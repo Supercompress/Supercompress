@@ -179,6 +179,7 @@
   backdrop-filter: blur(16px);
   color: var(--text-primary);
 }
+.df-github-link:hover,
 .df-gitlab-link:hover { background: rgba(229, 229, 229, 0.95); }
 .df-menu-btn {
   display: inline-flex;
