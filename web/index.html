@@ -38,7 +38,7 @@
   <link rel="preload" href="/assets/video/launch-post-poster.jpg?v=5" as="image" fetchpriority="high" />
   <link rel="preload" href="/assets/video/launch-post.mp4?v=5" as="video" type="video/mp4" />
   <link rel="stylesheet" href="/assets/css/landing-motion.css?v=5" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=5" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=6" />
 
 
 <!-- Preconnect hints for faster external resource loading -->
@@ -223,14 +223,14 @@
       <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
-      <a href="/" class="df-logo-desktop">
+      <a href="/" class="df-logo-desktop" aria-current="page">
         <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
         <span class="df-logo-word">Super<em>Compress</em></span>
       </a>
       <div class="df-header-end">
         <nav class="df-nav-pill" aria-label="Main">
           <a href="/benchmarks">Benchmarks</a>
-          <a href="#agents">Agents</a>
+          <a href="/#agents">Agents</a>
           <a href="/blog">Blog</a>
           <a href="/changelog">Changelog</a>
           <a href="/docs/">Docs</a>
@@ -243,7 +243,7 @@
         </a>
       </div>
       <div class="df-mobile-bar">
-        <a href="/" class="df-logo-mobile">
+        <a href="/" class="df-logo-mobile" aria-current="page">
           <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
           <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
         </a>
@@ -252,7 +252,7 @@
     </div>
     <div class="df-mobile-nav" id="df-mobile-nav">
       <a href="/benchmarks">Benchmarks</a>
-      <a href="#agents">Agents</a>
+      <a href="/#agents">Agents</a>
       <a href="/blog">Blog</a>
       <a href="/changelog">Changelog</a>
       <a href="/docs/">Docs</a>
@@ -675,7 +675,7 @@
     <div class="df-footer-inner">
       <div class="df-footer-grid">
         <div class="df-footer-brand">
-          <a href="/" class="df-footer-lockup">
+          <a href="/" class="df-footer-lockup" aria-current="page">
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
@@ -745,5 +745,6 @@
   <script src="/assets/js/vendor/gsap/ScrollTrigger.min.js"></script>
 <script src="/assets/js/landing-app.js?v=5"></script>
 
+  <script src="/assets/js/site-chrome.js?v=6"></script>
 </body>
 </html>
