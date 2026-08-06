@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="stylesheet" href="/assets/css/supercompress.css?v=105" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=13" />
   <style>
     .unsub-page { max-width: 520px; margin: 0 auto; padding: 96px 24px; }
     .unsub-page h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(1.8rem, 4vw, 2.4rem); letter-spacing: -0.02em; margin: 0 0 12px; }
@@ -69,8 +69,8 @@
     (async function () {
       const status = document.getElementById("status");
       const params = new URLSearchParams(location.search);
-      const email = params.get("email") || "";
-      const token = params.get("token") || "";
+      const email = decodeURIComponent(params.get("email") || "");
+      const token = decodeURIComponent(params.get("token") || "");
       if (!email || !token) {
         status.textContent = "Missing email or token. Use the unsubscribe link from a weekly email.";
         return;

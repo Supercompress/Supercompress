@@ -1,7 +1,7 @@
 const { json, readBody } = require("./_lib/http");
 const { verifyUser, bearerToken } = require("./_lib/auth");
 const { KEY_PREFIX } = require("./_lib/keys");
-const { createKey, authenticateKey } = require("./_lib/firebase-key-store");
+const { createKey, revokeKey, listKeys, authenticateKey } = require("./_lib/firebase-key-store");
 const { loadStore, mutateStore } = require("./_lib/store");
 const { getPlan } = require("./_lib/stripe");
 const admin = require("firebase-admin");
@@ -12,6 +12,18 @@ const {
   markWelcome,
   drainPendingWelcomes,
 } = require("./_lib/welcome");
+const {
+  weeklyTick,
+  listPendingWeekly,
+  drainPendingWeekly,
+  enqueueWeeklyCampaign,
+  unsubscribeEmail,
+  sendUnsubscribeLink,
+  markWeekly,
+  isoWeekCampaignId,
+  tipCampaignId,
+  shipCampaignId,
+} = require("./_lib/weekly");
 
 function normalizeCode(code) {
   return String(code || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -20,17 +32,31 @@ function normalizeCode(code) {
 function normalizeAgentUsage(raw = {}) {
   return Object.fromEntries(
     Object.entries(raw)
-      .map(([agent, snap]) => [
-        agent,
-        {
-          requests: snap.requests || 0,
-          tokens_in: snap.tokens_in || 0,
-          tokens_out: snap.tokens_out || 0,
-          tokens_saved: snap.tokens_saved || 0,
-          first_seen: snap.first_seen || null,
-          last_seen: snap.last_seen || null,
-        },
-      ])
+      .map(([agent, snap]) => {
+        const tokens_in = snap.tokens_in || 0;
+        const tokens_saved = snap.tokens_saved || 0;
+        const avg_cut_pct =
+          tokens_in > 0
+            ? Math.round((tokens_saved / tokens_in) * 10000) / 100
+            : 0;
+        return [
+          agent,
+          {
+            requests: snap.requests || 0,
+            tokens_in,
+            tokens_out: snap.tokens_out || 0,
+            tokens_saved,
+            avg_cut_pct,
+            avg_latency_ms: snap.avg_latency_ms || null,
+            last_latency_ms: snap.last_latency_ms || null,
+            last_pct: snap.last_pct != null ? snap.last_pct : null,
+            last_query: snap.last_query || null,
+            last_source: snap.last_source || null,
+            first_seen: snap.first_seen || null,
+            last_seen: snap.last_seen || null,
+          },
+        ];
+      })
       .sort((a, b) => (b[1].tokens_saved || 0) - (a[1].tokens_saved || 0))
   );
 }
@@ -42,6 +68,12 @@ function planUsage(owner, fallbackUsed = 0) {
     billableTokens,
     estimatedOverageUsd,
     freeTokensRemaining,
+    isComped,
+    isLegacyMetered,
+    isCreditWallet,
+    normalizeCreditLimitUsd,
+    DEFAULT_CREDIT_LIMIT_USD,
+    roundUsd,
   } = require("./_lib/stripe");
   const claims = owner?.customClaims || {};
   const plan = getPlan(claims.sc_plan || "free");
@@ -49,9 +81,10 @@ function planUsage(owner, fallbackUsed = 0) {
   const usage = claims.sc_usage?.month === month ? claims.sc_usage : {};
   const used = usage.tokens_in || fallbackUsed || 0;
   const payg = isPaygEnabled(plan.id);
-  const unlimited = payg || plan.tokens_per_month < 0;
+  const unlimited = isComped(claims) || isLegacyMetered(claims);
   const freeRemaining = freeTokensRemaining(used);
   const remaining = unlimited ? -1 : freeRemaining;
+  const creditWallet = isCreditWallet(claims);
   return {
     plan: plan.id,
     plan_name: plan.name,
@@ -63,37 +96,90 @@ function planUsage(owner, fallbackUsed = 0) {
     billable_tokens: billableTokens(used),
     estimated_overage_usd: estimatedOverageUsd(used),
     payg_enabled: payg,
+    credit_wallet: creditWallet,
+    credit_balance_usd: roundUsd(claims.sc_credit_balance_usd || 0),
+    credit_limit_usd: normalizeCreditLimitUsd(claims.sc_credit_limit_usd, DEFAULT_CREDIT_LIMIT_USD),
+    auto_recharge: Boolean(claims.sc_auto_recharge),
     usage_pct: FREE_TOKENS_PER_MONTH > 0
       ? Math.min(100, Math.round((Math.min(used, FREE_TOKENS_PER_MONTH) / FREE_TOKENS_PER_MONTH) * 10000) / 100)
       : 0,
     unlimited,
-    limit_reached: !payg && freeRemaining === 0,
-    upgrade_url: "https://supercompress.dev/dashboard#billing",
+    limit_reached: !payg && !creditWallet && freeRemaining === 0,
+    upgrade_url: "https://www.supercompress.dev/dashboard#billing",
+    upgrade_hint:
+      "Free 5M tokens/month used. Add prepaid credits ($1/1M after free) so compression keeps going.",
   };
 }
 
 async function linkedStatus(code) {
-  const store = await loadStore();
-  const rec = store.connections?.[code];
-  if (!rec) return null;
-  return {
-    code,
-    status: rec.secret ? "linked" : "pending",
-    owner_uid: rec.owner_uid || null,
-    secret: rec.secret || null,
-    linked_at: rec.linked_at || null,
-    created_at: rec.created_at || null,
-  };
+  // Auth-only device link (no gist).
+  const { getDeviceLink } = require("./_lib/auth-connect");
+  return getDeviceLink(code);
+}
+
+const PLUGIN_KEY_NAME = "Coding agent";
+const ROTATABLE_KEY_NAME =
+  /^(coding agent|cli|mcp|default|plugin|device|setup)(\s|$)/i;
+
+/**
+ * Mint a coding-agent key via Firebase Auth (no gist/Firestore).
+ * Rotates prior Auth plugin keys when at plan limit.
+ */
+async function mintConnectKey(ownerUid, maxKeys) {
+  const {
+    createAuthPluginKey,
+    listAuthPluginKeys,
+    revokeAuthPluginKey,
+  } = require("./_lib/auth-connect");
+
+  const existing = await listAuthPluginKeys(ownerUid).catch(() => []);
+  if (existing.length >= maxKeys) {
+    const pool = existing
+      .filter((k) => ROTATABLE_KEY_NAME.test(String(k.name || "")))
+      .slice()
+      .sort((a, b) => String(a.created_at || "").localeCompare(String(b.created_at || "")));
+    const victims = (pool.length ? pool : existing).slice(0, Math.max(1, existing.length - maxKeys + 1));
+    for (const victim of victims.slice(0, 3)) {
+      try {
+        await revokeAuthPluginKey(ownerUid, victim.id);
+      } catch (_) {
+        /* continue */
+      }
+    }
+  }
+  return createAuthPluginKey(ownerUid, PLUGIN_KEY_NAME);
 }
 
 async function handleConnectDevice(req, res) {
+  const { getDeviceLink, putDeviceLink } = require("./_lib/auth-connect");
   const code = normalizeCode((req.method === "GET" ? req.query?.code : readBody(req)?.code) || "");
-  if (!code || code.length < 6) return json(res, 422, { detail: "Valid code required" });
+  if (!code || code.length < 6) {
+    // Bots hit /api/connect-device with no code — soft 200 avoids error-rate spikes.
+    return json(res, 200, {
+      ok: false,
+      status: "invalid_code",
+      detail: "Valid connect code required (?code=…)",
+    });
+  }
 
   if (req.method === "GET") {
-    const status = await linkedStatus(code);
-    if (!status) return json(res, 404, { detail: "Connection code not found" });
-    return json(res, 200, status);
+    try {
+      const status = await getDeviceLink(code);
+      if (!status) {
+        // MCP/CLI polls every ~1.5s before the user finishes browser login.
+        return json(res, 200, {
+          code,
+          status: "waiting",
+          owner_uid: null,
+          secret: null,
+          linked_at: null,
+          created_at: null,
+        });
+      }
+      return json(res, 200, status);
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "Lookup failed" });
+    }
   }
 
   if (req.method !== "POST") return json(res, 405, { detail: "Method not allowed" });
@@ -102,22 +188,24 @@ async function handleConnectDevice(req, res) {
     const user = await verifyUser(req);
     const owner = await admin.auth().getUser(user.uid).catch(() => ({ uid: user.uid, customClaims: {} }));
     const plan = getPlan(owner.customClaims?.sc_plan || "free");
-    const key = await createKey(user.uid, "Default", plan.max_keys);
+    const key = await mintConnectKey(user.uid, plan.max_keys);
     const secret = key.secret || key.full_key || null;
     if (!secret || !String(secret).startsWith(KEY_PREFIX)) {
       return json(res, 500, { detail: "Could not create account key" });
     }
 
-    await mutateStore((store) => {
-      if (!store.connections) store.connections = {};
-      store.connections[code] = {
-        code,
-        owner_uid: user.uid,
-        secret,
-        linked_at: new Date().toISOString(),
-        created_at: store.connections[code]?.created_at || new Date().toISOString(),
-      };
-      return true;
+    const body = readBody(req) || {};
+    const source = String(body.source || "oauth").trim().slice(0, 40) || "oauth";
+    const agents = Array.isArray(body.agents)
+      ? body.agents.map((a) => String(a || "").trim().toLowerCase().slice(0, 40)).filter(Boolean).slice(0, 20)
+      : [];
+
+    // Auth-only handshake — never touches gist/Firestore store.
+    await putDeviceLink(code, {
+      ownerUid: user.uid,
+      secret,
+      source,
+      agents,
     });
 
     return json(res, 200, {
@@ -126,6 +214,11 @@ async function handleConnectDevice(req, res) {
       owner_uid: user.uid,
       secret,
       key_id: key.key?.id || null,
+      agent_plugin: {
+        linked: true,
+        source,
+        agents,
+      },
     });
   } catch (err) {
     return json(res, err.status || 401, { detail: err.message });
@@ -139,8 +232,9 @@ async function handleUsage(req, res) {
     const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization) || (req.query && req.query.api_key);
     if (raw && raw.startsWith(KEY_PREFIX)) {
       const authenticated = await authenticateKey(raw);
-      const { loadCodingAgentUsage } = require("./_lib/store");
+      const { loadCodingAgentUsage, loadAgentPluginLink } = require("./_lib/store");
       const usage = await loadCodingAgentUsage(authenticated.ownerUid);
+      const agent_plugin = await loadAgentPluginLink(authenticated.ownerUid).catch(() => ({ linked: false }));
       const total = Object.values(usage).reduce((acc, snap) => ({
         requests: acc.requests + (snap.requests || 0),
         tokens_in: acc.tokens_in + (snap.tokens_in || 0),
@@ -155,13 +249,15 @@ async function handleUsage(req, res) {
         total_tokens_out: total.tokens_out,
         total_tokens_saved: total.tokens_saved,
         coding_agent_usage: normalizeAgentUsage(usage),
+        agent_plugin,
         ...planUsage(authenticated.owner, total.tokens_in),
       });
     }
 
     const user = await verifyUser(req);
-    const { loadCodingAgentUsage } = require("./_lib/store");
+    const { loadCodingAgentUsage, loadAgentPluginLink } = require("./_lib/store");
     const usage = await loadCodingAgentUsage(user.uid);
+    const agent_plugin = await loadAgentPluginLink(user.uid).catch(() => ({ linked: false }));
     const total = Object.values(usage).reduce((acc, snap) => ({
       requests: acc.requests + (snap.requests || 0),
       tokens_in: acc.tokens_in + (snap.tokens_in || 0),
@@ -177,10 +273,108 @@ async function handleUsage(req, res) {
       total_tokens_out: total.tokens_out,
       total_tokens_saved: total.tokens_saved,
       coding_agent_usage: normalizeAgentUsage(usage),
+      agent_plugin,
       ...planUsage(owner, total.tokens_in),
     });
   } catch (err) {
-    return json(res, err.status || 401, { detail: err.message });
+    // Unauthenticated scanner GETs — soft 200 so Observability error rate stays honest.
+    if ((err.status || 401) === 401) {
+      return json(res, 200, { ok: false, auth: "required", detail: err.message || "Authorization required" });
+    }
+    return json(res, err.status || 500, { detail: err.message });
+  }
+}
+
+async function resolveOwnerFromReq(req) {
+  const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization) || (req.query && req.query.api_key);
+  if (raw && String(raw).startsWith(KEY_PREFIX)) {
+    const authenticated = await authenticateKey(raw);
+    return {
+      uid: authenticated.ownerUid,
+      owner: authenticated.owner,
+      via: "api_key",
+      key_prefix: authenticated.user?.prefix || String(raw).slice(0, 16),
+    };
+  }
+  const user = await verifyUser(req);
+  const owner = await admin.auth().getUser(user.uid);
+  return { uid: user.uid, owner, via: "firebase", key_prefix: null };
+}
+
+async function handleMe(req, res) {
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
+  try {
+    const { uid, owner, via, key_prefix } = await resolveOwnerFromReq(req);
+    const { loadAgentPluginLink, loadCodingAgentUsage } = require("./_lib/store");
+    const agent_plugin = await loadAgentPluginLink(uid).catch(() => ({ linked: false }));
+    const usage = await loadCodingAgentUsage(uid).catch(() => ({}));
+    const totalIn = Object.values(usage).reduce((n, s) => n + (s.tokens_in || 0), 0);
+
+    let plugin_keys = [];
+    try {
+      const { listAuthPluginKeys } = require("./_lib/auth-connect");
+      plugin_keys = (await listAuthPluginKeys(uid)).map((k) => ({
+        id: k.id,
+        name: k.name,
+        prefix: k.prefix,
+        created_at: k.created_at || null,
+        last_used_at: k.last_used_at || null,
+      }));
+    } catch (_) {
+      plugin_keys = [];
+    }
+
+    let api_keys = [];
+    try {
+      const listed = await listKeys(uid);
+      const rows = Array.isArray(listed) ? listed : listed?.keys || [];
+      api_keys = rows.map((k) => ({
+        id: k.id,
+        name: k.name,
+        prefix: k.prefix,
+        created_at: k.created_at || null,
+        last_used_at: k.last_used_at || null,
+      }));
+    } catch (_) {
+      api_keys = [];
+    }
+
+    return json(res, 200, {
+      uid,
+      email: owner.email || null,
+      display_name: owner.displayName || null,
+      email_verified: Boolean(owner.emailVerified),
+      created_at: owner.metadata?.creationTime || null,
+      last_sign_in: owner.metadata?.lastSignInTime || null,
+      auth_via: via,
+      key_prefix: key_prefix || null,
+      agent_plugin,
+      plugin_keys,
+      api_keys,
+      dashboard_url: "https://www.supercompress.dev/dashboard",
+      ...planUsage(owner, totalIn),
+    });
+  } catch (err) {
+    if ((err.status || 401) === 401) {
+      return json(res, 200, { ok: false, auth: "required", detail: err.message || "Authorization required" });
+    }
+    return json(res, err.status || 500, { detail: err.message });
+  }
+}
+
+async function handleCompressLog(req, res) {
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
+  try {
+    const { uid } = await resolveOwnerFromReq(req);
+    const limit = Number(req.query?.limit) || 40;
+    const { listCompressLog } = require("./_lib/compress-log");
+    const data = await listCompressLog(uid, { limit });
+    return json(res, 200, { owner_uid: uid, ...data });
+  } catch (err) {
+    if ((err.status || 401) === 401) {
+      return json(res, 200, { ok: false, auth: "required", detail: err.message || "Authorization required" });
+    }
+    return json(res, err.status || 500, { detail: err.message });
   }
 }
 
@@ -194,18 +388,24 @@ async function handleAuthStatus(req, res) {
       process.env.FIREBASE_PRIVATE_KEY
   );
   const storeReady = hasJson || hasParts;
+  const { gistConfigured } = require("./_lib/gist-store");
+  // Report intended primary backend (Firestore when Admin is configured).
+  const storage = storeReady ? "firestore" : gistConfigured() ? "github-gist" : "in-memory-only";
 
   return json(res, 200, {
     sc_auth_dev: process.env.SC_AUTH_DEV === "1" || process.env.SC_AUTH_DEV === "true",
-    storage: storeReady ? "firestore" : "in-memory-only",
+    storage,
     firebase_client: Boolean(
       process.env.FIREBASE_API_KEY && process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_AUTH_DOMAIN
     ),
     firebase_admin: storeReady,
     firebase_project_id_set: Boolean(process.env.FIREBASE_PROJECT_ID),
+    gist_fallback: gistConfigured(),
     note: storeReady
-      ? "Firestore backing the persistent store + CCR cache"
-      : "Add FIREBASE_SERVICE_ACCOUNT_JSON (or FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY) on Vercel, then redeploy",
+      ? "Firestore is primary store; GitHub gist is emergency fallback only"
+      : gistConfigured()
+        ? "Using GitHub gist store (Firebase Admin not configured)"
+        : "Add FIREBASE_SERVICE_ACCOUNT_JSON (or FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY) on Vercel, then redeploy",
   });
 }
 
@@ -215,6 +415,8 @@ module.exports = async (req, res) => {
   const op = String(req.query?.op || "").trim();
   if (op === "connect-device") return handleConnectDevice(req, res);
   if (op === "usage") return handleUsage(req, res);
+  if (op === "me" || op === "account") return handleMe(req, res);
+  if (op === "compress-log" || op === "activity") return handleCompressLog(req, res);
   if (op === "auth-status") return handleAuthStatus(req, res);
 
   // Signup welcome automation (no extra serverless function — Hobby 12-fn limit)
@@ -259,11 +461,182 @@ module.exports = async (req, res) => {
     if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     try {
       const result = await drainPendingWelcomes();
-      return json(res, 200, { ok: true, ...result });
+      // Also nudge weekly queue so mid-week backlog clears on the daily cron.
+      let weekly = null;
+      try {
+        weekly = await weeklyTick();
+      } catch (weeklyErr) {
+        weekly = { ok: false, error: weeklyErr.message || "weekly_tick_failed" };
+      }
+      return json(res, 200, { ok: true, ...result, weekly });
     } catch (err) {
       return json(res, err.status || 500, { detail: err.message });
     }
   }
 
-  return json(res, 404, { detail: "Unknown account operation" });
+  // Weekly product emails to all users
+  if (op === "weekly-tick" && (req.method === "POST" || req.method === "GET")) {
+    const body = req.method === "POST" ? readBody(req) : {};
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      const force = String(body.force || req.query?.force || "").trim();
+      return json(res, 200, await weeklyTick(force ? { force } : {}));
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "Weekly tick failed" });
+    }
+  }
+  if (op === "weekly-enqueue" && (req.method === "POST" || req.method === "GET")) {
+    const body = req.method === "POST" ? readBody(req) : {};
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      const force = String(body.force || req.query?.force || "").trim();
+      const defaultId =
+        force === "ship" || String(force).endsWith("-ship")
+          ? shipCampaignId()
+          : force === "tip" || String(force).endsWith("-tip")
+            ? tipCampaignId()
+            : isoWeekCampaignId();
+      const campaignId =
+        String(body.campaign_id || req.query?.campaign_id || "").trim() ||
+        (force && force.includes("-") ? force : defaultId);
+      return json(res, 200, { ok: true, ...(await enqueueWeeklyCampaign(campaignId)) });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "weekly-pending" && req.method === "GET") {
+    if (!drainSecretOk(req)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      // Always include branded HTML — gog drain + Mailer need it (plain text alone looks unstyled).
+      const pending = await listPendingWeekly(req.query?.campaign_id || null, {
+        includeHtml: String(req.query?.html || "1") !== "0",
+      });
+      return json(res, 200, {
+        pending,
+        count: pending.length,
+        campaign_id: req.query?.campaign_id || isoWeekCampaignId(),
+      });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "weekly-drain" && (req.method === "POST" || req.method === "GET")) {
+    const body = req.method === "POST" ? readBody(req) : {};
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      const limit = Number(body.limit || req.query?.limit || 0) || undefined;
+      return json(res, 200, {
+        ok: true,
+        ...(await drainPendingWeekly({ limit })),
+      });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "weekly-mark" && req.method === "POST") {
+    const body = readBody(req);
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    const key = String(body.key || "").trim();
+    if (!key) return json(res, 422, { detail: "key required" });
+    const status = body.status === "failed" ? "failed" : "sent";
+    try {
+      const record = await markWeekly(key, {
+        status,
+        sent_at: status === "sent" ? new Date().toISOString() : null,
+        provider: body.provider || "gog",
+        error: body.error || null,
+      });
+      return json(res, 200, { ok: true, record });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "weekly-mark-campaign" && req.method === "POST") {
+    const body = readBody(req);
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    const campaignId = String(body.campaign_id || "").trim();
+    if (!campaignId) return json(res, 422, { detail: "campaign_id required" });
+    const status = body.status === "failed" ? "failed" : "sent";
+    try {
+      const { mutateStore } = require("./_lib/store");
+      const result = await mutateStore((store) => {
+        if (!store.weekly_emails) store.weekly_emails = {};
+        let marked = 0;
+        let skipped = 0;
+        for (const [key, rec] of Object.entries(store.weekly_emails)) {
+          if (!rec || rec.campaign_id !== campaignId) continue;
+          if (rec.status === status) {
+            skipped += 1;
+            continue;
+          }
+          store.weekly_emails[key] = {
+            ...rec,
+            status,
+            sent_at: status === "sent" ? new Date().toISOString() : rec.sent_at || null,
+            provider: body.provider || "gog",
+            error: body.error || null,
+          };
+          marked += 1;
+        }
+        return { marked, skipped };
+      });
+      return json(res, 200, { ok: true, campaign_id: campaignId, ...result });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "weekly-unsubscribe" && (req.method === "GET" || req.method === "POST")) {
+    const body = req.method === "POST" ? readBody(req) || {} : {};
+    let email = String(body.email || req.query?.email || "").trim();
+    let token = String(body.token || req.query?.token || "").trim();
+    try {
+      email = decodeURIComponent(email);
+    } catch {
+      /* keep raw */
+    }
+    try {
+      token = decodeURIComponent(token);
+    } catch {
+      /* keep raw */
+    }
+    const oneClickPost =
+      String(body["List-Unsubscribe"] || "").trim() === "One-Click" ||
+      (typeof req.body === "string" &&
+        /List-Unsubscribe=One-Click/i.test(String(req.body)));
+    const confirmOnly =
+      body.confirm === true ||
+      body.confirm === "1" ||
+      String(req.query?.confirm || "") === "1" ||
+      (oneClickPost && email && token);
+    try {
+      return json(res, 200, await unsubscribeEmail(email, token, { confirmOnly }));
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "Unsubscribe failed" });
+    }
+  }
+  if (op === "weekly-unsub-link" && req.method === "POST") {
+    const body = readBody(req) || {};
+    const email = String(body.email || "").trim();
+    try {
+      return json(res, 200, await sendUnsubscribeLink(email));
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "Could not send link" });
+    }
+  }
+
+  return json(res, 200, {
+    ok: true,
+    detail: "Specify ?op=…",
+    ops: [
+      "auth-status",
+      "usage",
+      "connect-device",
+      "welcome",
+      "welcome-drain",
+      "weekly-tick",
+      "weekly-drain",
+      "weekly-unsubscribe",
+      "weekly-unsub-link",
+    ],
+  });
 };
