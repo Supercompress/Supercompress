@@ -606,8 +606,7 @@ module.exports = async (req, res) => {
     const confirmOnly =
       body.confirm === true ||
       body.confirm === "1" ||
-      String(req.query?.confirm || "") === "1" ||
-      (oneClickPost && email && token);
+      String(req.query?.confirm || "") === "1";
     try {
       return json(res, 200, await unsubscribeEmail(email, token, { confirmOnly }));
     } catch (err) {
