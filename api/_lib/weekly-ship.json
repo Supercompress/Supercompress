@@ -1,0 +1,20 @@
+{
+  "byCampaign": {
+    "2026-W32-ship": {
+      "versions": ["0.5.10", "0.5.9"],
+      "subject": "Shipped: agent connect that actually works · SuperCompress 0.5.10",
+      "headline": "Agent setup that doesn’t strand you mid-connect",
+      "intro": "This week’s focus: fewer dead ends when you link Cursor / Claude / CLI — and faster installs so you spend time compressing context, not debugging setup.",
+      "bullets": [
+        "Device connect hang fixed — rotates Coding agent / CLI keys at the plan limit instead of failing silently",
+        "Clearer dashboard linking — connected / retry banner; keeps ?connect= on failure so Retry still works",
+        "CLI setup / connect — www URL, longer wait, progress ticks, paste-key fallback",
+        "Store prefers Firestore — GitHub gist is emergency fallback only (stops rate-limit connect failures)",
+        "Fast global install — dropped heavy MCP SDK deps so install no longer hangs",
+        "Hermes auto-compress — shell hooks + transform plugin + native compact",
+        "Hermes + OpenClaw MCP auto-wire — pluggable custom agents via supercompress agents add",
+        "Incremental session memory — compress only new chunks; compact when memory grows"
+      ]
+    }
+  }
+}

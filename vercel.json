@@ -168,6 +168,30 @@
       "destination": "/api/account?op=welcome-drain"
     },
     {
+      "source": "/api/weekly/tick",
+      "destination": "/api/account?op=weekly-tick"
+    },
+    {
+      "source": "/api/weekly/drain",
+      "destination": "/api/account?op=weekly-drain"
+    },
+    {
+      "source": "/api/weekly/pending",
+      "destination": "/api/account?op=weekly-pending"
+    },
+    {
+      "source": "/api/weekly/unsubscribe",
+      "destination": "/api/account?op=weekly-unsubscribe"
+    },
+    {
+      "source": "/api/weekly/unsub-link",
+      "destination": "/api/account?op=weekly-unsub-link"
+    },
+    {
+      "source": "/unsubscribe",
+      "destination": "/unsubscribe.html"
+    },
+    {
       "source": "/dashboard",
       "destination": "/dashboard.html"
     },
@@ -346,6 +370,14 @@
     {
       "path": "/api/account?op=welcome-drain",
       "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/account?op=weekly-tick",
+      "schedule": "0 15 * * 0"
+    },
+    {
+      "path": "/api/account?op=weekly-tick",
+      "schedule": "0 15 * * 3"
     }
   ],
   "headers": [

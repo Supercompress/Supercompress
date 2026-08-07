@@ -1,0 +1,77 @@
+{
+  "seed": [
+    {
+      "id": "agents-money",
+      "subject": "Your coding agent is burning tokens you can reclaim",
+      "tipTitle": "Stop paying for every log dump in Cursor / Claude Code",
+      "tipBody": "Agents re-send huge context every turn. SuperCompress installs as MCP, keeps your login, and compresses dumps before they hit the model — typically ~65% fewer input tokens with ≥98% answer keep on our held-out suites.",
+      "proof": "Install once. Works with Cursor, Claude Code, Codex, and more.",
+      "ctaLabel": "Install coding agent plugin →",
+      "ctaUrl": "https://www.supercompress.dev/docs/coding-agents",
+      "command": "npm install -g supercompress-proxy && npx supercompress setup",
+      "secondaryLabel": "See held-out benchmarks",
+      "secondaryUrl": "https://www.supercompress.dev/benchmarks"
+    },
+    {
+      "id": "api-bill",
+      "subject": "The fastest way to cut your LLM API bill this week",
+      "tipTitle": "Compress the dump. Keep the answer. Same model.",
+      "tipBody": "If input tokens dominate your OpenAI / Claude / Gemini invoice, you don’t need a cheaper model first — you need fewer tokens in the prompt. Query-aware compression keeps original evidence for this question and drops the rest.",
+      "proof": "Primary held-out bundle: 99.4% answer keep · 65.4% token-weighted cut.",
+      "ctaLabel": "Get an API key & compress →",
+      "ctaUrl": "https://www.supercompress.dev/dashboard?signup=1",
+      "command": null,
+      "secondaryLabel": "Read the cost playbook",
+      "secondaryUrl": "https://www.supercompress.dev/reduce-llm-costs"
+    },
+    {
+      "id": "free-to-payg",
+      "subject": "You’ve got 5M free tokens — don’t hard-stop mid-week",
+      "tipTitle": "Enable PAYG before a busy agent week",
+      "tipBody": "Every account includes 1M tokens/month free. Heavy RAG and coding-agent workloads often burn that in days. Pay-as-you-go is $1 per 1M tokens after free — usually a fraction of what you save on the LLM bill.",
+      "proof": "No plan lock-in. Card on file → compress never hard-stops.",
+      "ctaLabel": "Enable pay-as-you-go →",
+      "ctaUrl": "https://www.supercompress.dev/dashboard",
+      "command": null,
+      "secondaryLabel": "Pricing & quickstart",
+      "secondaryUrl": "https://www.supercompress.dev/docs/quickstart"
+    },
+    {
+      "id": "vs-truncation",
+      "subject": "Truncation is why your answers got worse",
+      "tipTitle": "Blind cuts drop the answer. Query-aware keeps it.",
+      "tipBody": "Sliding windows and “keep last N tokens” delete by position. SuperCompress scores blocks against the question so the fact in the middle of a dump can survive. That’s the difference between a cheaper prompt and a wrong answer.",
+      "proof": "Built for production APIs, RAG, and agents — not research demos.",
+      "ctaLabel": "Try the playground →",
+      "ctaUrl": "https://www.supercompress.dev/playground",
+      "command": null,
+      "secondaryLabel": "SuperCompress vs truncation",
+      "secondaryUrl": "https://www.supercompress.dev/supercompress-vs-truncation"
+    },
+    {
+      "id": "headroom",
+      "subject": "Looking for a Headroom alternative?",
+      "tipTitle": "Query-aware + MCP agents + published answer gates",
+      "tipBody": "If you’re evaluating Headroom or similar tools: SuperCompress is query-aware evidence selection, MCP-first for Cursor/Claude (keep your login), and we publish held-out ≥98% answer containment — not just “% saved.”",
+      "proof": "Compare quality and agent install — not parameter-count marketing.",
+      "ctaLabel": "Read SuperCompress vs Headroom →",
+      "ctaUrl": "https://www.supercompress.dev/supercompress-vs-headroom",
+      "command": null,
+      "secondaryLabel": "Start free",
+      "secondaryUrl": "https://www.supercompress.dev/dashboard?signup=1"
+    },
+    {
+      "id": "reply-close",
+      "subject": "What’s blocking you from using SuperCompress daily?",
+      "tipTitle": "I want the honest answer",
+      "tipBody": "Setup friction? Unclear savings? Need a LangChain/RAG example? Reply with one sentence. I read every email and ship fixes from real feedback. If it’s working, tell me which workload — agents, support, or RAG — and I’ll send the tightest path to PAYG ROI.",
+      "proof": "Founder-led support. No ticket bot.",
+      "ctaLabel": "Open dashboard →",
+      "ctaUrl": "https://www.supercompress.dev/dashboard",
+      "command": null,
+      "secondaryLabel": "Coding agent setup",
+      "secondaryUrl": "https://www.supercompress.dev/docs/coding-agents"
+    }
+  ],
+  "byCampaign": {}
+}

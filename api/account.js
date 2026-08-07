@@ -12,6 +12,18 @@ const {
   markWelcome,
   drainPendingWelcomes,
 } = require("./_lib/welcome");
+const {
+  weeklyTick,
+  listPendingWeekly,
+  drainPendingWeekly,
+  enqueueWeeklyCampaign,
+  unsubscribeEmail,
+  sendUnsubscribeLink,
+  markWeekly,
+  isoWeekCampaignId,
+  tipCampaignId,
+  shipCampaignId,
+} = require("./_lib/weekly");
 
 function normalizeCode(code) {
   return String(code || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -259,9 +271,157 @@ module.exports = async (req, res) => {
     if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     try {
       const result = await drainPendingWelcomes();
-      return json(res, 200, { ok: true, ...result });
+      let weekly = null;
+      try {
+        weekly = await weeklyTick();
+      } catch (weeklyErr) {
+        weekly = { ok: false, error: weeklyErr.message || "weekly_tick_failed" };
+      }
+      return json(res, 200, { ok: true, ...result, weekly });
     } catch (err) {
       return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+
+  if (op === "weekly-tick" && (req.method === "POST" || req.method === "GET")) {
+    const body = req.method === "POST" ? readBody(req) : {};
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      const force = String(body.force || req.query?.force || "").trim();
+      return json(res, 200, await weeklyTick(force ? { force } : {}));
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "Weekly tick failed" });
+    }
+  }
+  if (op === "weekly-enqueue" && (req.method === "POST" || req.method === "GET")) {
+    const body = req.method === "POST" ? readBody(req) : {};
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      const force = String(body.force || req.query?.force || "").trim();
+      const defaultId =
+        force === "ship" || String(force).endsWith("-ship")
+          ? shipCampaignId()
+          : force === "tip" || String(force).endsWith("-tip")
+            ? tipCampaignId()
+            : isoWeekCampaignId();
+      const campaignId =
+        String(body.campaign_id || req.query?.campaign_id || "").trim() ||
+        (force && force.includes("-") ? force : defaultId);
+      return json(res, 200, { ok: true, ...(await enqueueWeeklyCampaign(campaignId)) });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "weekly-pending" && req.method === "GET") {
+    if (!drainSecretOk(req)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      const pending = await listPendingWeekly(req.query?.campaign_id || null, {
+        includeHtml: String(req.query?.html || "1") !== "0",
+      });
+      return json(res, 200, {
+        pending,
+        count: pending.length,
+        campaign_id: req.query?.campaign_id || isoWeekCampaignId(),
+      });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "weekly-drain" && (req.method === "POST" || req.method === "GET")) {
+    const body = req.method === "POST" ? readBody(req) : {};
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      const limit = Number(body.limit || req.query?.limit || 0) || undefined;
+      return json(res, 200, {
+        ok: true,
+        ...(await drainPendingWeekly({ limit })),
+      });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "weekly-mark" && req.method === "POST") {
+    const body = readBody(req);
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    const key = String(body.key || "").trim();
+    if (!key) return json(res, 422, { detail: "key required" });
+    const status = body.status === "failed" ? "failed" : "sent";
+    try {
+      const record = await markWeekly(key, {
+        status,
+        sent_at: status === "sent" ? new Date().toISOString() : null,
+        provider: body.provider || "gog",
+        error: body.error || null,
+      });
+      return json(res, 200, { ok: true, record });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "weekly-mark-campaign" && req.method === "POST") {
+    const body = readBody(req);
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    const campaignId = String(body.campaign_id || "").trim();
+    if (!campaignId) return json(res, 422, { detail: "campaign_id required" });
+    const status = body.status === "failed" ? "failed" : "sent";
+    try {
+      const result = await mutateStore((store) => {
+        if (!store.weekly_emails) store.weekly_emails = {};
+        let marked = 0;
+        let skipped = 0;
+        for (const [key, rec] of Object.entries(store.weekly_emails)) {
+          if (!rec || rec.campaign_id !== campaignId) continue;
+          if (rec.status === status) {
+            skipped += 1;
+            continue;
+          }
+          store.weekly_emails[key] = {
+            ...rec,
+            status,
+            sent_at: status === "sent" ? new Date().toISOString() : rec.sent_at || null,
+            provider: body.provider || "gog",
+            error: body.error || null,
+          };
+          marked += 1;
+        }
+        return { marked, skipped };
+      });
+      return json(res, 200, { ok: true, campaign_id: campaignId, ...result });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "weekly-unsubscribe" && (req.method === "GET" || req.method === "POST")) {
+    const body = req.method === "POST" ? readBody(req) || {} : {};
+    let email = String(body.email || req.query?.email || "").trim();
+    let token = String(body.token || req.query?.token || "").trim();
+    try {
+      email = decodeURIComponent(email);
+    } catch {
+      /* keep raw */
+    }
+    try {
+      token = decodeURIComponent(token);
+    } catch {
+      /* keep raw */
+    }
+    const confirmOnly =
+      body.confirm === true ||
+      body.confirm === "1" ||
+      String(req.query?.confirm || "") === "1";
+    try {
+      return json(res, 200, await unsubscribeEmail(email, token, { confirmOnly }));
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "Unsubscribe failed" });
+    }
+  }
+  if (op === "weekly-unsub-link" && req.method === "POST") {
+    const body = readBody(req) || {};
+    const email = String(body.email || "").trim();
+    try {
+      return json(res, 200, await sendUnsubscribeLink(email));
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "Could not send link" });
     }
   }
 

@@ -47,6 +47,8 @@ function emptyStore() {
     connections: {},
     coding_agent_usage: {},
     welcome_emails: {},
+    weekly_emails: {},
+    weekly_unsubscribes: {},
     _version: 0,
   };
 }
@@ -68,6 +70,8 @@ function normalizeStore(raw) {
     connections: raw.connections && typeof raw.connections === "object" ? raw.connections : {},
     coding_agent_usage: raw.coding_agent_usage && typeof raw.coding_agent_usage === "object" ? raw.coding_agent_usage : {},
     welcome_emails: raw.welcome_emails && typeof raw.welcome_emails === "object" ? raw.welcome_emails : {},
+    weekly_emails: raw.weekly_emails && typeof raw.weekly_emails === "object" ? raw.weekly_emails : {},
+    weekly_unsubscribes: raw.weekly_unsubscribes && typeof raw.weekly_unsubscribes === "object" ? raw.weekly_unsubscribes : {},
     _version: typeof raw._version === "number" ? raw._version : 0,
     _updated_at: raw._updated_at || null,
   };
