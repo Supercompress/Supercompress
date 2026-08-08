@@ -105,3 +105,11 @@ launch-video/
 # Demo build output
 examples/yc-demo/out/
 scripts/cleanup-auth-stubs.js
+
+# Private enterprise / customer commercial pack — LOCAL ONLY (never commit/push)
+docs/enterprise/
+web/local-enterprise-brief.html
+web/local-only/
+scripts/build_local_enterprise_brief.py
+scripts/serve_local_enterprise_brief.sh
+exports/
