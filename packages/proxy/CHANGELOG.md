@@ -8,7 +8,7 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## Unreleased
 
-- **Fix `uninstall` leaving artifacts behind**: it reported success while the Cursor rule, Cursor hook scripts and hook registrations, and the agent instruction blocks (`CLAUDE.md` / `AGENTS.md` / …) all survived. `revertAll` only walked the provider base-URL configs, and the three writers responsible never recorded a backup. Uninstalling now removes them and reports each one, preserving unrelated Cursor hooks and user-authored instruction content. Installs from earlier versions clean up too.
+- **Fix `uninstall` leaving artifacts behind**: it reported success while the Cursor rule, Cursor hook scripts and registrations, the Claude Code / Codex prompt + tool hooks, and the agent instruction blocks (`CLAUDE.md` / `AGENTS.md` / …) all survived. `revertAll` only walked the provider base-URL configs, and the writers responsible recorded no backup. Uninstalling now removes them and reports each one, while preserving unrelated hooks, user-authored instruction content, and any file the backup restored. Installs from earlier versions — including ones with no backup manifest, and Windows-style hook paths — clean up too.
 
 ## 0.5.11 — 2026-08-07
 

@@ -381,13 +381,10 @@ async function main() {
       stopServer();
       require("../src/service").unregister();
       console.log("  → Reverting agent configurations...");
-      const { revertAll, removeMcp, removePluginArtifacts } = require("../src/detector");
+      const { revertAll, removeMcp } = require("../src/detector");
       const undone = revertAll();
-      undone.forEach((a) => console.log(`  → Reverted ${a}`));
+      undone.forEach((a) => console.log(`  → ${a}`));
       removeMcp().forEach((a) => console.log(`  → Removed ${a} MCP registration`));
-      // Runs after revertAll so it clears anything the backup manifest missed
-      // (older installs never recorded the rule, hooks or instruction files).
-      removePluginArtifacts().forEach((a) => console.log(`  → Removed ${a}`));
       // Remove config dir
       if (fs.existsSync(CONFIG_DIR)) {
         fs.rmSync(CONFIG_DIR, { recursive: true, force: true });

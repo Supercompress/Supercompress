@@ -137,4 +137,90 @@ let passed = 0;
   passed++;
 }
 
+// 3. A user's own file at one of our paths is backed up and restored — the
+//    artifact sweep must not then delete what the restore just put back.
+{
+  const home = newHome();
+  const rulePath = path.join(home, ".cursor", "rules", "supercompress.mdc");
+  const mine = "MY OWN CURSOR RULE - not supercompress\n";
+  fs.mkdirSync(path.dirname(rulePath), { recursive: true });
+  fs.writeFileSync(rulePath, mine);
+
+  run(home, "plugin");
+  run(home, "uninstall");
+
+  assert.ok(fs.existsSync(rulePath), "a pre-existing user file must survive uninstall");
+  assert.strictEqual(
+    fs.readFileSync(rulePath, "utf8"),
+    mine,
+    "a pre-existing user file must be restored to its original contents"
+  );
+  fs.rmSync(home, { recursive: true, force: true });
+  console.log("✔ a user's own file at one of our paths is restored, not deleted");
+  passed++;
+}
+
+// 4. Stripping the instruction block must stop at the next heading of any
+//    level, or a user section starting with "##" is swallowed with it.
+{
+  const { stripInstructionBlock } = require(path.join(ROOT, "src", "detector.js"));
+  const input = [
+    "# My notes", "", "Keep this.", "",
+    "# SuperCompress (always on · context only)", "", "Compress bulky context.", "",
+    "## My own subsection", "", "This must survive.", "",
+  ].join("\n");
+  const out = stripInstructionBlock(input);
+  assert.ok(out.includes("Keep this."), "content before the block must survive");
+  assert.ok(out.includes("## My own subsection"), "a following h2 section must survive");
+  assert.ok(out.includes("This must survive."), "content under a following h2 must survive");
+  assert.ok(!out.includes("SuperCompress (always on"), "the block itself must be removed");
+  console.log("✔ block stripping stops at the next heading of any level");
+  passed++;
+}
+
+// 5. Claude/Codex hook registrations from an install that recorded no backup
+//    must still be removed — including Windows-style backslash paths.
+{
+  const home = newHome();
+  const settings = path.join(home, ".claude", "settings.json");
+  const codexHooks = path.join(home, ".codex", "hooks.json");
+  fs.writeFileSync(
+    settings,
+    JSON.stringify({
+      model: "opus",
+      hooks: {
+        PostToolUse: [
+          { hooks: [{ type: "command", command: "C:\\Users\\me\\.cursor\\hooks\\supercompress\\post-tool-compress.js" }], matcher: ".*" },
+        ],
+        UserPromptSubmit: [{ hooks: [{ type: "command", command: "/usr/bin/mine" }] }],
+      },
+    })
+  );
+  fs.writeFileSync(
+    codexHooks,
+    JSON.stringify({
+      hooks: {
+        UserPromptSubmit: [
+          { hooks: [{ type: "command", command: "SUPERCOMPRESS_AGENT_NAME=Codex /home/u/.cursor/hooks/supercompress/user-prompt-submit.js" }] },
+        ],
+      },
+    })
+  );
+
+  run(home, "uninstall");
+
+  const after = JSON.parse(fs.readFileSync(settings, "utf8"));
+  assert.strictEqual(
+    after.hooks && after.hooks.PostToolUse,
+    undefined,
+    "Windows-path SuperCompress hook must be removed from settings.json"
+  );
+  assert.ok(after.hooks && after.hooks.UserPromptSubmit, "the user's own hook must survive");
+  assert.strictEqual(after.model, "opus", "unrelated settings must survive");
+  assert.ok(!fs.existsSync(codexHooks), "a Codex hooks.json holding only our entries must be removed");
+  fs.rmSync(home, { recursive: true, force: true });
+  console.log("✔ Claude/Codex hook registrations are removed, Windows paths included");
+  passed++;
+}
+
 console.log(`\nuninstall-clean: ${passed} checks passed`);
