@@ -91,9 +91,23 @@ async function handleConnectDevice(req, res) {
   if (!code || code.length < 6) return json(res, 422, { detail: "Valid code required" });
 
   if (req.method === "GET") {
-    const status = await linkedStatus(code);
-    if (!status) return json(res, 404, { detail: "Connection code not found" });
-    return json(res, 200, status);
+    const claimed = await mutateStore((store) => {
+      const rec = store.connections?.[code];
+      if (!rec) return { notFound: true };
+      const ageMs = Date.now() - new Date(rec.linked_at || rec.created_at || 0).getTime();
+      if (rec.secret && ageMs > 10 * 60 * 1000) {
+        delete store.connections[code];
+        return { expired: true };
+      }
+      if (!rec.secret) return { status: "pending", owner_uid: rec.owner_uid || null };
+      const secret = rec.secret;
+      const owner_uid = rec.owner_uid || null;
+      delete store.connections[code];
+      return { status: "linked", owner_uid, secret };
+    });
+    if (claimed?.notFound) return json(res, 404, { detail: "Connection code not found" });
+    if (claimed?.expired) return json(res, 410, { detail: "Connection code expired" });
+    return json(res, 200, { code, ...claimed });
   }
 
   if (req.method !== "POST") return json(res, 405, { detail: "Method not allowed" });
