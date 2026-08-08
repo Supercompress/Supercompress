@@ -5,7 +5,7 @@ Start here for API usage, deployment, integrations, and environmental impact met
 ## Getting started
 
 1. **[API.md](API.md)** — `compress_context`, `compress_for_turn`, `compare_policies`, plus Precision mode, domain preprocessors, and CCR
-2. **[API_DASHBOARD.md](API_DASHBOARD.md)** — sign up, API keys, `POST /v1/compress`, Firebase setup
+2. **[API_DASHBOARD.md](API_DASHBOARD.md)** — sign up, API keys, `POST /api/v1/compress`, billing, Firebase setup
 3. **[INTEGRATIONS.md](INTEGRATIONS.md)** — drop-in hooks for OpenAI, LangChain, LlamaIndex
 
 ## New features (v0.6)

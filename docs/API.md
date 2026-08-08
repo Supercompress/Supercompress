@@ -277,13 +277,13 @@ Success (`200`) includes `compressed_text`, token counts, `tokens_saved`, `token
 
 `GET` with the same query params is supported for quick tests; production clients should use `POST`.
 
-**Precision mode** (`mode="precision"`) is available in the **Python library** and browser demo — the hosted Node route uses compiler (adaptive) or fixed modes only.
+**Precision mode** is available in the **local Python library** and browser demo. The hosted `/api/v1/compress` route accepts `mode: "compiler"` (default, adaptive) or `mode: "fixed"` with `budget_ratio`.
 
 ```python
-from supercompress.client import SuperCompress
+from supercompress import compress_context
 
-sc = SuperCompress()  # SUPERCOMPRESS_API_KEY + default base https://www.supercompress.dev
-out = sc.compress(context, "What matters?", mode="precision")
+# local library — precision search + verifier (see Precision mode above)
+result = compress_context(text, question)  # or SuperCompress client with mode="precision" against a self-hosted stack
 ```
 
 Dashboard & keys: [www.supercompress.dev/dashboard](https://www.supercompress.dev/dashboard)
