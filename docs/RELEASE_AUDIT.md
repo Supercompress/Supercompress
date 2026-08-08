@@ -1,6 +1,6 @@
 # SuperCompress repository and coding-agent release audit
 
-Date: 2026-07-24
+Date: 2026-07-24 (historical audit — not a live doc index)
 
 ## Scope
 
