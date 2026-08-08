@@ -1,20 +1,19 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.12",
-  "description": "SuperCompress \u2014 MCP-first coding-agent plugin. Fast global install (no heavy MCP SDK). Every submit with context auto-compresses; tiny asks skip. Optional local API proxy.",
+  "version": "0.5.14",
+  "description": "SuperCompress for coding agents — wrap Claude/Codex/Aider or use hooks to cut ~65% of LLM input tokens. Benchmarks at supercompress.dev/benchmarks. MCP optional.",
   "keywords": [
     "supercompress",
     "prompt-compression",
-    "mcp",
-    "cursor",
+    "coding-agents",
     "claude-code",
     "codex",
-    "freebuff",
-    "opencode",
-    "hermes",
-    "openclaw",
+    "cursor",
     "token-compression",
-    "llm-cost"
+    "llm-cost",
+    "context-compression",
+    "opencode",
+    "aider"
   ],
   "homepage": "https://supercompress.dev/docs/coding-agents",
   "repository": {

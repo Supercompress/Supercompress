@@ -1,10 +1,18 @@
-## 0.5.12
-
-- Harden device-link pairing codes to 128-bit entropy.
-
 # Changelog
 
 Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
+
+## 0.5.14 — 2026-08-08
+
+- **README rewrite**: wrap-first install (`supercompress wrap claude|codex|aider`). Removed monorepo / local-path install warnings. MCP documented as optional. Benchmarks linked.
+
+## 0.5.13 — 2026-08-08
+
+- Same README rewrite (initial publish).
+
+## 0.5.12
+
+- Harden device-link pairing codes to 128-bit entropy.
 
 ## 0.5.11 — 2026-08-07
 
