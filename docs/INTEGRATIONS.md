@@ -81,7 +81,7 @@ print(f"Risk: {result.compression_risk}")
 
 Precision mode uses a dual-model architecture (AMCP policy + verifier) that tries progressively aggressive budgets (0.40→0.20) and returns the most compressed output where verifier confidence ≥ 0.85.
 
-See the [full guide](/precision-mode-compression) for details.
+See the [precision mode guide](https://www.supercompress.dev/precision-mode-compression) for details.
 
 ---
 
@@ -97,7 +97,7 @@ result = sc.compress(context, query, ccr=True)
 # Retrieve a removed block (via HTTP)
 import requests
 response = requests.get(
-    f"https://supercompress.dev/api/retrieve?hash={result.ccr['hash']}",
+    f"https://www.supercompress.dev/api/retrieve?hash={result.ccr['hash']}",
     headers={"X-API-Key": "sc_live_YOUR_KEY"}
 )
 original = response.json()["original"]
@@ -105,7 +105,7 @@ original = response.json()["original"]
 
 CCR caches original content in Vercel Blob (server-side) and an LRU Map (browser-side). Retrieval uses the same API key as compression.
 
-See the [full guide](/reversible-compression-ccr) for details.
+See the [CCR guide](https://www.supercompress.dev/reversible-compression-ccr) for details.
 
 ---
 
@@ -130,7 +130,7 @@ Example body:
 
 See `examples/integrations/curl_local_server.sh`.
 
-**Production:** hosted API at `https://supercompress.dev/api/v1/compress` (API key required). Browser demo runs in-process via `web/assets/js/compress-engine.js`.
+**Production:** hosted API at `https://www.supercompress.dev/api/v1/compress` (API key required). Browser demo runs in-process via `web/assets/js/compress-engine.js`.
 
 ---
 

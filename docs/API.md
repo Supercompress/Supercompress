@@ -32,7 +32,7 @@ The hosted API does not require a budget. It uses compiler mode by default: maxi
 ```bash
 export SUPERCOMPRESS_API_KEY=sc_live_YOUR_KEY
 
-curl -X POST https://supercompress.dev/api/v1/compress \
+curl -X POST https://www.supercompress.dev/api/v1/compress \
   -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"context":"long text…","query":"What matters?"}'
@@ -141,23 +141,25 @@ Reversible compression: removed blocks are replaced with retrieval markers. The 
 
 ```bash
 # Request compression with CCR
-curl -X POST https://supercompress.dev/api/v1/compress \
+curl -X POST https://www.supercompress.dev/api/v1/compress \
   -H "X-API-Key: sc_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"context": "long text…", "query": "What matters?", "ccr": true}'
 
-# Response includes ccr field:
+# Response includes ccr field (when storage succeeds):
 # {
 #   "compressed_text": "... [SC-Retrieve: a1b2c3d4] ...",
 #   "ccr": {
 #     "hash": "a1b2c3d4e5f6_1a2b",
-#     "stored": true,
-#     "retrieve_url": "/api/retrieve?hash=a1b2c3d4e5f6_1a2b"
+#     "marker_hashes": ["..."],
+#     "markers_count": 3,
+#     "retrieve_url": "/retrieve?hash=a1b2c3d4e5f6_1a2b"
 #   }
 # }
 
-# Retrieve original
-curl https://supercompress.dev/api/retrieve?hash=a1b2c3d4e5f6_1a2b
+# Retrieve original (same API key as compress)
+curl "https://www.supercompress.dev/api/retrieve?hash=a1b2c3d4e5f6_1a2b" \
+  -H "X-API-Key: sc_live_YOUR_KEY"
 ```
 
 ### Browser-side CCR
@@ -251,26 +253,40 @@ See [ENVIRONMENT.md](./ENVIRONMENT.md) for assumptions.
 
 ## Hosted API (production)
 
-Use `POST /api/v1/compress` with `context` and `query`. Do not pass a budget unless you intentionally want the legacy fixed-ratio mode.
+Use `POST https://www.supercompress.dev/api/v1/compress` with `context` and `query`. Omit `budget_ratio` unless you want legacy fixed-ratio mode (`mode: "fixed"`).
 
-Optional parameters:
+**Auth:** `X-API-Key: sc_live_…`, or `Authorization: Bearer sc_live_…`, or `?api_key=` on GET (discouraged for production).
+
+**Limits:** 90 requests/minute per API key; 600 requests/hour per client IP. `context` max 120,000 characters.
+
+Optional JSON body fields:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `mode` | str | `"compiler"` | `"compiler"`, `"precision"`, or `"fixed"` |
-| `ccr` | bool | `false` | Enable reversible compression (markers + storage) |
-| `cache_prefix` | bool | `false` | Wrap compressed output in a deterministic XML preamble/postamble so providers can reuse **prompt/prefix cache**. SuperCompress does not operate inside model KV cache — compression is pre-inference text selection. |
+| `query` | str | `"Summarize this context."` | Current user question — never compressed |
+| `mode` | str | `"compiler"` | `"compiler"` (adaptive) or `"fixed"` (explicit `budget_ratio`) |
+| `budget_ratio` | float | `0.35` | Keep ratio for `mode: "fixed"` only (0.05–1) |
+| `ccr` | bool | `false` | Reversible compression (markers + blob storage) |
+| `cache_prefix` | bool | `false` | Wrap output for provider prompt/prefix cache (pre-inference text only) |
+| `coding_agent` | str | — | Label for agent usage analytics |
+| `source` | str | inferred | Override usage source (`api`, `agent`, …) |
+| `session_id` | str | — | Correlate logs across turns |
+| `log` | bool | `true` | Set `false` to skip activity log previews |
 
-Or use the Python client:
+Success (`200`) includes `compressed_text`, token counts, `tokens_saved`, `tokens_saved_pct`, `compression_risk`, `kept_blocks` / `dropped_blocks`, and `latency_ms`. Paywall responses use HTTP `402` with `paywall: true` and `code` `free_quota_exhausted` or `credits_exhausted`.
+
+`GET` with the same query params is supported for quick tests; production clients should use `POST`.
+
+**Precision mode** (`mode="precision"`) is available in the **Python library** and browser demo — the hosted Node route uses compiler (adaptive) or fixed modes only.
 
 ```python
 from supercompress.client import SuperCompress
 
-sc = SuperCompress()  # SUPERCOMPRESS_API_KEY + default base https://supercompress.dev
+sc = SuperCompress()  # SUPERCOMPRESS_API_KEY + default base https://www.supercompress.dev
 out = sc.compress(context, "What matters?", mode="precision")
 ```
 
-Dashboard & keys: [supercompress.dev/dashboard](https://supercompress.dev/dashboard)
+Dashboard & keys: [www.supercompress.dev/dashboard](https://www.supercompress.dev/dashboard)
 
 ## Local HTTP server (optional)
 
@@ -322,4 +338,4 @@ pytest tests/ -q
 
 - [INTEGRATIONS.md](./INTEGRATIONS.md) — OpenAI, LangChain, browser, curl
 - [ENVIRONMENT.md](./ENVIRONMENT.md) — kWh / CO₂ methodology
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — policy design
+- [Architecture](https://docs.supercompress.dev/architecture) — policy design

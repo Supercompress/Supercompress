@@ -2,7 +2,7 @@
 
 Sign up, create API keys, and call the hosted compress endpoint with usage tracking.
 
-**Live:** [supercompress.dev/dashboard](https://supercompress.dev/dashboard)
+**Live:** [www.supercompress.dev/dashboard](https://www.supercompress.dev/dashboard)
 
 ## Quick start (local dev)
 
@@ -21,7 +21,7 @@ Open [http://127.0.0.1:8790/dashboard](http://127.0.0.1:8790/dashboard). Dev mod
 2. Enable **Authentication** → Email/Password and Google
 3. Create a **Firestore** database
 4. Generate a **service account** JSON → set `GOOGLE_APPLICATION_CREDENTIALS`
-5. Add **supercompress.dev** to Firebase Auth → Settings → Authorized domains
+5. Add **www.supercompress.dev** to Firebase Auth → Settings → Authorized domains
 6. Copy web app config into env vars (see `scripts/generate-firebase-config.js`)
 
 Deploy Firestore rules:
@@ -90,20 +90,23 @@ Header: `Authorization: Bearer <firebase_id_token>`
 ### Compress (API key)
 
 ```http
-POST /v1/compress
+POST /api/v1/compress
 X-API-Key: sc_live_xxxxxxxx
 Content-Type: application/json
 
 {
   "context": "long document…",
-  "query": "Summarize this context.",
-  "budget_ratio": 0.35
+  "query": "Summarize this context."
 }
 ```
 
+Add `"mode": "fixed"` and `"budget_ratio": 0.35` only when you need explicit keep-ratio compression. Default is compiler (adaptive) — no budget field required.
+
 Or: `Authorization: Bearer sc_live_…`
 
-Response includes `compressed_text`, token counts, and savings metrics. Usage is recorded automatically.
+Response includes `compressed_text`, token counts, savings metrics, and `latency_ms`. Usage is recorded automatically.
+
+**Rate limits:** 90 requests/minute per key; 600/hour per client IP. **Max context:** 120,000 characters.
 
 ### Playground (no key)
 
@@ -117,6 +120,17 @@ Response includes `compressed_text`, token counts, and savings metrics. Usage is
 | `SC_KEY_STORE` | `auto` | `memory`, `firestore`, or `auto` |
 | `SC_KEY_STORE_FILE` | — | JSON file persistence (dev) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | — | Firebase service account path |
+
+## Billing & pricing (production)
+
+Hosted compression billing uses Stripe on the live site (`https://www.supercompress.dev`).
+
+| Tier | Price | Allowance | Behavior |
+|------|-------|-----------|----------|
+| Free | $0 | 1M tokens / month | Compression pauses when free allowance is used |
+| Pay as you go | $0.30 / 1M tokens after free | Prepaid credit wallet | Top up from the dashboard (min $10 load); optional auto-recharge |
+
+When free allowance is exhausted, the API returns HTTP `402` with `paywall: true`. Legacy metered subscriptions may still exist for older accounts — see `api/_lib/stripe.js` for operator env vars (`STRIPE_SECRET_KEY`, webhooks at `/api/billing/webhook`).
 
 ## Security
 

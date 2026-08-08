@@ -37,35 +37,6 @@ print(impact.watt_hours_saved, impact.co2_kg_avoided)
 print(impact.assumptions.to_dict())
 ```
 
-## Stripe billing (production)
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `STRIPE_SECRET_KEY` | Yes (for billing) | — | Stripe secret key (sk_live_…) |
-| `STRIPE_PUBLISHABLE_KEY` | Yes (for billing) | — | Stripe publishable key (pk_live_…) |
-| `STRIPE_WEBHOOK_SECRET` | Yes (for billing) | — | Webhook signing secret (whsec_…) |
-| `STRIPE_PRICE_PAYG` | Yes (for billing) | — | Metered Stripe price: $1 per 1M tokens overage |
-| `STRIPE_METER_EVENT_NAME` | Optional | `supercompress_tokens_millions` | Billing meter event name for usage reports |
-| `STRIPE_PRICE_STARTER` | Legacy only | — | Old fixed Starter price (existing subs) |
-| `STRIPE_PRICE_PRO` | Legacy only | — | Old fixed Pro price (existing subs) |
-| `STRIPE_PRICE_BUSINESS` | Legacy only | — | Old fixed Business price (existing subs) |
-
-### Setup steps
-
-1. Run `stripe login` and authenticate
-2. Run `bash scripts/create-stripe-products.sh --live` to create the metered PAYG price
-3. Set `STRIPE_PRICE_PAYG` (+ Stripe keys) on Vercel
-4. Configure the webhook endpoint in Stripe Dashboard:
-   - Endpoint URL: `https://supercompress.dev/api/billing/webhook`
-   - Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.created`, `customer.subscription.deleted`
-
-## Pricing
-
-| Tier | Price | Allowance | Behavior |
-|------|-------|-----------|----------|
-| Free | $0 | 5M tokens/mo ($5 worth) | Hard stop until PAYG |
-| Pay as you go | $1 / 1M tokens after free | Unlimited | Card on file; Stripe meters overage |
-
 ## Why CPU eviction matters
 
 The learned policy (a learned query-aware neural policy) runs on **CPU before GPU inference**. Eviction adds sub-millisecond latency while avoiding much larger GPU prefill cost on long contexts.
@@ -88,7 +59,7 @@ Use the website **Projection calculator** (`#impact`) to adjust volume.
 
 ## Neural reranker (hosted input quality)
 
-Company-grade compression uses a BGE cross-encoder on Fly/local (not Vercel cold starts). Offline plugin stays heuristic-only unless it calls the hosted API.
+Hosted compression can use a BGE cross-encoder on Fly/local (not Vercel cold starts). The offline plugin stays heuristic-only unless it calls the hosted API.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -104,4 +75,4 @@ Warmup / download:
 SC_NEURAL=1 node scripts/warmup_neural.js
 ```
 
-See also [ARCHITECTURE.md](../ARCHITECTURE.md) for deployment modes.
+See also [Architecture](https://docs.supercompress.dev/architecture) for deployment modes.
