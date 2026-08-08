@@ -67,6 +67,33 @@ function restoreBackups() {
   return restored;
 }
 
+// Shared by the instruction writer and the uninstaller so the two cannot drift.
+const INSTRUCTION_TARGETS = [
+  ["Claude Code", path.join(HOME, ".claude", "CLAUDE.md")],
+  ["Codex", path.join(HOME, ".codex", "AGENTS.md")],
+  ["Aider", path.join(HOME, ".aider", "CONVENTIONS.md")],
+  ["Goose", path.join(HOME, ".config", "goose", "AGENTS.md")],
+  ["OpenCode", path.join(HOME, ".config", "opencode", "AGENTS.md")],
+];
+
+const CURSOR_RULE_DIRS = [
+  path.join(HOME, ".cursor", "rules"),
+  path.join(HOME, ".config", "cursor", "rules"),
+];
+
+/**
+ * Remove SuperCompress instruction blocks from an agent instruction file,
+ * leaving the user's own content untouched. Matches on the block heading so it
+ * covers every variant shipped so far ("· context only", "· Headroom-parity"),
+ * and repeats, so files that accumulated duplicate blocks are fully cleaned.
+ */
+function stripInstructionBlock(text) {
+  return text
+    .replace(/\n*# SuperCompress \(always on[\s\S]*?(?=\n# |$)/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/^\n+/, "");
+}
+
 function writeMcpJson(filePath) {
   let data = {};
   if (fs.existsSync(filePath)) {
@@ -802,6 +829,82 @@ function configureAll() {
  * Revert all agent configs back to original state.
  * Returns an array of agent names that were reverted.
  */
+/**
+ * Remove the plugin-mode artifacts: the Cursor rule, the Cursor hook scripts
+ * and hook registrations, and the instruction blocks.
+ *
+ * These are written by writeCursorRule / writeCursorHooks /
+ * writeAgentInstructionFiles. The AGENTS loop in revertAll only covers the
+ * provider base-URL configs, so without this they survive `uninstall`.
+ */
+function removePluginArtifacts() {
+  const removed = [];
+  const drop = (target, label) => {
+    try {
+      fs.rmSync(target, { recursive: true, force: true });
+      removed.push(label || target);
+    } catch (err) {
+      console.error(`  ✗ Failed to remove ${target}: ${err.message}`);
+    }
+  };
+
+  for (const dir of CURSOR_RULE_DIRS) {
+    const rule = path.join(dir, "supercompress.mdc");
+    if (fs.existsSync(rule)) drop(rule, "Cursor rule");
+  }
+
+  const hooksDir = path.join(HOME, ".cursor", "hooks", "supercompress");
+  if (fs.existsSync(hooksDir)) drop(hooksDir, "Cursor hook scripts");
+
+  // Cursor hooks.json: drop only our entries so unrelated hooks survive.
+  const hooksPath = path.join(HOME, ".cursor", "hooks.json");
+  if (fs.existsSync(hooksPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(hooksPath, "utf8"));
+      const events = (data && data.hooks) || {};
+      let changed = false;
+      for (const event of Object.keys(events)) {
+        if (!Array.isArray(events[event])) continue;
+        const kept = events[event].filter(
+          (e) => !String((e && e.command) || "").includes("/supercompress/")
+        );
+        if (kept.length !== events[event].length) changed = true;
+        if (kept.length) events[event] = kept;
+        else delete events[event];
+      }
+      if (changed) {
+        if (Object.keys(events).length === 0) drop(hooksPath, "Cursor hooks.json");
+        else {
+          data.hooks = events;
+          fs.writeFileSync(hooksPath, `${JSON.stringify(data, null, 2)}\n`);
+          removed.push("Cursor hook registrations");
+        }
+      }
+    } catch (err) {
+      console.error(`  ✗ Failed to clean ${hooksPath}: ${err.message}`);
+    }
+  }
+
+  for (const [name, filePath] of INSTRUCTION_TARGETS) {
+    if (!fs.existsSync(filePath)) continue;
+    try {
+      const prev = fs.readFileSync(filePath, "utf8");
+      const next = stripInstructionBlock(prev);
+      if (next === prev) continue;
+      // Only delete when the block was the file's entire contents.
+      if (!next.trim()) drop(filePath, `${name} instructions`);
+      else {
+        fs.writeFileSync(filePath, next.endsWith("\n") ? next : `${next}\n`);
+        removed.push(`${name} instructions`);
+      }
+    } catch (err) {
+      console.error(`  ✗ Failed to clean ${filePath}: ${err.message}`);
+    }
+  }
+
+  return removed;
+}
+
 function revertAll() {
   const reverted = [];
   const restored = restoreBackups();
@@ -878,11 +981,8 @@ function clearProxyOverrides() {
  * and MCP compress_context for bulky context.
  */
 function writeCursorRule() {
-  const candidates = [
-    path.join(HOME, ".cursor", "rules"),
-    path.join(HOME, ".config", "cursor", "rules"),
-  ];
-  const dir = candidates.find((d) => fs.existsSync(path.dirname(d))) || candidates[0];
+  const dir =
+    CURSOR_RULE_DIRS.find((d) => fs.existsSync(path.dirname(d))) || CURSOR_RULE_DIRS[0];
   fs.mkdirSync(dir, { recursive: true });
   const filePath = path.join(dir, "supercompress.mdc");
   const inboxPath = path.join(HOME, ".supercompress", "inbox", "latest.md");
@@ -917,6 +1017,7 @@ alwaysApply: true
 - If \`compress_context\` fails with account-not-linked → \`connect_account\` once, then retry
 - Do not mention this rule unless the user asks about SuperCompress
 `;
+  backupFile(filePath);
   fs.writeFileSync(filePath, body);
   return filePath;
 }
@@ -952,6 +1053,7 @@ function writeCursorHooks() {
   const postCmd = path.join(hooksDir, "post-tool-compress.js");
   const beforeCmd = path.join(hooksDir, "before-submit.js");
   const hooksPath = path.join(cursorDir, "hooks.json");
+  backupFile(hooksPath);
 
   let existing = { version: 1, hooks: {} };
   if (fs.existsSync(hooksPath)) {
@@ -1127,15 +1229,7 @@ function writeAgentInstructionFiles() {
     "",
   ].join("\n");
 
-  const targets = [
-    ["Claude Code", path.join(HOME, ".claude", "CLAUDE.md")],
-    ["Codex", path.join(HOME, ".codex", "AGENTS.md")],
-    ["Aider", path.join(HOME, ".aider", "CONVENTIONS.md")],
-    ["Goose", path.join(HOME, ".config", "goose", "AGENTS.md")],
-    ["OpenCode", path.join(HOME, ".config", "opencode", "AGENTS.md")],
-  ];
-
-  for (const [name, filePath] of targets) {
+  for (const [name, filePath] of INSTRUCTION_TARGETS) {
     try {
       const dir = path.dirname(filePath);
       if (!fs.existsSync(dir) && name !== "Claude Code" && name !== "Codex") {
@@ -1154,6 +1248,7 @@ function writeAgentInstructionFiles() {
       if (!existsAgent) continue;
 
       fs.mkdirSync(dir, { recursive: true });
+      backupFile(filePath);
       let next = body;
       if (fs.existsSync(filePath)) {
         const prev = fs.readFileSync(filePath, "utf8");
@@ -1204,6 +1299,8 @@ module.exports = {
   configureMcp,
   removeMcp,
   revertAll,
+  removePluginArtifacts,
+  stripInstructionBlock,
   clearProxyOverrides,
   AGENTS,
   AGENT_CATALOG,

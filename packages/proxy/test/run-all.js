@@ -8,6 +8,7 @@ const path = require("path");
 const ROOT = path.join(__dirname, "..");
 const suites = [
   ["smoke", "test/smoke.js"],
+  ["uninstall-clean", "test/uninstall-clean.js"],
   ["dual-launch", "test/dual-launch.js"],
   ["compress-deep", "test/compress-deep.js"],
   ["bug-hunt", "test/bug-hunt.js"],

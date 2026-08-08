@@ -6,6 +6,10 @@
 
 Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
 
+## Unreleased
+
+- **Fix `uninstall` leaving artifacts behind**: it reported success while the Cursor rule, Cursor hook scripts and hook registrations, and the agent instruction blocks (`CLAUDE.md` / `AGENTS.md` / …) all survived. `revertAll` only walked the provider base-URL configs, and the three writers responsible never recorded a backup. Uninstalling now removes them and reports each one, preserving unrelated Cursor hooks and user-authored instruction content. Installs from earlier versions clean up too.
+
 ## 0.5.11 — 2026-08-07
 
 - **CLI `account` / `usage`**: show linked account, plan/quota, and per-agent token savings (`supercompress usage [--json]`).
