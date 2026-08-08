@@ -4,7 +4,7 @@ Start here for API usage, deployment, integrations, and environmental impact met
 
 ## Company fleet (DOCS lane)
 
-This tree is **public product documentation only**. Enterprise quotes, customer packs, and control-plane runbooks belong in the private agent-bridge `docs/` tree — do not open SuperCompress feature branches for that material. Before `READY_FOR_PR`, confirm the branch diff matches the private-pack block at the bottom of the repo root `.gitignore` (see also agent-bridge `docs/ops/leak-checklist.md`).
+This tree is **public product documentation only**. Enterprise quotes, customer packs, order forms, and control-plane runbooks belong in the private agent-bridge `docs/` tree — do not open SuperCompress feature branches for that material. Before `READY_FOR_PR`, confirm the branch diff matches the private-pack block at the bottom of the repo root `.gitignore` (see also agent-bridge `docs/ops/leak-checklist.md`).
 
 ## Getting started
 
