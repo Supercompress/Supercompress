@@ -1,6 +1,6 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.12",
+  "version": "0.5.14",
   "description": "SuperCompress \u2014 MCP-first coding-agent plugin. Fast global install (no heavy MCP SDK). Every submit with context auto-compresses; tiny asks skip. Optional local API proxy.",
   "keywords": [
     "supercompress",

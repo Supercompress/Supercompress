@@ -7,6 +7,7 @@ cd "$repo_root"
 node --check api/account.js
 node --check api/v1/compress.js
 node --check web/assets/js/supercompress.js
+node scripts/check-versions.js
 
 node - <<'NODE'
 const fs = require('fs');
