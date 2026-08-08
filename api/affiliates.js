@@ -390,9 +390,6 @@ async function handleList(req, res) {
     const list = Object.values(affiliates).map((a) => ({
       id: a.id,
       name: a.name,
-      email: a.email,
-      website: a.website,
-      audience: a.audience,
       referral_slug: a.referral_slug,
       referral_link: a.referral_link,
       status: a.status,
