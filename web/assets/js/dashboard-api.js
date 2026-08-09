@@ -1012,7 +1012,8 @@ function syncCreditsPresets(amount) {
 function openCreditsModal() {
   const modal = $("modal-credits");
   if (!modal) {
-    handleEnablePaygCheckout(lastBillingSub?.default_credit_limit_usd || 10, false);
+    // Modal missing: still default auto-recharge ON when jumping straight to checkout
+    handleEnablePaygCheckout(lastBillingSub?.default_credit_limit_usd || 10, true);
     return;
   }
   const { min, max, def, rate } = creditLimitsFromSub(lastBillingSub);
@@ -1040,7 +1041,11 @@ function openCreditsModal() {
     err.classList.add("hidden");
   }
   const auto = $("credits-auto-recharge");
-  if (auto) auto.checked = Boolean(lastBillingSub?.auto_recharge);
+  if (auto) {
+    // Default ON when adding / topping up credits (user can uncheck).
+    // If they previously enabled auto-recharge, keep it on; never open with it forced off.
+    auto.checked = true;
+  }
   syncCreditsPresets(Number(input?.value));
   syncCreditsHint();
   modal.classList.remove("hidden");
@@ -1112,7 +1117,7 @@ function handleEnablePayg() {
   openCreditsModal();
 }
 
-async function handleEnablePaygCheckout(creditUsd, autoRecharge = false) {
+async function handleEnablePaygCheckout(creditUsd, autoRecharge = true) {
   if (apiMode === "local") {
     alert("Stripe billing is not available in local/dev mode. Set up production with STRIPE_SECRET_KEY on Vercel.");
     return;

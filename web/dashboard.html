@@ -26,7 +26,7 @@
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
   <meta name="theme-color" content="rgb(251,251,248)" />
-  <link rel="stylesheet" href="assets/css/supercompress.css?v=108" />
+  <link rel="stylesheet" href="assets/css/supercompress.css?v=111" />
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
 <style>
     /* Dashboard: no dark bg layers, full light page */
@@ -1081,6 +1081,34 @@ npm exec supercompress setup</pre>
     </div>
   </div>
 
+  <!-- Credit top-up modal -->
+  <div class="dash-modal hidden" id="modal-credits">
+    <div class="dash-modal-card dash-modal-card--credits">
+      <h2 id="credits-modal-title">Add credits</h2>
+      <p class="dash-credits-lead" id="credits-modal-lead">$0.30 = 1M tokens after your free monthly allowance. Minimum load $10 (~33M tokens).</p>
+      <div class="dash-credits-presets" id="credits-presets" role="group" aria-label="Suggested amounts">
+        <button type="button" class="dash-credits-preset" data-amount="10">$10</button>
+        <button type="button" class="dash-credits-preset" data-amount="20">$20</button>
+        <button type="button" class="dash-credits-preset" data-amount="50">$50</button>
+        <button type="button" class="dash-credits-preset" data-amount="100">$100</button>
+        <button type="button" class="dash-credits-preset" data-amount="250">$250</button>
+      </div>
+      <label class="dash-field-label" for="credits-amount">Custom amount (USD)</label>
+      <div class="dash-credits-amount-row">
+        <span class="dash-credits-currency" aria-hidden="true">$</span>
+        <input class="dash-field-input dash-credits-amount" id="credits-amount" type="number" inputmode="decimal" min="10" max="1000" step="1" value="10" />
+      </div>
+      <p class="dash-credits-hint" id="credits-hint">About 33M tokens · $10 minimum</p>
+      <label class="dash-credits-auto">
+        <input type="checkbox" id="credits-auto-recharge" checked />
+        <span>Auto-recharge this amount when balance hits $0</span>
+      </label>
+      <button type="button" class="btn-brand dash-credits-submit" id="btn-confirm-credits">Continue to checkout</button>
+      <button type="button" class="btn-link-muted" id="btn-cancel-credits">Cancel</button>
+      <p class="dash-auth-error hidden" id="credits-error"></p>
+    </div>
+  </div>
+
   </div><!-- /.df-page-inner -->
 
 <footer class="df-footer">
@@ -1154,7 +1182,7 @@ npm exec supercompress setup</pre>
   <script src="assets/js/firebase-config.js?v=3"></script>
   <script src="assets/js/supercompress.js?v=1"></script>
   <script src="assets/js/dither-kit-lite.js?v=2"></script>
-  <script type="module" src="assets/js/dashboard-api.js?v=20"></script>
+  <script type="module" src="assets/js/dashboard-api.js?v=23"></script>
   <script src="assets/js/affiliate-track.js?v=1"></script>
   <script src="/assets/js/site-chrome.js?v=11"></script>
 </body>
