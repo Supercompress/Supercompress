@@ -34,7 +34,26 @@ process.stdin.on("end", async () => {
     }
 
     const result = await compressContext(context, ask || "Compress pasted context for the coding task.", agent);
+    if (result.paywall || result.skipped === "paywall") {
+      const notice = result.notice || "[SuperCompress PAYWALL] Add credits at https://www.supercompress.dev/dashboard#billing";
+      writeInbox(ask, notice, "paywall", { kind: "paywall" });
+      process.stdout.write(
+        JSON.stringify({
+          hookSpecificOutput: {
+            hookEventName: "UserPromptSubmit",
+            additionalContext: notice,
+          },
+          additionalContext: notice,
+          additional_context: notice,
+        })
+      );
+      return;
+    }
     if (!result.compressed || result.skipped === "empty" || result.skipped === "too_small") {
+      process.stdout.write("{}");
+      return;
+    }
+    if (result.skipped === "no_key" || String(result.skipped || "").startsWith("http_")) {
       process.stdout.write("{}");
       return;
     }

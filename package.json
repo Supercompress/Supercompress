@@ -14,6 +14,6 @@
     "firebase-admin": "^13.10.0",
     "openfork": "^1.17.36",
     "stripe": "^22.3.0",
-    "supercompress-proxy": "^0.5.15"
+    "supercompress-proxy": "^0.5.16"
   }
 }

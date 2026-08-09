@@ -96,7 +96,30 @@ process.stdin.on("end", async () => {
         }),
         signal: controller.signal,
       });
-      if (!res.ok) return empty();
+      if (!res.ok) {
+        let detail = "";
+        let code = "";
+        try {
+          const errBody = await res.json();
+          detail = errBody.detail || errBody.title || "";
+          code = errBody.code || "";
+        } catch {}
+        const paywalled =
+          res.status === 402 ||
+          code === "free_quota_exhausted" ||
+          code === "credits_exhausted" ||
+          /PAYWALL|free_quota|credits_exhausted/i.test(detail);
+        if (paywalled) {
+          const notice = [
+            "[SuperCompress PAYWALL] Compression is paused — free 1M tokens used (or credits empty).",
+            detail || "Add credits to unlock — $0.30 per 1M tokens after free ($10 minimum load).",
+            "Upgrade: https://www.supercompress.dev/dashboard#billing",
+          ].join("\n");
+          process.stdout.write(JSON.stringify({ additional_context: notice }));
+          return;
+        }
+        return empty();
+      }
       body = await res.json();
     } finally {
       clearTimeout(timer);

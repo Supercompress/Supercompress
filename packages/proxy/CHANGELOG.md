@@ -2,6 +2,12 @@
 
 Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
 
+## [0.5.16] — 2026-08-09
+
+- **Hard paywall surfacing**: Cursor/Claude hooks + MCP no longer silently fail-open on HTTP 402.
+- Inject loud `[SuperCompress PAYWALL]` upgrade CTA into agent context; proxy returns 402 (not 502) with billing URL.
+- Restore missing `compressIncremental` export used by MCP `compress_context`.
+
 ## [0.5.15] — 2026-08-09
 
 - **Setup-first**: `supercompress setup` / `plugin` is the recommended path (auto MCP + hooks). `wrap` deprecated.

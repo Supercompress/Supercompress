@@ -180,22 +180,32 @@ async function compress(messages, agentName) {
     if (response.status === 401) {
       throw new Error(
         "Invalid SuperCompress API key. Run `supercompress setup` to update it " +
-        "or get a new key at https://supercompress.dev/dashboard"
+        "or get a new key at https://www.supercompress.dev/dashboard"
       );
     }
+    const paywalled =
+      response.status === 402 ||
+      /PAYWALL|free_quota_exhausted|credits_exhausted/i.test(errorBody);
+    if (paywalled) {
+      const msg =
+        "PAYWALL: Free 1M tokens used (or credits empty). Compression paused. " +
+        "Add credits at https://www.supercompress.dev/dashboard#billing — $0.30/1M after free ($10 min).";
+      console.error(`[supercompress] ${msg}`);
+      const err = new Error(msg);
+      err.status = 402;
+      err.paywall = true;
+      throw err;
+    }
     if (response.status === 429) {
-      // Rate limit or quota exceeded — pass through uncompressed
-      const limitReached = /monthly token limit|plan limit|upgrade/i.test(errorBody);
-      console.error(limitReached
-        ? `[supercompress] Monthly plan limit reached — upgrade at https://supercompress.dev/dashboard#billing; passing through uncompressed`
-        : "[supercompress] Rate limit reached — passing through uncompressed");
+      // Pure rate limit — pass through uncompressed (do NOT soft-pass paywalls)
+      console.error("[supercompress] Rate limit reached — passing through uncompressed");
       return {
         messages,
         original_tokens: wordCount,
         compressed_tokens: wordCount,
         tokens_saved: 0,
         savings_pct: 0,
-        skip_reason: "quota_exceeded",
+        skip_reason: "rate_limited",
       };
     }
     throw new Error(`SuperCompress API error (${response.status}): ${errorBody.slice(0, 200)}`);

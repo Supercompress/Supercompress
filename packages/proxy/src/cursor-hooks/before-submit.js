@@ -53,6 +53,14 @@ process.stdin.on("end", async () => {
 
     const query = ask || prompt || "Compress context for the current coding task.";
     const result = await compressContext(context, query, "Cursor");
+    if (result.paywall || result.skipped === "paywall") {
+      const notice = result.notice || "[SuperCompress PAYWALL] Add credits at https://www.supercompress.dev/dashboard#billing";
+      writeInbox(query, notice, "paywall", { kind: "paywall" });
+      return done({
+        additional_context: notice,
+        additionalContext: notice,
+      });
+    }
     if (!result.compressed || result.skipped === "empty" || result.skipped === "too_small") {
       return done();
     }

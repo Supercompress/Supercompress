@@ -10,10 +10,21 @@ const path = require("path");
 const COMPRESS_URL =
   process.env.SUPERCOMPRESS_COMPRESS_URL ||
   "https://www.supercompress.dev/api/v1/compress";
+const BILLING_URL = "https://www.supercompress.dev/dashboard#billing";
 const INBOX_DIR = path.join(
   process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(os.homedir(), ".supercompress"),
   "inbox"
 );
+
+/** Loud upgrade copy injected into agent context when free quota / credits are exhausted. */
+function paywallNotice(detail) {
+  const line = String(detail || "").trim();
+  return [
+    "[SuperCompress PAYWALL] Compression is paused — free 1M tokens used (or credits empty).",
+    line || "Add credits to unlock — $0.30 per 1M tokens after free ($10 minimum load).",
+    `Upgrade: ${BILLING_URL}`,
+  ].join("\n");
+}
 
 function loadApiKey() {
   const envKey = String(process.env.SUPERCOMPRESS_API_KEY || "").trim();
@@ -133,7 +144,33 @@ async function compressContext(context, query, codingAgent) {
       }),
       signal: controller.signal,
     });
-    if (!res.ok) return { compressed: ctx, skipped: `http_${res.status}` };
+    if (!res.ok) {
+      let detail = "";
+      let code = "";
+      try {
+        const errBody = await res.json();
+        detail = errBody.detail || errBody.title || "";
+        code = errBody.code || "";
+      } catch {
+        /* ignore non-JSON error bodies */
+      }
+      const paywalled =
+        res.status === 402 ||
+        code === "free_quota_exhausted" ||
+        code === "credits_exhausted" ||
+        /PAYWALL|free_quota|credits_exhausted/i.test(detail);
+      if (paywalled) {
+        return {
+          compressed: "",
+          skipped: "paywall",
+          paywall: true,
+          detail: detail || `HTTP ${res.status}`,
+          notice: paywallNotice(detail),
+        };
+      }
+      // Other failures: do not silently re-inject the raw dump as "compressed"
+      return { compressed: "", skipped: `http_${res.status}`, detail };
+    }
     const body = await res.json();
     const compressed =
       body.compressed_text ||
@@ -168,12 +205,28 @@ async function compressPrompt(context, codingAgent) {
   return compressContext(context, "Compress this context for the coding agent.", codingAgent);
 }
 
+/**
+ * MCP entrypoint — compress a new context chunk.
+ * (Session-memory compaction can layer on later; paywall must surface loudly.)
+ */
+async function compressIncremental({ context, query, codingAgent } = {}) {
+  const result = await compressContext(context, query, codingAgent || "mcp");
+  return {
+    ...result,
+    delta: result.compressed || "",
+    compacted: false,
+  };
+}
+
 module.exports = {
   compressContext,
+  compressIncremental,
   compressPrompt,
   writeInbox,
   loadApiKey,
   splitAskAndContext,
+  paywallNotice,
+  BILLING_URL,
   INBOX_DIR,
 };
 

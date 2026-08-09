@@ -1,7 +1,7 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.15",
-  "description": "SuperCompress for coding agents \u2014 run setup once to auto-install MCP + hooks and cut ~65% of LLM input tokens. Benchmarks at supercompress.dev/benchmarks.",
+  "version": "0.5.16",
+  "description": "SuperCompress for coding agents — run setup once to auto-install MCP + hooks and cut ~65% of LLM input tokens. Benchmarks at supercompress.dev/benchmarks.",
   "keywords": [
     "supercompress",
     "prompt-compression",

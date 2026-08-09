@@ -208,8 +208,19 @@ async function handleToolCall(name, args = {}) {
         "SuperCompress account is not connected. Call connect_account, finish sign-in in the browser, then retry compress_context (or run: supercompress setup)."
       );
     }
+    if (result.paywall || result.skipped === "paywall") {
+      return toolError(
+        result.notice ||
+          result.detail ||
+          "PAYWALL: Free 1M tokens used (or credits empty). Add credits at https://www.supercompress.dev/dashboard#billing"
+      );
+    }
     if (String(result.skipped || "").startsWith("http_")) {
-      return toolError(`Compression failed (${result.skipped})`);
+      return toolError(
+        result.detail
+          ? `Compression failed (${result.skipped}): ${result.detail}`
+          : `Compression failed (${result.skipped})`
+      );
     }
     if (!result.compressed) {
       return toolError("Nothing new to compress (empty or already in session memory).");

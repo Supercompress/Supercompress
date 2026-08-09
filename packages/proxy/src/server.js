@@ -180,10 +180,14 @@ app.post("/v1/chat/completions", async (req, res) => {
   } catch (err) {
     console.error("[supercompress] Error:", err.message);
     if (!res.headersSent) {
-      res.status(502).json({
+      const paywall = Boolean(err.paywall || err.status === 402);
+      res.status(paywall ? 402 : 502).json({
         error: {
-          message: `SuperCompress proxy error: ${err.message}`,
-          type: "proxy_error",
+          message: err.message || "SuperCompress proxy error",
+          type: paywall ? "paywall" : "proxy_error",
+          ...(paywall
+            ? { upgrade_url: "https://www.supercompress.dev/dashboard#billing" }
+            : {}),
         },
       });
     }
@@ -207,7 +211,16 @@ app.post("/v1/responses", async (req, res) => {
   } catch (err) {
     console.error("[supercompress] Error:", err.message);
     if (!res.headersSent) {
-      res.status(502).json({ error: { message: `SuperCompress proxy error: ${err.message}`, type: "proxy_error" } });
+      const paywall = Boolean(err.paywall || err.status === 402);
+      res.status(paywall ? 402 : 502).json({
+        error: {
+          message: err.message || "SuperCompress proxy error",
+          type: paywall ? "paywall" : "proxy_error",
+          ...(paywall
+            ? { upgrade_url: "https://www.supercompress.dev/dashboard#billing" }
+            : {}),
+        },
+      });
     }
   }
 });
@@ -244,10 +257,14 @@ app.post("/v1/messages", async (req, res) => {
   } catch (err) {
     console.error("[supercompress] Error:", err.message);
     if (!res.headersSent) {
-      res.status(502).json({
+      const paywall = Boolean(err.paywall || err.status === 402);
+      res.status(paywall ? 402 : 502).json({
         error: {
-          message: `SuperCompress proxy error: ${err.message}`,
-          type: "proxy_error",
+          message: err.message || "SuperCompress proxy error",
+          type: paywall ? "paywall" : "proxy_error",
+          ...(paywall
+            ? { upgrade_url: "https://www.supercompress.dev/dashboard#billing" }
+            : {}),
         },
       });
     }
