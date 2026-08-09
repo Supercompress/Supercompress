@@ -1233,11 +1233,176 @@ function updateStats() {
     saved += snap.total_tokens_saved || 0;
     tin += snap.total_tokens_in || 0;
   }
+  const cutPct = tin > 0 ? Math.round((saved / tin) * 100) : null;
   $("stat-requests").textContent = formatNum(reqs);
   $("stat-saved").textContent = formatNum(saved);
-  $("stat-in").textContent = formatNum(tin);
+  const cutEl = $("stat-cut");
+  if (cutEl) cutEl.textContent = cutPct == null ? "—" : `${cutPct}%`;
+  const inEl = $("stat-in");
+  if (inEl) inEl.textContent = `${formatNum(tin)} in`;
+  renderAnalytics();
   renderActivationChecklist();
   if (lastBillingSub) renderPaygNudge(lastBillingSub);
+}
+
+/** Last N UTC calendar days as YYYY-MM-DD, oldest → newest. */
+function lastNDayKeys(n = 30) {
+  const out = [];
+  const d = new Date();
+  d.setUTCHours(12, 0, 0, 0);
+  for (let i = n - 1; i >= 0; i--) {
+    const x = new Date(d);
+    x.setUTCDate(d.getUTCDate() - i);
+    out.push(x.toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+function dayLabel(iso) {
+  const [, m, day] = String(iso).split("-");
+  return `${Number(m)}/${Number(day)}`;
+}
+
+/** Aggregate by_day across all keys for the last 30 days. */
+function aggregateUsageSeries(days = 30) {
+  const keys = lastNDayKeys(days);
+  const saved = keys.map((day) => ({ x: dayLabel(day), y: 0, day }));
+  const requests = keys.map((day) => ({ x: dayLabel(day), y: 0, day }));
+  const byDayIndex = Object.fromEntries(keys.map((d, i) => [d, i]));
+  let activeDays = 0;
+  const dayHit = new Set();
+
+  for (const snap of Object.values(usageData || {})) {
+    const byDay = snap.by_day || {};
+    for (const [day, rec] of Object.entries(byDay)) {
+      const i = byDayIndex[day];
+      if (i == null) continue;
+      saved[i].y += rec.tokens_saved || 0;
+      requests[i].y += rec.requests || 0;
+      if ((rec.requests || 0) > 0 || (rec.tokens_saved || 0) > 0) dayHit.add(day);
+    }
+  }
+  activeDays = dayHit.size;
+  return { saved, requests, activeDays, dayKeys: keys };
+}
+
+function cutPercent(saved, tin) {
+  if (!tin || tin <= 0) return null;
+  return Math.round((Number(saved) / Number(tin)) * 100);
+}
+
+let analyticsResizeBound = false;
+
+function renderAnalytics() {
+  const DK = typeof window !== "undefined" ? window.DitherKitLite : null;
+  const series = aggregateUsageSeries(30);
+
+  let reqs = 0;
+  let saved = 0;
+  let tin = 0;
+  for (const snap of Object.values(usageData || {})) {
+    reqs += snap.total_requests || 0;
+    saved += snap.total_tokens_saved || 0;
+    tin += snap.total_tokens_in || 0;
+  }
+  const cut = cutPercent(saved, tin);
+  const setText = (id, v) => {
+    const el = $(id);
+    if (el) el.textContent = v;
+  };
+  setText("analytics-cut", cut == null ? "—" : `${cut}%`);
+  setText("analytics-saved", formatNum(saved));
+  setText("analytics-requests", formatNum(reqs));
+  setText("analytics-days", String(series.activeDays));
+  setText(
+    "analytics-cut-sub",
+    tin > 0 ? `${formatNum(saved)} saved · ${formatNum(tin)} in` : "tokens saved / in"
+  );
+  setText("analytics-saved-sub", series.activeDays ? "lifetime · spark below on keys" : "lifetime");
+  setText(
+    "analytics-requests-sub",
+    keysData.length ? `${keysData.length} key${keysData.length === 1 ? "" : "s"}` : "all keys"
+  );
+
+  if (!DK) return;
+
+  const hasSeries =
+    series.saved.some((r) => r.y > 0) || series.requests.some((r) => r.y > 0);
+
+  DK.renderSparkline($("spark-requests"), series.requests.map((r) => r.y), {
+    color: "blue",
+    bloom: "low",
+  });
+  DK.renderSparkline($("spark-saved"), series.saved.map((r) => r.y), {
+    color: "green",
+    bloom: "low",
+  });
+
+  DK.renderAreaChart($("chart-saved-area"), {
+    data: series.saved,
+    color: "green",
+    variant: "gradient",
+    bloom: "aura",
+    empty: !hasSeries,
+  });
+  DK.renderBarChart($("chart-requests-bars"), {
+    data: series.requests.map((r) => ({ label: r.x, value: r.y })),
+    orientation: "vertical",
+    color: "blue",
+    variant: "gradient",
+    bloom: "low",
+    maxBars: 30,
+    empty: !hasSeries,
+  });
+
+  const agentEntries = Object.entries(codingAgentUsage || {})
+    .map(([label, a]) => ({
+      label,
+      value: a.tokens_saved || a.total_tokens_saved || a.requests || 0,
+    }))
+    .filter((d) => d.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+  DK.renderPieChart($("chart-agents-pie"), {
+    data: agentEntries,
+    bloom: "aura",
+  });
+
+  const keyBars = keysData
+    .map((k) => {
+      const snap = usageData[k.id] || {};
+      return {
+        label: (k.name || k.prefix || "key").slice(0, 18),
+        value: snap.total_tokens_saved || 0,
+      };
+    })
+    .filter((d) => d.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+  DK.renderBarChart($("chart-keys-bars"), {
+    data: keyBars.length ? keyBars : [{ label: "No savings yet", value: 0 }],
+    color: "purple",
+    variant: "hatched",
+    bloom: "low",
+    empty: !keyBars.length,
+  });
+
+  if (!analyticsResizeBound) {
+    analyticsResizeBound = true;
+    let t = 0;
+    const onResize = () => {
+      clearTimeout(t);
+      t = setTimeout(() => renderAnalytics(), 120);
+    };
+    window.addEventListener("resize", onResize);
+    if (typeof ResizeObserver !== "undefined") {
+      const host = $("usage-analytics");
+      if (host) {
+        const ro = new ResizeObserver(onResize);
+        ro.observe(host);
+      }
+    }
+  }
 }
 
 function renderKeys() {
@@ -1277,23 +1442,33 @@ function renderKeys() {
 
 function renderUsage() {
   if (!keysData.length) {
-    usageTbody.innerHTML = `<tr><td colspan="6" class="dash-empty">No usage yet.</td></tr>`;
+    usageTbody.innerHTML = `<tr><td colspan="7" class="dash-empty">No usage yet.</td></tr>`;
     return;
   }
   usageTbody.innerHTML = keysData
     .map((k) => {
       const snap = usageData[k.id] || {};
+      const tin = snap.total_tokens_in || 0;
+      const saved = snap.total_tokens_saved || 0;
+      const cut = cutPercent(saved, tin);
+      const cutHtml =
+        cut == null
+          ? `<span class="dash-cut-pill dash-cut-pill--muted">—</span>`
+          : `<span class="dash-cut-pill">${cut}%</span>`;
       return `
         <tr>
           <td><strong>${escapeHtml(k.name)}</strong><br/><code>${escapeHtml(k.prefix)}…</code></td>
           <td>${snap.total_requests || 0}</td>
-          <td>${formatNum(snap.total_tokens_in || 0)}</td>
+          <td>${formatNum(tin)}</td>
           <td>${formatNum(snap.total_tokens_out || 0)}</td>
-          <td>${formatNum(snap.total_tokens_saved || 0)}</td>
+          <td>${formatNum(saved)}</td>
+          <td>${cutHtml}</td>
           <td>${formatDate(k.last_used_at)}</td>
         </tr>`;
     })
     .join("");
+  // Charts live above the table; keep them in sync when usage refreshes.
+  renderAnalytics();
 }
 
 function escapeHtml(s) {
@@ -1379,6 +1554,10 @@ function initPanels() {
       const panelEl = $(`panel-${panel}`);
       if (panelEl) panelEl.classList.remove("hidden");
       if (panel === "billing") loadSubscription();
+      // Canvas hosts are 0-width while hidden — paint after the panel is visible.
+      if (panel === "usage" || panel === "keys") {
+        requestAnimationFrame(() => renderAnalytics());
+      }
     });
   });
 }

@@ -1,87 +1,109 @@
 # SuperCompress
 
-**One install. Every agent. ~65% fewer LLM tokens.**
+**Cut ~65% of LLM input tokens for coding agents — without losing the answer.**
+
+Compress bulky context (files, logs, tool dumps, pastes) against the current question. Your ask stays intact.
+
+[Website](https://www.supercompress.dev) · [Benchmarks](https://www.supercompress.dev/benchmarks) · [Playground](https://www.supercompress.dev/playground) · [Docs](https://www.supercompress.dev/docs/coding-agents)
+
+---
+
+## Install
 
 ```bash
 npm install -g supercompress-proxy
+```
+
+Requires Node.js 18+.
+
+---
+
+## Quick start (recommended)
+
+One command links your account and **auto-adds MCP + hooks** for every coding agent it detects (Cursor, Claude Code, Codex, OpenCode, Gemini, and more):
+
+```bash
 supercompress setup
-# or just:
-supercompress plugin
 ```
 
-`setup` / `plugin` auto-detects agents and installs:
-- **MCP** on every detected host (Cursor, Claude, Codex, OpenCode, FreeBuff, Windsurf, Continue, Gemini, …)
-- **Hooks** for Cursor / Claude Code / Codex — **every submit with context** auto-compresses (Headroom-parity); tiny asks skip
-- **Instruction files** so other agents still prefer `compress_context`
+Then restart your agent so integrations reload. That’s it.
 
-Your ask is never mangled (it stays the query). Pastes, attachments, and tool dumps are compressed before they burn tokens.
-
-### Full-traffic auto (Headroom-style)
-
-```bash
-supercompress wrap claude    # starts proxy + launches Claude with ANTHROPIC_BASE_URL
-supercompress wrap codex
-supercompress wrap aider
-```
-
-Install alone does **not** rewrite agent configs. `supercompress setup` (or `supercompress plugin`) is the opt-in step.
-
-Re-run detect anytime:
+Re-detect later (new agent installed, etc.):
 
 ```bash
 supercompress plugin
+supercompress agents
 ```
 
-Optional localhost API proxy (base-URL rewrite) is opt-in only:
+---
+
+## Benchmarks
+
+Same keep-budget (**35% of tokens kept**). Who still has the answer?
+
+| Method | Answer-critical kept |
+|---|---:|
+| FIFO / truncation | **24.8%** |
+| Summarization | **60.5%** |
+| H2O | **97.9%** |
+| **SuperCompress** | **100%** |
+
+| Metric | Result |
+|---|---:|
+| Oracle recall (fixed budget) | **100%** |
+| Mean token cut (real suite) | **~67%** |
+| Important lines kept (compiler) | **100%** |
+
+Full methodology and charts: **[supercompress.dev/benchmarks](https://www.supercompress.dev/benchmarks)**
+
+---
+
+## How it works
+
+```
+Your agent ──→ SuperCompress (hooks / MCP) ──→ smaller context ──→ model
+                      ↑
+                 query stays whole; only context is compressed
+```
+
+1. You ask a question (never rewritten).
+2. Large context is scored against that question.
+3. Evidence-critical lines stay in original wording; filler drops.
+4. You pay for fewer input tokens.
+
+---
+
+## Commands
+
+| Command | What it does |
+|---------|----------------|
+| `supercompress setup` | **Recommended** — link account, detect agents, install MCP + hooks |
+| `supercompress plugin` | Refresh agent integrations anytime |
+| `supercompress agents` | List supported / detected agents |
+| `supercompress start` / `stop` / `status` | Optional local proxy (`setup --proxy`) |
+| `supercompress usage` | Plan, quota, savings (`--json` ok) |
+| `supercompress uninstall` | Remove configs under `~/.supercompress` |
+
+Optional localhost API proxy (base-URL rewrite) if you explicitly need it:
 
 ```bash
 supercompress setup --proxy
 supercompress start
 ```
 
-## How it works
+Then point OpenAI/Anthropic-compatible clients at `http://localhost:8080/v1`.
 
+---
+
+## MCP
+
+`setup` / `plugin` registers the MCP server on every detected host. You can also run it directly:
+
+```bash
+supercompress-mcp
 ```
-Coding agent ──→ compress_context (MCP) ──→ SuperCompress API
-                 subscription / login safe     ~65% fewer tokens
-```
 
-When context gets huge — file dumps, search results, logs, diffs — the agent calls `compress_context`. SuperCompress returns a smaller, evidence-preserving version metered to your plan.
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `supercompress setup` | Link account + detect agents + install MCP plugin |
-| `supercompress plugin` | Re-detect and refresh MCP registrations |
-| `supercompress agents` | Show supported / detected integrations |
-| `supercompress setup --proxy` | Opt into localhost OpenAI/Anthropic base-URL proxy |
-| `supercompress start` / `stop` / `status` | Manage optional local proxy |
-| `supercompress uninstall` | Remove MCP/plugin configs and `~/.supercompress` |
-| `supercompress-mcp` | Run the MCP server over stdio |
-
-## First-class MCP agents
-
-| Agent | What setup writes |
-|-------|-------------------|
-| Cursor | `~/.cursor/mcp.json` + Cursor rule + `~/.cursor/hooks.json` (every submit + tool dumps) |
-| Claude Code | `~/.claude.json` MCP + UserPromptSubmit / PostToolUse hooks |
-| Codex | `~/.codex/config.toml` MCP + prompt/tool hooks |
-| FreeBuff | `~/.agents/mcp.json` |
-| OpenCode | `~/.config/opencode/opencode.jsonc` (`type: "local"`, `enabled: true`) |
-| Gemini CLI | Gemini settings MCP servers |
-
-The detector catalog covers **49** integrations. Run `supercompress agents` to see what is on your machine.
-
-## MCP tools
-
-| Tool | Purpose |
-|------|---------|
-| `compress_context` | Compress bulky coding context for a query |
-| `connect_account` | Open the dashboard to link this install |
-| `usage_summary` | Per-agent savings for the connected account |
-
-Manual MCP registration (any MCP client):
+Manual registration:
 
 ```json
 {
@@ -93,27 +115,33 @@ Manual MCP registration (any MCP client):
 }
 ```
 
-## Optional API proxy
+| Tool | Purpose |
+|------|---------|
+| `compress_context` | Compress bulky context for a query |
+| `connect_account` | Link this install to your dashboard |
+| `usage_summary` | Savings for the connected account |
 
-Use `--proxy` only when your agent already uses a provider API key and exposes a configurable OpenAI/Anthropic base URL. Point it at `http://localhost:8080/v1`.
+---
 
-ChatGPT-login Codex and similar hosted backends are **not** intercepted by the local proxy — stay on MCP.
+## Account & pricing
 
-## Requirements
+Free tier + paid credits from the [dashboard](https://www.supercompress.dev/dashboard).  
+Public PAYG: **$0.30 / 1M tokens** (see site for current plans).
 
-- Node.js 18+
-- A SuperCompress account — https://supercompress.dev/dashboard
+---
 
 ## Privacy
 
-The MCP server / optional proxy run on your machine. Provider API keys never leave your agent. Context text is sent to the SuperCompress API so the hosted compiler can process it.
+Hooks / MCP run on your machine. Provider API keys stay with your agent. Context text is sent to the SuperCompress API so the hosted compiler can compress it.
 
-## Docs
+---
 
-- Coding agents: https://supercompress.dev/docs/coding-agents
-- API: https://supercompress.dev/docs/api-reference
-- Source: https://github.com/Supercompress/Supercompress
+## More
+
+- Coding agents: https://www.supercompress.dev/docs/coding-agents  
+- HTTP / Python API: https://www.supercompress.dev/docs/quickstart  
+- Source: https://github.com/Supercompress/Supercompress  
 
 ## License
 
-MIT. Commercial use is permitted. See [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).

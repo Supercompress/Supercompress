@@ -1,14 +1,30 @@
-## 0.5.12
-
-- Harden device-link pairing codes to 128-bit entropy.
-
 # Changelog
 
 Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
 
+## [0.5.15] — 2026-08-09
+
+- **Setup-first**: `supercompress setup` / `plugin` is the recommended path (auto MCP + hooks). `wrap` deprecated.
+- **Zed**: detect macOS Zed app; write MCP via `context_servers` (not Cursor `mcpServers`).
+- Docs/links prefer `https://www.supercompress.dev/docs/...`.
+
 ## Unreleased
 
-- **Fix `uninstall` leaving artifacts behind**: it reported success while the Cursor rule, Cursor hook scripts and registrations, the Claude Code / Codex prompt + tool hooks, and the agent instruction blocks (`CLAUDE.md` / `AGENTS.md` / …) all survived. `revertAll` only walked the provider base-URL configs, and the writers responsible recorded no backup. Uninstalling now removes them and reports each one, while preserving unrelated hooks, user-authored instruction content, and any file the backup restored. Installs from earlier versions — including ones with no backup manifest, and Windows-style hook paths — clean up too.
+- **Zed support**: detect macOS Zed app + write MCP via `context_servers` (not Cursor `mcpServers`).
+- **Setup-first UX**: `supercompress setup` is the only recommended path (auto MCP + hooks). `wrap` is deprecated.
+- Docs links prefer `https://www.supercompress.dev/docs/...` (docs subdomain routed to `/docs/*`).
+
+## 0.5.14 — 2026-08-08
+
+- **README rewrite**: wrap-first install (`supercompress wrap claude|codex|aider`). Removed monorepo / local-path install warnings. MCP documented as optional. Benchmarks linked.
+
+## 0.5.13 — 2026-08-08
+
+- Same README rewrite (initial publish).
+
+## 0.5.12
+
+- Harden device-link pairing codes to 128-bit entropy.
 
 ## 0.5.11 — 2026-08-07
 

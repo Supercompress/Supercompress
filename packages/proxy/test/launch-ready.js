@@ -270,6 +270,52 @@ async function main() {
     fail("detector isolates FreeBuff+OpenCode MCP install + preserves peers", e.message);
   }
 
+  // Zed: macOS Application Support path + context_servers schema (not mcpServers)
+  try {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "sc-zed-"));
+    const originalHome = os.homedir;
+    const originalConfigDir = process.env.SUPERCOMPRESS_CONFIG_DIR;
+    os.homedir = () => home;
+    process.env.SUPERCOMPRESS_CONFIG_DIR = path.join(home, ".supercompress");
+    const zedDir = path.join(home, "Library", "Application Support", "Zed");
+    fs.mkdirSync(zedDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(zedDir, "settings.json"),
+      JSON.stringify({ theme: "One Dark", context_servers: { other: { command: "echo", args: ["hi"] } } }, null, 2)
+    );
+    // Fake app bundle so zedInstalled() is true without PATH `zed`
+    fs.mkdirSync(path.join(home, "Applications", "Zed.app", "Contents", "MacOS"), { recursive: true });
+    fs.writeFileSync(path.join(home, "Applications", "Zed.app", "Contents", "MacOS", "zed"), "#!/bin/sh\n");
+    fs.chmodSync(path.join(home, "Applications", "Zed.app", "Contents", "MacOS", "zed"), 0o755);
+
+    const detectorPath = path.join(ROOT, "src/detector.js");
+    delete require.cache[require.resolve(detectorPath)];
+    const detector = require(detectorPath);
+    const found = detector.detectAll().map((a) => a.name);
+    assert.ok(found.includes("Zed"), `missing Zed in ${found}`);
+    const configured = detector.configureMcp();
+    assert.ok(configured.includes("Zed"), configured.join(","));
+    const settings = JSON.parse(fs.readFileSync(path.join(zedDir, "settings.json"), "utf8"));
+    assert.ok(settings.context_servers.other, "must preserve existing Zed context servers");
+    assert.ok(settings.context_servers.supercompress);
+    assert.equal(typeof settings.context_servers.supercompress.command, "string");
+    assert.ok(Array.isArray(settings.context_servers.supercompress.args));
+    assert.equal(settings.mcpServers, undefined);
+    assert.equal(settings.agent.enable_all_context_servers, true);
+    const removed = detector.removeMcp();
+    assert.ok(removed.includes("Zed"), removed.join(","));
+    const after = JSON.parse(fs.readFileSync(path.join(zedDir, "settings.json"), "utf8"));
+    assert.equal(after.context_servers.supercompress, undefined);
+    assert.ok(after.context_servers.other);
+    os.homedir = originalHome;
+    process.env.SUPERCOMPRESS_CONFIG_DIR = originalConfigDir;
+    fs.rmSync(home, { recursive: true, force: true });
+    delete require.cache[require.resolve(detectorPath)];
+    pass("detector configures Zed via context_servers and preserves peers");
+  } catch (e) {
+    fail("detector configures Zed via context_servers and preserves peers", e.message);
+  }
+
   // ── D. Hosted API formats ──
   const formats = [
     ["diff", `diff --git a/a.ts b/a.ts\n${Array.from({ length: 40 }, (_, i) => `+export const x${i}=${i}`).join("\n")}\n+export const needle = "KEEP_ME_DIFF"`, "KEEP_ME_DIFF"],

@@ -163,8 +163,7 @@ module.exports = async function setup({ CONFIG_DIR, CONFIG_PATH, PID_PATH, LOG_P
     console.log(`  ✓ Cleared provider API-key proxy overrides: ${auto.cleared.join(", ")}`);
   }
   console.log("  → Works with Cursor / Claude / Codex login — no provider API-key mode.");
-  console.log("  → Restart agents so hooks reload.");
-  console.log("  → Full-traffic auto (Headroom-style): `supercompress wrap claude`");
+  console.log("  → Restart agents so MCP/hooks reload.");
 
   if (!wantProxy) {
     console.log("");
@@ -174,10 +173,10 @@ module.exports = async function setup({ CONFIG_DIR, CONFIG_PATH, PID_PATH, LOG_P
     console.log("");
     console.log("  Next steps:");
     console.log("    1. Restart your coding agent so MCP/hooks reload");
-    console.log("    2. Or run `supercompress wrap claude` for proxy auto-compress");
+    console.log("    2. Big dumps auto-compress via hooks; use compress_context for large pastes");
     console.log("");
     console.log("  Tip: `supercompress plugin` re-runs detect + install anytime.");
-    console.log("  Tip: `supercompress setup --proxy` only if you want durable base-URL rewrite.");
+    console.log("  Tip: `supercompress setup --proxy` only if you need durable base-URL rewrite.");
     console.log("");
     return;
   }
@@ -187,7 +186,7 @@ module.exports = async function setup({ CONFIG_DIR, CONFIG_PATH, PID_PATH, LOG_P
   console.log("  Step 3: Optional proxy mode (--proxy)");
   console.log("  ─────────────────────────────────────");
   const configured = detector.configureAll();
-  config.configured_agents = [...new Set([...mcpConfigured, ...configured])];
+  config.configured_agents = [...new Set([...auto.mcpConfigured, ...configured])];
   config.mode = "proxy";
   saveConfig(config);
   for (const name of configured) {

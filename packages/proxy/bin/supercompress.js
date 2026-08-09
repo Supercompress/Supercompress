@@ -20,7 +20,7 @@ const crypto = require("crypto");
 const VERSION = require("../package.json").version;
 const USAGE_URL = process.env.SUPERCOMPRESS_USAGE_URL || "https://www.supercompress.dev/api/usage";
 const ME_URL = process.env.SUPERCOMPRESS_ME_URL || "https://www.supercompress.dev/api/me";
-const ACTIVITY_URL = process.env.SUPERCOMPRESS_ACTIVITY_URL || "https://www.supercompress.dev/api/compress-log";
+const ACTIVITY_URL = process.env.SUPERCOMPRESS_ACTIVITY_URL || "https://www.supercompress.dev/api/account?op=compress-log";
 
 const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(require("os").homedir(), ".supercompress");
 const CONFIG_PATH = path.join(CONFIG_DIR, "config.json");
@@ -56,13 +56,12 @@ function printHelp() {
   console.log("Usage: supercompress <command>");
   console.log("");
   console.log("  Commands:");
-  console.log("  setup       One-time setup — account link, auto-detect agents, MCP plugin, optional proxy");
-  console.log("  plugin      Auto-install MCP + hooks + agent instructions for every detected agent");
-  console.log("  wrap        Headroom-style: start proxy + launch agent (claude|codex|aider|…) with auto-compress");
+  console.log("  setup       Recommended — link account, auto-detect agents, install MCP + hooks");
+  console.log("  plugin      Re-run detect + install MCP/hooks/instructions for every agent");
   console.log("  connect     Link this install to your SuperCompress account");
   console.log("  account     Show the connected SuperCompress account");
   console.log("  usage       Plan, quota, and token savings by coding agent");
-  console.log("  start       Start the proxy server (if not running)");
+  console.log("  start       Start the optional local proxy server");
   console.log("  stop        Stop the proxy server");
   console.log("  status      Check if the proxy is running");
   console.log("  agents      Show supported agents and detected integrations");
@@ -70,12 +69,11 @@ function printHelp() {
   console.log("  agents rm   Remove a custom agent plugin");
   console.log("  mcp-check   Verify the SuperCompress MCP server responds");
   console.log("  restart     Restart the proxy server");
-  console.log("  uninstall   Remove proxy and revert all agent configs");
+  console.log("  uninstall   Remove SuperCompress configs and revert agent integrations");
   console.log("");
   console.log("Examples:");
-  console.log("  supercompress plugin");
-  console.log("  supercompress wrap claude");
   console.log("  supercompress setup");
+  console.log("  supercompress plugin");
   console.log("  supercompress account");
   console.log("  supercompress usage");
   console.log("  supercompress usage --json");
@@ -150,20 +148,13 @@ async function main() {
         console.log(`  ✓ Cleared provider API-key proxy overrides: ${result.cleared.join(", ")}`);
       }
       console.log("  → Restart agents so MCP/hooks reload.");
-      console.log("  → For Headroom-style full-traffic auto: `supercompress wrap claude` (or codex|aider|…)");
       break;
     }
     case "wrap": {
-      const agent = process.argv[3];
-      const passthrough = process.argv.slice(4);
-      if (passthrough[0] === "--") passthrough.shift();
-      await require("../src/wrap").wrap(agent, passthrough, {
-        CONFIG_DIR,
-        CONFIG_PATH,
-        loadConfig,
-        startServer,
-        isHealthy,
-      });
+      console.log("  ✗ `supercompress wrap` is deprecated and unreliable with login-based agents.");
+      console.log("  → Run `supercompress setup` instead — it auto-installs MCP + hooks for every detected agent.");
+      console.log("  → Docs: https://www.supercompress.dev/docs/coding-agents");
+      process.exit(1);
       break;
     }
     case "setup":

@@ -9,6 +9,7 @@
 const pkg = require("../package.json");
 
 console.log(`SuperCompress v${pkg.version} installed.`);
-console.log("Next: run `supercompress setup` to connect your account and install the MCP plugin.");
-console.log("Or:   `supercompress plugin` to detect agents and refresh MCP registrations only.");
-console.log("Docs: https://supercompress.dev/docs/coding-agents");
+console.log("Next: run `supercompress setup` — links your account and auto-adds MCP + hooks");
+console.log("     for every detected coding agent (npm install alone does not).");
+console.log("Or:   `supercompress plugin` to re-detect and refresh integrations anytime.");
+console.log("Docs: https://www.supercompress.dev/docs/coding-agents");

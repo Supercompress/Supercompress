@@ -1,0 +1,71 @@
+/* Topic-cluster nav + SEO article chrome used by marketing pages. */
+.seo-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  justify-content: center;
+  max-width: 720px;
+  margin: 28px auto 36px;
+  padding: 14px 18px;
+  border: 0.5px solid var(--card-border, #e5e5e0);
+  border-radius: 4px;
+  background: var(--feat-blue, #f4f7ff);
+}
+
+.seo-cluster a {
+  color: var(--brand, #1d4ed8);
+  font-size: 13px;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.seo-cluster a:hover {
+  border-bottom-color: currentColor;
+}
+
+.seo-verdict {
+  max-width: 640px;
+  margin: 20px auto 8px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--brand, #1d4ed8);
+  background: rgba(29, 78, 216, 0.06);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.seo-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 16px auto 28px;
+  max-width: 720px;
+}
+
+.seo-chip-row a {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 0.5px solid var(--card-border, #e5e5e0);
+  color: var(--text-muted, #6b7280);
+  text-decoration: none;
+}
+
+.seo-proof,
+.seo-vs-hr {
+  max-width: 720px;
+  margin: 0 auto 40px;
+}
+
+.seo-proof-table {
+  width: 100%;
+}
+
+.seo-cta-incentives {
+  margin: 12px auto 0;
+  max-width: 420px;
+  padding-left: 1.2em;
+  text-align: left;
+  color: var(--text-muted, #6b7280);
+  font-size: 14px;
+}

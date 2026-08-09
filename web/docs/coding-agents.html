@@ -7,11 +7,11 @@
   <meta name="description" content="Install SuperCompress once. Auto-detect Cursor, Claude Code, Codex, FreeBuff, OpenCode, and more — then compress large context through MCP without provider API-key mode." />
   <meta property="og:title" content="Coding Agents — SuperCompress Documentation" />
   <meta property="og:description" content="One install. Auto-detect your agents. MCP plugin for subscription/login flows. ~65% fewer tokens." />
-  <meta property="og:url" content="https://docs.supercompress.dev/coding-agents" />
+  <meta property="og:url" content="https://www.supercompress.dev/docs/coding-agents" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="canonical" href="https://docs.supercompress.dev/coding-agents" />
+  <link rel="canonical" href="https://www.supercompress.dev/docs/coding-agents" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -63,25 +63,36 @@
 
 
       <div class="docs-content">
-        <p class="doc-kicker df-reveal">Coding agent plugin · v0.5.7</p>
+        <p class="doc-kicker df-reveal">Coding agent plugin · v0.5.15</p>
         <h1 class="df-reveal">One install. Every agent. Fewer tokens.</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Run <code>supercompress setup</code> to connect your account, detect coding agents, and auto-install MCP + hooks so large dumps get compressed before they burn tokens — Cursor, Claude Code, Codex, FreeBuff, OpenCode, Windsurf, Continue, Gemini, and more. Keep your normal login. Or use <code>supercompress wrap claude</code> for Headroom-style full-traffic auto-compress.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Run <code>supercompress setup</code> once. It connects your account, detects coding agents, and <strong>auto-installs MCP + hooks</strong> so large dumps get compressed before they burn tokens — Cursor, Claude Code, Codex, Zed, FreeBuff, OpenCode, Windsurf, Continue, Gemini, and more. Keep your normal login.</p>
 
         <div class="doc-callout doc-callout--tip">
           <span class="doc-callout-label">Install in 30 seconds</span>
           <pre style="margin:10px 0 0"><code><span class="kw">npm install</span> -g supercompress-proxy
-<span class="kw">supercompress</span> setup
-<span class="cm"># full-traffic auto (optional):</span>
-<span class="kw">supercompress</span> wrap claude</code></pre>
-          <p style="margin-top:10px;margin-bottom:0">npm install alone does not rewrite agent configs. <code>setup</code> / <code>plugin</code> links your account, installs MCP on every detected host, and adds Cursor/Claude/Codex hooks. Re-run anytime with <code>supercompress plugin</code>.</p>
+<span class="kw">supercompress</span> setup</code></pre>
+          <p style="margin-top:10px;margin-bottom:0">npm install alone does not rewrite agent configs. <code>setup</code> links your account and auto-adds MCP + hooks on every detected host. Re-run anytime with <code>supercompress plugin</code>.</p>
         </div>
 
         <div class="ca-stat-row df-reveal" style="--reveal-delay:120ms" aria-label="Highlights">
           <div class="ca-stat"><strong>~65%</strong><span>fewer tokens</span></div>
+          <div class="ca-stat"><strong id="ca-npm-downloads">1k+</strong><span>npm downloads / week</span></div>
           <div class="ca-stat"><strong>49</strong><span>agents catalogued</span></div>
-          <div class="ca-stat"><strong>MCP</strong><span>subscription-safe</span></div>
           <div class="ca-stat"><strong>~60ms</strong><span>compress latency</span></div>
         </div>
+        <script>
+          (function () {
+            var el = document.getElementById("ca-npm-downloads");
+            if (!el) return;
+            fetch("/api/stats", { credentials: "omit" })
+              .then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (d) {
+                if (!d || !d.npm_primary) return;
+                el.textContent = d.npm_primary.label || d.npm_downloads_week_label || el.textContent;
+              })
+              .catch(function () {});
+          })();
+        </script>
 
         <div class="doc-toc">
           <h3>In this guide</h3>
@@ -98,17 +109,13 @@
         </div>
 
         <h2 id="how-it-works">How it works</h2>
-        <p>Three layers, best together:</p>
+        <p>Two layers, installed together by <code>setup</code>:</p>
         <ol>
           <li><strong>Hooks</strong> (Cursor / Claude Code / Codex) — every user message + large tool dumps auto-compress.</li>
           <li><strong>MCP</strong> on every detected agent — <code>compress_context</code> for big dumps (subscription / login safe).</li>
-          <li><strong>Wrap</strong> — <code>supercompress wrap claude</code> starts the local proxy and launches the agent so <em>all</em> traffic is compressed (Headroom-style).</li>
         </ol>
-        <pre><code><span class="cm"># Default — subscription / login safe (MCP + hooks)</span>
-<span class="kw">Coding agent</span> ──<span class="op">→</span> <span class="fn">hooks / compress_context</span> ──<span class="op">→</span> <span class="kw">SuperCompress API</span>
-
-<span class="cm"># Full-traffic auto</span>
-<span class="kw">supercompress wrap claude</span> ──<span class="op">→</span> <span class="str">localhost:8080</span> ──<span class="op">→</span> <span class="kw">provider</span></code></pre>
+        <pre><code><span class="cm"># After `supercompress setup` (subscription / login safe)</span>
+<span class="kw">Coding agent</span> ──<span class="op">→</span> <span class="fn">hooks / compress_context</span> ──<span class="op">→</span> <span class="kw">SuperCompress API</span></code></pre>
 
         <div class="doc-callout doc-callout--info">
           <span class="doc-callout-label">Privacy</span>
@@ -118,7 +125,7 @@
         <h2 id="install">Install</h2>
         <pre><code><span class="kw">npm install</span> -g supercompress-proxy
 <span class="kw">supercompress</span> --version
-<span class="cm"># → 0.5.7</span></code></pre>
+<span class="cm"># → 0.5.15</span></code></pre>
         <p>Or one-shot without a global install:</p>
         <pre><code><span class="kw">npm install</span> supercompress-proxy
 <span class="kw">npm exec</span> supercompress setup</code></pre>
@@ -151,6 +158,7 @@
           <article class="ca-agent"><h3>FreeBuff</h3><p>Global Codebuff/FreeBuff MCP via <code>~/.agents/mcp.json</code>.</p><span class="ca-badge">MCP</span></article>
           <article class="ca-agent"><h3>OpenCode</h3><p>Writes <code>mcp.supercompress</code> into <code>opencode.jsonc</code>.</p><span class="ca-badge">MCP</span></article>
           <article class="ca-agent"><h3>Gemini CLI</h3><p>Registers in Gemini settings MCP servers.</p><span class="ca-badge">MCP</span></article>
+          <article class="ca-agent"><h3>Zed</h3><p>Writes <code>context_servers.supercompress</code> into Zed settings.</p><span class="ca-badge">MCP</span></article>
         </div>
 
         <p class="ca-more-label">Also detected (manual endpoint / MCP where available)</p>

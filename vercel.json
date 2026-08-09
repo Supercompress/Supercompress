@@ -8,6 +8,66 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/headroom",
+      "destination": "/headroom-api",
+      "permanent": true
+    },
+    {
+      "source": "/headroom-alternative",
+      "destination": "/better-than-headroom",
+      "permanent": true
+    },
+    {
+      "source": "/better-than-headroom-ai",
+      "destination": "/better-than-headroom",
+      "permanent": true
+    },
+    {
+      "source": "/what-is-better-than-headroom",
+      "destination": "/better-than-headroom",
+      "permanent": true
+    },
+    {
+      "source": "/alternatives-to-headroom",
+      "destination": "/better-than-headroom",
+      "permanent": true
+    },
+    {
+      "source": "/vs-headroom",
+      "destination": "/headroom-api",
+      "permanent": true
+    },
+    {
+      "source": "/find-headroom",
+      "destination": "/headroom-api",
+      "permanent": true
+    },
+    {
+      "source": "/what-is-headroom-api",
+      "destination": "/headroom-api",
+      "permanent": true
+    },
+    {
+      "source": "/cut-api-cost",
+      "destination": "/cut-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/how-to-cut-api-costs",
+      "destination": "/cut-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/cut-llm-api-costs",
+      "destination": "/cut-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-tools",
+      "destination": "/open-source-token-compression",
+      "permanent": true
+    },
+    {
       "source": "/cut-llm-costs",
       "destination": "/reduce-llm-costs",
       "permanent": true
@@ -108,9 +168,930 @@
       "source": "/web/:path*",
       "destination": "/:path*",
       "permanent": false
+    },
+    {
+      "source": "/ab-testing-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/ai-coding-assistant-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/anthropic-claude-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/awesome-token-compression",
+      "destination": "/open-source-token-compression",
+      "permanent": true
+    },
+    {
+      "source": "/batch-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/claude-haiku-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compressed-rag-evaluation",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-code-generation",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-compliance",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-data-extraction",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-debugging",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-monitoring",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-question-answering",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-ratio-impact-quality",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-security",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-sentiment-analysis",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-sla",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/compression-summarization-pipeline",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/context-window-management",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/cost-allocation-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/cost-per-query-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/deploy-compression-aws-lambda",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/deploy-compression-azure",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/deploy-compression-fly-io",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/deploy-compression-google-cloud",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/deploy-compression-railway",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/django-compression-views",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/dynamic-chunk-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/edge-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/enterprise-compression-strategy",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/express-compression-routes",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/fastapi-compression-middleware",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/flask-compression-integration",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/future-of-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/gemini-flash-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/go-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/gpt-4-turbo-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/graph-rag-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/helicone-compression-monitoring",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/hierarchical-context-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/hybrid-retrieval-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/java-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/langchain-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/langfuse-compression-observability",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/latency-benchmarks-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/llama-3-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/llamaindex-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/measuring-token-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/mistral-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/mlflow-compression-pipelines",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/multi-agent-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/multi-hop-rag-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/multi-tenant-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/multi-turn-context-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/openai-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/plan-execute-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/posthog-compression-analytics",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-agno",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-autogen",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-ci-cd",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-crewai",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-dify",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-docker",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-flowise",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-langfuse",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-mistakes",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-mlflow",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-vs-caching",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-vs-routing",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-compression-wandb",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/prompt-optimization-gpt",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/python-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/rag-token-optimization",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/react-agent-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/rust-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/save-llm-tokens",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/serverless-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/spring-compression-controllers",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/streaming-compression-strategies",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/structured-output-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-dspy",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-haystack",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-langgraph",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-magentic-one",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-semantic-kernel",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-vs-hyde",
+      "destination": "/supercompress-vs-alternatives",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-vs-mmr",
+      "destination": "/supercompress-vs-alternatives",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-vs-self-rag",
+      "destination": "/supercompress-vs-alternatives",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-vs-sliding-window",
+      "destination": "/supercompress-vs-alternatives",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-vs-top-k-retrieval",
+      "destination": "/supercompress-vs-alternatives",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-assessment",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-chatbots",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-content-summarization",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-customer-support",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-ecommerce",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-education",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-finance",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-healthcare",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-inventory",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-lead-qualification",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-lease-review",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-legal",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-market-analysis",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-property-listings",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-real-estate",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-recommendations",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-research",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-review-analysis",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-search",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-tool",
+      "destination": "/token-compression",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression-tutoring",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/tool-calling-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/typescript-prompt-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/vercel-ai-sdk-compression",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/wandb-compression-tracking",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/api-reference",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/api-reference",
+      "permanent": true
+    },
+    {
+      "source": "/api-reference",
+      "has": [
+        {
+          "type": "host",
+          "value": "supercompress.dev"
+        }
+      ],
+      "destination": "/docs/api-reference",
+      "permanent": true
+    },
+    {
+      "source": "/architecture",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/architecture",
+      "permanent": true
+    },
+    {
+      "source": "/architecture",
+      "has": [
+        {
+          "type": "host",
+          "value": "supercompress.dev"
+        }
+      ],
+      "destination": "/docs/architecture",
+      "permanent": true
+    },
+    {
+      "source": "/coding-agents",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/coding-agents",
+      "permanent": true
+    },
+    {
+      "source": "/coding-agents",
+      "has": [
+        {
+          "type": "host",
+          "value": "supercompress.dev"
+        }
+      ],
+      "destination": "/docs/coding-agents",
+      "permanent": true
+    },
+    {
+      "source": "/compress-engine",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/compress-engine",
+      "permanent": true
+    },
+    {
+      "source": "/compress-engine",
+      "has": [
+        {
+          "type": "host",
+          "value": "supercompress.dev"
+        }
+      ],
+      "destination": "/docs/compress-engine",
+      "permanent": true
+    },
+    {
+      "source": "/environment",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/environment",
+      "permanent": true
+    },
+    {
+      "source": "/environment",
+      "has": [
+        {
+          "type": "host",
+          "value": "supercompress.dev"
+        }
+      ],
+      "destination": "/docs/environment",
+      "permanent": true
+    },
+    {
+      "source": "/integrations",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/integrations",
+      "permanent": true
+    },
+    {
+      "source": "/integrations",
+      "has": [
+        {
+          "type": "host",
+          "value": "supercompress.dev"
+        }
+      ],
+      "destination": "/docs/integrations",
+      "permanent": true
+    },
+    {
+      "source": "/quickstart",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/quickstart",
+      "permanent": true
+    },
+    {
+      "source": "/quickstart",
+      "has": [
+        {
+          "type": "host",
+          "value": "supercompress.dev"
+        }
+      ],
+      "destination": "/docs/quickstart",
+      "permanent": true
+    },
+    {
+      "source": "/usage",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/usage",
+      "permanent": true
+    },
+    {
+      "source": "/usage",
+      "has": [
+        {
+          "type": "host",
+          "value": "supercompress.dev"
+        }
+      ],
+      "destination": "/docs/usage",
+      "permanent": true
     }
   ],
   "rewrites": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/index.html"
+    },
+    {
+      "source": "/quickstart",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/quickstart"
+    },
+    {
+      "source": "/quickstart.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/quickstart"
+    },
+    {
+      "source": "/api-reference",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/api-reference"
+    },
+    {
+      "source": "/api-reference.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/api-reference"
+    },
+    {
+      "source": "/integrations",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/integrations"
+    },
+    {
+      "source": "/integrations.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/integrations"
+    },
+    {
+      "source": "/coding-agents",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/coding-agents"
+    },
+    {
+      "source": "/coding-agents.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/coding-agents"
+    },
+    {
+      "source": "/usage",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/usage"
+    },
+    {
+      "source": "/usage.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/usage"
+    },
+    {
+      "source": "/architecture",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/architecture"
+    },
+    {
+      "source": "/architecture.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/architecture"
+    },
+    {
+      "source": "/compress-engine",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/compress-engine"
+    },
+    {
+      "source": "/compress-engine.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/compress-engine"
+    },
+    {
+      "source": "/environment",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/environment"
+    },
+    {
+      "source": "/environment.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs/environment"
+    },
     {
       "source": "/compress",
       "destination": "/api/v1/compress"

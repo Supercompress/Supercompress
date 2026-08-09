@@ -10,6 +10,8 @@
  *   - Claude Code     ~/.claude/settings.json
  *   - Codex           ~/.codex/config.toml and `codex` in PATH
  *   - Aider           ~/.aider.conf.yml or ~/.config/aider/conf.yml
+ *   - Zed             macOS app + ~/Library/Application Support/Zed/settings.json
+ *                     (context_servers MCP — not Cursor-style mcpServers)
  */
 
 const fs = require("fs");
@@ -222,6 +224,105 @@ function writeOpenCodeMcp(filePath) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
 }
 
+/** macOS / Linux / Windows locations for Zed's user settings.json */
+function zedSettingsCandidates() {
+  return [
+    path.join(HOME, "Library", "Application Support", "Zed", "settings.json"),
+    path.join(HOME, ".config", "zed", "settings.json"),
+    path.join(HOME, "AppData", "Roaming", "Zed", "settings.json"),
+  ];
+}
+
+function zedHomeDirs() {
+  return [
+    path.join(HOME, "Library", "Application Support", "Zed"),
+    path.join(HOME, ".config", "zed"),
+    path.join(HOME, "AppData", "Roaming", "Zed"),
+  ];
+}
+
+/**
+ * True when the real Zed editor is installed.
+ * Avoid treating the zsh `zed` builtin / unrelated PATH stubs as Zed.
+ */
+function zedInstalled() {
+  if (appExists("Zed") || appExists("Zed Preview")) return true;
+  if (zedHomeDirs().some((dir) => fs.existsSync(dir))) return true;
+  // Prefer absolute binaries over bare `which zed` (zsh ships a `zed` function).
+  const bins = [
+    path.join("/Applications", "Zed.app", "Contents", "MacOS", "cli"),
+    path.join("/Applications", "Zed.app", "Contents", "MacOS", "zed"),
+    path.join(HOME, "Applications", "Zed.app", "Contents", "MacOS", "cli"),
+    path.join(HOME, "Applications", "Zed.app", "Contents", "MacOS", "zed"),
+    path.join("/opt/homebrew/bin", "zed"),
+    path.join("/usr/local/bin", "zed"),
+    path.join(HOME, ".local", "bin", "zed"),
+  ];
+  return bins.some((candidate) => {
+    try {
+      return fs.existsSync(candidate) && fs.statSync(candidate).isFile();
+    } catch {
+      return false;
+    }
+  });
+}
+
+function resolveZedSettingsPath() {
+  const existing = zedSettingsCandidates().find((p) => fs.existsSync(p));
+  if (existing) return existing;
+  // Prefer the platform-native config home when creating settings for the first time.
+  if (process.platform === "darwin") {
+    return path.join(HOME, "Library", "Application Support", "Zed", "settings.json");
+  }
+  if (process.platform === "win32") {
+    return path.join(HOME, "AppData", "Roaming", "Zed", "settings.json");
+  }
+  return path.join(HOME, ".config", "zed", "settings.json");
+}
+
+/** Zed uses context_servers (not mcpServers). See https://zed.dev/docs/ai/mcp */
+function writeZedMcp(filePath) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  let data = {};
+  let hadExisting = false;
+  if (fs.existsSync(filePath)) {
+    hadExisting = true;
+    try {
+      data = parseJsonc(fs.readFileSync(filePath, "utf8"));
+    } catch (err) {
+      throw new Error(`Zed settings are not valid JSON/JSONC (${filePath}): ${err.message}`);
+    }
+  }
+  if (hadExisting && (!data || typeof data !== "object" || Array.isArray(data))) {
+    throw new Error(`Zed settings must be a JSON object (${filePath})`);
+  }
+
+  const launch = resolveMcpLaunchCommand();
+  const command = launch[0];
+  const args = launch.slice(1);
+  data.context_servers = data.context_servers && typeof data.context_servers === "object"
+    ? data.context_servers
+    : {};
+  // Strip any mistaken Cursor-style registration from older setup runs.
+  if (data.mcpServers && data.mcpServers.supercompress) {
+    delete data.mcpServers.supercompress;
+    if (Object.keys(data.mcpServers).length === 0) delete data.mcpServers;
+  }
+  data.context_servers.supercompress = {
+    command,
+    args,
+    env: {
+      SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR,
+    },
+  };
+  // Make MCP tools available in the default agent profile when profiles exist.
+  data.agent = data.agent && typeof data.agent === "object" ? data.agent : {};
+  if (data.agent.enable_all_context_servers == null) {
+    data.agent.enable_all_context_servers = true;
+  }
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+}
+
 function shouldWriteMcpTarget(name, filePath, detect) {
   if (typeof detect === "function") return detect();
   if (fs.existsSync(filePath)) return true;
@@ -265,8 +366,6 @@ function configureMcp() {
       commandExists("crush") || fs.existsSync(path.join(HOME, ".config", "crush"))],
     ["Amp", path.join(HOME, ".amp", "mcp.json"), () =>
       commandExists("amp") || fs.existsSync(path.join(HOME, ".amp"))],
-    ["Zed AI", path.join(HOME, ".config", "zed", "settings.json"), () =>
-      commandExists("zed") || fs.existsSync(path.join(HOME, ".config", "zed"))],
     ["VS Code Copilot", path.join(HOME, ".copilot", "mcp.json"), () =>
       commandExists("copilot") || commandExists("github-copilot") || fs.existsSync(path.join(HOME, ".copilot"))],
     ["Roo Code", path.join(HOME, ".roo", "mcp.json"), () =>
@@ -307,6 +406,18 @@ function configureMcp() {
       configured.push("OpenCode");
     } catch (err) {
       console.error(`  ✗ Failed to configure OpenCode MCP: ${err.message}`);
+    }
+  }
+
+  // Zed uses settings.json `context_servers` (not mcpServers).
+  if (zedInstalled()) {
+    const zedPath = resolveZedSettingsPath();
+    try {
+      backupFile(zedPath);
+      writeZedMcp(zedPath);
+      configured.push("Zed");
+    } catch (err) {
+      console.error(`  ✗ Failed to configure Zed MCP: ${err.message}`);
     }
   }
 
@@ -376,6 +487,30 @@ function removeMcp() {
       removed.push("OpenCode");
     } catch (err) {
       console.error(`  ✗ Failed to remove OpenCode MCP registration: ${err.message}`);
+    }
+  }
+
+  for (const filePath of zedSettingsCandidates()) {
+    try {
+      if (!fs.existsSync(filePath)) continue;
+      const data = parseJsonc(fs.readFileSync(filePath, "utf8"));
+      let changed = false;
+      if (data.context_servers && data.context_servers.supercompress) {
+        delete data.context_servers.supercompress;
+        if (Object.keys(data.context_servers).length === 0) delete data.context_servers;
+        changed = true;
+      }
+      if (data.mcpServers && data.mcpServers.supercompress) {
+        delete data.mcpServers.supercompress;
+        if (Object.keys(data.mcpServers).length === 0) delete data.mcpServers;
+        changed = true;
+      }
+      if (changed) {
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+        removed.push("Zed");
+      }
+    } catch (err) {
+      console.error(`  ✗ Failed to remove Zed MCP registration: ${err.message}`);
     }
   }
 
@@ -665,7 +800,7 @@ const EXTRA_AGENTS = [
   ["Mentat", ["mentat"], [".mentat"]],
   ["Sweep", ["sweep"], [".sweep"]],
   ["Tabby", ["tabby"], [".tabby"]],
-  ["Zed AI", ["zed"], [".config/zed"]],
+  ["Zed", ["zed"], [".config/zed", "Library/Application Support/Zed", "AppData/Roaming/Zed"]],
   ["Void", ["void"], [".void"]],
   ["PearAI", ["pearai"], [".pearai"]],
   ["Supermaven", ["supermaven"], [".supermaven"]],
@@ -708,6 +843,7 @@ const INSTALL_CHECKS = {
   "Claude Code": () => commandExists("claude"),
   Aider: () => commandExists("aider"),
   Codex: () => commandExists("codex"),
+  Zed: () => zedInstalled(),
 };
 
 // ── Shell profile helpers ──
@@ -793,14 +929,22 @@ function detectAll() {
     const directory = agent.directories
       .map((relative) => path.join(HOME, relative))
       .find((candidate) => fs.existsSync(candidate));
-    const command = agent.commands.find((candidate) => commandExists(candidate));
-    if (directory || command) {
+    // Zed: never trust bare `which zed` (zsh ships an unrelated `zed` function).
+    const command = agent.name === "Zed"
+      ? (zedInstalled() ? "zed" : null)
+      : agent.commands.find((candidate) => commandExists(candidate));
+    const installedExtra = agent.name === "Zed"
+      ? zedInstalled()
+      : Boolean(directory || command);
+    if (installedExtra) {
       found.push({
         name: agent.name,
-        configPath: directory || null,
+        configPath: directory || (agent.name === "Zed" ? path.dirname(resolveZedSettingsPath()) : null),
         installed: true,
-        autoConfigurable: false,
-        description: agent.description,
+        autoConfigurable: agent.name === "Zed",
+        description: agent.name === "Zed"
+          ? "Zed Agent MCP via settings.json context_servers (auto-configured by setup/plugin)"
+          : agent.description,
       });
     }
   }
@@ -1346,7 +1490,7 @@ function writeAgentInstructionFiles() {
 
 /**
  * Full auto install: MCP everywhere detected + Cursor/Claude/Codex hooks + instruction files.
- * Headroom-parity path for true traffic auto is `supercompress wrap <agent>`.
+ * This is the default path used by `supercompress setup` / `plugin`.
  */
 function installAutoPlugin() {
   const found = detectAll();

@@ -6,14 +6,14 @@
     "deploy:prod": "bash scripts/deploy-prod.sh",
     "launch:check": "bash scripts/hard-launch-check.sh",
     "release:check": "bash scripts/release-check.sh",
-    "check:version": "node scripts/check-versions.js",
-    "mcp": "node mcp/server.js"
+    "mcp": "node mcp/server.js",
+    "check:version": "node scripts/check-versions.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "firebase-admin": "^13.10.0",
     "openfork": "^1.17.36",
     "stripe": "^22.3.0",
-    "supercompress-proxy": "^0.5.14"
+    "supercompress-proxy": "^0.5.15"
   }
 }
