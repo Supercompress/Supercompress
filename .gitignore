@@ -113,3 +113,4 @@ launch-video/
 # Demo build output
 examples/yc-demo/out/
 scripts/cleanup-auth-stubs.js
+graphify-out/
