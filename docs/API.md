@@ -19,11 +19,11 @@ from supercompress import compress_context
 
 result = compress_context(
     text=open("context.txt").read(),
-    question="What does fetch return when the row is missing?",
+    query="What does fetch return when the row is missing?",
 )
 
 print(result.compressed_text)       # send to your LLM
-print(result.tokens_saved_pct)        # tokens removed before your LLM call
+print(result.tokens_saved_pct)      # tokens removed before your LLM call
 print(result.original_tokens, result.kept_tokens)
 ```
 
@@ -59,7 +59,7 @@ SuperCompress supports three compression modes:
 Query-aware context compiler. Removes the most tokens it can while preserving answer-critical evidence. No budget needed.
 
 ```python
-result = compress_context(text, question)  # auto-compiler
+result = compress_context(text, query)  # local compiler fallback
 ```
 
 ### Precision mode
@@ -89,7 +89,7 @@ Additional response fields:
 Explicit token budget — kept for research baselines.
 
 ```python
-result = compress_context(text, question, budget_ratio=0.35)
+result = compress_context(text, query, budget_ratio=0.35)
 ```
 
 ## Domain Preprocessors
@@ -131,9 +131,12 @@ The router samples the first 50 lines and classifies them:
 ### Accessing preprocessor info
 
 ```python
-result = compress_context(text, question)
-print(f"Preprocessor: {result.preprocessor}")  # "json", "code", "log", or "none"
+result = compress_context(text, query)
+print(result.compressed_text)
+print(result.policy_name, result.mode, result.tokens_saved_pct)
 ```
+
+Hosted responses may also include engine-specific fields such as `kept_blocks` / `dropped_blocks` on the raw JSON; the shared `CompressResult` exposes the common metrics above.
 
 ## CCR — Cache, Compress, Retrieve
 
@@ -170,72 +173,71 @@ const result = SuperCompressEngine.compressCCR(context, query, model, { enableMa
 
 ## Functions
 
-### `compress_context(text, question, budget_ratio=0.35, policy=None, checkpoint=None)`
+### `compress_for_turn(context, user_query, context_blocks=None, budget_ratio=0.35, mode="compiler")`
 
-Compress a single string. Returns `CompressResult`.
+Query-aware local compression. Returns a shared `CompressResult` (same type as the hosted client).
 
 | Parameter | Type | Default | Notes |
 |-----------|------|---------|-------|
-| `text` | str | required | Full context to trim |
-| `question` | str | required | Current user query — drives retention |
-| `budget_ratio` | float | `0.35` | Fraction of tokens to keep, `(0, 1]` (fixed-ratio mode only) |
-| `policy` | `EvictionPolicy` | learned | Override with `FIFO()`, `TruncationPolicy()`, etc. |
-| `checkpoint` | str | `default.pt` | Path to trained weights |
+| `context` | str | required | Full context to trim (ignored when `context_blocks` is set) |
+| `user_query` | str | required | Current user query — drives retention (not appended to output) |
+| `context_blocks` | list[str] \| None | `None` | Optional list of blocks joined before compression |
+| `budget_ratio` | float | `0.35` | Fraction of lines to keep; must be in `(0, 1]` |
+| `mode` | str | `"compiler"` | Local `"compiler"`, or `"precision"` (hosted; requires `SUPERCOMPRESS_API_KEY`) |
 
-**Raises:** `ValueError` if `budget_ratio` ∉ `(0, 1]`.
-
-**Empty input:** returns `policy_name="noop"` with zero tokens.
-
-### `compress_for_turn(context_blocks, user_query, budget_ratio=0.35)`
-
-Merge blocks with `\n\n---\n\n`, then compress. Returns `(compressed_text, CompressResult)`.
+**Raises:** `ValueError` if `budget_ratio` ∉ `(0, 1]`. `RuntimeError` if `mode="precision"` without an API key.
 
 ```python
-compressed, stats = compress_for_turn(
-    ["## Notes\n…", "## Code\n…"],
-    "Summarize the API",
+from supercompress import compress_for_turn
+
+result = compress_for_turn(
+    context="",
+    user_query="Summarize the API",
+    context_blocks=["## Notes\n…", "## Code\n…"],
+    budget_ratio=0.35,
 )
+print(result.compressed_text, result.tokens_saved_pct)
 ```
 
-### `compare_policies(text, question, budget_ratio=0.35)`
+### `compress_context(text, query, budget_ratio=0.35)`
 
-Returns `dict[str, CompressResult]` for FIFO, Truncation, Summarization, H2O, and SuperCompress.
+Alias for `compress_for_turn` with a single context string. Returns `CompressResult`.
 
 ```python
-for name, r in compare_policies(ctx, question).items():
-    print(name, r.kept_tokens, f"{r.tokens_saved_pct:.1f}%")
+from supercompress import compress_context
+
+result = compress_context(ctx, "What does fetch return?")
 ```
 
-### `compress_detailed(text, question, ...)`
-
-Same as `compress_context`, plus `List[LineAnnotation]` with per-line keep/drop reasons.
+### Hosted client — `SuperCompress.compress(...)`
 
 ```python
-result, lines = compress_detailed(ctx, question)
-for ln in lines:
-    if not ln.kept:
-        print(ln.line_index, ln.reason)
+from supercompress.client import SuperCompress
+
+sc = SuperCompress(api_key="sc_live_…")
+result = sc.compress(context, query, mode="precision")
+# same CompressResult type as local compress_for_turn
 ```
-
-### `middle_truncation_failure_case()`
-
-Returns `(context, question)` where head+tail truncation loses a middle answer — use for demos and tests.
 
 ## `CompressResult`
 
+Shared by local engine and hosted API (`supercompress.result.CompressResult`).
+
 | Field | Type | Description |
 |-------|------|-------------|
-| `original_text` | str | Input context |
 | `compressed_text` | str | Trimmed context for your LLM |
-| `original_tokens` | int | Tokens before eviction |
+| `original_tokens` | int | Tokens before compression |
 | `kept_tokens` | int | Tokens retained |
 | `tokens_saved_pct` | float | `(1 - kept/original) × 100` |
-| `compression_ratio` | float | Property: `original / kept` |
-| `policy_name` | str | `SuperCompress`, `H2O-fallback`, or baseline name |
-| `budget_ratio` | float | Retention budget used |
-| `preprocessor` | str | `json`, `code`, `log`, or `none` |
-| `kept_line_ratio` | float | Share of lines kept (includes sink/recent) |
-| `question` | str | Query used |
+| `tokens_saved` | int \| None | `original - kept` (filled in `__post_init__`) |
+| `policy_name` | str | e.g. `local-query-aware`, `SuperCompress-compiler` |
+| `mode` | str | `compiler` or `precision` |
+| `keep_ratio` | float | Retention budget used |
+| `kept_line_ratio` | float | Share of lines kept (API; local may be `0`) |
+| `cache_prefix_applied` | bool | Hosted cache-aligner flag |
+| `compression_risk` | float \| None | Verifier risk (when available) |
+| `confidence` | float \| None | Confidence score (when available) |
+| `ccr` | dict \| None | CCR retrieve payload (when enabled) |
 
 ## Environmental impact
 

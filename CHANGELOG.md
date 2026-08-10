@@ -13,6 +13,50 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+### Python library
+- Shared `CompressResult` for local + hosted client (`supercompress.result`)
+- Honest `mode="precision"` (hosted API when keyed; otherwise raises)
+- Validate `budget_ratio` in `(0, 1]`; empty context returns `noop`
+- Stop appending the user query onto local `compressed_text`
+- Remove import-time warning when no API key is set
+- Fix OpenAI / LangChain / Anthropic integration examples and middleware contracts
+- `serve` extra installs FastAPI + Uvicorn (not Flask/Gunicorn); add `py.typed`
+
+### API / dashboard
+- Durable per-key usage metering + dashboard KPI preference for billing meter
+- Remove dead store Auth-stub helpers; CCR uses Firestore (docs match)
+- Fix demo CO₂ grams over-count (`×1000` bug)
+
+### Coding agent plugin
+- See **[0.5.17](#0517--2026-08-10)** / **[0.5.16](#0516--2026-08-09)** below
+
+### Repository hygiene
+- Remove Fly/Docker/Render deploy debris (Vercel-only production)
+- Delete unused frontend CSS/JS; drop duplicate tracked `launch.mp4`
+- Remove unused `openfork` dependency; strengthen GitHub CI smoke tests
+- Host redirects for `internal` / `arjun` → `/dashboard`
+- Homepage: stop preloading hero MP4; `preload="metadata"` on video
+
+---
+
+## [0.5.17] — 2026-08-10
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Fix agent attribution**: Cursor postToolUse no longer mislabels usage as `claude_code`
+- Cursor hooks set `SUPERCOMPRESS_AGENT_NAME=Cursor` explicitly
+- Stop using `configured_agents[0]` as the compress agent name
+
+---
+
+## [0.5.16] — 2026-08-09
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Hard paywall surfacing**: hooks + MCP no longer silently fail-open on HTTP 402
+- Loud `[SuperCompress PAYWALL]` CTA; proxy returns 402 with billing URL
+- Restore missing `compressIncremental` export used by MCP `compress_context`
+
 ---
 
 ## [0.5.7] — 2026-08-01
@@ -98,4 +142,4 @@ Public page: https://www.supercompress.dev/changelog
 
 - [GitHub releases](https://github.com/Supercompress/Supercompress/releases)
 - [npm: supercompress-proxy](https://www.npmjs.com/package/supercompress-proxy)
-- [Coding agents docs](https://www.supercompress.dev/docs/coding-agents)
+- [Coding agents docs](https://docs.supercompress.dev/coding-agents)

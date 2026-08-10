@@ -37,24 +37,9 @@ pip install -e ".[serve,firebase]"
 SC_KEY_STORE=firestore python scripts/local_web_server.py
 ```
 
-For production, the live site ships serverless API routes on Vercel (`/api/health`, `/api/keys`, `/api/v1/compress`) with keys stored in Vercel Blob. No separate deploy step when using the main Vercel project.
+For production, deploy on **Vercel** only. The live site ships serverless API routes (`/api/health`, `/api/keys`, `/api/v1/compress`) with keys in Vercel Blob / Firebase — no Fly.io, Docker, or Render step.
 
-**Optional self-host (Python FastAPI)**
-
-```bash
-fly apps create supercompress-api
-fly volumes create sc_data --size 1 --region sjc -a supercompress-api
-fly deploy
-```
-
-**Docker (local / other hosts)**
-
-```bash
-docker build -t supercompress-api .
-docker run -p 8790:8790 -e SC_AUTH_DEV=1 -e SC_KEY_STORE=file -v sc-data:/data supercompress-api
-```
-
-**Render** — use the included `render.yaml` blueprint (Docker + persistent disk for keys).
+Local Python FastAPI (`scripts/local_web_server.py`) is for development only.
 
 Set `SC_API_BASE` in `firebase-config.js` only if the dashboard and API are on different origins. On the live Vercel site, leave it empty (`""`) so the dashboard hits the same origin.
 

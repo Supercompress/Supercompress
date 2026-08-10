@@ -45,7 +45,6 @@ ARCHITECTURE.md
 launchvideoforwebsite/
 web/assets/video/*.mp4
 !web/assets/video/launch-post.mp4
-!web/assets/video/launch.mp4
 web/assets/pitch/
 
 # Internal / ops pages — never in public repo
@@ -114,3 +113,9 @@ launch-video/
 examples/yc-demo/out/
 scripts/cleanup-auth-stubs.js
 graphify-out/
+
+# Local previews, ONNX weights, film work — never commit (private / huge)
+/local/
+/models/
+/videos/
+*.onnx

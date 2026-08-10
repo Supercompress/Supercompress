@@ -8,6 +8,72 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "docs.supercompress.dev"
+        }
+      ],
+      "destination": "/docs",
+      "permanent": false
+    },
+    {
+      "source": "/docs",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "https://docs.supercompress.dev/",
+      "permanent": true
+    },
+    {
+      "source": "/docs/",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "https://docs.supercompress.dev/",
+      "permanent": true
+    },
+    {
+      "source": "/docs/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.supercompress.dev"
+        }
+      ],
+      "destination": "https://docs.supercompress.dev/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/docs",
+      "has": [
+        {
+          "type": "host",
+          "value": "supercompress.dev"
+        }
+      ],
+      "destination": "https://docs.supercompress.dev/",
+      "permanent": true
+    },
+    {
+      "source": "/docs/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "supercompress.dev"
+        }
+      ],
+      "destination": "https://docs.supercompress.dev/:path*",
+      "permanent": true
+    },
+    {
       "source": "/headroom",
       "destination": "/headroom-api",
       "permanent": true
@@ -135,7 +201,7 @@
           "value": "internal.supercompress.dev"
         }
       ],
-      "destination": "/internal",
+      "destination": "/dashboard",
       "permanent": false
     },
     {
@@ -146,7 +212,7 @@
           "value": "arjun.supercompress.dev"
         }
       ],
-      "destination": "/founder",
+      "destination": "/dashboard",
       "permanent": false
     },
     {
@@ -922,16 +988,6 @@
     }
   ],
   "rewrites": [
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "docs.supercompress.dev"
-        }
-      ],
-      "destination": "/docs/index.html"
-    },
     {
       "source": "/quickstart",
       "has": [

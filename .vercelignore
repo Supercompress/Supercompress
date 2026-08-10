@@ -36,4 +36,17 @@ web/assets/video/supercompress-launch.mp4
 web/assets/video/supercompress-lovable.mp4
 models
 models/**
+videos
+videos/**
 launch-video/**
+# Local-only previews — never ship
+local
+local/**
+exports
+exports/**
+docs/enterprise
+web/local-only
+web/pitch.html
+web/internal.html
+web/outreach.html
+.env.*

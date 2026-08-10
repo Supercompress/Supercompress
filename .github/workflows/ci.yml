@@ -12,7 +12,37 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Package import smoke
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Python package smoke
         run: |
-          pip install -e . -q || pip install -r requirements.txt -q
-          python -c "import supercompress; print('ok', getattr(supercompress, '__version__', 'dev'))"
+          pip install -e . -q
+          python - <<'PY'
+          from supercompress import CompressResult, compress_for_turn
+          from supercompress.client import CompressResult as CR2
+          assert CompressResult is CR2
+          r = compress_for_turn("a\nb\nc\nd", "what is b?", budget_ratio=0.5)
+          assert isinstance(r, CompressResult)
+          assert r.compressed_text  # context only — query is not auto-appended
+          assert "what is b?" not in r.compressed_text
+          try:
+              compress_for_turn("x", "q", budget_ratio=0)
+              raise SystemExit("expected ValueError")
+          except ValueError:
+              pass
+          try:
+              compress_for_turn("x", "q", mode="precision")
+              raise SystemExit("expected RuntimeError without key")
+          except RuntimeError:
+              pass
+          print("ok", r.policy_name, r.tokens_saved_pct)
+          PY
+          python examples/integrations/openai_wrapper.py >/dev/null
+          python examples/integrations/langchain_hook.py >/dev/null
+          python examples/demo_compare.py >/dev/null
+      - name: JS syntax smoke
+        run: |
+          node --check api/demo/compress.js
+          node --check api/_lib/store.js
+          node --check api/_lib/engine.js

@@ -103,7 +103,7 @@ response = requests.get(
 original = response.json()["original"]
 ```
 
-CCR caches original content in Vercel Blob (server-side) and an LRU Map (browser-side). Retrieval uses the same API key as compression.
+CCR caches original content in Firestore (server-side) and an LRU Map (browser-side). Retrieval uses the same API key as compression.
 
 See the [full guide](/reversible-compression-ccr) for details.
 
@@ -112,7 +112,7 @@ See the [full guide](/reversible-compression-ccr) for details.
 ## Local HTTP server
 
 ```bash
-pip install -e ".[serve]"
+pip install -e ".[serve]"   # FastAPI + Uvicorn
 python scripts/local_web_server.py
 # POST http://127.0.0.1:8790/api/compress
 ```
@@ -123,8 +123,7 @@ Example body:
 {
   "context": "long text…",
   "query": "What does fetch return?",
-  "budget_ratio": 0.35,
-  "compare": true
+  "budget_ratio": 0.35
 }
 ```
 
@@ -156,9 +155,8 @@ const result = SuperCompressEngine.compressCCR(context, query, model, { enableMa
 
 | Call | Policy |
 |------|--------|
-| `compress_context(text, q)` | SuperCompress (or H2O fallback if no checkpoint) |
-| `compress_context(..., policy=FIFO())` | Explicit baseline |
-| `compare_policies(text, q)` | All policies for benchmarks |
+| `compress_for_turn(...)` / `compress_context(text, q)` | Local query-aware engine (`local-query-aware`) |
+| `SuperCompress(...).compress(...)` | Hosted API (`compiler` / `precision`) |
 
 ---
 
@@ -166,7 +164,7 @@ const result = SuperCompressEngine.compressCCR(context, query, model, { enableMa
 
 | Path | Purpose |
 |------|---------|
-| `examples/demo_compare.py` | CLI policy comparison |
+| `examples/demo_compare.py` | Local compress demo (shared `CompressResult`) |
 | `examples/integrations/openai_wrapper.py` | Message list wrapper |
 | `examples/integrations/langchain_hook.py` | History compression hook |
 | `examples/integrations/raw_pipeline.py` | Minimal stdin/stdout |

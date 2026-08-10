@@ -1,8 +1,0 @@
-/* Optional display face used by a couple of launch pages. Falls back safely. */
-@font-face {
-  font-family: "Platypi";
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: local("Platypi"), local("Georgia");
-}
