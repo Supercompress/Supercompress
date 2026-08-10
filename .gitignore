@@ -99,6 +99,19 @@ scripts/__pycache__/
 # Screenshots and local media
 screenshots/
 
+# Welcome / weekly email ops — LOCAL ONLY (never OSS)
+# Canonical copies: ~/agent-bridge/private/supercompress-email/
+scripts/drain_welcome_emails.py
+scripts/drain_weekly_emails.py
+scripts/dev.supercompress.welcome-drain.plist
+scripts/outreach_suppression.py
+**/email-previews/**
+**/*prospects*
+**/CONTACTS_DATABASE*
+**/DO_NOT_CONTACT*
+**/fresh_leads*
+**/*-email-draft*
+
 # Welcome email drain secret
 outreach/.welcome_drain_secret
 

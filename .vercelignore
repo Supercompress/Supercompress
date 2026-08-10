@@ -49,4 +49,8 @@ web/local-only
 web/pitch.html
 web/internal.html
 web/outreach.html
+scripts/drain_welcome_emails.py
+scripts/drain_weekly_emails.py
+scripts/dev.supercompress.welcome-drain.plist
+scripts/outreach_suppression.py
 .env.*

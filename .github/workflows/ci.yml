@@ -46,3 +46,7 @@ jobs:
           node --check api/demo/compress.js
           node --check api/_lib/store.js
           node --check api/_lib/engine.js
+      - name: No PII / private email ops in tree
+        run: node scripts/check-no-pii.js
+      - name: Version pins
+        run: node scripts/check-versions.js

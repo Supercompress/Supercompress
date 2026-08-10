@@ -17,10 +17,12 @@ const { loadStore, mutateStore } = require("./_lib/store");
 const { verifyUser } = require("./_lib/auth");
 
 const REF_BASE = "https://supercompress.dev";
-const FOUNDER_EMAILS = new Set([
-  "arjunkshah21@gmail.com",
-  "arjunkshah12345@gmail.com",
-]);
+const FOUNDER_EMAILS = new Set(
+  String(process.env.FOUNDER_ADMIN_EMAILS || "arjunkshah21@gmail.com")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+);
 const PLAN_PRICES = { starter: 1000, pro: 2000, business: 6000 };
 
 /* ── Helpers ── */

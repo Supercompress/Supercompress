@@ -1,17 +1,8 @@
 /**
- * Transactional + weekly product mail.
- * Primary: Resend (RESEND_API_KEY). Fallback: queue → gog Gmail drain scripts.
- *
- * Owned by Mailer (Priya Shah) under CoS Client — product lifecycle only.
- * Brand voice: Jules Hart (Voice). From-user: Arjun at SuperCompress.
- *
- * Email lanes (do not mix):
- * - Product / marketing / welcome / weekly / blasts → arjunkshah21@gmail.com · branded HTML
- * - Developer cold outreach → arjunkshah12345@gmail.com · plain text only
+ * Transactional product email helpers (welcome / weekly / receipts).
+ * From-address and reply-to come from env (WELCOME_FROM_EMAIL / WELCOME_REPLY_TO).
  *
  * Weekly tips: api/_lib/weekly-tips.json
- * - byCampaign[ISO-week] → brand-new tip for that week (agent automation)
- * - seed[] → fallback rotation if no campaign tip yet
  * Ship digests: api/_lib/weekly-ship.json
  */
 

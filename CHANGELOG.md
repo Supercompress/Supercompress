@@ -16,6 +16,7 @@ Public page: https://www.supercompress.dev/changelog
 ### Site / docs
 - Sync public npm pins to `supercompress-proxy@0.5.17`; extend `check-versions.js` to gate those pins
 - Remove leftover Analytics spark DOM + unused series helpers from dashboard
+- Keep user emails / outreach dumps / welcome-drain ops **out of OSS** (gitignore + CI PII gate); drain scripts live under `~/agent-bridge/private/supercompress-email/`
 
 ### Python library
 - Shared `CompressResult` for local + hosted client (`supercompress.result`)
