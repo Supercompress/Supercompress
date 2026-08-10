@@ -46,6 +46,39 @@ jobs:
           node --check api/demo/compress.js
           node --check api/_lib/store.js
           node --check api/_lib/engine.js
+          node --check api/_lib/billing-ledger.js 2>/dev/null || true
+          node --check packages/proxy/src/server.js
+          node --check packages/proxy/src/compressor.js
+          node --check packages/proxy/src/forwarder.js
+      - name: Proxy package tests
+        run: |
+          cd packages/proxy
+          node test/smoke.js
+          node test/agent-plugins.js
+          node test/uninstall-clean.js
+          if [ -f test/protocol-safety.js ]; then node test/protocol-safety.js; fi
+      - name: Proxy npm pack clean-install smoke
+        run: |
+          set -euo pipefail
+          cd packages/proxy
+          tgz=$(npm pack 2>/dev/null | tail -1)
+          test -n "$tgz" && test -f "$tgz"
+          tmp=$(mktemp -d)
+          abs_tgz="$PWD/$tgz"
+          cd "$tmp"
+          npm init -y >/dev/null
+          npm install "$abs_tgz"
+          node -e "require('supercompress-proxy/src/compressor'); require('supercompress-proxy/src/forwarder'); console.log('pack ok')"
+          node - <<'NODE'
+          const fs = require("fs");
+          const p = require.resolve("supercompress-proxy/src/forwarder");
+          const s = fs.readFileSync(p, "utf8");
+          if (/require\(["']node-fetch["']\)/.test(s)) {
+            console.error("FAIL: packed forwarder still requires node-fetch");
+            process.exit(1);
+          }
+          console.log("native fetch ok");
+          NODE
       - name: No PII / private email ops in tree
         run: node scripts/check-no-pii.js
       - name: Version pins

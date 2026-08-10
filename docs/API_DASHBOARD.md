@@ -2,27 +2,25 @@
 
 Sign up, create API keys, and call the hosted compress endpoint with usage tracking.
 
-**Live:** [supercompress.dev/dashboard](https://supercompress.dev/dashboard)
+**Live:** [supercompress.dev/dashboard](https://www.supercompress.dev/dashboard)
 
-## Quick start (local dev)
+## Production
 
-```bash
-pip install -e ".[serve]"
-SC_AUTH_DEV=1 SC_KEY_STORE=memory python scripts/local_web_server.py
-```
+The product API and dashboard ship on **Vercel** from this repository:
 
-Open [http://127.0.0.1:8790/dashboard](http://127.0.0.1:8790/dashboard). Dev mode accepts any email — no Firebase required.
+- Serverless routes under `api/` (`/api/health`, `/api/keys`, `/api/v1/compress`, billing, connect-device, …)
+- Dashboard static UI under `web/`
+- Keys / usage / billing: Firebase Auth + Firestore (with durable `key_usage` / `billing` collections)
 
-## Production setup
+There is no separate FastAPI / `local_web_server.py` runtime in this tree.
 
-### 1. Firebase project
+### Firebase
 
 1. Create a [Firebase project](https://console.firebase.google.com/)
 2. Enable **Authentication** → Email/Password and Google
 3. Create a **Firestore** database
-4. Generate a **service account** JSON → set `GOOGLE_APPLICATION_CREDENTIALS`
-5. Add **supercompress.dev** to Firebase Auth → Settings → Authorized domains
-6. Copy web app config into env vars (see `scripts/generate-firebase-config.js`)
+4. Configure the Vercel project with Firebase Admin credentials + web config
+5. Add **supercompress.dev** / **www.supercompress.dev** to Authorized domains
 
 Deploy Firestore rules:
 
@@ -30,25 +28,14 @@ Deploy Firestore rules:
 firebase deploy --only firestore:rules
 ```
 
-### 2. Run the API server
-
-```bash
-pip install -e ".[serve,firebase]"
-SC_KEY_STORE=firestore python scripts/local_web_server.py
-```
-
-For production, deploy on **Vercel** only. The live site ships serverless API routes (`/api/health`, `/api/keys`, `/api/v1/compress`) with keys in Vercel Blob / Firebase — no Fly.io, Docker, or Render step.
-
-Local Python FastAPI (`scripts/local_web_server.py`) is for development only.
-
-Set `SC_API_BASE` in `firebase-config.js` only if the dashboard and API are on different origins. On the live Vercel site, leave it empty (`""`) so the dashboard hits the same origin.
+Local static preview of the site can use any static server against `web/`; authenticated API calls still need a deployed (or emulated) Vercel/`api` backend.
 
 ## Dashboard
 
 | URL | Description |
 |-----|-------------|
 | `/dashboard` | Sign up / sign in, manage keys, view usage |
-| Docs link | [docs/API.md](./API.md) |
+| Docs | [docs/API.md](./API.md) |
 
 ### Key management
 
@@ -74,8 +61,10 @@ Header: `Authorization: Bearer <firebase_id_token>`
 
 ### Compress (API key)
 
+Prefer **POST** with header auth (query-string keys/context are deprecated):
+
 ```http
-POST /v1/compress
+POST /api/v1/compress
 X-API-Key: sc_live_xxxxxxxx
 Content-Type: application/json
 
@@ -92,19 +81,10 @@ Response includes `compressed_text`, token counts, and savings metrics. Usage is
 
 ### Playground (no key)
 
-`POST /api/compress` remains unauthenticated for the browser demo and local testing.
-
-## Environment variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SC_AUTH_DEV` | off | Accept `dev:uid:email` tokens |
-| `SC_KEY_STORE` | `auto` | `memory`, `firestore`, or `auto` |
-| `SC_KEY_STORE_FILE` | — | JSON file persistence (dev) |
-| `GOOGLE_APPLICATION_CREDENTIALS` | — | Firebase service account path |
+`POST /api/demo/compress` remains unauthenticated for the browser demo.
 
 ## Security
 
-- Full API keys are never stored — only SHA-256 hashes
-- Firestore is server-side only; clients use FastAPI + Firebase Auth
-- Revoked keys are removed from the lookup index immediately
+- Long-lived API key secrets are stored as hashes (plus short-lived device-link secrets in Auth/Firestore during connect)
+- Firestore is server-side only; the dashboard uses Firebase Auth client SDK + same-origin API calls
+- Revoked keys stop authenticating immediately
