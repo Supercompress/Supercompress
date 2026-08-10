@@ -50,9 +50,9 @@ def resolve_static(path: str) -> Path | None:
 
 
 def compress_local(context: str, query: str, budget_ratio: float) -> dict:
-    from supercompress.compress import compress_detailed
+    from supercompress import compress_for_turn
 
-    result, lines = compress_detailed(context, query, budget_ratio=budget_ratio)
+    result = compress_for_turn(context, query, budget_ratio=budget_ratio)
     return {
         "compressed_text": result.compressed_text,
         "original_tokens": result.original_tokens,
@@ -60,12 +60,8 @@ def compress_local(context: str, query: str, budget_ratio: float) -> dict:
         "tokens_saved_pct": round(result.tokens_saved_pct, 2),
         "kept_line_ratio": round(result.kept_line_ratio, 3),
         "policy_name": result.policy_name,
-        "budget_ratio": result.budget_ratio,
+        "budget_ratio": result.keep_ratio,
         "mode": "local-python",
-        "line_annotations": [
-            {"line_index": a.line_index, "text": a.text, "kept": a.kept, "reason": a.reason}
-            for a in lines
-        ],
     }
 
 

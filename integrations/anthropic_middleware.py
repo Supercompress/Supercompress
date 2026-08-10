@@ -52,8 +52,9 @@ class SuperCompressAnthropic:
     def messages(self):
         return _MessagesWrapper(self)
 
-    def _compress_messages(self, messages: list[dict], system: Optional[str] = None) -> list[dict]:
-        """Compress conversation for Anthropic message format."""
+    def _compress_messages(self, messages: list[dict], system: Optional[str] = None) -> list[dict]:  # noqa: ARG002
+        """Compress message history only; leave Anthropic ``system=`` untouched."""
+        _ = system
         if len(messages) <= 1:
             return messages
 
@@ -65,8 +66,8 @@ class SuperCompressAnthropic:
         history = messages[:-1]
         query = last_msg["content"]
 
-        # Format history
-        context_parts = [system] if system else []
+        # History only — keep Anthropic `system=` wholly outside compression.
+        context_parts = []
         for msg in history:
             content = msg.get("content", "")
             if isinstance(content, list):
@@ -88,7 +89,7 @@ class SuperCompressAnthropic:
             f"({result.tokens_saved_pct:.1f}%% saved)"
         )
 
-        # Rebuild
+        # Rebuild — query appended once (compress_for_turn does not include it).
         compressed_content = (
             f"[SuperCompress: {result.original_tokens}→{result.kept_tokens} tok, "
             f"{result.tokens_saved_pct:.1f}%% saved]\n\n"

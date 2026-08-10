@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Sequence
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 
 from supercompress import compress_for_turn
 
@@ -30,13 +35,21 @@ def compress_history(
     last = non_system[-1]
     middle = non_system[:-1]
     blocks = [f"[{m.role}] {m.content}" for m in middle]
-    compressed, stats = compress_for_turn(blocks, last.content, budget_ratio=budget_ratio)
+    result = compress_for_turn(
+        context="",
+        user_query=last.content,
+        context_blocks=blocks,
+        budget_ratio=budget_ratio,
+    )
 
-    out = system + [Message(role="assistant", content=f"[compressed context]\n{compressed}"), last]
+    out = system + [
+        Message(role="assistant", content=f"[compressed context]\n{result.compressed_text}"),
+        last,
+    ]
     meta = {
-        "original_tokens": stats.original_tokens,
-        "kept_tokens": stats.kept_tokens,
-        "tokens_saved_pct": stats.tokens_saved_pct,
+        "original_tokens": result.original_tokens,
+        "kept_tokens": result.kept_tokens,
+        "tokens_saved_pct": result.tokens_saved_pct,
     }
     return out, meta
 

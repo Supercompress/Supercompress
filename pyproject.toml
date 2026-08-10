@@ -33,12 +33,12 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://supercompress.dev"
-Documentation = "https://www.supercompress.dev/docs/"
+Documentation = "https://docs.supercompress.dev/"
 Repository = "https://github.com/Supercompress/Supercompress"
 Issues = "https://github.com/Supercompress/Supercompress/issues"
 
 [project.optional-dependencies]
-serve = ["flask>=3.0", "gunicorn>=22.0"]
+serve = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "pydantic>=2.0"]
 dev = ["build>=1.0", "twine>=5.0"]
 
 [tool.setuptools.packages.find]

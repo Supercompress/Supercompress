@@ -32,7 +32,7 @@ def main() -> None:
                 "kept_tokens": result.kept_tokens,
                 "tokens_saved_pct": result.tokens_saved_pct,
                 "policy": result.policy_name,
-                "co2_kg_avoided": impact.co2_kg_avoided,
+                "co2_kg_avoided": impact.co2_saved_kg,
             },
             indent=2,
         ),

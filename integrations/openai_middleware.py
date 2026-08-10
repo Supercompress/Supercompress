@@ -141,6 +141,7 @@ class _ChatWrapper:
     def __init__(self, parent: SuperCompressOpenAI):
         self._parent = parent
 
+    @property
     def completions(self):
         return _CompletionWrapper(self._parent)
 

@@ -23,51 +23,15 @@ Typical usage:
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
 from typing import Any, Optional
 
 import httpx
 
+from .result import CompressResult
+
 BASE_URL = os.environ.get("SUPERCOMPRESS_API_URL", "https://www.supercompress.dev")
 COMPRESS_ENDPOINT = "/api/v1/compress"
 RETRIEVE_ENDPOINT = "/api/retrieve"
-
-
-@dataclass
-class CompressResult:
-    """Result from the hosted SuperCompress API.
-
-    ``tokens_saved_pct`` is percent of prompt tokens removed:
-    ``(1 - kept/original) * 100``.
-    """
-
-    compressed_text: str
-    original_tokens: int
-    kept_tokens: int
-    tokens_saved: int
-    tokens_saved_pct: float
-    kept_line_ratio: float
-    policy_name: str
-    mode: str
-    keep_ratio: float
-    cache_prefix_applied: bool
-    compression_risk: Optional[float] = None
-    confidence: Optional[float] = None
-    ccr: Optional[dict[str, Any]] = None
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "compressed_text": self.compressed_text,
-            "original_tokens": self.original_tokens,
-            "kept_tokens": self.kept_tokens,
-            "tokens_saved": self.tokens_saved,
-            "tokens_saved_pct": self.tokens_saved_pct,
-            "kv_savings_pct": self.tokens_saved_pct,  # deprecated alias
-            "policy_name": self.policy_name,
-            "mode": self.mode,
-            "compression_risk": self.compression_risk,
-            "confidence": self.confidence,
-        }
 
 
 class SuperCompress:
@@ -146,17 +110,25 @@ class SuperCompress:
         resp.raise_for_status()
         data = resp.json()
 
+        original = int(data.get("original_tokens", 0) or 0)
+        kept = int(data.get("kept_tokens", 0) or 0)
+        saved = data.get("tokens_saved")
+        if saved is None:
+            saved = max(0, original - kept)
+
         return CompressResult(
             compressed_text=data.get("compressed_text", ""),
-            original_tokens=data.get("original_tokens", 0),
-            kept_tokens=data.get("kept_tokens", 0),
-            tokens_saved=data.get("tokens_saved", 0),
-            tokens_saved_pct=float(data.get("tokens_saved_pct", data.get("kv_savings_pct", 0.0)) or 0.0),
-            kept_line_ratio=data.get("kept_line_ratio", 0.0),
-            policy_name=data.get("policy_name", ""),
+            original_tokens=original,
+            kept_tokens=kept,
+            tokens_saved=int(saved),
+            tokens_saved_pct=float(
+                data.get("tokens_saved_pct", data.get("kv_savings_pct", 0.0)) or 0.0
+            ),
+            kept_line_ratio=float(data.get("kept_line_ratio", 0.0) or 0.0),
+            policy_name=data.get("policy_name", "") or "supercompress",
             mode=data.get("mode", mode),
-            keep_ratio=data.get("keep_ratio", budget_ratio or 0.35),
-            cache_prefix_applied=data.get("cache_prefix_applied", False),
+            keep_ratio=float(data.get("keep_ratio", budget_ratio or 0.35) or 0.35),
+            cache_prefix_applied=bool(data.get("cache_prefix_applied", False)),
             compression_risk=data.get("compression_risk"),
             confidence=data.get("confidence"),
             ccr=data.get("ccr"),
@@ -179,13 +151,12 @@ class SuperCompress:
         return resp.json().get("original")
 
     def close(self) -> None:
-        """Close the underlying HTTP client."""
         self._client.close()
 
-    def __enter__(self) -> SuperCompress:
+    def __enter__(self) -> "SuperCompress":
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         self.close()
 
 

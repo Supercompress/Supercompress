@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local dev server — optional FastAPI wrapper around compress API. Not used on Vercel."""
+"""Local FastAPI static+compress demo. Production is Vercel (api/* + web/)."""
 
 from __future__ import annotations
 
@@ -16,11 +16,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from supercompress import compare_policies, compress_detailed, compress_for_turn
-from supercompress.api.router import router as api_router
+from supercompress import compress_for_turn
 
 api = FastAPI(title="SuperCompress Web", version="0.1.0")
-api.include_router(api_router)
 api.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -33,61 +31,31 @@ class CompressRequest(BaseModel):
     context: str = Field(..., min_length=1, max_length=120_000)
     query: str = Field(default="Summarize this context.", max_length=2000)
     budget_ratio: float = Field(default=0.35, ge=0.05, le=1.0)
-    compare: bool = False
-
-
-def _result_dict(r) -> dict:
-    return {
-        "original_tokens": r.original_tokens,
-        "kept_tokens": r.kept_tokens,
-        "tokens_saved_pct": round(r.tokens_saved_pct, 2),
-        "kept_line_ratio": round(r.kept_line_ratio, 3),
-        "policy_name": r.policy_name,
-        "budget_ratio": r.budget_ratio,
-        "compressed_text": r.compressed_text,
-    }
 
 
 @api.get("/api/health")
 def health() -> dict:
-    return {"ok": True, "service": "supercompress-web"}
+    return {"ok": True, "service": "supercompress-web", "deploy": "local-dev"}
 
 
 @api.post("/api/compress")
-def compress(body: CompressRequest) -> dict:
-    return _demo_compress(body)
-
-
 @api.post("/api/demo/compress")
-def demo_compress(body: CompressRequest) -> dict:
-    return _demo_compress(body)
-
-
-def _demo_compress(body: CompressRequest) -> dict:
+def compress(body: CompressRequest) -> dict:
     try:
-        compressed, result = compress_for_turn(
-            [body.context],
-            body.query,
+        result = compress_for_turn(
+            context=body.context,
+            user_query=body.query,
             budget_ratio=body.budget_ratio,
         )
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    out = {"compressed_text": compressed, **_result_dict(result)}
+    out = result.to_dict()
     out["original_chars"] = len(body.context)
-    out["compressed_chars"] = len(compressed)
+    out["compressed_chars"] = len(result.compressed_text)
     out["char_savings_pct"] = round(
-        (1 - len(compressed) / max(len(body.context), 1)) * 100, 2
+        (1 - len(result.compressed_text) / max(len(body.context), 1)) * 100, 2
     )
-    out["tokens_saved"] = max(0, result.original_tokens - result.kept_tokens)
-    if body.compare:
-        cmp = compare_policies(body.context, body.query, budget_ratio=body.budget_ratio)
-        out["compare"] = {name: _result_dict(r) for name, r in cmp.items()}
-    _, annotations = compress_detailed(body.context, body.query, budget_ratio=body.budget_ratio)
-    out["line_annotations"] = [
-        {"line_index": a.line_index, "text": a.text, "kept": a.kept, "reason": a.reason}
-        for a in annotations
-    ]
     return out
 
 

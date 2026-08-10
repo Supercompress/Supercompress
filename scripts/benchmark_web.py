@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate web/assets/data/benchmarks.json from live SuperCompress runs."""
+"""Generate a lightweight web/assets/data/benchmarks.json from local compress runs."""
 
 from __future__ import annotations
 
@@ -11,13 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from supercompress.benchmarks.metrics import answer_quality_score
-from supercompress.benchmarks.runner import run_policy_benchmarks
-from supercompress.compress import (
-    compare_policies,
-    compress_for_turn,
-    middle_truncation_failure_case,
-)
+from supercompress import compress_for_turn
+from supercompress.benchmarks.metrics import compression_quality_score
 
 OUT = ROOT / "web" / "assets" / "data" / "benchmarks.json"
 
@@ -40,11 +35,16 @@ def _pytest_summary() -> dict:
     return {"passed": passed, "count": count, "summary": line or ("passed" if passed else "failed")}
 
 
-def main() -> None:
-    bench = run_policy_benchmarks(seeds=8, budget_ratio=0.35)
+def _middle_truncation_case() -> tuple[str, str]:
+    head = "\n".join(f"- noise head {i}" for i in range(40))
+    answer = "IMPORTANT: User.fetch returns 404 when the row is missing."
+    tail = "\n".join(f"- noise tail {i}" for i in range(40))
+    return f"{head}\n{answer}\n{tail}", "What does User.fetch return when the row is missing?"
 
-    ctx, question = middle_truncation_failure_case()
-    failure_cmp = compare_policies(ctx, question, budget_ratio=0.1)
+
+def main() -> None:
+    ctx, question = _middle_truncation_case()
+    failure = compress_for_turn(ctx, question, budget_ratio=0.1)
 
     demo_blocks = [
         "## Notes\n" + "\n".join(f"- Context block {i}: padding and metadata" for i in range(1, 12)),
@@ -52,17 +52,20 @@ def main() -> None:
         "## Summary\n1. Trim context\n2. Keep entities\n3. Send to LLM",
     ]
     demo_query = "How does the ApiClient fetch method work?"
-    compressed, demo = compress_for_turn(demo_blocks, demo_query, budget_ratio=0.35)
+    demo = compress_for_turn(
+        context="",
+        user_query=demo_query,
+        context_blocks=demo_blocks,
+        budget_ratio=0.35,
+    )
 
     data = {
-        **bench,
+        "generated_by": "scripts/benchmark_web.py",
+        "engine": "local-query-aware",
         "model": {
-            "params": "~5,000",
-            "feature_dim": 9,
-            "hidden_dim": 64,
-            "train_time_sec": 30,
-            "inference": "CPU · browser + Python",
-            "checkpoint": "checkpoints/default.pt",
+            "params": "local fallback",
+            "inference": "CPU · Python",
+            "note": "Hosted compiler/precision runs on Vercel API",
         },
         "turn_table": [
             {"turn": 1, "without": "2K tokens", "with_sc": "~700 tokens"},
@@ -72,13 +75,15 @@ def main() -> None:
         "failure_case": {
             "question": question,
             "compare": {
-                name: {
-                    "kept_tokens": r.kept_tokens,
-                    "tokens_saved_pct": round(r.tokens_saved_pct, 1),
-                    "answer_quality": answer_quality_score(ctx, r.compressed_text, question),
-                    "has_answer": "404" in r.compressed_text or "User.fetch" in r.compressed_text,
+                "local-query-aware": {
+                    "kept_tokens": failure.kept_tokens,
+                    "tokens_saved_pct": round(failure.tokens_saved_pct, 1),
+                    "answer_quality": compression_quality_score(
+                        failure.original_tokens, failure.kept_tokens
+                    ),
+                    "has_answer": "404" in failure.compressed_text
+                    or "User.fetch" in failure.compressed_text,
                 }
-                for name, r in failure_cmp.items()
             },
         },
         "demo": {
@@ -88,7 +93,7 @@ def main() -> None:
             "tokens_saved_pct": round(demo.tokens_saved_pct, 1),
             "policy": demo.policy_name,
             "input_preview": "\n\n---\n\n".join(demo_blocks)[:1200],
-            "compressed_text": compressed,
+            "compressed_text": demo.compressed_text,
         },
         "tests": _pytest_summary(),
     }
@@ -96,27 +101,6 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(data, indent=2), encoding="utf-8")
     print(f"Wrote {OUT}")
-
-    charts = ROOT / "scripts" / "generate_charts.py"
-    if charts.exists():
-        subprocess.run([sys.executable, str(charts)], cwd=ROOT, check=True)
-
-    adaptive_js = ROOT / "scripts" / "benchmark_adaptive.js"
-    if adaptive_js.exists():
-        proc = subprocess.run(
-            ["node", str(adaptive_js)],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        adaptive = json.loads(proc.stdout)
-        existing = json.loads(OUT.read_text())
-        existing.update(adaptive)
-        OUT.write_text(json.dumps(existing, indent=2), encoding="utf-8")
-        print(f"Merged adaptive benchmarks into {OUT}")
-        if charts.exists():
-            subprocess.run([sys.executable, str(charts)], cwd=ROOT, check=True)
 
 
 if __name__ == "__main__":

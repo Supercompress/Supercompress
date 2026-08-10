@@ -9,12 +9,13 @@ Typical usage:
 
     from supercompress import compress_for_turn
 
-    compressed, stats = compress_for_turn(
-        context_blocks=[system_prompt, tool_outputs, chat_history],
+    result = compress_for_turn(
+        context="",
         user_query=user_message,
+        context_blocks=[system_prompt, tool_outputs, chat_history],
         budget_ratio=0.35,
     )
-    # Send `compressed` to your LLM instead of the full context.
+    # Send `result.compressed_text` to your LLM instead of the full context.
 
 For the hosted API (API key required):
 
@@ -28,9 +29,9 @@ from __future__ import annotations
 
 import os
 import re
-import warnings
-from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
+
+from .result import CompressResult
 
 __version__ = "0.6.1"
 
@@ -71,61 +72,6 @@ _QUERY_STOPWORDS = {
     "to",
 }
 
-# ── Data types ──────────────────────────────────────────────────────
-
-
-@dataclass
-class CompressResult:
-    """Result of a local compression operation.
-
-    ``tokens_saved_pct`` is percent of prompt tokens removed:
-    ``(1 - kept/original) * 100``.
-    """
-
-    compressed_text: str
-    original_tokens: int = 0
-    kept_tokens: int = 0
-    tokens_saved_pct: float = 0.0
-    policy_name: str = "supercompress"
-    mode: str = "compiler"
-    keep_ratio: float = 0.35
-    compression_risk: Optional[float] = None
-    confidence: Optional[float] = None
-    ccr: Optional[dict[str, Any]] = None
-
-    @property
-    def tokens_saved(self) -> int:
-        return max(0, self.original_tokens - self.kept_tokens)
-
-    @property
-    def savings_pct(self) -> float:
-        if self.original_tokens == 0:
-            return 0.0
-        return (1 - self.kept_tokens / self.original_tokens) * 100
-
-    @property
-    def kv_savings_pct(self) -> float:
-        """Deprecated alias of tokens_saved_pct."""
-        return self.tokens_saved_pct
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "compressed_text": self.compressed_text,
-            "original_tokens": self.original_tokens,
-            "kept_tokens": self.kept_tokens,
-            "tokens_saved": self.tokens_saved,
-            "savings_pct": round(self.savings_pct, 1),
-            "tokens_saved_pct": self.tokens_saved_pct,
-            "kv_savings_pct": self.tokens_saved_pct,  # deprecated alias
-            "policy_name": self.policy_name,
-            "mode": self.mode,
-            "keep_ratio": self.keep_ratio,
-            "compression_risk": self.compression_risk,
-            "confidence": self.confidence,
-            "ccr": self.ccr,
-        }
-
-
 # ── Local compression engine ────────────────────────────────────────
 
 
@@ -137,42 +83,67 @@ def compress_for_turn(
     mode: str = "compiler",
 ) -> CompressResult:
     """
-    Compress a conversation turn using a lightweight, query-aware local
-    fallback.
+    Compress conversation context for the current user query.
 
-    The local fallback keeps a compact set of blocks that are most likely
-    to matter for the current query. It is intentionally simple, but it is
-    no longer blind head/tail truncation.
+    Local ``compiler`` mode is a lightweight query-aware fallback (not the
+    hosted engine). ``mode="precision"`` calls the hosted API when
+    ``SUPERCOMPRESS_API_KEY`` is set; otherwise it raises ``RuntimeError``.
 
     Args:
-        context: Full context to compress (lines of text).
-        user_query: The current user question (kept intact).
-        context_blocks: Alternative to ``context`` — pass a list of blocks.
-        budget_ratio: Fraction of tokens to keep (0.0–1.0). Default 0.35.
-        mode: ``"compiler"`` for maximum reduction, ``"precision"`` for
-              quality-guaranteed compression (uses hosted API if available).
+        context: Full context to compress (ignored when ``context_blocks`` is set).
+        user_query: Current user question — used for retention scoring only
+            (not appended to ``compressed_text``).
+        context_blocks: Optional list of blocks joined before compression.
+        budget_ratio: Fraction of lines to keep; must be in ``(0, 1]``.
+        mode: ``"compiler"`` (local) or ``"precision"`` (hosted when keyed).
 
     Returns:
-        A :class:`CompressResult` with the compressed text and statistics.
+        A :class:`CompressResult` with compressed context and statistics.
+
+    Raises:
+        ValueError: If ``budget_ratio`` is not in ``(0, 1]``.
+        RuntimeError: If ``mode="precision"`` and no API key is configured.
     """
+    if not (0.0 < float(budget_ratio) <= 1.0):
+        raise ValueError(f"budget_ratio must be in (0, 1], got {budget_ratio!r}")
+
+    mode_norm = (mode or "compiler").strip().lower()
     if context_blocks:
         context = "\n".join(context_blocks)
+    context = context if context is not None else ""
+
+    if mode_norm == "precision":
+        api_key = os.getenv("SUPERCOMPRESS_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                'mode="precision" requires SUPERCOMPRESS_API_KEY '
+                "(hosted quality-guaranteed path). Use mode=\"compiler\" for local fallback, "
+                "or set a key from https://supercompress.dev/dashboard"
+            )
+        # Lazy import avoids circular init when SuperCompress is re-exported below.
+        from .client import SuperCompress
+
+        return SuperCompress(api_key=api_key).compress(
+            context,
+            user_query,
+            mode="precision",
+            budget_ratio=budget_ratio,
+        )
+
+    if not str(context).strip():
+        return CompressResult(
+            compressed_text="",
+            original_tokens=0,
+            kept_tokens=0,
+            tokens_saved_pct=0.0,
+            policy_name="noop",
+            mode=mode_norm,
+            keep_ratio=budget_ratio,
+        )
 
     lines = context.split("\n")
     n = len(lines)
     keep = min(n, max(1, int(round(n * budget_ratio))))
-
-    if n == 0:
-        compressed = user_query
-        return CompressResult(
-            compressed_text=compressed,
-            original_tokens=0,
-            kept_tokens=0,
-            tokens_saved_pct=0.0,
-            policy_name="local-query-aware",
-            mode=mode,
-            keep_ratio=budget_ratio,
-        )
 
     query_terms = _extract_query_terms(user_query)
     blocks = _segment_blocks(lines)
@@ -205,17 +176,17 @@ def compress_for_turn(
         kept_lines = _trim_selected_lines(kept_lines, query_terms, keep)
 
     original_tokens = _estimate_tokens(context)
-    kept_tokens = _estimate_tokens("\n".join(kept_lines))
+    kept_text = "\n".join(kept_lines)
+    kept_tokens = _estimate_tokens(kept_text)
     savings = round((1 - kept_tokens / max(original_tokens, 1)) * 100, 1)
 
-    compressed = "\n".join(kept_lines) + "\n\n---\n\n" + user_query
     return CompressResult(
-        compressed_text=compressed,
+        compressed_text=kept_text,
         original_tokens=original_tokens,
         kept_tokens=kept_tokens,
         tokens_saved_pct=savings,
         policy_name="local-query-aware",
-        mode=mode,
+        mode=mode_norm,
         keep_ratio=budget_ratio,
     )
 
@@ -345,11 +316,3 @@ __all__ = [
     "SuperCompress",
     "__version__",
 ]
-
-if not os.getenv("SUPERCOMPRESS_API_KEY"):
-    warnings.warn(
-        "No SUPERCOMPRESS_API_KEY set - using the local fallback engine. "
-        "Results may be degraded. Get a free API key at https://supercompress.dev/dashboard",
-        RuntimeWarning,
-        stacklevel=2,
-    )

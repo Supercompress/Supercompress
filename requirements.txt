@@ -1,5 +1,8 @@
-# SuperCompress API server
-# This repo is the website + API. For the Python library: pip install supercompress
-# or see github.com/Supercompress/Supercompress-nn
+# SuperCompress — Python deps for local scripts / library install.
+# Production site + API: Vercel (api/* serverless + web/).
+# Library: pip install -e ".[serve]"  (or: pip install supercompress)
 httpx>=0.27.0
 firebase-admin>=6.0.0
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.0

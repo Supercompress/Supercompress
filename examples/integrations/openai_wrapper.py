@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import Any
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 
 from supercompress import compress_for_turn
 
@@ -36,11 +41,19 @@ def compress_messages(
 
     blocks = [f"[{m.get('role', '?')}] {m.get('content', '')}" for m in rest[:-1]]
     query = str(last.get("content", ""))
-    compressed, stats = compress_for_turn(blocks, query, budget_ratio=budget_ratio)
+    result = compress_for_turn(
+        context="",
+        user_query=query,
+        context_blocks=blocks,
+        budget_ratio=budget_ratio,
+    )
 
     compressed_msg = {
         "role": "user",
-        "content": f"[SuperCompress: {stats.original_tokens}→{stats.kept_tokens} tok]\n\n{compressed}\n\n---\n\n{query}",
+        "content": (
+            f"[SuperCompress: {result.original_tokens}→{result.kept_tokens} tok]\n\n"
+            f"{result.compressed_text}\n\n---\n\n{query}"
+        ),
     }
     return system + [compressed_msg]
 
