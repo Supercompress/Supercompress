@@ -4,7 +4,7 @@
 
 Compress bulky context (files, logs, tool dumps, pastes) against the current question. Your ask stays intact.
 
-[Website](https://www.supercompress.dev) · [Benchmarks](https://www.supercompress.dev/benchmarks) · [Playground](https://www.supercompress.dev/playground) · [Docs](https://www.supercompress.dev/docs/coding-agents)
+[Website](https://www.supercompress.dev) · [Benchmarks](https://www.supercompress.dev/benchmarks) · [Playground](https://www.supercompress.dev/playground) · [Docs](https://docs.supercompress.dev/coding-agents)
 
 ---
 
@@ -138,8 +138,8 @@ Hooks / MCP run on your machine. Provider API keys stay with your agent. Context
 
 ## More
 
-- Coding agents: https://www.supercompress.dev/docs/coding-agents  
-- HTTP / Python API: https://www.supercompress.dev/docs/quickstart  
+- Coding agents: https://docs.supercompress.dev/coding-agents  
+- HTTP / Python API: https://docs.supercompress.dev/quickstart  
 - Source: https://github.com/Supercompress/Supercompress  
 
 ## License

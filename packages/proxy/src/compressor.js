@@ -106,21 +106,12 @@ function assembleMessages(messages) {
  * Used to tag compress API calls for per-agent usage tracking.
  */
 function detectAgentName() {
-  // Check environment variable first (set by server.js from User-Agent header)
+  // Prefer explicit env (proxy / hooks set this per agent).
   if (process.env.SUPERCOMPRESS_AGENT_NAME) {
     return process.env.SUPERCOMPRESS_AGENT_NAME;
   }
-  // Check config for configured agents
-  const configPath = path.join(
-    process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(os.homedir(), ".supercompress"),
-    "config.json"
-  );
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    if (config.configured_agents && config.configured_agents.length > 0) {
-      return config.configured_agents[0];
-    }
-  } catch {}
+  // Never use configured_agents[0] — setup lists every detected agent, so the
+  // first entry (often Claude Code) would mis-attribute Cursor traffic.
   return "coding-agent";
 }
 

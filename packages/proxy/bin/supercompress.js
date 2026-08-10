@@ -153,7 +153,7 @@ async function main() {
     case "wrap": {
       console.log("  ✗ `supercompress wrap` is deprecated and unreliable with login-based agents.");
       console.log("  → Run `supercompress setup` instead — it auto-installs MCP + hooks for every detected agent.");
-      console.log("  → Docs: https://www.supercompress.dev/docs/coding-agents");
+      console.log("  → Docs: https://docs.supercompress.dev/coding-agents");
       process.exit(1);
       break;
     }

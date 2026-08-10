@@ -1,6 +1,6 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.16",
+  "version": "0.5.17",
   "description": "SuperCompress for coding agents — run setup once to auto-install MCP + hooks and cut ~65% of LLM input tokens. Benchmarks at supercompress.dev/benchmarks.",
   "keywords": [
     "supercompress",
@@ -15,7 +15,7 @@
     "opencode",
     "aider"
   ],
-  "homepage": "https://supercompress.dev/docs/coding-agents",
+  "homepage": "https://docs.supercompress.dev/coding-agents",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Supercompress/Supercompress.git",
@@ -43,7 +43,6 @@
     "test:compress": "node test/compress-deep.js",
     "test:launch": "node test/launch-ready.js",
     "test:bugs": "node test/bug-hunt.js",
-    "test:hermes": "node test/hermes-comprehensive.js",
     "test:all": "node test/run-all.js",
     "setup": "node bin/supercompress.js setup",
     "start": "node bin/supercompress.js start",

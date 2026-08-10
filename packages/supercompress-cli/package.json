@@ -13,7 +13,7 @@
     "token-compression",
     "llm-cost"
   ],
-  "homepage": "https://supercompress.dev/docs/coding-agents",
+  "homepage": "https://docs.supercompress.dev/coding-agents",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Supercompress/Supercompress.git",

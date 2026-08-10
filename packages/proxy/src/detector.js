@@ -1307,13 +1307,15 @@ function writeCursorHooks() {
   ensureHook("sessionStart", { command: sessionCmd, timeout: 10 });
   // Cursor beforeSubmitPrompt — no matcher (fires on every user submit)
   ensureHook("beforeSubmitPrompt", {
-    command: beforeCmd,
+    command: `SUPERCOMPRESS_AGENT_NAME=Cursor ${beforeCmd}`,
     timeout: 20,
   });
+  // Tag Cursor explicitly — without this, post-tool used to mislabel as Claude Code
+  // whenever the payload had session_id/cwd (which Cursor always sends).
   ensureHook("postToolUse", {
-    command: postCmd,
-    matcher: "Read|Shell|Grep|Task|AwaitShell|WebFetch|WebSearch|MCP:.*|Edit|Write|Glob",
+    command: `SUPERCOMPRESS_AGENT_NAME=Cursor ${postCmd}`,
     timeout: 20,
+    matcher: "Read|Shell|Grep|Task|AwaitShell|WebFetch|WebSearch|MCP:.*|Edit|Write|Glob",
   });
 
   fs.writeFileSync(hooksPath, `${JSON.stringify(existing, null, 2)}\n`);

@@ -12,8 +12,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "firebase-admin": "^13.10.0",
-    "openfork": "^1.17.36",
     "stripe": "^22.3.0",
-    "supercompress-proxy": "^0.5.16"
+    "supercompress-proxy": "^0.5.17"
   }
 }

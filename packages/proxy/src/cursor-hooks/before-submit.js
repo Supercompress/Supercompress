@@ -1,21 +1,20 @@
 #!/usr/bin/env node
 /**
- * Cursor beforeSubmitPrompt — Headroom-parity: run on EVERY user submit.
+ * Cursor beforeSubmitPrompt — Headroom-parity incremental compress.
  *
- * Same strategy as the SuperCompress proxy:
  * - last/short user ask = query (never mangled)
- * - attached files + bulky paste / remainder = context → compress
- * - tiny asks with no context → skip (same as proxy context_too_small)
+ * - only *new* attached/pasted context is compressed
+ * - rolling session memory; compact when it gets big
  */
 const path = require("path");
 const fs = require("fs");
 const {
-  compressContext,
+  compressIncremental,
   writeInbox,
   splitAskAndContext,
+  resolveSessionId,
 } = require("./compress-prompt-lib");
 
-// Align with proxy compressor (~100 words). Override with SUPERCOMPRESS_HOOK_MIN_CHARS.
 const MIN_CONTEXT_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
 
 process.stdin.setEncoding("utf8");
@@ -31,6 +30,7 @@ process.stdin.on("end", async () => {
     const input = JSON.parse(raw || "{}");
     const prompt = String(input.prompt || "").trim();
     const attachments = Array.isArray(input.attachments) ? input.attachments : [];
+    const sessionId = resolveSessionId(input);
 
     let attachText = "";
     for (const a of attachments.slice(0, 12)) {
@@ -52,29 +52,38 @@ process.stdin.on("end", async () => {
     }
 
     const query = ask || prompt || "Compress context for the current coding task.";
-    const result = await compressContext(context, query, "Cursor");
-    if (result.paywall || result.skipped === "paywall") {
-      const notice = result.notice || "[SuperCompress PAYWALL] Add credits at https://www.supercompress.dev/dashboard#billing";
-      writeInbox(query, notice, "paywall", { kind: "paywall" });
-      return done({
-        additional_context: notice,
-        additionalContext: notice,
-      });
-    }
-    if (!result.compressed || result.skipped === "empty" || result.skipped === "too_small") {
-      return done();
-    }
+    const result = await compressIncremental({
+      context,
+      query,
+      codingAgent: "Cursor",
+      sessionId,
+      kind: "submit",
+    });
+
+    if (!result.compressed) return done();
     if (result.skipped === "no_key" || String(result.skipped || "").startsWith("http_")) {
       return done();
     }
 
-    const meta = result.skipped
-      ? `skipped=${result.skipped}`
-      : `${result.original_tokens}→${result.compressed_tokens} (−${result.savings_pct}%)`;
-    writeInbox(query, result.compressed, meta, { kind: "every-submit" });
+    const meta =
+      result.skipped === "already_seen"
+        ? `memory replay · session ${sessionId}`
+        : `${result.original_tokens}→${result.compressed_tokens} (−${result.savings_pct}%)${
+            result.compacted ? " · compacted" : " · delta-only"
+          }`;
+
+    writeInbox(query, result.compressed, meta, {
+      kind: result.skipped === "already_seen" ? "session-memory" : "every-submit",
+      session_id: sessionId,
+      compacted: Boolean(result.compacted),
+    });
 
     const additional_context = [
-      `[SuperCompress auto] Compressed this turn's context (~${meta}).`,
+      `[SuperCompress auto] ${
+        result.skipped === "already_seen"
+          ? "Session memory (no new context this turn)."
+          : `Compressed new context only (~${meta}).`
+      }`,
       "User ask unchanged. Prefer this digest over raw dumps/attachments:",
       "",
       result.compressed,

@@ -2,6 +2,12 @@
 
 Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
 
+## [0.5.17] — 2026-08-10
+
+- **Fix agent attribution**: Cursor postToolUse no longer mislabels usage as `claude_code` when the payload has `session_id`/`cwd` (Cursor always does).
+- Cursor hooks now set `SUPERCOMPRESS_AGENT_NAME=Cursor` explicitly (same pattern as Claude Code / Codex).
+- Stop using `configured_agents[0]` as the compress agent name (setup lists every detected agent).
+
 ## [0.5.16] — 2026-08-09
 
 - **Hard paywall surfacing**: Cursor/Claude hooks + MCP no longer silently fail-open on HTTP 402.
@@ -12,13 +18,7 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 - **Setup-first**: `supercompress setup` / `plugin` is the recommended path (auto MCP + hooks). `wrap` deprecated.
 - **Zed**: detect macOS Zed app; write MCP via `context_servers` (not Cursor `mcpServers`).
-- Docs/links prefer `https://www.supercompress.dev/docs/...`.
-
-## Unreleased
-
-- **Zed support**: detect macOS Zed app + write MCP via `context_servers` (not Cursor `mcpServers`).
-- **Setup-first UX**: `supercompress setup` is the only recommended path (auto MCP + hooks). `wrap` is deprecated.
-- Docs links prefer `https://www.supercompress.dev/docs/...` (docs subdomain routed to `/docs/*`).
+- Docs/links prefer `https://docs.supercompress.dev/...`.
 
 ## 0.5.14 — 2026-08-08
 

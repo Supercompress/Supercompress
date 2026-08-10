@@ -1,33 +1,21 @@
 #!/usr/bin/env node
 /**
- * Cursor postToolUse — auto-compress large tool outputs via SuperCompress API.
- * Injects a compressed digest as additional_context so the model does not
- * re-spend tokens on the raw dump. Fail-open on any error.
+ * Cursor / Claude Code / Codex postToolUse — compress only *new* tool output
+ * into session memory. When memory gets large, compact (Headroom-style).
+ * Fail-open.
+ *
+ * Agent attribution: always prefer SUPERCOMPRESS_AGENT_NAME (set by setup for
+ * Claude Code / Codex). Cursor hooks omit it — default to "Cursor".
+ * Never infer Claude Code from session_id/cwd (Cursor always has those).
  */
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
+const {
+  compressIncremental,
+  writeInbox,
+  resolveSessionId,
+} = require("./compress-prompt-lib");
 
-const COMPRESS_URL =
-  process.env.SUPERCOMPRESS_COMPRESS_URL ||
-  "https://www.supercompress.dev/api/v1/compress";
 const MIN_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
 const MAX_IN = Number(process.env.SUPERCOMPRESS_HOOK_MAX_CHARS || 180000);
-
-function loadApiKey() {
-  const envKey = String(process.env.SUPERCOMPRESS_API_KEY || "").trim();
-  if (envKey && !envKey.includes("${") && envKey.startsWith("sc_")) return envKey;
-  const configPath = path.join(
-    process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(os.homedir(), ".supercompress"),
-    "config.json"
-  );
-  try {
-    const key = String(JSON.parse(fs.readFileSync(configPath, "utf8")).api_key || "").trim();
-    return key.startsWith("sc_") ? key : null;
-  } catch {
-    return null;
-  }
-}
 
 function extractText(toolOutput) {
   if (toolOutput == null) return "";
@@ -39,9 +27,31 @@ function extractText(toolOutput) {
   }
 }
 
+/** Resolve coding-agent label for usage tracking. */
+function resolveAgentHint(input = {}) {
+  const envName = String(process.env.SUPERCOMPRESS_AGENT_NAME || "").trim();
+  if (envName) return envName;
+
+  // Cursor-specific payload fields
+  if (
+    input.tool_output != null ||
+    input.cursor_version != null ||
+    input.generation_id != null ||
+    input.model != null
+  ) {
+    return "Cursor";
+  }
+
+  // Installed under ~/.cursor/hooks even when invoked by other agents —
+  // without SUPERCOMPRESS_AGENT_NAME, this is Cursor's postToolUse.
+  return "Cursor";
+}
+
 process.stdin.setEncoding("utf8");
 let raw = "";
-process.stdin.on("data", (c) => { raw += c; });
+process.stdin.on("data", (c) => {
+  raw += c;
+});
 process.stdin.on("end", async () => {
   const empty = () => process.stdout.write("{}");
   try {
@@ -53,12 +63,11 @@ process.stdin.on("end", async () => {
         (input.tool_input && input.tool_input.name) ||
         ""
     );
-    // Skip our own MCP compress calls to avoid loops
     if (/compress_context|connect_account|usage_summary|headroom_/i.test(toolName)) {
       return empty();
     }
 
-    // Cursor: tool_output · Claude Code PostToolUse: tool_response · others: result/output
+    // Cursor: tool_output · Claude Code PostToolUse: tool_response · others
     let text = extractText(input.tool_output);
     if (!text) text = extractText(input.tool_response);
     if (!text) text = extractText(input.result);
@@ -66,97 +75,44 @@ process.stdin.on("end", async () => {
     if (!text) text = extractText(input.response);
     if (text.length < MIN_CHARS) return empty();
 
-    const agentHint =
-      process.env.SUPERCOMPRESS_AGENT_NAME ||
-      (input.session_id || input.cwd ? "Claude Code" : "Cursor");
-
-    const apiKey = loadApiKey();
-    if (!apiKey) return empty();
-
     const clipped = text.length > MAX_IN ? text.slice(0, MAX_IN) : text;
+    const agentHint = resolveAgentHint(input);
+    const sessionId = resolveSessionId(input);
+
     const query =
-      `Compress this ${toolName || "tool"} output for the current coding task. ` +
+      `Compress new ${toolName || "tool"} output for the current coding task. ` +
       "Preserve code, paths, errors, numbers, and decisions.";
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
-    let body;
-    try {
-      const res = await fetch(COMPRESS_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": apiKey,
-        },
-        body: JSON.stringify({
-          context: clipped,
-          query,
-          mode: "compiler",
-          coding_agent: agentHint,
-        }),
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        let detail = "";
-        let code = "";
-        try {
-          const errBody = await res.json();
-          detail = errBody.detail || errBody.title || "";
-          code = errBody.code || "";
-        } catch {}
-        const paywalled =
-          res.status === 402 ||
-          code === "free_quota_exhausted" ||
-          code === "credits_exhausted" ||
-          /PAYWALL|free_quota|credits_exhausted/i.test(detail);
-        if (paywalled) {
-          const notice = [
-            "[SuperCompress PAYWALL] Compression is paused — free 1M tokens used (or credits empty).",
-            detail || "Add credits to unlock — $0.30 per 1M tokens after free ($10 minimum load).",
-            "Upgrade: https://www.supercompress.dev/dashboard#billing",
-          ].join("\n");
-          process.stdout.write(JSON.stringify({ additional_context: notice }));
-          return;
-        }
-        return empty();
-      }
-      body = await res.json();
-    } finally {
-      clearTimeout(timer);
+    const result = await compressIncremental({
+      context: clipped,
+      query,
+      codingAgent: agentHint,
+      sessionId,
+      kind: `tool:${toolName || "unknown"}`,
+    });
+
+    if (!result.compressed) return empty();
+    if (result.skipped === "no_key" || String(result.skipped || "").startsWith("http_")) {
+      return empty();
     }
+    // Already in memory — don't spam additional_context every identical tool call
+    if (result.skipped === "already_seen" && !result.delta) return empty();
 
-    const compressed =
-      body.compressed_text ||
-      body.compressed_context ||
-      body.compressed ||
-      body.context ||
-      body.result ||
-      "";
-    if (!compressed || typeof compressed !== "string") return empty();
-
-    const inTok = body.original_tokens || body.tokens_in || Math.round(clipped.length / 4);
-    const outTok =
-      body.kept_tokens ||
-      body.compressed_tokens ||
-      body.tokens_out ||
-      Math.round(compressed.length / 4);
-    const saved = body.tokens_saved != null ? body.tokens_saved : Math.max(0, inTok - outTok);
-    const pct =
-      body.tokens_saved_pct != null
-        ? Math.round(body.tokens_saved_pct)
-        : body.kv_savings_pct != null
-          ? Math.round(body.kv_savings_pct)
-          : body.savings_pct != null
-            ? body.savings_pct
-            : inTok > 0
-              ? Math.round((saved / inTok) * 100)
-              : 0;
+    const meta = `${result.original_tokens}→${result.compressed_tokens} (−${result.savings_pct}%)${
+      result.compacted ? " · compacted" : " · delta-only"
+    }`;
+    writeInbox(query, result.compressed, meta, {
+      kind: "post-tool",
+      session_id: sessionId,
+      tool: toolName,
+      compacted: Boolean(result.compacted),
+    });
 
     const additional_context = [
-      `[SuperCompress auto] Compressed ${toolName || "tool"} output (~${inTok}→${outTok} tok, −${pct}%).`,
-      "Prefer this digest over the raw tool dump:",
+      `[SuperCompress auto] Compressed new ${toolName || "tool"} output (~${meta}).`,
+      "Prefer this session digest over the raw tool dump:",
       "",
-      compressed,
+      result.compressed,
     ].join("\n");
 
     process.stdout.write(JSON.stringify({ additional_context }));
