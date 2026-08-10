@@ -661,6 +661,16 @@ function pluginDetected(plugin) {
   return false;
 }
 
+function backupBeforeWrite(filePath) {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return;
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    fs.copyFileSync(filePath, `${filePath}.sc-bak.${stamp}`);
+  } catch (err) {
+    console.error(`  ⚠ backup failed for ${filePath}: ${err.message}`);
+  }
+}
+
 function installPlugin(plugin, { force = false } = {}) {
   const should = force || plugin.alwaysInstall || pluginDetected(plugin);
   if (!should) return null;
@@ -671,17 +681,22 @@ function installPlugin(plugin, { force = false } = {}) {
     }
     const writer = FORMAT_WRITERS[plugin.format];
     if (!writer) throw new Error(`No writer for format ${plugin.format}`);
+    backupBeforeWrite(plugin.configPath);
     writer.write(plugin.configPath);
     for (const extra of plugin.extraWriters || []) {
       const fmt = extra.format || "mcp-json";
       const cfg = expandHome(extra.configPath);
       if (!cfg) continue;
       const w = FORMAT_WRITERS[fmt];
-      if (w) w.write(cfg);
+      if (w) {
+        backupBeforeWrite(cfg);
+        w.write(cfg);
+      }
     }
   }
 
   if (plugin.instructionPath) {
+    backupBeforeWrite(expandHome(plugin.instructionPath) || plugin.instructionPath);
     writeInstructionFile(plugin.instructionPath);
   }
   return plugin.name;

@@ -34,7 +34,11 @@ Public page: https://www.supercompress.dev/changelog
 - Transactional Firestore billing ledger for usage + wallet burns; Stripe auto-recharge lock + idempotency; no pre-Checkout `sc_metered` mutation; micro-USD burns so tiny requests are not free
 
 ### Coding agent plugin
+<<<<<<< HEAD
 - Protocol/runtime safety: native `fetch` (drop `node-fetch`), owned-PID-only stop, buffered SSE that preserves `tool_calls`, skip compression for structured tool/Responses items, inject digests as user (not system), fail-open on compress timeout/5xx, block browser `Origin` on local proxy, zstd size caps, spawn via `process.execPath`
+=======
+- Non-destructive setup: only clear SuperCompress-owned base URLs; backup before plugin writers; fix instruction-block idempotency; don’t markSeen on compress timeout/error; don’t split long asks without paragraph breaks; secure inbox/session modes; fail connect instead of rotating production API keys; atomic device-link consume via Firestore
+>>>>>>> 80b33bf (fix(plugin): non-destructive agent integration and safer connect)
 - See **[0.5.17](#0517--2026-08-10)** / **[0.5.16](#0516--2026-08-09)** below
 
 ### Repository hygiene

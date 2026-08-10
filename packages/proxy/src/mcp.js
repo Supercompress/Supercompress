@@ -140,14 +140,15 @@ async function handleToolCall(name, args = {}) {
           try {
             config = JSON.parse(fs.readFileSync(configPath, "utf8"));
           } catch {}
-          fs.mkdirSync(path.dirname(configPath), { recursive: true });
+          fs.mkdirSync(path.dirname(configPath), { recursive: true, mode: 0o700 });
           fs.writeFileSync(
             configPath,
             JSON.stringify(
               { ...config, api_key: body.secret, connected_at: new Date().toISOString() },
               null,
               2
-            )
+            ),
+            { mode: 0o600 }
           );
           return toolText("SuperCompress account connected. Future compression usage is metered to this account.");
         }

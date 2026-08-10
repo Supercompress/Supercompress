@@ -192,9 +192,10 @@ async function putDeviceLink(code, { ownerUid, secret, source = "oauth", agents 
       displayName: `Device link ${String(code).slice(0, 8)}`,
     });
   }
+  const codeNorm = String(code).trim().toLowerCase();
   await auth().setCustomUserClaims(uid, {
     sc_device_link: true,
-    code: String(code).trim().toLowerCase(),
+    code: codeNorm,
     owner_uid: ownerUid,
     secret,
     source: String(source || "oauth").slice(0, 40),
@@ -203,8 +204,24 @@ async function putDeviceLink(code, { ownerUid, secret, source = "oauth", agents 
     linked_at: now,
     created_at: existing?.customClaims?.created_at || now,
   });
+  try {
+    await admin.firestore().collection("device_links").doc(uid).set(
+      {
+        code: codeNorm,
+        owner_uid: ownerUid,
+        secret,
+        source: String(source || "oauth").slice(0, 40),
+        status: "linked",
+        linked_at: now,
+        created_at: existing?.customClaims?.created_at || now,
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn("putDeviceLink firestore mirror skipped:", err.message || err);
+  }
   return {
-    code: String(code).trim().toLowerCase(),
+    code: codeNorm,
     status: "linked",
     owner_uid: ownerUid,
     secret,
@@ -241,6 +258,66 @@ async function clearDeviceLinkSecret(code) {
   await auth().setCustomUserClaims(uid, c);
 }
 
+/**
+ * Atomically take the device-link secret (single-use).
+ * Prefers a Firestore transaction; falls back to Auth clear-then-return.
+ * Returns { secret, owner_uid, linked_at, created_at } or null if already consumed.
+ */
+async function consumeDeviceLinkSecret(code) {
+  const normalized = String(code || "").trim().toLowerCase();
+  if (!normalized) return null;
+
+  // Firestore CAS when available
+  try {
+    const { initFirebaseAdmin } = require("./auth");
+    if (initFirebaseAdmin()) {
+      const db = admin.firestore();
+      const ref = db.collection("device_links").doc(linkUidFromCode(normalized));
+      const taken = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) return null;
+        const data = snap.data() || {};
+        if (!data.secret) return null;
+        const out = {
+          secret: data.secret,
+          owner_uid: data.owner_uid || null,
+          linked_at: data.linked_at || null,
+          created_at: data.created_at || null,
+        };
+        tx.set(
+          ref,
+          {
+            ...data,
+            secret: null,
+            status: "consumed",
+            consumed_at: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+        return out;
+      });
+      if (taken) {
+        try { await clearDeviceLinkSecret(normalized); } catch (_) {}
+        return taken;
+      }
+    }
+  } catch (err) {
+    console.warn("consumeDeviceLinkSecret firestore path:", err.message || err);
+  }
+
+  // Auth fallback: read → clear → return (still a small race under Auth-only).
+  const status = await getDeviceLink(normalized);
+  if (!status?.secret) return null;
+  const secret = status.secret;
+  await clearDeviceLinkSecret(normalized);
+  return {
+    secret,
+    owner_uid: status.owner_uid || null,
+    linked_at: status.linked_at || null,
+    created_at: status.created_at || null,
+  };
+}
+
 module.exports = {
   KEY_UID_PREFIX,
   LINK_UID_PREFIX,
@@ -251,5 +328,6 @@ module.exports = {
   putDeviceLink,
   getDeviceLink,
   clearDeviceLinkSecret,
+  consumeDeviceLinkSecret,
   generateAuthBackedKey,
 };

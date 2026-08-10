@@ -48,24 +48,20 @@ function splitAskAndContext(text) {
   if (raw.trim().length < minSplit) {
     return { ask: raw.trim(), context: "" };
   }
+  // Only split on a clear paragraph boundary. Never arbitrarily carve the first
+  // ~400 chars of a long instruction — that would compress the user's ask.
   const parts = raw.split(/\n\s*\n/);
-  if (parts.length >= 2 && parts[0].trim().length <= 500) {
+  if (parts.length >= 2 && parts[0].trim().length > 0 && parts[0].trim().length <= 800) {
     return {
       ask: parts[0].trim(),
       context: parts.slice(1).join("\n\n").trim(),
     };
   }
-  const head = raw.slice(0, 400);
-  const nl = head.lastIndexOf("\n");
-  const cut = nl > 80 ? nl : 400;
-  return {
-    ask: raw.slice(0, cut).trim() || "Compress the following context for the coding task.",
-    context: raw.slice(cut).trim(),
-  };
+  return { ask: raw.trim(), context: "" };
 }
 
 function writeInbox(query, compressed, meta, extra = {}) {
-  fs.mkdirSync(INBOX_DIR, { recursive: true });
+  fs.mkdirSync(INBOX_DIR, { recursive: true, mode: 0o700 });
   const latestMd = path.join(INBOX_DIR, "latest.md");
   const latestJson = path.join(INBOX_DIR, "latest.json");
   const body = [
@@ -85,7 +81,7 @@ function writeInbox(query, compressed, meta, extra = {}) {
     compressed || "(empty)",
     "",
   ].join("\n");
-  fs.writeFileSync(latestMd, body);
+  fs.writeFileSync(latestMd, body, { mode: 0o600 });
   fs.writeFileSync(
     latestJson,
     JSON.stringify(
@@ -98,7 +94,8 @@ function writeInbox(query, compressed, meta, extra = {}) {
       },
       null,
       2
-    )
+    ),
+    { mode: 0o600 }
   );
   return latestMd;
 }
@@ -157,9 +154,8 @@ function loadSession(sessionId) {
 
 function saveSession(sessionId, state) {
   const { dir, statePath, memoryPath } = sessionPaths(sessionId);
-  fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   state.updated_at = new Date().toISOString();
-  fs.writeFileSync(memoryPath, state.memory || "");
   const disk = {
     session_id: sessionId,
     seen: state.seen || {},
@@ -168,7 +164,13 @@ function saveSession(sessionId, state) {
     compacted_at: state.compacted_at || null,
     memory_chars: (state.memory || "").length,
   };
-  fs.writeFileSync(statePath, JSON.stringify(disk, null, 2));
+  // Atomic-ish write: temp + rename reduces cross-hook lost updates.
+  const memTmp = `${memoryPath}.${process.pid}.tmp`;
+  const stateTmp = `${statePath}.${process.pid}.tmp`;
+  fs.writeFileSync(memTmp, state.memory || "", { mode: 0o600 });
+  fs.writeFileSync(stateTmp, JSON.stringify(disk, null, 2), { mode: 0o600 });
+  fs.renameSync(memTmp, memoryPath);
+  fs.renameSync(stateTmp, statePath);
 }
 
 function markSeen(state, hash) {
@@ -322,8 +324,11 @@ async function compressIncremental({ context, query, codingAgent, sessionId, kin
     deltaResult.skipped === "empty" ||
     deltaResult.skipped === "too_small" ||
     deltaResult.skipped === "no_key" ||
+    deltaResult.skipped === "timeout" ||
+    deltaResult.skipped === "error" ||
     String(deltaResult.skipped || "").startsWith("http_")
   ) {
+    // Do not markSeen on timeout/error — temporary outages must remain retryable.
     return { ...deltaResult, session_id: sid, compacted: false, delta: "" };
   }
 

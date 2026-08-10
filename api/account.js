@@ -150,7 +150,16 @@ async function mintConnectKey(ownerUid, maxKeys) {
       .filter((k) => ROTATABLE_KEY_NAME.test(String(k.name || "")))
       .slice()
       .sort((a, b) => String(a.created_at || "").localeCompare(String(b.created_at || "")));
-    const victims = (pool.length ? pool : existing).slice(0, Math.max(1, existing.length - maxKeys + 1));
+    // Never fall back to rotating arbitrary production keys — fail setup instead.
+    if (!pool.length) {
+      const err = new Error(
+        `API key limit reached (${maxKeys}). Revoke an unused coding-agent/CLI key in the dashboard, then retry connect.`
+      );
+      err.status = 409;
+      err.code = "key_limit_reached";
+      throw err;
+    }
+    const victims = pool.slice(0, Math.max(1, existing.length - maxKeys + 1));
     for (const victim of victims.slice(0, 3)) {
       try {
         await revokeAuthPluginKey(ownerUid, victim.id);
@@ -229,17 +238,26 @@ async function handleConnectDevice(req, res) {
         });
       }
 
-      // Single-use: return secret once, then strip it so scanners cannot re-harvest.
-      const secret = status.secret;
-      const ownerUid = status.owner_uid || null;
-      try { await clearDeviceLinkSecret(code); } catch (_) { /* best-effort */ }
+      // Single-use: atomically consume secret (Firestore CAS when available).
+      const { consumeDeviceLinkSecret } = require("./_lib/auth-connect");
+      const taken = await consumeDeviceLinkSecret(code);
+      if (!taken?.secret) {
+        return json(res, 200, {
+          code,
+          status: "consumed",
+          owner_uid: status.owner_uid || null,
+          secret: null,
+          linked_at: status.linked_at || null,
+          created_at: status.created_at || null,
+        });
+      }
       return json(res, 200, {
         code,
         status: "linked",
-        owner_uid: ownerUid,
-        secret,
-        linked_at: status.linked_at || null,
-        created_at: status.created_at || null,
+        owner_uid: taken.owner_uid || null,
+        secret: taken.secret,
+        linked_at: taken.linked_at || status.linked_at || null,
+        created_at: taken.created_at || status.created_at || null,
       });
     } catch (err) {
       return json(res, err.status || 500, { detail: err.message || "Lookup failed" });

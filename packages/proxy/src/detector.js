@@ -618,8 +618,9 @@ const AGENTS = [
     },
     configure: (config, revert) => {
       if (revert) {
-        delete config["openAiBaseUrl"];
-        delete config["openAIBaseUrl"];
+        // Only clear values we wrote — never wipe a user's custom API base.
+        if (config["openAiBaseUrl"] === PROXY_BASE) delete config["openAiBaseUrl"];
+        if (config["openAIBaseUrl"] === PROXY_BASE) delete config["openAIBaseUrl"];
       } else {
         config["openAiBaseUrl"] = PROXY_BASE;
       }
@@ -646,8 +647,8 @@ const AGENTS = [
     },
     configure: (config, revert) => {
       if (revert) {
-        delete config["apiBaseUrl"];
-        delete config["api_base_url"];
+        if (config["apiBaseUrl"] === PROXY_BASE) delete config["apiBaseUrl"];
+        if (config["api_base_url"] === PROXY_BASE) delete config["api_base_url"];
       } else {
         config["apiBaseUrl"] = PROXY_BASE;
       }
@@ -719,9 +720,9 @@ const AGENTS = [
     },
     configure: (config, revert) => {
       if (revert) {
-        delete config["openAiBaseUrl"];
-        delete config["apiBaseUrl"];
-        delete config["api_base_url"];
+        if (config["openAiBaseUrl"] === PROXY_BASE) delete config["openAiBaseUrl"];
+        if (config["apiBaseUrl"] === PROXY_BASE) delete config["apiBaseUrl"];
+        if (config["api_base_url"] === PROXY_BASE) delete config["api_base_url"];
       } else {
         config["openAiBaseUrl"] = PROXY_BASE;
         config["apiProvider"] = "openai-compatible";
@@ -1604,11 +1605,15 @@ function writeAgentInstructionFiles() {
       let next = body;
       if (fs.existsSync(filePath)) {
         const prev = fs.readFileSync(filePath, "utf8");
-        if (prev.includes("SuperCompress (always on)")) {
+        if (/SuperCompress \(always on/i.test(prev)) {
           next = prev.replace(
-            /# SuperCompress \(always on\)[\s\S]*?(?=\n# |\n## |$)/,
+            /# SuperCompress \(always on[^\n]*\)[\s\S]*?(?=\n# (?!#)|\n*$)/,
             body.trim() + "\n\n"
           );
+          // If the heading variant didn't match the regex, avoid appending a duplicate.
+          if (next === prev) {
+            next = prev; // already present under a recognized heading
+          }
         } else {
           next = `${prev.trimEnd()}\n\n${body}`;
         }
