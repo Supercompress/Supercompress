@@ -18,6 +18,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { execFileSync } = require("child_process");
+const agentPlugins = require("./agent-plugins");
 
 const HOME = os.homedir();
 const PROXY_BASE = "http://localhost:8080/v1";
@@ -70,12 +71,34 @@ function restoreBackups() {
 }
 
 // Shared by the instruction writer and the uninstaller so the two cannot drift.
+function instructionTargets() {
+  const base = [
+    ["Claude Code", path.join(HOME, ".claude", "CLAUDE.md")],
+    ["Codex", path.join(HOME, ".codex", "AGENTS.md")],
+    ["Aider", path.join(HOME, ".aider", "CONVENTIONS.md")],
+    ["Goose", path.join(HOME, ".config", "goose", "AGENTS.md")],
+    ["OpenCode", path.join(HOME, ".config", "opencode", "AGENTS.md")],
+    ["Hermes", path.join(HOME, ".hermes", "AGENTS.md")],
+    ["OpenClaw", path.join(HOME, ".openclaw", "AGENTS.md")],
+  ];
+  const seen = new Set(base.map(([name]) => name));
+  for (const [name, filePath] of agentPlugins.instructionTargetsFromPlugins()) {
+    if (seen.has(name)) continue;
+    seen.add(name);
+    base.push([name, filePath]);
+  }
+  return base;
+}
+
+/** Static fallback list (uninstall/prune paths that load before custom plugins). */
 const INSTRUCTION_TARGETS = [
   ["Claude Code", path.join(HOME, ".claude", "CLAUDE.md")],
   ["Codex", path.join(HOME, ".codex", "AGENTS.md")],
   ["Aider", path.join(HOME, ".aider", "CONVENTIONS.md")],
   ["Goose", path.join(HOME, ".config", "goose", "AGENTS.md")],
   ["OpenCode", path.join(HOME, ".config", "opencode", "AGENTS.md")],
+  ["Hermes", path.join(HOME, ".hermes", "AGENTS.md")],
+  ["OpenClaw", path.join(HOME, ".openclaw", "AGENTS.md")],
 ];
 
 const CURSOR_RULE_DIRS = [
@@ -446,6 +469,12 @@ function configureMcp() {
       configured.push("Codex MCP");
     } catch (err) { console.error(`  ✗ Failed to configure Codex MCP: ${err.message}`); }
   }
+
+  // Hermes, OpenClaw, and user-registered custom agents (pluggable)
+  for (const name of agentPlugins.configurePluginAgents()) {
+    if (!configured.includes(name)) configured.push(name);
+  }
+
   return configured;
 }
 
@@ -528,6 +557,10 @@ function removeMcp() {
     }
   } catch (err) {
     console.error(`  ✗ Failed to remove Codex MCP registration: ${err.message}`);
+  }
+
+  for (const name of agentPlugins.removePluginAgents()) {
+    if (!removed.includes(name)) removed.push(name);
   }
   return removed;
 }
@@ -826,6 +859,8 @@ const EXTRA_AGENTS = [
   ["Composio", ["composio"], [".composio"]],
   ["Pythagora", ["pythagora"], [".pythagora"]],
   ["Marvin", ["marvin"], [".marvin"]],
+  ["Hermes", ["hermes"], [".hermes"]],
+  ["OpenClaw", ["openclaw", "claw"], [".openclaw"]],
 ].map(([name, commands, directories]) => ({
   name,
   commands,
@@ -833,7 +868,29 @@ const EXTRA_AGENTS = [
   description: `${name} detected; configure its OpenAI/Anthropic-compatible base URL or MCP settings manually`,
 }));
 
-const AGENT_CATALOG = [...AGENTS, ...EXTRA_AGENTS];
+function buildAgentCatalog() {
+  const base = [...AGENTS, ...EXTRA_AGENTS];
+  const seen = new Set(base.map((a) => a.name));
+  const extras = [];
+  for (const entry of agentPlugins.catalogEntries()) {
+    if (seen.has(entry.name)) {
+      // Upgrade description for first-class MCP plugins already in EXTRA_AGENTS
+      const hit = base.find((a) => a.name === entry.name);
+      if (hit) {
+        hit.description = entry.description;
+        hit.pluginId = entry.pluginId;
+        hit.format = entry.format;
+        hit.autoMcp = true;
+      }
+      continue;
+    }
+    seen.add(entry.name);
+    extras.push(entry);
+  }
+  return [...base, ...extras];
+}
+
+const AGENT_CATALOG = buildAgentCatalog();
 
 const INSTALL_CHECKS = {
   Cursor: () => commandExists("cursor") || appExists("Cursor"),
@@ -941,12 +998,25 @@ function detectAll() {
         name: agent.name,
         configPath: directory || (agent.name === "Zed" ? path.dirname(resolveZedSettingsPath()) : null),
         installed: true,
-        autoConfigurable: agent.name === "Zed",
+        autoConfigurable: agent.name === "Zed" || Boolean(agent.autoMcp),
         description: agent.name === "Zed"
           ? "Zed Agent MCP via settings.json context_servers (auto-configured by setup/plugin)"
           : agent.description,
       });
     }
+  }
+  // Custom / pluggable agents not already listed
+  const foundNames = new Set(found.map((f) => f.name));
+  for (const plugin of agentPlugins.allPlugins()) {
+    if (foundNames.has(plugin.name)) continue;
+    if (!agentPlugins.pluginDetected(plugin)) continue;
+    found.push({
+      name: plugin.name,
+      configPath: plugin.configPath || null,
+      installed: true,
+      autoConfigurable: plugin.format !== "instruction-only",
+      description: `${plugin.name} MCP via ${plugin.format} (custom plugin)`,
+    });
   }
   return found;
 }
@@ -1097,8 +1167,11 @@ function removePluginArtifacts(skip = new Set()) {
     }
   }
 
-  for (const [name, filePath] of INSTRUCTION_TARGETS) {
-    if (!fs.existsSync(filePath) || skip.has(filePath)) continue;
+  // Always strip SuperCompress blocks — even when restoreBackups already touched
+  // the path. Hermes auto-install can rewrite AGENTS.md after the first backup,
+  // so "restore" may put SC content back; skipping would leave residue.
+  for (const [name, filePath] of instructionTargets()) {
+    if (!fs.existsSync(filePath)) continue;
     try {
       const prev = fs.readFileSync(filePath, "utf8");
       const next = stripInstructionBlock(prev);
@@ -1111,6 +1184,61 @@ function removePluginArtifacts(skip = new Set()) {
       }
     } catch (err) {
       console.error(`  ✗ Failed to clean ${filePath}: ${err.message}`);
+    }
+  }
+
+  // Hermes auto-compress copies hooks/plugins outside the instruction file.
+  removed.push(...removeHermesAutoCompressArtifacts());
+
+  return removed;
+}
+
+/** Drop Hermes agent-hooks / plugins / auto yaml written by writeHermesAutoCompress. */
+function removeHermesAutoCompressArtifacts() {
+  const removed = [];
+  const hermesHome = path.join(HOME, ".hermes");
+  if (!fs.existsSync(hermesHome)) return removed;
+
+  const hooksDest = path.join(hermesHome, "agent-hooks", "supercompress");
+  if (fs.existsSync(hooksDest)) {
+    try {
+      fs.rmSync(hooksDest, { recursive: true, force: true });
+      removed.push("Hermes agent-hooks");
+    } catch (err) {
+      console.error(`  ✗ Failed to remove ${hooksDest}: ${err.message}`);
+    }
+  }
+
+  const pluginDest = path.join(hermesHome, "plugins", "supercompress");
+  if (fs.existsSync(pluginDest)) {
+    try {
+      fs.rmSync(pluginDest, { recursive: true, force: true });
+      removed.push("Hermes transform plugin");
+    } catch (err) {
+      console.error(`  ✗ Failed to remove ${pluginDest}: ${err.message}`);
+    }
+  }
+
+  const configPath = path.join(hermesHome, "config.yaml");
+  if (fs.existsSync(configPath)) {
+    try {
+      let raw = fs.readFileSync(configPath, "utf8");
+      const before = raw;
+      raw = raw.replace(/\n?# supercompress-auto[\s\S]*?(?=\n# [^\n]+|\n[a-z_][a-z0-9_]*:|\n*$)/g, "\n");
+      raw = raw.replace(
+        /(^|\n)([ \t]*)-[ \t]*command:[^\n]*(?:pre-llm-call|post-tool-call|agent-hooks\/supercompress)[^\n]*\n(?:\2[ \t]+[^\n]*\n)*/g,
+        "$1"
+      );
+      if (typeof agentPlugins.removeHermesYaml === "function") {
+        agentPlugins.removeHermesYaml(configPath);
+        raw = fs.existsSync(configPath) ? fs.readFileSync(configPath, "utf8") : raw;
+      }
+      if (raw !== before) {
+        fs.writeFileSync(configPath, raw.endsWith("\n") ? raw : `${raw}\n`);
+        if (!removed.includes("Hermes MCP registration")) removed.push("Hermes auto config");
+      }
+    } catch (err) {
+      console.error(`  ✗ Failed to clean Hermes config: ${err.message}`);
     }
   }
 
@@ -1449,7 +1577,7 @@ function writeAgentInstructionFiles() {
     "",
   ].join("\n");
 
-  for (const [name, filePath] of INSTRUCTION_TARGETS) {
+  for (const [name, filePath] of instructionTargets()) {
     try {
       const dir = path.dirname(filePath);
       if (!fs.existsSync(dir) && name !== "Claude Code" && name !== "Codex") {
@@ -1460,11 +1588,15 @@ function writeAgentInstructionFiles() {
       }
       const existsAgent =
         fs.existsSync(dir) ||
+        // Custom / pluggable agents: always write once registered (mkdir below)
+        agentPlugins.loadCustomPlugins().some((p) => p.name === name) ||
         (name === "Claude Code" && (commandExists("claude") || fs.existsSync(path.join(HOME, ".claude")))) ||
         (name === "Codex" && (commandExists("codex") || fs.existsSync(path.join(HOME, ".codex")))) ||
         (name === "Aider" && commandExists("aider")) ||
         (name === "Goose" && commandExists("goose")) ||
-        (name === "OpenCode" && commandExists("opencode"));
+        (name === "OpenCode" && commandExists("opencode")) ||
+        (name === "Hermes" && (commandExists("hermes") || fs.existsSync(path.join(HOME, ".hermes")))) ||
+        (name === "OpenClaw" && (commandExists("openclaw") || commandExists("claw") || fs.existsSync(path.join(HOME, ".openclaw"))));
       if (!existsAgent) continue;
 
       fs.mkdirSync(dir, { recursive: true });
@@ -1501,6 +1633,18 @@ function installAutoPlugin() {
   const hooks = writeCursorHooks();
   const agentHooks = writeAgentPromptHooks();
   const instructions = writeAgentInstructionFiles();
+  let hermes = null;
+  if (commandExists("hermes") || fs.existsSync(path.join(HOME, ".hermes"))) {
+    try {
+      const hermesHome = path.join(HOME, ".hermes");
+      // Backup before auto-compress rewrites AGENTS.md / config.yaml.
+      backupFile(path.join(hermesHome, "AGENTS.md"));
+      backupFile(path.join(hermesHome, "config.yaml"));
+      hermes = agentPlugins.writeHermesAutoCompress(hermesHome);
+    } catch (err) {
+      console.error(`  ⚠ Hermes auto-compress: ${err.message}`);
+    }
+  }
   const cleared = clearProxyOverrides();
   return {
     found,
@@ -1509,6 +1653,7 @@ function installAutoPlugin() {
     hooks,
     agentHooks,
     instructions,
+    hermes,
     cleared,
   };
 }
@@ -1529,4 +1674,5 @@ module.exports = {
   writeAgentPromptHooks,
   writeAgentInstructionFiles,
   installAutoPlugin,
+  agentPlugins,
 };
