@@ -33,6 +33,7 @@ Public page: https://www.supercompress.dev/changelog
 - Fix demo CO₂ grams over-count (`×1000` bug)
 
 ### Coding agent plugin
+- Protocol/runtime safety: native `fetch` (drop `node-fetch`), owned-PID-only stop, buffered SSE that preserves `tool_calls`, skip compression for structured tool/Responses items, inject digests as user (not system), fail-open on compress timeout/5xx, block browser `Origin` on local proxy, zstd size caps, spawn via `process.execPath`
 - See **[0.5.17](#0517--2026-08-10)** / **[0.5.16](#0516--2026-08-09)** below
 
 ### Repository hygiene

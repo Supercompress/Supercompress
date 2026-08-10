@@ -408,18 +408,41 @@ async function main() {
   }
 }
 
-function isRunning() {
+function readPidFile() {
   try {
-    if (fs.existsSync(PID_PATH)) {
-      const pid = parseInt(fs.readFileSync(PID_PATH, "utf8").trim(), 10);
-      // A PID alone is not enough: stale PID files can point at another process.
-      process.kill(pid, 0);
-      return true;
-    }
+    if (!fs.existsSync(PID_PATH)) return null;
+    const pid = parseInt(fs.readFileSync(PID_PATH, "utf8").trim(), 10);
+    return Number.isFinite(pid) && pid > 0 ? pid : null;
   } catch {
-    // stale PID
-    try { fs.unlinkSync(PID_PATH); } catch {}
+    return null;
   }
+}
+
+/** True only if pid looks like our proxy server.js (not a reused PID). */
+function isOurProxyProcess(pid) {
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0);
+  } catch {
+    return false;
+  }
+  try {
+    const out = execFileSync("ps", ["-p", String(pid), "-o", "command="], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return /supercompress|packages[\\/]+proxy[\\/]+src[\\/]+server\.js|proxy[\\/]+src[\\/]+server\.js/i.test(out);
+  } catch {
+    return false;
+  }
+}
+
+function isRunning() {
+  const pid = readPidFile();
+  if (!pid) return false;
+  if (isOurProxyProcess(pid)) return true;
+  // Stale or reused PID — drop the file so we never SIGTERM a stranger.
+  try { fs.unlinkSync(PID_PATH); } catch {}
   return false;
 }
 
@@ -478,6 +501,8 @@ function killListenerOnPort(port) {
     for (const line of out.split("\n")) {
       const pid = parseInt(line.trim(), 10);
       if (!pid || pid === process.pid) continue;
+      // Never SIGTERM an unrelated listener (dev servers, Docker, etc.).
+      if (!isOurProxyProcess(pid)) continue;
       try {
         process.kill(pid, "SIGTERM");
         killed = true;
@@ -495,7 +520,7 @@ async function startServer(config) {
   const logPath = path.join(CONFIG_DIR, "proxy.log");
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
   const logFd = fs.openSync(logPath, "a");
-  const child = spawn("node", [serverPath, String(port)], {
+  const child = spawn(process.execPath, [serverPath, String(port)], {
     detached: true,
     stdio: ["ignore", logFd, logFd],
     env: {
@@ -528,16 +553,16 @@ async function startServer(config) {
 function stopServer(port) {
   let stopped = false;
   try {
-    if (fs.existsSync(PID_PATH)) {
-      const pid = parseInt(fs.readFileSync(PID_PATH, "utf8").trim(), 10);
+    const pid = readPidFile();
+    if (pid && isOurProxyProcess(pid)) {
       try {
         process.kill(pid, "SIGTERM");
         stopped = true;
       } catch {}
-      try { fs.unlinkSync(PID_PATH); } catch {}
     }
+    try { fs.unlinkSync(PID_PATH); } catch {}
   } catch {}
-  // Also clear orphaned listeners (stale PID / launchd / older installs).
+  // Also clear orphaned SuperCompress listeners only (never foreign processes).
   const targetPort = port || loadConfig()?.port || 8080;
   if (killListenerOnPort(targetPort)) stopped = true;
   if (stopped) console.log("  ✓ Proxy stopped.");

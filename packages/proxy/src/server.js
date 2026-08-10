@@ -24,21 +24,37 @@ const PORT = parseInt(process.argv[2] || process.env.PROXY_PORT || "8080", 10);
 
 const app = express();
 
+const ZSTD_MAX_COMPRESSED_BYTES = 12 * 1024 * 1024; // 12 MB compressed cap
+const ZSTD_MAX_DECODED_BYTES = 10 * 1024 * 1024; // match express.json limit
+
 // Codex sends compact JSON with zstd content encoding. Decode it before
 // Express's JSON parser, which otherwise rejects the request with HTTP 415.
 app.use((req, res, next) => {
   if (req.headers["content-encoding"] !== "zstd") return next();
 
   const chunks = [];
-  req.on("data", (chunk) => chunks.push(chunk));
+  let total = 0;
+  req.on("data", (chunk) => {
+    total += chunk.length;
+    if (total > ZSTD_MAX_COMPRESSED_BYTES) {
+      res.status(413).json({ error: { message: "zstd body too large", type: "payload_too_large" } });
+      req.destroy();
+      return;
+    }
+    chunks.push(chunk);
+  });
   req.on("end", () => {
     try {
       if (typeof zlib.zstdDecompressSync !== "function") {
         res.status(415).json({ error: { message: "zstd request bodies require Node.js 22.15 or newer", type: "unsupported_encoding" } });
         return;
       }
-      const decoded = zlib.zstdDecompressSync(Buffer.concat(chunks)).toString("utf8");
-      req.body = JSON.parse(decoded);
+      const decodedBuf = zlib.zstdDecompressSync(Buffer.concat(chunks));
+      if (decodedBuf.length > ZSTD_MAX_DECODED_BYTES) {
+        res.status(413).json({ error: { message: "decompressed zstd body too large", type: "payload_too_large" } });
+        return;
+      }
+      req.body = JSON.parse(decodedBuf.toString("utf8"));
       req.headers["content-encoding"] = "identity";
       req._body = true;
       next();
@@ -51,11 +67,20 @@ app.use((req, res, next) => {
 // ── Raw body capture for streaming detection ──
 app.use(express.json({ limit: "10mb" }));
 
-// ── CORS (allow any coding agent) ──
+// ── Local-only proxy: block browser CSRF/CORS abuse of the user's SC key ──
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key");
+  // Do not advertise wildcard CORS — coding agents are non-browser clients.
+  const origin = req.headers.origin;
+  if (origin && /^https?:\/\//i.test(String(origin)) && req.path !== "/health") {
+    return res.status(403).json({
+      error: {
+        message: "Browser origins cannot call the local SuperCompress proxy",
+        type: "forbidden_origin",
+      },
+    });
+  }
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
@@ -204,8 +229,29 @@ app.post("/v1/responses", async (req, res) => {
 
   try {
     const agentName = detectCodingAgent(req);
-    const compressed = await compressor.compress(forwarder.responsesInputToMessages(input), agentName);
-    await forwarder.forwardResponses(rest.model, compressed, rest, res, req.headers.authorization);
+    let compressed;
+    if (forwarder.responsesInputHasStructuredItems(input)) {
+      // Tool / function_call items cannot round-trip through text compression.
+      const approx = JSON.stringify(input).split(/\s+/).length;
+      compressed = {
+        messages: [],
+        original_tokens: approx,
+        compressed_tokens: approx,
+        tokens_saved: 0,
+        savings_pct: 0,
+        skip_reason: "structured_protocol",
+      };
+    } else {
+      compressed = await compressor.compress(forwarder.responsesInputToMessages(input), agentName);
+    }
+    await forwarder.forwardResponses(
+      rest.model,
+      compressed,
+      rest,
+      res,
+      req.headers.authorization,
+      input
+    );
     const totalMs = Date.now() - startTime;
     console.error(`[supercompress] responses | ${rest.model || "unknown"} | ${compressed.original_tokens}→${compressed.compressed_tokens} tok | ${compressed.savings_pct}% saved | ${totalMs}ms total`);
   } catch (err) {

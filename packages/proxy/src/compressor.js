@@ -1,177 +1,202 @@
 /**
- * Compressor — calls the SuperCompress hosted API to compress message context.
+ * Compressor — calls SuperCompress API to compress conversation context.
  *
- * Every call uses the user's SuperCompress API key (from config),
- * which authenticates against their plan and counts toward their
- * monthly token quota. This is the monetization hook.
- *
- * The hosted API endpoint: POST https://supercompress.dev/api/v1/compress
+ * Protocol safety:
+ * - Structured tool / multimodal messages pass through uncompressed.
+ * - Compressed history is injected as a user digest (never elevated to system).
+ * - All system messages are preserved (joined), not overwritten.
+ * - Network / 5xx failures fail open (return original messages).
  */
 
-// Native fetch handles the hosted API's compressed responses reliably on the
-// Node versions supported by the CLI. node-fetch can report premature closes
-// for larger gzip responses even when the server returned a valid body.
-const fetch = globalThis.fetch;
-const path = require("path");
 const fs = require("fs");
+const path = require("path");
 const os = require("os");
 
-// Use the canonical host directly. The apex domain redirects to www, and
-// node-fetch can fail while replaying a compressed request across that 308.
-const SUPERCOMPRESS_API = "https://www.supercompress.dev/api/v1/compress";
+const SUPERCOMPRESS_API =
+  process.env.SUPERCOMPRESS_API_URL || "https://www.supercompress.dev/api/v1/compress";
+const COMPRESS_TIMEOUT_MS = Number(process.env.SUPERCOMPRESS_COMPRESS_TIMEOUT_MS || 12_000);
 
-/**
- * Load the user's API key from config.
- * Falls back to SUPERCOMPRESS_API_KEY env var.
- */
 function getApiKey() {
-  const envKey = String(process.env.SUPERCOMPRESS_API_KEY || "").trim();
-  // Ignore unresolved placeholders / non-sc_ values (Cursor used to inject
-  // the literal "${SUPERCOMPRESS_API_KEY}" into MCP/proxy env).
-  if (envKey && !envKey.includes("${") && envKey.startsWith("sc_")) {
-    return envKey;
-  }
-  const configPath = path.join(
-    process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(os.homedir(), ".supercompress"),
-    "config.json"
-  );
+  if (process.env.SUPERCOMPRESS_API_KEY) return process.env.SUPERCOMPRESS_API_KEY;
   try {
-    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    const key = String(config.api_key || "").trim();
-    return key || null;
-  } catch {
-    return null;
+    const configPath = path.join(
+      process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(os.homedir(), ".supercompress"),
+      "config.json"
+    );
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      return config.api_key || null;
+    }
+  } catch {}
+  return null;
+}
+
+function messageText(content) {
+  if (typeof content === "string") return content;
+  if (content == null) return "";
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (!part || typeof part !== "object") return "";
+        return part.text || part.content || part.input_text || part.output_text || "";
+      })
+      .filter(Boolean)
+      .join("\n");
   }
+  if (typeof content === "object") {
+    return content.text || content.content || JSON.stringify(content);
+  }
+  return String(content);
+}
+
+/** True when history contains tool protocol that must not be flattened. */
+function hasStructuredProtocol(messages) {
+  if (!Array.isArray(messages)) return false;
+  for (const msg of messages) {
+    if (!msg || typeof msg !== "object") continue;
+    const role = String(msg.role || "");
+    if (role === "tool" || role === "function") return true;
+    if (msg.tool_calls || msg.function_call || msg.tool_call_id || msg.name) return true;
+    if (Array.isArray(msg.content)) {
+      for (const part of msg.content) {
+        if (!part || typeof part !== "object") continue;
+        const t = String(part.type || "");
+        if (
+          t &&
+          t !== "text" &&
+          t !== "input_text" &&
+          t !== "output_text"
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 /**
- * Assemble the messages into a context + query pair for compression.
- *
- * Strategy:
- * - The last user message becomes the "query"
- * - All previous messages (system + assistant + user history) become the "context"
- * - If there's only one message, return it uncompressed
+ * Assemble compressible text context while preserving all system messages.
+ * Last user message = query; prior non-system turns = context (text only).
  */
 function assembleMessages(messages) {
   if (!messages || messages.length === 0) {
-    return { context: "", query: "", systemMsg: null };
+    return { context: "", query: "", systemMsgs: [] };
   }
 
-  let systemMsg = null;
+  const systemMsgs = [];
   const nonSystem = [];
 
   for (const msg of messages) {
-    if (msg.role === "system") {
-      systemMsg = msg;
+    if (msg.role === "system" || msg.role === "developer") {
+      systemMsgs.push(msg);
     } else {
       nonSystem.push(msg);
     }
   }
 
   if (nonSystem.length === 0) {
-    return { context: "", query: "", systemMsg };
+    return { context: "", query: "", systemMsgs };
   }
 
-  // The last user message becomes the query
   let query = "";
-  let contextParts = [];
-
+  const contextParts = [];
   const lastIdx = nonSystem.length - 1;
   const last = nonSystem[lastIdx];
 
   if (last.role === "user") {
-    query = typeof last.content === "string" ? last.content : JSON.stringify(last.content);
-    // Everything before the last user message is context
+    query = messageText(last.content);
     for (let i = 0; i < lastIdx; i++) {
       const msg = nonSystem[i];
-      const content = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
-      contextParts.push(`[${msg.role}]: ${content}`);
+      contextParts.push(`[${msg.role}]: ${messageText(msg.content)}`);
     }
   } else {
-    // Last message is not user — compress everything
     for (const msg of nonSystem) {
-      const content = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
-      contextParts.push(`[${msg.role}]: ${content}`);
+      contextParts.push(`[${msg.role}]: ${messageText(msg.content)}`);
     }
     query = "Continue the conversation.";
   }
 
-  const context = contextParts.join("\n\n");
-
-  return { context, query, systemMsg };
+  return { context: contextParts.join("\n\n"), query, systemMsgs };
 }
 
-/**
- * Detect the coding agent name from environment variables or config.
- * Used to tag compress API calls for per-agent usage tracking.
- */
 function detectAgentName() {
-  // Prefer explicit env (proxy / hooks set this per agent).
   if (process.env.SUPERCOMPRESS_AGENT_NAME) {
     return process.env.SUPERCOMPRESS_AGENT_NAME;
   }
-  // Never use configured_agents[0] — setup lists every detected agent, so the
-  // first entry (often Claude Code) would mis-attribute Cursor traffic.
   return "coding-agent";
+}
+
+function passThrough(messages, wordCount, skipReason) {
+  return {
+    messages,
+    original_tokens: wordCount,
+    compressed_tokens: wordCount,
+    tokens_saved: 0,
+    savings_pct: 0,
+    skip_reason: skipReason,
+  };
 }
 
 /**
  * Compress a list of messages via the SuperCompress API.
- *
- * @param {Array} messages - The conversation messages to compress
- * @param {string} [agentName] - Optional coding agent name for usage tracking
- * Returns the compressed messages array (replacing context messages
- * with a compressed version) plus compression stats.
  */
 async function compress(messages, agentName) {
+  if (hasStructuredProtocol(messages)) {
+    const words = messageText(JSON.stringify(messages)).split(/\s+/).length;
+    return passThrough(messages, words, "structured_protocol");
+  }
+
+  const { context, query, systemMsgs } = assembleMessages(messages);
+  const wordCount = context.split(/\s+/).filter(Boolean).length;
+  if (wordCount < 100) {
+    return passThrough(messages, wordCount, "context_too_small");
+  }
+
   const apiKey = getApiKey();
   if (!apiKey) {
     throw new Error(
       "SuperCompress API key not found. Run `supercompress setup` first " +
-      "or set SUPERCOMPRESS_API_KEY environment variable."
+        "or set SUPERCOMPRESS_API_KEY environment variable."
     );
   }
 
-  const { context, query, systemMsg } = assembleMessages(messages);
-
-  // Skip compression for very small contexts
-  const wordCount = context.split(/\s+/).length;
-  if (wordCount < 100) {
-    // Too small to compress meaningfully — pass through
-    return {
-      messages,
-      original_tokens: wordCount,
-      compressed_tokens: wordCount,
-      tokens_saved: 0,
-      savings_pct: 0,
-      skip_reason: "context_too_small",
-    };
-  }
-
-  // Determine the coding agent name for usage tracking
   const agent = agentName || detectAgentName();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), COMPRESS_TIMEOUT_MS);
 
-  // Call the SuperCompress API
-  const response = await fetch(SUPERCOMPRESS_API, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": apiKey,
-    },
-    body: JSON.stringify({
-      context,
-      query,
-      mode: "compiler",
-      coding_agent: agent,
-    }),
-  });
+  let response;
+  try {
+    response = await fetch(SUPERCOMPRESS_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey,
+      },
+      body: JSON.stringify({
+        context,
+        query,
+        mode: "compiler",
+        coding_agent: agent,
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    const reason = err?.name === "AbortError" ? "timeout" : "network_error";
+    console.error(`[supercompress] Compress ${reason} — passing through uncompressed`);
+    return passThrough(messages, wordCount, reason);
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "");
     if (response.status === 401) {
       throw new Error(
         "Invalid SuperCompress API key. Run `supercompress setup` to update it " +
-        "or get a new key at https://www.supercompress.dev/dashboard"
+          "or get a new key at https://www.supercompress.dev/dashboard"
       );
     }
     const paywalled =
@@ -188,18 +213,14 @@ async function compress(messages, agentName) {
       throw err;
     }
     if (response.status === 429) {
-      // Pure rate limit — pass through uncompressed (do NOT soft-pass paywalls)
       console.error("[supercompress] Rate limit reached — passing through uncompressed");
-      return {
-        messages,
-        original_tokens: wordCount,
-        compressed_tokens: wordCount,
-        tokens_saved: 0,
-        savings_pct: 0,
-        skip_reason: "rate_limited",
-      };
+      return passThrough(messages, wordCount, "rate_limited");
     }
-    throw new Error(`SuperCompress API error (${response.status}): ${errorBody.slice(0, 200)}`);
+    // 5xx / other: fail open so a hosted outage does not brick the agent.
+    console.error(
+      `[supercompress] API error (${response.status}) — passing through uncompressed`
+    );
+    return passThrough(messages, wordCount, `http_${response.status}`);
   }
 
   const result = await response.json();
@@ -212,41 +233,27 @@ async function compress(messages, agentName) {
     result.kv_savings_pct ??
     (originalTokens > 0 ? Math.round((tokensSaved / originalTokens) * 100) : 0);
 
-  // Never forward an empty compression result — that would wipe agent context.
-  // This can happen on highly repetitive dumps where the policy drops everything.
   if (!compressedText.trim()) {
     console.error(
       "[supercompress] Compression returned empty context — passing through uncompressed"
     );
-    return {
-      messages,
-      original_tokens: result.original_tokens || wordCount,
-      compressed_tokens: result.kept_tokens || result.original_tokens || wordCount,
-      tokens_saved: 0,
-      savings_pct: 0,
-      skip_reason: "empty_compression",
-    };
+    return passThrough(messages, originalTokens, "empty_compression");
   }
 
-  // Reconstruct the messages array with compressed content
   const compressedMessages = [];
+  for (const sys of systemMsgs) compressedMessages.push(sys);
 
-  // Keep system message as-is
-  if (systemMsg) {
-    compressedMessages.push(systemMsg);
-  }
-
-  // Add compressed context as a system message
+  // User-role digest — never elevate tool/history content to system authority.
   compressedMessages.push({
-    role: "system",
-    content: `[Compressed context — ${tokensSaved} tokens saved (~${Math.round(tokensSavedPct)}%)]\n\n${compressedText}`,
+    role: "user",
+    content:
+      `[Compressed prior context — ${tokensSaved} tokens saved (~${Math.round(tokensSavedPct)}%)]\n\n` +
+      `${compressedText}\n\n` +
+      `(End compressed context. Follow the next user message as the active ask.)`,
   });
 
-  // Add the last user message (query) unchanged
-  const lastUserMsg = messages.filter((m) => m.role === "user").pop();
-  if (lastUserMsg) {
-    compressedMessages.push(lastUserMsg);
-  }
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+  if (lastUserMsg) compressedMessages.push(lastUserMsg);
 
   return {
     messages: compressedMessages,
@@ -257,4 +264,10 @@ async function compress(messages, agentName) {
   };
 }
 
-module.exports = { compress, assembleMessages, getApiKey };
+module.exports = {
+  compress,
+  assembleMessages,
+  getApiKey,
+  hasStructuredProtocol,
+  messageText,
+};
