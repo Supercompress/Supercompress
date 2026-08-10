@@ -140,8 +140,32 @@ async function applyCreditTopUp(session) {
 
   const grantFirstPayBonus = !prev.sc_first_pay_bonus_at;
   const bonusUsd = grantFirstPayBonus ? FIRST_PAY_BONUS_USD : 0;
-  const newBalance = roundUsd(Number(prev.sc_credit_balance_usd || 0) + creditUsd + bonusUsd);
-  const nextCredited = [...credited.slice(-40), session.id];
+  const limitUsd = normalizeCreditLimitUsd(
+    session.metadata?.credit_usd || prev.sc_credit_limit_usd,
+    creditUsd
+  );
+
+  // Ledger first (idempotent by session.id) — Auth claims mirror from ledger.
+  const { creditBalance } = require("./billing-ledger");
+  const ledgerResult = await creditBalance({
+    uid: userId,
+    creditUsd: creditUsd + bonusUsd,
+    creditKey: session.id,
+    claims: prev,
+    patch: {
+      credit_limit_usd: limitUsd,
+      auto_recharge: autoRecharge,
+      customer_id: session.customer,
+    },
+  });
+  const newBalance = roundUsd(
+    ledgerResult.balance != null
+      ? ledgerResult.balance
+      : Number(prev.sc_credit_balance_usd || 0) + creditUsd + bonusUsd
+  );
+  const nextCredited = Array.isArray(ledgerResult.ledger?.credited_keys)
+    ? ledgerResult.ledger.credited_keys
+    : [...credited.slice(-40), session.id];
 
   const persistPayload = {
     stripe_customer_id: session.customer,
@@ -150,18 +174,12 @@ async function applyCreditTopUp(session) {
     status: "active",
     sc_metered: false,
     sc_credit_balance_usd: newBalance,
-    sc_credit_limit_usd: normalizeCreditLimitUsd(
-      session.metadata?.credit_usd || prev.sc_credit_limit_usd,
-      creditUsd
-    ),
+    sc_credit_limit_usd: limitUsd,
     sc_auto_recharge: autoRecharge,
     sc_default_payment_method: paymentMethod ? String(paymentMethod) : undefined,
     sc_credited_sessions: nextCredited,
     credit_balance_usd: newBalance,
-    credit_limit_usd: normalizeCreditLimitUsd(
-      session.metadata?.credit_usd || prev.sc_credit_limit_usd,
-      creditUsd
-    ),
+    credit_limit_usd: limitUsd,
     auto_recharge: autoRecharge,
     updated_at: new Date().toISOString(),
   };

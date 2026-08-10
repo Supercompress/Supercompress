@@ -286,14 +286,9 @@ async function startCreditCheckout(req, res, user, body, existingSub, stripeBill
 
   const customerId = await ensureCustomer(user, existingSub, stripeBilling);
 
-  // Remember preferred pack size + auto-recharge before Checkout returns
-  await patchCreditClaims(user.uid, {
-    sc_credit_limit_usd: creditUsd,
-    sc_auto_recharge: autoRecharge,
-    sc_customer_id: customerId,
-    sc_metered: false,
-  });
-
+  // Do NOT flip sc_metered / wallet claims before payment succeeds — a canceled
+  // Checkout must not reclassify a legacy metered subscriber. Persist prefs only
+  // in the subscriptions store (+ Checkout metadata) until the webhook credits.
   try {
     await mutateStore((s) => {
       if (!s.subscriptions) s.subscriptions = {};
@@ -301,6 +296,8 @@ async function startCreditCheckout(req, res, user, body, existingSub, stripeBill
         ...(s.subscriptions[user.uid] || {}),
         stripe_customer_id: customerId,
         plan_id: s.subscriptions[user.uid]?.plan_id || "free",
+        pending_credit_limit_usd: creditUsd,
+        pending_auto_recharge: autoRecharge,
         credit_limit_usd: creditUsd,
         auto_recharge: autoRecharge,
         updated_at: new Date().toISOString(),
@@ -309,6 +306,13 @@ async function startCreditCheckout(req, res, user, body, existingSub, stripeBill
     });
   } catch (err) {
     if (err.status !== 503) throw err;
+  }
+
+  // Safe claim touch: customer id only (needed for Checkout), never sc_metered.
+  try {
+    await patchCreditClaims(user.uid, { sc_customer_id: customerId });
+  } catch (err) {
+    console.warn("checkout customer claim patch skipped:", err.message || err);
   }
 
   const { session, amount } = await createCreditTopUpCheckout({

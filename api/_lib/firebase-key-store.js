@@ -441,91 +441,85 @@ async function recordUsage(keyRec, owner, compressed) {
     } catch (_) {}
   }
 
-  // Owner monthly usage stays on the real Auth user for billing enforcement.
-  const month = now.slice(0, 7);
+  // Owner monthly usage + wallet burn — transactional Firestore ledger (not Auth RMW).
   const ownerClaims = owner.customClaims || {};
-  const ownerPrevious = ownerClaims.sc_usage?.month === month ? ownerClaims.sc_usage : {};
-  const prevTokensIn = ownerPrevious.tokens_in || 0;
-  const ownerTokensIn = prevTokensIn + compressed.original_tokens;
-  let ownerUsage = {
-    month,
-    requests: (ownerPrevious.requests || 0) + 1,
-    tokens_in: ownerTokensIn,
-    tokens_out: (ownerPrevious.tokens_out || 0) + compressed.kept_tokens,
-    tokens_saved: (ownerPrevious.tokens_saved || 0) + tokensSaved,
-    tokens_reported: ownerPrevious.tokens_reported || 0,
-  };
+  const { applyUsageAndBurn, microsToUsd } = require("./billing-ledger");
+  const { reportPaygUsage, isPaygEnabled, isComped, isLegacyMetered, roundUsd } = require("./stripe");
 
-  const {
-    reportPaygUsage,
-    isPaygEnabled,
-    isComped,
-    isLegacyMetered,
-    isCreditWallet,
-    billableTokens,
-    tokensToUsd,
-    attemptAutoRecharge,
-    roundUsd,
-  } = require("./stripe");
+  let ledger;
+  try {
+    const applied = await applyUsageAndBurn({
+      uid: owner.uid,
+      tokensIn: compressed.original_tokens,
+      tokensOut: compressed.kept_tokens,
+      tokensSaved,
+      claims: ownerClaims,
+    });
+    ledger = applied.ledger;
+  } catch (err) {
+    console.warn("recordUsage: billing ledger failed:", err.message || err);
+    ledger = null;
+  }
 
-  let nextClaims = { ...ownerClaims, sc_usage: ownerUsage };
+  const ownerUsage = ledger
+    ? {
+        month: ledger.month,
+        requests: ledger.requests,
+        tokens_in: ledger.tokens_in,
+        tokens_out: ledger.tokens_out,
+        tokens_saved: ledger.tokens_saved,
+        tokens_reported: ledger.tokens_reported || 0,
+      }
+    : {
+        month: now.slice(0, 7),
+        requests: 1,
+        tokens_in: compressed.original_tokens,
+        tokens_out: compressed.kept_tokens,
+        tokens_saved: tokensSaved,
+        tokens_reported: 0,
+      };
 
-  // Legacy metered: report to Stripe meters
+  // Legacy metered: report to Stripe meters (idempotent watermark on ledger).
   try {
     if (isPaygEnabled(ownerClaims.sc_plan) && isLegacyMetered(ownerClaims) && !isComped(ownerClaims)) {
       const freshOwner = {
         ...owner,
-        customClaims: { ...ownerClaims, sc_usage: ownerUsage },
+        customClaims: {
+          ...ownerClaims,
+          sc_usage: ownerUsage,
+          sc_credit_balance_usd: ledger
+            ? roundUsd(microsToUsd(ledger.credit_balance_micros))
+            : ownerClaims.sc_credit_balance_usd,
+        },
       };
-      const reported = await reportPaygUsage(freshOwner, ownerTokensIn);
+      const reported = await reportPaygUsage(freshOwner, ownerUsage.tokens_in);
       if (reported?.tokens_reported != null) {
         ownerUsage.tokens_reported = reported.tokens_reported;
-        nextClaims.sc_usage = ownerUsage;
       }
     }
   } catch (err) {
     console.warn("PAYG meter skipped:", err.message || err);
   }
 
-  // Prepaid credit wallet: burn $ for newly billable tokens
+  // Refresh in-memory owner claims from ledger mirror (applyUsageAndBurn already wrote Auth).
   try {
-    if (!isComped(ownerClaims) && (isCreditWallet(ownerClaims) || (isPaygEnabled(ownerClaims.sc_plan) && !isLegacyMetered(ownerClaims)))) {
-      const prevBillable = billableTokens(prevTokensIn);
-      const newBillable = billableTokens(ownerTokensIn);
-      const deltaBillable = Math.max(0, newBillable - prevBillable);
-      let cost = tokensToUsd(deltaBillable);
-      if (cost > 0) {
-        // Refresh claims in case enforceUsageLimit already auto-recharged
-        let balance = roundUsd(nextClaims.sc_credit_balance_usd || 0);
-        if (balance < cost && nextClaims.sc_auto_recharge) {
-          const recharge = await attemptAutoRecharge({
-            ...owner,
-            customClaims: nextClaims,
-          });
-          if (recharge.ok) {
-            const fresh = await auth().getUser(owner.uid);
-            nextClaims = { ...(fresh.customClaims || {}), sc_usage: ownerUsage };
-            balance = roundUsd(nextClaims.sc_credit_balance_usd || 0);
-          }
-        }
-        if (balance < cost) {
-          // Soft-fail burn: zero out — request already compressed; next call 402s.
-          nextClaims.sc_credit_balance_usd = 0;
-          nextClaims.sc_plan = "payg";
-          nextClaims.sc_metered = false;
-        } else {
-          nextClaims.sc_credit_balance_usd = roundUsd(balance - cost);
-          nextClaims.sc_plan = "payg";
-          nextClaims.sc_metered = false;
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("Credit burn skipped:", err.message || err);
+    const fresh = await auth().getUser(owner.uid);
+    owner.customClaims = fresh.customClaims || {
+      ...ownerClaims,
+      sc_usage: ownerUsage,
+      ...(ledger
+        ? { sc_credit_balance_usd: roundUsd(microsToUsd(ledger.credit_balance_micros)) }
+        : {}),
+    };
+  } catch (_) {
+    owner.customClaims = {
+      ...ownerClaims,
+      sc_usage: ownerUsage,
+      ...(ledger
+        ? { sc_credit_balance_usd: roundUsd(microsToUsd(ledger.credit_balance_micros)) }
+        : {}),
+    };
   }
-
-  await auth().setCustomUserClaims(owner.uid, nextClaims);
-  owner.customClaims = nextClaims;
   return ownerUsage;
 }
 

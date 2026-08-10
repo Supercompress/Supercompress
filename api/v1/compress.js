@@ -36,10 +36,9 @@ async function enforceUsageLimit(owner) {
     // Transition: treat as credit wallet with 0 balance until top-up
   }
 
-  const month = new Date().toISOString().slice(0, 7);
-  const tokensUsedThisPeriod = claims.sc_usage?.month === month
-    ? claims.sc_usage.tokens_in || 0
-    : 0;
+  const { loadLedger, microsToUsd } = require("../_lib/billing-ledger");
+  const ledger = await loadLedger(owner.uid, claims);
+  const tokensUsedThisPeriod = Number(ledger.tokens_in || 0);
 
   if (tokensUsedThisPeriod < FREE_TOKENS_PER_MONTH) return;
 
@@ -71,17 +70,19 @@ async function enforceUsageLimit(owner) {
     throw err;
   }
 
-  let balance = roundUsd(claims.sc_credit_balance_usd || 0);
+  let balance = roundUsd(
+    microsToUsd(ledger.credit_balance_micros) || claims.sc_credit_balance_usd || 0
+  );
   if (balance > 0) return;
 
-  if (claims.sc_auto_recharge) {
+  if (claims.sc_auto_recharge || ledger.auto_recharge) {
     const recharge = await attemptAutoRecharge(owner);
     if (recharge.ok) {
-      const admin = require("firebase-admin");
-      const { initFirebaseAdmin } = require("../_lib/auth");
-      initFirebaseAdmin();
-      const fresh = await admin.auth().getUser(owner.uid);
-      owner.customClaims = fresh.customClaims || {};
+      const freshLedger = await loadLedger(owner.uid, owner.customClaims || claims);
+      owner.customClaims = {
+        ...(owner.customClaims || claims),
+        sc_credit_balance_usd: roundUsd(microsToUsd(freshLedger.credit_balance_micros)),
+      };
       if (roundUsd(owner.customClaims.sc_credit_balance_usd || 0) > 0) return;
     }
   }

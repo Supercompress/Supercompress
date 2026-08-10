@@ -145,9 +145,11 @@ function roundUsd(n) {
   return Math.round(Number(n || 0) * 10000) / 10000;
 }
 
-/** USD cost for a token delta at $0.30 / 1M. */
+/** USD cost for a token delta at $0.30 / 1M (display/aggregate helper). */
 function tokensToUsd(tokenCount) {
-  return roundUsd((Number(tokenCount || 0) / TOKENS_PER_BILLING_UNIT) * USD_PER_MILLION);
+  // Keep sub-cent precision in micros, then round for display.
+  const micros = Math.ceil(Number(tokenCount || 0) * USD_PER_MILLION);
+  return Math.round(micros) / 1_000_000;
 }
 
 function normalizeCreditLimitUsd(raw, fallback = DEFAULT_CREDIT_LIMIT_USD) {
@@ -203,9 +205,9 @@ async function reportPaygUsage(owner, tokensInThisMonth) {
   if (!customerId) return null;
 
   const billable = billableTokens(tokensInThisMonth);
-  const month = new Date().toISOString().slice(0, 7);
-  const prev = claims.sc_usage?.month === month ? claims.sc_usage : {};
-  const alreadyReported = Number(prev.tokens_reported || 0);
+  const { loadLedger, markTokensReported } = require("./billing-ledger");
+  const ledger = await loadLedger(owner.uid, claims);
+  const alreadyReported = Number(ledger.tokens_reported || 0);
   const delta = billable - alreadyReported;
   if (delta <= 0) return null;
 
@@ -217,17 +219,24 @@ async function reportPaygUsage(owner, tokensInThisMonth) {
   }
 
   const eventName = envTrim("STRIPE_METER_EVENT_NAME", "supercompress_tokens_millions");
+  // Idempotent per customer + absolute billable watermark.
+  const idempotencyKey = `sc_meter_${customerId}_${billable}`.slice(0, 255);
 
   try {
     const stripe = getStripe();
-    await stripe.billing.meterEvents.create({
-      event_name: eventName,
-      payload: {
-        stripe_customer_id: customerId,
-        value: String(unitDelta),
+    await stripe.billing.meterEvents.create(
+      {
+        event_name: eventName,
+        payload: {
+          stripe_customer_id: customerId,
+          value: String(unitDelta),
+        },
+        identifier: idempotencyKey,
       },
-    });
+      { idempotencyKey }
+    );
 
+    await markTokensReported(owner.uid, billable, claims);
     return { tokens_reported: billable, units: unitDelta };
   } catch (err) {
     console.warn("PAYG usage report failed:", err.message || err);
@@ -300,16 +309,29 @@ async function createCreditTopUpCheckout({
  */
 async function attemptAutoRecharge(owner) {
   const claims = owner.customClaims || {};
-  if (!claims.sc_auto_recharge) {
+  const { loadLedger, acquireRechargeLock, creditBalance } = require("./billing-ledger");
+  const ledger = await loadLedger(owner.uid, claims);
+  if (!(claims.sc_auto_recharge || ledger.auto_recharge)) {
     return { ok: false, error: "auto_recharge_disabled" };
   }
-  const customerId = claims.sc_customer_id;
+  const customerId = claims.sc_customer_id || ledger.customer_id;
   if (!customerId) {
     return { ok: false, error: "no_customer" };
   }
 
-  const amount = normalizeCreditLimitUsd(claims.sc_credit_limit_usd, DEFAULT_CREDIT_LIMIT_USD);
+  const amount = normalizeCreditLimitUsd(
+    ledger.credit_limit_usd || claims.sc_credit_limit_usd,
+    DEFAULT_CREDIT_LIMIT_USD
+  );
+  const lock = await acquireRechargeLock(owner.uid);
+  if (!lock.acquired) {
+    return { ok: false, error: "recharge_in_progress" };
+  }
+
   const stripe = getStripe();
+  // Hour-bucketed key so concurrent compressions share one PI attempt.
+  const hourBucket = new Date().toISOString().slice(0, 13).replace(/[-:T]/g, "");
+  const idempotencyKey = `sc_ar_${owner.uid}_${Math.round(amount * 100)}_${hourBucket}`.slice(0, 255);
 
   try {
     const customer = await stripe.customers.retrieve(customerId);
@@ -327,65 +349,52 @@ async function attemptAutoRecharge(owner) {
       return { ok: false, error: "no_payment_method" };
     }
 
-    const pi = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
-      currency: "usd",
-      customer: customerId,
-      payment_method: pm,
-      off_session: true,
-      confirm: true,
-      description: `SuperCompress auto-recharge $${amount.toFixed(2)}`,
-      metadata: {
-        user_id: owner.uid,
-        plan_id: "payg",
-        kind: "credit_auto_recharge",
-        credit_usd: String(amount),
+    const pi = await stripe.paymentIntents.create(
+      {
+        amount: Math.round(amount * 100),
+        currency: "usd",
+        customer: customerId,
+        payment_method: pm,
+        off_session: true,
+        confirm: true,
+        description: `SuperCompress auto-recharge $${amount.toFixed(2)}`,
+        metadata: {
+          user_id: owner.uid,
+          plan_id: "payg",
+          kind: "credit_auto_recharge",
+          credit_usd: String(amount),
+        },
       },
-    });
+      { idempotencyKey }
+    );
 
     if (pi.status !== "succeeded") {
       return { ok: false, error: `payment_${pi.status}`, paymentIntentId: pi.id };
     }
 
-    // Apply credit immediately; webhook uses the same idempotency key
-    try {
-      const { initFirebaseAdmin } = require("./auth");
-      const admin = require("firebase-admin");
-      if (initFirebaseAdmin()) {
-        const fresh = await admin.auth().getUser(owner.uid);
-        const prev = fresh.customClaims || {};
-        const key = `pi_${pi.id}`;
-        const credited = Array.isArray(prev.sc_credited_sessions)
-          ? prev.sc_credited_sessions
-          : [];
-        if (!credited.includes(key)) {
-          const balance = roundUsd(Number(prev.sc_credit_balance_usd || 0) + amount);
-          await admin.auth().setCustomUserClaims(owner.uid, {
-            ...prev,
-            sc_plan: "payg",
-            sc_metered: false,
-            sc_credit_balance_usd: balance,
-            sc_credit_limit_usd: normalizeCreditLimitUsd(prev.sc_credit_limit_usd, amount),
-            sc_credited_sessions: [...credited.slice(-40), key],
-            sc_default_payment_method: String(pm),
-          });
-          return { ok: true, balanceAdd: amount, paymentIntentId: pi.id, balance };
-        }
-        return {
-          ok: true,
-          balanceAdd: 0,
-          paymentIntentId: pi.id,
-          balance: roundUsd(prev.sc_credit_balance_usd || 0),
-        };
-      }
-    } catch (err) {
-      console.warn("Auto-recharge claim update failed:", err.message || err);
-    }
+    const credited = await creditBalance({
+      uid: owner.uid,
+      creditUsd: amount,
+      creditKey: `pi_${pi.id}`,
+      claims,
+      patch: {
+        credit_limit_usd: amount,
+        auto_recharge: true,
+        customer_id: customerId,
+      },
+    });
 
-    return { ok: true, balanceAdd: amount, paymentIntentId: pi.id };
+    return {
+      ok: true,
+      balanceAdd: credited.already ? 0 : amount,
+      paymentIntentId: pi.id,
+      balance: credited.balance,
+    };
   } catch (err) {
     console.warn("Auto-recharge failed:", err.message || err);
     return { ok: false, error: err.message || "charge_failed" };
+  } finally {
+    if (lock.release) await lock.release();
   }
 }
 

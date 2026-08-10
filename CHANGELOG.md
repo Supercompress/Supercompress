@@ -31,6 +31,7 @@ Public page: https://www.supercompress.dev/changelog
 - Durable per-key usage metering + dashboard KPI preference for billing meter
 - Remove dead store Auth-stub helpers; CCR uses Firestore (docs match)
 - Fix demo CO₂ grams over-count (`×1000` bug)
+- Transactional Firestore billing ledger for usage + wallet burns; Stripe auto-recharge lock + idempotency; no pre-Checkout `sc_metered` mutation; micro-USD burns so tiny requests are not free
 
 ### Coding agent plugin
 - See **[0.5.17](#0517--2026-08-10)** / **[0.5.16](#0516--2026-08-09)** below
