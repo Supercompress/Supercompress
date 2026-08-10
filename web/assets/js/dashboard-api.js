@@ -1434,60 +1434,6 @@ function usageTotals() {
   };
 }
 
-/** Last N UTC calendar days as YYYY-MM-DD, oldest → newest. */
-function lastNDayKeys(n = 30) {
-  const out = [];
-  const d = new Date();
-  d.setUTCHours(12, 0, 0, 0);
-  for (let i = n - 1; i >= 0; i--) {
-    const x = new Date(d);
-    x.setUTCDate(d.getUTCDate() - i);
-    out.push(x.toISOString().slice(0, 10));
-  }
-  return out;
-}
-
-function dayLabel(iso) {
-  const [, m, day] = String(iso).split("-");
-  return `${Number(m)}/${Number(day)}`;
-}
-
-/** Aggregate by_day across all keys for the last 30 days. */
-function aggregateUsageSeries(days = 30) {
-  const keys = lastNDayKeys(days);
-  const saved = keys.map((day) => ({ x: dayLabel(day), y: 0, day }));
-  const requests = keys.map((day) => ({ x: dayLabel(day), y: 0, day }));
-  const byDayIndex = Object.fromEntries(keys.map((d, i) => [d, i]));
-  let activeDays = 0;
-  const dayHit = new Set();
-
-  for (const snap of Object.values(usageData || {})) {
-    const byDay = snap.by_day || {};
-    for (const [day, rec] of Object.entries(byDay)) {
-      const i = byDayIndex[day];
-      if (i == null) continue;
-      saved[i].y += rec.tokens_saved || 0;
-      requests[i].y += rec.requests || 0;
-      if ((rec.requests || 0) > 0 || (rec.tokens_saved || 0) > 0) dayHit.add(day);
-    }
-  }
-
-  // Claims-only fallback: put month totals on today so charts aren't blank zeros.
-  const hasSeries = saved.some((r) => r.y > 0) || requests.some((r) => r.y > 0);
-  if (!hasSeries && accountUsage && ((accountUsage.tokens_saved || 0) > 0 || (accountUsage.requests || 0) > 0)) {
-    const today = keys[keys.length - 1];
-    const i = byDayIndex[today];
-    if (i != null) {
-      saved[i].y = accountUsage.tokens_saved || 0;
-      requests[i].y = accountUsage.requests || 0;
-      dayHit.add(today);
-    }
-  }
-
-  activeDays = dayHit.size;
-  return { saved, requests, activeDays, dayKeys: keys };
-}
-
 function cutPercent(saved, tin) {
   if (!tin || tin <= 0) return null;
   return Math.round((Number(saved) / Number(tin)) * 100);
@@ -1525,9 +1471,7 @@ function renderKeysSummary() {
   );
 }
 
-/** Analytics charts removed from production — local preview only (`local/analytics-preview.html`). */
-function paintAnalyticsCharts() {}
-
+/** KPI cards on API keys panel (charts live only in local/analytics-preview.html). */
 function renderAnalytics() {
   renderKeysSummary();
 }

@@ -13,6 +13,10 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+### Site / docs
+- Sync public npm pins to `supercompress-proxy@0.5.17`; extend `check-versions.js` to gate those pins
+- Remove leftover Analytics spark DOM + unused series helpers from dashboard
+
 ### Python library
 - Shared `CompressResult` for local + hosted client (`supercompress.result`)
 - Honest `mode="precision"` (hosted API when keyed; otherwise raises)

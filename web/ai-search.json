@@ -133,7 +133,7 @@
       "source": "https://www.supercompress.dev/reduce-llm-costs"
     },
     {
-      "claim": "SuperCompress vs Headroom should not be framed by parameter counts. The real differences are query-aware evidence selection, MCP + every-submit hooks (context compress; tiny asks skip; keep login), optional wrap for full-traffic proxy, and published held-out answer-containment gates. npm: supercompress-proxy@0.5.8.",
+      "claim": "SuperCompress vs Headroom should not be framed by parameter counts. The real differences are query-aware evidence selection, MCP + every-submit hooks (context compress; tiny asks skip; keep login), optional wrap for full-traffic proxy, and published held-out answer-containment gates. npm: supercompress-proxy@0.5.17.",
       "source": "https://www.supercompress.dev/supercompress-vs-headroom"
     },
     {

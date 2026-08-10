@@ -106,6 +106,31 @@ if (!rootLock) {
   }
 }
 
+// 5. Public site / docs pins must match proxy version (OSS-facing surfaces)
+const publicPins = [
+  { file: 'web/docs/coding-agents.html', needle: `v${proxyVersion}` },
+  { file: 'web/docs/coding-agents.html', needle: `# → ${proxyVersion}` },
+  { file: 'web/index.html', needle: `"softwareVersion": "${proxyVersion}"` },
+  { file: 'web/ai-search.json', needle: `supercompress-proxy@${proxyVersion}` },
+  { file: 'web/llms.txt', needle: `supercompress-proxy@${proxyVersion}` },
+];
+
+for (const { file, needle } of publicPins) {
+  const fullPath = path.join(repoRoot, file);
+  if (!fs.existsSync(fullPath)) {
+    console.error(`❌ Missing public pin file: ${file}`);
+    hasErrors = true;
+    continue;
+  }
+  const text = fs.readFileSync(fullPath, 'utf8');
+  if (!text.includes(needle)) {
+    console.error(`❌ Mismatch: ${file} missing pin '${needle}' (expected proxy ${proxyVersion})`);
+    hasErrors = true;
+  } else {
+    console.log(`✅ ${file} pin matches '${needle}'`);
+  }
+}
+
 if (hasErrors) {
   console.error('\n❌ Version consistency check failed!');
   process.exit(1);
