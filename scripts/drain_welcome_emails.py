@@ -77,10 +77,13 @@ def api(method: str, path: str, payload: dict | None = None) -> dict:
 
 
 def send_gmail(to: str, subject: str, body: str, html: str | None = None) -> bool:
+    """Send multipart email. HTML is required for branded product welcomes."""
+    if not html or not str(html).strip():
+        print(f"FAIL send {to}: missing branded html (refusing plain-only)", flush=True)
+        return False
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as handle:
         handle.write(body)
         path = handle.name
-    html_path = None
     try:
         cmd = [
             "gog",
@@ -94,26 +97,22 @@ def send_gmail(to: str, subject: str, body: str, html: str | None = None) -> boo
             subject,
             "--body-file",
             path,
+            "--body-html",
+            html,
             "--no-input",
             "--reply-to",
             ACCOUNT,
         ]
-        if html:
-            # Prefer HTML; keep plain as fallback for clients that strip HTML
-            with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as h2:
-                h2.write(html)
-                html_path = h2.name
-            # gog accepts --body-html as string; read file into arg
-            cmd.extend(["--body-html", html])
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if result.returncode:
             print(f"FAIL send {to}: {(result.stderr or result.stdout)[:200]}", flush=True)
             return False
+        # Confirm gog actually attached HTML (dry-run style fields aren't returned,
+        # but empty success with plain-only was the prior bug — log length).
+        print(f"OK send {to} html_len={len(html)}", flush=True)
         return True
     finally:
         Path(path).unlink(missing_ok=True)
-        if html_path:
-            Path(html_path).unlink(missing_ok=True)
 
 
 def main() -> int:
@@ -127,7 +126,11 @@ def main() -> int:
         subject = item.get("subject") or "Thanks for signing up — quick note from the founder"
         body = item.get("body") or ""
         html = item.get("html") or None
-        print(f"SEND {email}", flush=True)
+        if not html:
+            print(f"SKIP {email}: API returned no html field — check welcomeCopy deploy", flush=True)
+            failed += 1
+            continue
+        print(f"SEND {email} html_len={len(html)}", flush=True)
         ok = send_gmail(email, subject, body, html)
         resp = api(
             "POST",

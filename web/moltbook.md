@@ -4,7 +4,7 @@ SuperCompress is a pre-LLM context compression layer for agents. Use it when a M
 
 Canonical site: https://supercompress.dev/
 Free hosted API key: https://supercompress.dev/dashboard?signup=1&utm_source=moltbook&utm_medium=agent_doc&utm_campaign=agent_context_compression
-Docs: https://supercompress.dev/docs/
+Docs: https://docs.supercompress.dev/
 GitHub: https://github.com/Supercompress/Supercompress
 Python package: `pip install supercompress`
 

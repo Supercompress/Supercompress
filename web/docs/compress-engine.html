@@ -7,16 +7,16 @@
   <meta name="description" content="Layman and technical reference for every function in web/assets/js/compress-engine.js — what it does and how it works." />
   <meta property="og:title" content="Compress Engine Reference — SuperCompress Documentation" />
   <meta property="og:description" content="Function-by-function guide to the browser compress engine: preprocessors, ML scoring, compiler selection, CCR, and precision mode." />
-  <meta property="og:url" content="https://www.supercompress.dev/docs/compress-engine" />
+  <meta property="og:url" content="https://docs.supercompress.dev/compress-engine" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="canonical" href="https://www.supercompress.dev/docs/compress-engine" />
+  <link rel="canonical" href="https://docs.supercompress.dev/compress-engine" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-  <link rel="stylesheet" href="/assets/css/docs.css?v=12" />
+<link rel="stylesheet" href="/assets/css/docs.css?v=14" />
   <style>
     .fn-card { margin: 1.25rem 0 1.75rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border, #e5e7eb); }
     .fn-card h3 { margin: 0 0 0.35rem; font-size: 1.05rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -35,22 +35,22 @@
 <body>
   <div class="docs-layout">
     <aside class="docs-sidebar" id="docs-sidebar">
-      <a href="/" class="docs-sidebar-logo">
+      <a href="https://docs.supercompress.dev/" class="docs-sidebar-logo">
         <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="18" height="18" />
         <span class="docs-sidebar-logo-word">Super<em>Compress</em></span>
       </a>
       <div class="docs-sidebar-section">Getting started</div>
-      <a href="/" class="docs-sidebar-link">Overview</a>
-      <a href="/quickstart" class="docs-sidebar-link">Quickstart</a>
+      <a href="https://docs.supercompress.dev/" class="docs-sidebar-link">Overview</a>
+      <a href="https://docs.supercompress.dev/quickstart" class="docs-sidebar-link">Quickstart</a>
       <div class="docs-sidebar-section">Reference</div>
-      <a href="/api-reference" class="docs-sidebar-link">API Reference</a>
-      <a href="/integrations" class="docs-sidebar-link">Integrations</a>
-      <a href="/coding-agents" class="docs-sidebar-link">Coding Agents</a>
-      <a href="/usage" class="docs-sidebar-link">Usage</a>
+      <a href="https://docs.supercompress.dev/api-reference" class="docs-sidebar-link">API Reference</a>
+      <a href="https://docs.supercompress.dev/integrations" class="docs-sidebar-link">Integrations</a>
+      <a href="https://docs.supercompress.dev/coding-agents" class="docs-sidebar-link">Coding Agents</a>
+      <a href="https://docs.supercompress.dev/usage" class="docs-sidebar-link">Usage</a>
       <div class="docs-sidebar-section">Deep dives</div>
-      <a href="/architecture" class="docs-sidebar-link">Architecture</a>
-      <a href="/compress-engine" class="docs-sidebar-link active">Compress engine</a>
-      <a href="/environment" class="docs-sidebar-link">Environment &amp; CO₂</a>
+      <a href="https://docs.supercompress.dev/architecture" class="docs-sidebar-link">Architecture</a>
+      <a href="https://docs.supercompress.dev/compress-engine" class="docs-sidebar-link active">Compress engine</a>
+      <a href="https://docs.supercompress.dev/environment" class="docs-sidebar-link">Environment &amp; CO₂</a>
     </aside>
     <div class="docs-sidebar-overlay" id="sidebar-overlay"></div>
 
@@ -67,9 +67,9 @@
               <a href="https://www.supercompress.dev/#agents">Agents</a>
               <a href="https://www.supercompress.dev/blog">Blog</a>
               <a href="https://www.supercompress.dev/changelog">Changelog</a>
-              <a href="/" aria-current="page">Docs</a>
+              <a href="https://docs.supercompress.dev/" aria-current="page">Docs</a>
             </nav>
-            <a href="https://www.supercompress.dev/dashboard?signup=1" class="docs-nav-cta">Get API key</a>
+            <a href="https://www.supercompress.dev/dashboard?signup=1" class="docs-nav-cta df-nav-cta">Get API key</a>
           </div>
         </div>
       </nav>
@@ -798,22 +798,18 @@ compressCCR, ccrRetrieve, ccrGetStats, simpleHash, cacheWrap</code></pre>
         <p>Many helpers above are internal closures (not exported) but documented because they define behavior.</p>
 
         <aside class="docs-signup-cta" aria-label="Get started">
-          <h2>Try it live</h2>
-          <p>5M free tokens/mo. No credit card. Compress context before inference in one click.</p>
-          <ul class="docs-signup-cta-incentives">
-            <li>5M free tokens/mo</li>
-            <li>No credit card</li>
-            <li>Then $1/1M</li>
-          </ul>
+          <p class="docs-signup-cta-kicker">Free to start</p>
+          <h2>Get your API key</h2>
+          <p>1M free tokens/mo · then $0.30/1M. No credit card.</p>
           <div class="docs-signup-cta-actions">
-            <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/playground">Open playground →</a>
-            <a class="docs-signup-cta-link" href="/architecture">Architecture overview</a>
+            <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
+            <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>
           </div>
         </aside>
 
         <footer class="docs-site-footer">
           <div class="docs-site-footer-inner">
-            <p><a href="https://www.supercompress.dev/">SuperCompress</a> · <a href="/">Docs</a> · <a href="https://www.supercompress.dev/dashboard?signup=1">Dashboard</a> · <a href="/coding-agents">Coding agents</a> · <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a> · MIT License</p>
+            <p><a href="https://www.supercompress.dev/">SuperCompress</a> · <a href="https://docs.supercompress.dev/">Docs</a> · <a href="https://www.supercompress.dev/dashboard?signup=1">Dashboard</a> · <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a> · <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a> · MIT License</p>
           </div>
         </footer>
       </div>

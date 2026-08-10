@@ -7,36 +7,36 @@
   <meta name="description" content="SuperCompress API reference: Python compress_context, compress_for_turn, HTTP POST /v1/compress, response fields, error codes, and client usage." />
   <meta property="og:title" content="API Reference — SuperCompress Documentation" />
   <meta property="og:description" content="Complete API reference for SuperCompress prompt compression." />
-  <meta property="og:url" content="https://www.supercompress.dev/docs/api-reference" />
+  <meta property="og:url" content="https://docs.supercompress.dev/api-reference" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="canonical" href="https://www.supercompress.dev/docs/api-reference" />
+  <link rel="canonical" href="https://docs.supercompress.dev/api-reference" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-<link rel="stylesheet" href="/assets/css/docs.css?v=12" />
+<link rel="stylesheet" href="/assets/css/docs.css?v=14" />
 </head>
 <body>
   <div class="docs-layout">
     <aside class="docs-sidebar" id="docs-sidebar">
-      <a href="/" class="docs-sidebar-logo">
+      <a href="https://docs.supercompress.dev/" class="docs-sidebar-logo">
         <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="18" height="18" />
         <span class="docs-sidebar-logo-word">Super<em>Compress</em></span>
       </a>
       <div class="docs-sidebar-section">Getting started</div>
-      <a href="/" class="docs-sidebar-link">Overview</a>
-      <a href="/quickstart" class="docs-sidebar-link">Quickstart</a>
+      <a href="https://docs.supercompress.dev/" class="docs-sidebar-link">Overview</a>
+      <a href="https://docs.supercompress.dev/quickstart" class="docs-sidebar-link">Quickstart</a>
       <div class="docs-sidebar-section">Reference</div>
-      <a href="/api-reference" class="docs-sidebar-link active">API Reference</a>
-      <a href="/integrations" class="docs-sidebar-link">Integrations</a>
-      <a href="/coding-agents" class="docs-sidebar-link">Coding Agents</a>
-      <a href="/usage" class="docs-sidebar-link">Usage</a>
+      <a href="https://docs.supercompress.dev/api-reference" class="docs-sidebar-link active">API Reference</a>
+      <a href="https://docs.supercompress.dev/integrations" class="docs-sidebar-link">Integrations</a>
+      <a href="https://docs.supercompress.dev/coding-agents" class="docs-sidebar-link">Coding Agents</a>
+      <a href="https://docs.supercompress.dev/usage" class="docs-sidebar-link">Usage</a>
       <div class="docs-sidebar-section">Deep dives</div>
-      <a href="/architecture" class="docs-sidebar-link">Architecture</a>
-      <a href="/compress-engine" class="docs-sidebar-link">Compress engine</a>
-      <a href="/environment" class="docs-sidebar-link">Environment & CO₂</a>
+      <a href="https://docs.supercompress.dev/architecture" class="docs-sidebar-link">Architecture</a>
+      <a href="https://docs.supercompress.dev/compress-engine" class="docs-sidebar-link">Compress engine</a>
+      <a href="https://docs.supercompress.dev/environment" class="docs-sidebar-link">Environment & CO₂</a>
     </aside>
     <div class="docs-sidebar-overlay" id="sidebar-overlay"></div>
 
@@ -53,9 +53,9 @@
               <a href="https://www.supercompress.dev/#agents">Agents</a>
               <a href="https://www.supercompress.dev/blog">Blog</a>
               <a href="https://www.supercompress.dev/changelog">Changelog</a>
-              <a href="/" aria-current="page">Docs</a>
+              <a href="https://docs.supercompress.dev/" aria-current="page">Docs</a>
             </nav>
-            <a href="https://www.supercompress.dev/dashboard?signup=1" class="docs-nav-cta">Get API key</a>
+            <a href="https://www.supercompress.dev/dashboard?signup=1" class="docs-nav-cta df-nav-cta">Get API key</a>
           </div>
         </div>
       </nav>
@@ -71,67 +71,46 @@
             <li><a href="#python-api">Python API</a></li>
             <li><a href="#http-api">HTTP API (POST /v1/compress)</a></li>
             <li><a href="#compiler-mode">Compiler mode</a></li>
-            <li><a href="#compare-policies">Comparing policies</a></li>
             <li><a href="#sustainability">Environmental impact</a></li>
             <li><a href="#errors">Error handling</a></li>
           </ol>
         </div>
 
         <h2 id="python-api">Python API</h2>
-        <p>The <code>supercompress</code> package provides the core compression functions. Import them directly from the top-level package.</p>
+        <p>The <code>supercompress</code> package provides the core compression functions. Local and hosted paths share one <code>CompressResult</code> type.</p>
 
-        <h3><code>compress_context(text, question, budget_ratio=0.35, policy=None, checkpoint=None)</code></h3>
-        <p>Compress a single string of context against a question. Returns a <code>CompressResult</code>.</p>
-        <table class="param-table">
-          <thead>
-            <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>text</td><td>str</td><td>required</td><td>The full context to compress (chat history, RAG chunks, logs, etc.)</td></tr>
-            <tr><td>question</td><td>str</td><td>required</td><td>The user's current query — drives retention scoring</td></tr>
-            <tr><td>budget_ratio</td><td>float</td><td>0.35</td><td>Fraction of tokens to keep, in (0, 1]. Used in fixed-ratio mode only</td></tr>
-            <tr><td>policy</td><td>EvictionPolicy</td><td>learned</td><td>Override with <code>FIFO()</code>, <code>TruncationPolicy()</code>, etc.</td></tr>
-            <tr><td>checkpoint</td><td>str</td><td>default.pt</td><td>Path to trained weights. Bundled with the package</td></tr>
-          </tbody>
-        </table>
-        <p><strong>Raises:</strong> <code>ValueError</code> if budget_ratio is not in (0, 1]. Empty input returns <code>policy_name="noop"</code> with zero tokens.</p>
+        <h3><code>compress_for_turn(context, user_query, context_blocks=None, budget_ratio=0.35, mode="compiler")</code></h3>
+        <p>Query-aware local compression. Returns a <code>CompressResult</code>.</p>
+        <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> compress_for_turn
+
+result = compress_for_turn(
+    context=<span class="str">""</span>,
+    user_query=user_message,
+    context_blocks=[system_prompt, tool_output, chat_history],
+    budget_ratio=<span class="num">0.35</span>,
+)
+
+<span class="cm"># Send result.compressed_text to your LLM</span>
+<span class="kw">print</span>(result.tokens_saved_pct)</code></pre>
+
+        <h3><code>compress_context(text, query, budget_ratio=0.35)</code></h3>
+        <p>Alias for <code>compress_for_turn</code> with a single context string. Returns a <code>CompressResult</code>.</p>
         <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> compress_context
 
 result = compress_context(
     text=<span class="str">"Your long context…"</span>,
-    question=<span class="str">"What does fetch return?"</span>,
+    query=<span class="str">"What does fetch return?"</span>,
 )
 
 <span class="kw">print</span>(result.compressed_text)
 <span class="kw">print</span>(<span class="str">f"Saved {result.tokens_saved_pct:.1f}% tokens"</span>)</code></pre>
 
-        <h3><code>compress_for_turn(context_blocks, user_query, budget_ratio=0.35)</code></h3>
-        <p>Compress a list of context blocks (e.g. system prompt, tool output, chat history) against a user query. Merges blocks with <code>\n\n---\n\n</code> before compression. Returns <code>(compressed_text, CompressResult)</code>.</p>
-        <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> compress_for_turn
+        <h3>Hosted client — <code>SuperCompress.compress(...)</code></h3>
+        <p>Same <code>CompressResult</code> type as the local engine.</p>
+        <pre><code><span class="kw">from</span> supercompress.client <span class="kw">import</span> SuperCompress
 
-compressed, stats = compress_for_turn(
-    context_blocks=[system_prompt, tool_output, chat_history],
-    user_query=user_message,
-)
-
-<span class="cm"># Send `compressed` to your LLM instead of the full merge</span></code></pre>
-
-        <h3><code>compress_detailed(text, question, ...)</code></h3>
-        <p>Same as <code>compress_context</code>, but also returns per-line keep/drop annotations. Useful for debugging or building visualizations.</p>
-        <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> compress_detailed
-
-result, lines = compress_detailed(ctx, question)
-<span class="kw">for</span> ln <span class="kw">in</span> lines:
-    <span class="kw">if</span> <span class="kw">not</span> ln.kept:
-        <span class="kw">print</span>(<span class="str">f"Line {ln.line_index}: {ln.reason}"</span>)</code></pre>
-
-        <h3><code>middle_truncation_failure_case()</code></h3>
-        <p>Returns a <code>(context, question)</code> tuple where head+tail truncation loses a middle answer. Useful for demos, benchmarks, and testing.</p>
-        <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> middle_truncation_failure_case
-
-ctx, q = middle_truncation_failure_case()
-result = compress_context(ctx, q)
-<span class="kw">print</span>(<span class="str">f"Truncation would lose this. SuperCompress: {result.tokens_saved_pct:.0f}% saved"</span>)</code></pre>
+sc = SuperCompress(api_key=<span class="str">"sc_live_…"</span>)
+result = sc.compress(context, query, mode=<span class="str">"precision"</span>)</code></pre>
 
         <h3>CompressResult fields</h3>
         <table>
@@ -139,16 +118,15 @@ result = compress_context(ctx, q)
             <tr><th>Field</th><th>Type</th><th>Description</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>original_text</code></td><td>str</td><td>Input context</td></tr>
             <tr><td><code>compressed_text</code></td><td>str</td><td>Compressed context for your LLM</td></tr>
             <tr><td><code>original_tokens</code></td><td>int</td><td>Tokens before compression</td></tr>
             <tr><td><code>kept_tokens</code></td><td>int</td><td>Tokens after compression</td></tr>
             <tr><td><code>tokens_saved_pct</code></td><td>float</td><td>Percent of prompt tokens removed: (1 − kept/original) × 100.</td></tr>
-            <tr><td><code>compression_ratio</code></td><td>float</td><td>original / kept (read-only property)</td></tr>
-            <tr><td><code>policy_name</code></td><td>str</td><td><code>"SuperCompress"</code>, <code>"H2O-fallback"</code>, or baseline name</td></tr>
-            <tr><td><code>budget_ratio</code></td><td>float</td><td>Retention budget used</td></tr>
-            <tr><td><code>question</code></td><td>str</td><td>The query used for scoring</td></tr>
-            <tr><td><code>kept_line_ratio</code></td><td>float</td><td>Fraction of original lines kept</td></tr>
+            <tr><td><code>tokens_saved</code></td><td>int</td><td>original − kept</td></tr>
+            <tr><td><code>policy_name</code></td><td>str</td><td>e.g. <code>local-query-aware</code>, <code>SuperCompress-compiler</code></td></tr>
+            <tr><td><code>mode</code></td><td>str</td><td><code>compiler</code> or <code>precision</code></td></tr>
+            <tr><td><code>keep_ratio</code></td><td>float</td><td>Retention budget used</td></tr>
+            <tr><td><code>kept_line_ratio</code></td><td>float</td><td>Fraction of original lines kept (hosted API)</td></tr>
           </tbody>
         </table>
 
@@ -251,20 +229,11 @@ result = compress_context(ctx, q)
           </thead>
           <tbody>
             <tr><td>Production API call — maximize savings safely</td><td><strong>Compiler mode</strong> (omit budget)</td></tr>
-            <tr><td>Research / benchmark comparisons</td><td><strong>Fixed-ratio mode</strong> (pass budget_ratio)</td></tr>
-            <tr><td>Debugging what gets kept</td><td><code>compress_detailed()</code> with budget_ratio</td></tr>
-            <tr><td>Comparing methods in a notebook</td><td><code>compare_policies()</code></td></tr>
+            <tr><td>Research / fixed retention budget</td><td><strong>Fixed-ratio mode</strong> (pass budget_ratio)</td></tr>
+            <tr><td>Local offline / no API key</td><td><code>compress_for_turn()</code> / <code>compress_context()</code></td></tr>
+            <tr><td>Hosted with quality gate</td><td><code>SuperCompress(...).compress(..., mode="precision")</code></td></tr>
           </tbody>
         </table>
-
-        <h2 id="compare-policies">Comparing policies</h2>
-        <h3><code>compare_policies(text, question, budget_ratio=0.35)</code></h3>
-        <p>Returns a dict of <code>{policy_name: CompressResult}</code> for FIFO, Truncation, Summarization, H2O, and SuperCompress. Useful for benchmarks and research.</p>
-        <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> compare_policies
-
-results = compare_policies(ctx, question, budget_ratio=0.35)
-<span class="kw">for</span> name, r <span class="kw">in</span> results.items():
-    <span class="kw">print</span>(<span class="str">f"{name}: {r.kept_tokens} tokens ({r.tokens_saved_pct:.1f}%)"</span>)</code></pre>
 
         <h2 id="sustainability">Environmental impact</h2>
         <p>The <code>sustainability_from_tokens_saved</code> helper converts token savings into estimated GPU-seconds, kWh, and CO₂ avoided.</p>
@@ -276,7 +245,7 @@ impact = sustainability_from_tokens_saved(saved)
 <span class="kw">print</span>(impact.co2_kg_avoided)
 <span class="kw">print</span>(impact.watt_hours_saved)
 <span class="kw">print</span>(impact.assumptions.to_dict())</code></pre>
-        <p>Default assumptions: 2,500 tokens/GPU-sec, 150W GPU, 0.417 kg CO₂/kWh (US grid), and <code>context_share_of_prefill</code> set to 55%. This estimates the prefill work avoided by removing prompt tokens before inference; SuperCompress does not read or write the model’s KV cache. See <a href="/environment">Environment & CO₂</a> for the full methodology.</p>
+        <p>Default assumptions: 2,500 tokens/GPU-sec, 150W GPU, 0.417 kg CO₂/kWh (US grid), and <code>context_share_of_prefill</code> set to 55%. This estimates the prefill work avoided by removing prompt tokens before inference; SuperCompress does not read or write the model’s KV cache. See <a href="https://docs.supercompress.dev/environment">Environment & CO₂</a> for the full methodology.</p>
 
         <h2 id="errors">Error handling</h2>
         <h3>Python errors</h3>
@@ -307,26 +276,22 @@ impact = sustainability_from_tokens_saved(saved)
         </table>
 
         <div class="doc-footer">
-          <p>Next: <a href="/integrations">Integrations →</a></p>
+          <p>Next: <a href="https://docs.supercompress.dev/integrations">Integrations →</a></p>
         </div>
 
     </div>
               <aside class="docs-signup-cta" aria-label="Get started">
-          <h2>Get your free API key</h2>
-          <p>5M free tokens/mo. No credit card. Compress context before inference in one click.</p>
-          <ul class="docs-signup-cta-incentives">
-            <li>5M free tokens/mo</li>
-            <li>No credit card</li>
-            <li>Then $1/1M</li>
-          </ul>
+          <p class="docs-signup-cta-kicker">Free to start</p>
+          <h2>Get your API key</h2>
+          <p>1M free tokens/mo · then $0.30/1M. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
-            <a class="docs-signup-cta-link" href="/coding-agents">Coding agents setup</a>
+            <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>
           </div>
         </aside>
 <footer class="docs-site-footer">
         <div class="docs-site-footer-inner">
-          <p><a href="https://www.supercompress.dev/">SuperCompress</a> · <a href="/">Docs</a> · <a href="https://www.supercompress.dev/dashboard?signup=1">Dashboard</a> · <a href="/coding-agents">Coding agents</a> · <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a> · MIT License</p>
+          <p><a href="https://www.supercompress.dev/">SuperCompress</a> · <a href="https://docs.supercompress.dev/">Docs</a> · <a href="https://www.supercompress.dev/dashboard?signup=1">Dashboard</a> · <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a> · <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a> · MIT License</p>
         </div>
       </footer>
   </div>

@@ -12,7 +12,7 @@ SEO_CLUSTER = """
   <a href="/token-compression">Token compression</a>
   <a href="/prompt-compression">Prompt compression</a>
   <a href="/context-compression">Smart context compression</a>
-  <a href="/docs/coding-agents">Coding agents</a>
+  <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a>
   <a href="/supercompress-vs-headroom">vs Headroom</a>
   <a href="/blog">Blog</a>
 </nav>

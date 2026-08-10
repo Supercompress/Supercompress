@@ -12,7 +12,7 @@
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
 <link rel="stylesheet" href="/assets/css/aiscore.css?v=3" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
 </head>
 <body>
 <header class="df-header">
@@ -57,25 +57,6 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-
-    <aside class="sc-signup-band sc-signup-band--inline" aria-label="Start free">
-      <div class="sc-signup-band-inner">
-        <div class="sc-signup-band-copy">
-          <p class="sc-signup-band-kicker">Free to start</p>
-          <h2>Try it free — 5M tokens included</h2>
-          <p class="sc-signup-band-lead">No credit card. Same engine as production. Key ready after Google signup.</p>
-          <ul class="sc-signup-incentives">
-            <li>5M free tokens/mo</li>
-            <li>No credit card</li>
-            <li>Then $1/1M</li>
-          </ul>
-        </div>
-        <div class="sc-signup-band-actions">
-          <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=mid_cta&amp;utm_campaign=activation">Claim free API key →</a>
-        </div>
-      </div>
-    </aside>
-
 <div class="score-noise" aria-hidden="true"></div>
   <header class="score-header">
     <a class="score-logo" href="/" aria-label="SuperCompress home">
@@ -125,30 +106,11 @@
       <section class="auth-gate" id="auth-gate" hidden aria-labelledby="auth-title">
         <div class="auth-gate-mark">SC</div><p class="eyebrow"><span class="eyebrow-dot"></span> The useful part is ready</p><h2 id="auth-title">Unlock the<br /><i>why behind it.</i></h2><p>Sign in to see the signals we found and your personalized SuperCompress implementation plan.</p><button class="google-auth" id="google-auth" type="button"><span class="google-g">G</span><span>Continue with Google</span><span>↗</span></button><p class="auth-error" id="auth-error" role="alert"></p><small>We use your account only to save access to this assessment.</small>
       </section>
-      <div class="locked-results" id="locked-results" hidden><div class="result-detail"><div><span class="detail-label">Why this score</span><h3 id="why-score">Your stack likely creates repeated, oversized context.</h3></div><ul class="signal-list" id="signal-list"></ul></div><div class="implementation-plan"><div><span class="detail-label">Your implementation path</span><h3>Where SuperCompress fits in your stack.</h3><p class="plan-source">Generated from your Context.dev assessment.</p></div><div class="plan-copy" id="implementation-plan">Loading your specific plan…</div></div><div class="result-cta"><div><span class="eyebrow"><span class="eyebrow-dot"></span> The practical next step</span><h3>Put compression in front of your model call.</h3><p>Keep the evidence. Drop the noise. Pay for fewer input tokens on every request.</p></div><div class="cta-actions"><a href="https://www.supercompress.dev/docs/coding-agents" class="primary-action">See how it works <span>↗</span></a><a href="https://github.com/Supercompress/Supercompress" class="secondary-action" target="_blank" rel="noopener">View the open source ↗</a></div></div><p class="estimate-note">This is a directional estimate, not a quote. Your actual savings depend on model, traffic, context size, and current input pricing.</p></div>
+      <div class="locked-results" id="locked-results" hidden><div class="result-detail"><div><span class="detail-label">Why this score</span><h3 id="why-score">Your stack likely creates repeated, oversized context.</h3></div><ul class="signal-list" id="signal-list"></ul></div><div class="implementation-plan"><div><span class="detail-label">Your implementation path</span><h3>Where SuperCompress fits in your stack.</h3><p class="plan-source">Generated from your Context.dev assessment.</p></div><div class="plan-copy" id="implementation-plan">Loading your specific plan…</div></div><div class="result-cta"><div><span class="eyebrow"><span class="eyebrow-dot"></span> The practical next step</span><h3>Put compression in front of your model call.</h3><p>Keep the evidence. Drop the noise. Pay for fewer input tokens on every request.</p></div><div class="cta-actions"><a href="https://docs.supercompress.dev/coding-agents" class="primary-action">See how it works <span>↗</span></a><a href="https://github.com/Supercompress/Supercompress" class="secondary-action" target="_blank" rel="noopener">View the open source ↗</a></div></div><p class="estimate-note">This is a directional estimate, not a quote. Your actual savings depend on model, traffic, context size, and current input pricing.</p></div>
     </section>
 
   </main>
-  <section class="sc-signup-band" aria-label="Get started">
-  <div class="sc-signup-band-inner">
-    <div class="sc-signup-band-copy">
-      <p class="sc-signup-band-kicker">Free to start</p>
-      <h2>Get your API key — 5M free tokens every month</h2>
-      <p class="sc-signup-band-lead">Cut LLM input cost ~65%. No credit card. Google signup takes one click.</p>
-      <ul class="sc-signup-incentives">
-        <li>5M free tokens/mo</li>
-        <li>No credit card</li>
-        <li>Then $1/1M</li>
-        <li>Cursor · Claude Code · Codex</li>
-      </ul>
-    </div>
-    <div class="sc-signup-band-actions">
-      <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Get free API key →</a>
-      <a class="sc-signup-band-link" href="https://www.supercompress.dev/docs/coding-agents?utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Install for coding agents</a>
-    </div>
-  </div>
-</section>
-<footer class="df-footer">
+  <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
         <div class="df-footer-brand">
@@ -178,7 +140,7 @@
               <li><a href="/playground">Playground</a></li>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
               <li><a href="/compare">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
@@ -199,10 +161,10 @@
             <p class="df-footer-heading">Documentation</p>
             <ul>
               <li><a href="https://docs.supercompress.dev">Documentation</a></li>
-              <li><a href="https://www.supercompress.dev/docs/quickstart">Quickstart</a></li>
-              <li><a href="https://www.supercompress.dev/docs/api-reference">API reference</a></li>
-              <li><a href="https://www.supercompress.dev/docs/environment">Environment</a></li>
-              <li><a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
             </ul>
           </div>
           <div>
@@ -217,6 +179,6 @@
     </div>
   </footer>
   <script src="/assets/js/aiscore.js?v=3"></script>
-  <script src="/assets/js/site-chrome.js?v=11"></script>
+  <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>
 </html>

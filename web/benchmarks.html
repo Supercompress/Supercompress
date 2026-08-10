@@ -27,7 +27,7 @@
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
 <link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
   <style>
     .bench-head { text-align: center; padding: 60px 20px 20px; max-width: 860px; margin: 0 auto; }
     .bench-head h1 { font-family: var(--serif); font-weight: 300; font-size: 2.6rem; line-height: 1.15; }
@@ -184,7 +184,7 @@
         "name": "Is SuperCompress free?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. SuperCompress is open source under MIT license. The Python library and browser demo are free. The hosted API includes $5 free tokens per month (5M tokens), then $1 per 1M tokens pay-as-you-go."
+          "text": "Yes. SuperCompress is open source under MIT license. The Python library and browser demo are free. The hosted API includes 1M free tokens per month, then $0.30 per 1M tokens pay-as-you-go."
         }
       }
     ]
@@ -240,20 +240,7 @@
   <div class="df-header-spacer" aria-hidden="true"></div>
 <main>
 
-    <aside class="sc-signup-band sc-signup-band--inline" aria-label="Start free">
-      <div class="sc-signup-band-inner">
-        <div class="sc-signup-band-copy">
-          <p class="sc-signup-band-kicker">Incentive</p>
-          <h2>Try it free — 5M tokens included</h2>
-          <p class="sc-signup-band-lead">No credit card. Same engine as production. Key ready after Google signup.</p>
-        </div>
-        <div class="sc-signup-band-actions">
-          <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=mid_cta&amp;utm_campaign=activation">Claim free API key →</a>
-        </div>
-      </div>
-    </aside>
-
-      <div class="bench-head">
+    <div class="bench-head">
         <div class="bench-kicker"><strong>Updated 2026-08-01</strong> · held-out answer containment · live compiler workloads</div>
         <h1>Keep the answer. Drop the noise.</h1>
         <p>Most compressors cut tokens. SuperCompress is judged on a harder question: <em>after compression, can the model still answer correctly?</em> On primary held-out suites (real / fresh4 / fresh5), gold answers survive at <strong>99.4%</strong> pooled (180/181) while mean token cut stays <strong>≥55%</strong>. Fresh6 cold mix also clears the answer gate below.</p>
@@ -575,7 +562,7 @@
               </tbody>
             </table>
           </div>
-          <p class="bench-meta">Methodology: <a href="https://www.supercompress.dev/docs/environment" target="_blank" rel="noopener">Environment guide</a>. Real savings depend on model and workload.</p>
+          <p class="bench-meta">Methodology: <a href="https://docs.supercompress.dev/environment" target="_blank" rel="noopener">Environment guide</a>. Real savings depend on model and workload.</p>
         </section>
 
         <!-- FAQ -->
@@ -636,26 +623,7 @@
     </a>
   </div>
 
-    <section class="sc-signup-band" aria-label="Get started">
-  <div class="sc-signup-band-inner">
-    <div class="sc-signup-band-copy">
-      <p class="sc-signup-band-kicker">Free to start</p>
-      <h2>Get your API key — 5M free tokens every month</h2>
-      <p class="sc-signup-band-lead">Cut LLM input cost ~65%. No credit card. Google signup takes one click.</p>
-      <ul class="sc-signup-incentives">
-        <li>5M free tokens/mo</li>
-        <li>No credit card</li>
-        <li>Then $1/1M</li>
-        <li>Cursor · Claude Code · Codex</li>
-      </ul>
-    </div>
-    <div class="sc-signup-band-actions">
-      <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Get free API key →</a>
-      <a class="sc-signup-band-link" href="https://www.supercompress.dev/docs/coding-agents?utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Install for coding agents</a>
-    </div>
-  </div>
-</section>
-<footer class="df-footer">
+    <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
         <div class="df-footer-brand">
@@ -685,7 +653,7 @@
               <li><a href="/playground">Playground</a></li>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks" aria-current="page">Benchmarks</a></li>
-              <li><a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
               <li><a href="/compare">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
@@ -706,10 +674,10 @@
             <p class="df-footer-heading">Documentation</p>
             <ul>
               <li><a href="https://docs.supercompress.dev">Documentation</a></li>
-              <li><a href="https://www.supercompress.dev/docs/quickstart">Quickstart</a></li>
-              <li><a href="https://www.supercompress.dev/docs/api-reference">API reference</a></li>
-              <li><a href="https://www.supercompress.dev/docs/environment">Environment</a></li>
-              <li><a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
             </ul>
           </div>
           <div>
@@ -741,6 +709,6 @@
       <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 20px; font-size: 12px;">★</span>
     </a>
   </div>
-  <script src="/assets/js/site-chrome.js?v=11"></script>
+  <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>
 </html>

@@ -79,6 +79,10 @@ def api(method: str, path: str, payload: dict | None = None) -> dict:
 
 
 def send_gmail(to: str, subject: str, body: str, html: str | None = None) -> bool:
+    """Send multipart email. HTML is required for branded product mail."""
+    if not html or not str(html).strip():
+        print(f"FAIL send {to}: missing branded html (refusing plain-only)", flush=True)
+        return False
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as handle:
         handle.write(body)
         path = handle.name
@@ -95,16 +99,17 @@ def send_gmail(to: str, subject: str, body: str, html: str | None = None) -> boo
             subject,
             "--body-file",
             path,
+            "--body-html",
+            html,
             "--no-input",
             "--reply-to",
             ACCOUNT,
         ]
-        if html:
-            cmd.extend(["--body-html", html])
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
         if result.returncode:
             print(f"FAIL send {to}: {(result.stderr or result.stdout)[:240]}", flush=True)
             return False
+        print(f"OK send {to} html_len={len(html)}", flush=True)
         return True
     finally:
         Path(path).unlink(missing_ok=True)

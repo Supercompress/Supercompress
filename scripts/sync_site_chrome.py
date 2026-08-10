@@ -24,7 +24,8 @@ SIGNUP_CTA = (WEB / "assets/partials/signup-cta.html").read_text(encoding="utf-8
 # Strip comment markers for injection body
 HEADER_HTML = re.sub(r"<!-- SITE_HEADER_(?:START|END) -->\n?", "", HEADER).strip() + "\n"
 FOOTER_HTML = re.sub(r"<!-- SITE_FOOTER_(?:START|END) -->\n?", "", FOOTER).strip() + "\n"
-SIGNUP_CTA_HTML = re.sub(r"<!-- SITE_SIGNUP_CTA_(?:START|END) -->\n?", "", SIGNUP_CTA).strip() + "\n"
+# Pre-footer signup band removed (was unstyled / no CSS).
+SIGNUP_CTA_HTML = ""
 
 SKIP_PATHS = {
     "web/assets/partials/site-header.html",
@@ -34,15 +35,15 @@ SKIP_PATHS = {
     "web/assets/partials/seo-cluster.html",
 }
 
-# Pages that already have a full-bleed landing CTA (avoid stacking duplicate bands)
+# Signup CTA injection disabled site-wide
 SKIP_SIGNUP_CTA = {
     "web/index.html",
     "web/dashboard.html",
     "web/unsubscribe.html",
 }
 
-CHROME_CSS = '<link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />'
-CHROME_JS = '<script src="/assets/js/site-chrome.js?v=11"></script>'
+CHROME_CSS = '<link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />'
+CHROME_JS = '<script src="/assets/js/site-chrome.js?v=12"></script>'
 
 
 def rel(path: Path) -> str:
@@ -218,46 +219,25 @@ def replace_footer(html: str) -> str:
 
 
 def ensure_signup_cta(html: str) -> str:
-    """Place incentive signup band immediately before site footer."""
-    # Refresh existing band
-    html2, n = re.subn(
+    """Remove legacy unstyled signup bands / seo CTAs (do not re-inject)."""
+    html = re.sub(
         r"<!-- SITE_SIGNUP_CTA_START -->.*?<!-- SITE_SIGNUP_CTA_END -->\s*",
-        SIGNUP_CTA_HTML,
+        "",
         html,
-        count=1,
         flags=re.S,
     )
-    if n:
-        return html2
-
-    # Refresh only the pre-footer section band (never touch mid-page asides)
-    html2, n = re.subn(
-        r'<section class="sc-signup-band"(?![^>]*sc-signup-band--inline)[^>]*>.*?</section>\s*',
-        SIGNUP_CTA_HTML,
+    html = re.sub(
+        r'<(?:section|aside) class="sc-signup-band[^"]*"[^>]*>.*?</(?:section|aside)>\s*',
+        "",
         html,
-        count=1,
         flags=re.S,
     )
-    if n:
-        return html2
-
-    # Insert before footer if missing
-    if 'class="sc-signup-band"' not in html and 'class="df-footer"' in html:
-        return re.sub(
-            r'(<footer class="df-footer">)',
-            SIGNUP_CTA_HTML + r"\1",
-            html,
-            count=1,
-        )
-    if 'class="df-footer"' in html and 'sc-signup-band"' in html and 'SITE_SIGNUP_CTA' not in html:
-        # Has only an inline mid CTA — still add footer band
-        if "sc-signup-band--inline" in html and '<section class="sc-signup-band"' not in html:
-            return re.sub(
-                r'(<footer class="df-footer">)',
-                SIGNUP_CTA_HTML + r"\1",
-                html,
-                count=1,
-            )
+    html = re.sub(
+        r'<(?:section|aside|div) class="seo-cta"[^>]*>.*?</(?:section|aside|div)>\s*',
+        "",
+        html,
+        flags=re.S,
+    )
     return html
 
 
@@ -294,8 +274,8 @@ def process(path: Path) -> bool:
 
     html = replace_footer(html)
 
-    if rel_path not in SKIP_SIGNUP_CTA and not dashboard:
-        html = ensure_signup_cta(html)
+    # Always strip legacy unstyled pre-footer signup bands
+    html = ensure_signup_cta(html)
 
     if not is_landing and not dashboard:
         html = ensure_chrome_js(html)

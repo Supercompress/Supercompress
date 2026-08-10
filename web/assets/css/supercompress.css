@@ -87,26 +87,24 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
   font-family: var(--sans);
 }
 
-/* Header — exact SuperCompress pattern */
+/* Header — lander chrome (landing-chrome.css is source of truth; keep in sync) */
 .df-header {
   position: fixed;
   inset: 0 0 auto 0;
-  z-index: 50;
-  overflow-x: clip;
-  padding-top: 4px;
+  z-index: 200;
+  overflow: visible;
+  padding-top: 8px;
+  transition: background 0.25s ease, backdrop-filter 0.25s ease, box-shadow 0.25s ease;
 }
-@media (min-width: 640px) {
-  .df-header { padding-top: 8px; }
+.df-header.is-scrolled {
+  background: rgba(251, 251, 248, 0.82);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
 }
 
 .df-header-blur {
-  pointer-events: none;
-  position: absolute;
-  inset: 0 0 -60% 0;
-  z-index: -1;
-  backdrop-filter: blur(12px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62.5%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 62.5%, transparent 100%);
+  display: none;
 }
 
 .df-header-inner {
@@ -117,7 +115,7 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
   max-width: var(--max-w);
   margin: 0 auto;
   padding: 0 var(--frame-buffer);
-  min-height: var(--nav-h);
+  min-height: var(--nav-h, 72px);
 }
 
 .df-logo-desktop {
@@ -127,10 +125,11 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
   transform: translateY(-50%);
   display: none;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--text-primary);
+  z-index: 2;
 }
-@media (min-width: 820px) {
+@media (min-width: 900px) {
   .df-logo-desktop { display: inline-flex; }
 }
 
@@ -138,8 +137,9 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  color: var(--text-primary);
 }
-@media (min-width: 820px) {
+@media (min-width: 900px) {
   .df-logo-mobile { display: none; }
 }
 
@@ -147,16 +147,15 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
   display: block;
   flex-shrink: 0;
   object-fit: contain;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
 }
 
-.df-logo-desktop .sc-logo-mark {
-  width: 52px;
-  height: 52px;
-}
-
+.df-logo-desktop .sc-logo-mark,
 .df-logo-mobile .sc-logo-mark {
-  width: 38px;
-  height: 38px;
+  width: 28px;
+  height: 28px;
 }
 
 .docs-sidebar-logo .sc-logo-mark {
@@ -166,7 +165,7 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
 
 .df-logo-word {
   font-family: var(--serif);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 300;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -183,7 +182,7 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
   gap: 12px;
   margin-left: auto;
 }
-@media (min-width: 820px) {
+@media (min-width: 900px) {
   .df-header-end { display: flex; }
 }
 
@@ -3160,6 +3159,28 @@ button.btn-link-muted {
   font-weight: 300;
   font-size: 24px;
   margin-bottom: 16px;
+}
+
+.dash-modal-lead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink, #171717);
+}
+
+.dash-modal-bonus {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #eef4ff;
+  border-left: 3px solid #0566ff;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #171717;
+}
+
+.dash-modal.hidden {
+  display: none !important;
 }
 
 .dash-modal-card .btn-brand {

@@ -25,7 +25,7 @@
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
   <link rel="stylesheet" href="assets/css/supercompress.css?v=115" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
     <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=1" />
 <style>
     .seo-page { max-width: 920px; margin: 0 auto; padding: 72px 24px 96px; }
@@ -182,7 +182,7 @@
   <a href="/token-compression">Token compression</a>
   <a href="/prompt-compression">Prompt compression</a>
   <a href="/context-compression">Context compression</a>
-  <a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a>
+  <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a>
   <a href="/supercompress-vs-headroom">vs Headroom</a>
   <a href="/benchmarks">Benchmarks</a>
 </nav>
@@ -319,14 +319,14 @@
 sc = SuperCompress()
 result = sc.compress(context=long_context, query="What failed and how do we fix it?")
 print(result.compressed_text, result.tokens_saved_pct)</pre>
-      <p>Full docs: <a href="https://www.supercompress.dev/docs/quickstart">quickstart</a> · <a href="https://www.supercompress.dev/docs/usage">usage</a> · <a href="https://www.supercompress.dev/docs/api-reference">API reference</a>.</p>
+      <p>Full docs: <a href="https://docs.supercompress.dev/quickstart">quickstart</a> · <a href="https://docs.supercompress.dev/usage">usage</a> · <a href="https://docs.supercompress.dev/api-reference">API reference</a>.</p>
     </section>
 
     <section class="seo-section" id="agents">
       <h2>Reduce LLM costs for coding agents</h2>
       <p>Cursor, Claude Code, Codex, and similar agents re-send huge dumps every turn. That is a token-cost machine. SuperCompress’s MCP plugin compresses large context before inference while you keep your normal login.</p>
 <pre>npx supercompress-proxy setup</pre>
-      <p>Details: <a href="https://www.supercompress.dev/docs/coding-agents">coding agents guide</a>.</p>
+      <p>Details: <a href="https://docs.supercompress.dev/coding-agents">coding agents guide</a>.</p>
     </section>
 
 
@@ -349,7 +349,7 @@ print(result.compressed_text, result.tokens_saved_pct)</pre>
           <tr><td>LangChain compressors</td><td>Framework helpers (extractors/filters)</td><td>Glue code, not a measured compress product with answer gates</td></tr>
         </tbody>
       </table>
-      <p><strong>Short answer for “best way to reduce API costs query aware”:</strong> run SuperCompress on the context for <em>this</em> query, then optionally cache and route. Guide: <a href="/context-compression">context compression</a> · install: <a href="https://www.supercompress.dev/docs/coding-agents">coding agents</a>.</p>
+      <p><strong>Short answer for “best way to reduce API costs query aware”:</strong> run SuperCompress on the context for <em>this</em> query, then optionally cache and route. Guide: <a href="/context-compression">context compression</a> · install: <a href="https://docs.supercompress.dev/coding-agents">coding agents</a>.</p>
     </section>
 
     <section class="seo-section" id="faq">
@@ -385,38 +385,7 @@ print(result.compressed_text, result.tokens_saved_pct)</pre>
   -d "context=$(cat rag_dump.txt)&query=Why did checkout fail?"</code></pre>
     </section>
 
-        <section class="seo-cta">
-      <p class="seo-cta-kicker">Free to start · 5M tokens/mo</p>
-      <h2>Get your free API key — cut LLM input cost ~65%.</h2>
-      <p>No credit card. Google signup takes one click. Your key is ready instantly for chat, RAG, and coding agents.</p>
-      <ul class="seo-cta-incentives">
-        <li>5M free tokens/mo</li>
-        <li>No credit card</li>
-        <li>Then $1/1M</li>
-        <li>Cursor · Claude Code · Codex</li>
-      </ul>
-      <p class="seo-cta-actions"><a class="btn-brand" href="/dashboard?signup=1&amp;utm_source=seo&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key</a><a class="btn-link-muted" href="https://www.supercompress.dev/docs/coding-agents">Install for agents</a></p>
-    </section>
-  </main>
-<section class="sc-signup-band" aria-label="Get started">
-  <div class="sc-signup-band-inner">
-    <div class="sc-signup-band-copy">
-      <p class="sc-signup-band-kicker">Free to start</p>
-      <h2>Get your API key — 5M free tokens every month</h2>
-      <p class="sc-signup-band-lead">Cut LLM input cost ~65%. No credit card. Google signup takes one click.</p>
-      <ul class="sc-signup-incentives">
-        <li>5M free tokens/mo</li>
-        <li>No credit card</li>
-        <li>Then $1/1M</li>
-        <li>Cursor · Claude Code · Codex</li>
-      </ul>
-    </div>
-    <div class="sc-signup-band-actions">
-      <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Get free API key →</a>
-      <a class="sc-signup-band-link" href="https://www.supercompress.dev/docs/coding-agents?utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Install for coding agents</a>
-    </div>
-  </div>
-</section>
+        </main>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
@@ -447,7 +416,7 @@ print(result.compressed_text, result.tokens_saved_pct)</pre>
               <li><a href="/playground">Playground</a></li>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
               <li><a href="/compare">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
@@ -468,10 +437,10 @@ print(result.compressed_text, result.tokens_saved_pct)</pre>
             <p class="df-footer-heading">Documentation</p>
             <ul>
               <li><a href="https://docs.supercompress.dev">Documentation</a></li>
-              <li><a href="https://www.supercompress.dev/docs/quickstart">Quickstart</a></li>
-              <li><a href="https://www.supercompress.dev/docs/api-reference">API reference</a></li>
-              <li><a href="https://www.supercompress.dev/docs/environment">Environment</a></li>
-              <li><a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
             </ul>
           </div>
           <div>
@@ -485,6 +454,6 @@ print(result.compressed_text, result.tokens_saved_pct)</pre>
       <p class="df-footer-copy">© SuperCompress · MIT License</p>
     </div>
   </footer>
-  <script src="/assets/js/site-chrome.js?v=11"></script>
+  <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>
 </html>
