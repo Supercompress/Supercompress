@@ -432,6 +432,103 @@ async function sendWelcomeEmail({ email, firstName }) {
   return { ...result, subject: copy.subject, text: copy.text, html: copy.html };
 }
 
+/**
+ * One-off power-user blast for accounts past 1M tokens.
+ * @param {{ firstName: string, email: string, rank: number, tokensIn: number, tokensSaved: number, requests: number, morePct: number, cutPct: number }} opts
+ */
+function powerUserCopy({
+  firstName,
+  email,
+  rank,
+  tokensIn,
+  tokensSaved,
+  requests,
+  morePct,
+  cutPct,
+}) {
+  const hi = firstName ? `Hey ${firstName}` : "Hey";
+  const name = firstName || "there";
+  const subject = "You are officially a Supercompress power user!";
+  const billingUrl = `${SITE}/dashboard?panel=billing`;
+  const tin = Number(tokensIn || 0);
+  const saved = Number(tokensSaved || 0);
+  const reqs = Number(requests || 0);
+  const more = Number(morePct || 0);
+  const cut = Number(cutPct || 0);
+  const fmt = (n) => {
+    const v = Number(n || 0);
+    if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
+    if (v >= 1e3) return `${Math.round(v / 1e3)}k`;
+    return String(Math.round(v));
+  };
+  const ordinal = (n) => {
+    const v = Number(n) || 0;
+    const mod100 = v % 100;
+    if (mod100 >= 11 && mod100 <= 13) return `${v}th`;
+    switch (v % 10) {
+      case 1:
+        return `${v}st`;
+      case 2:
+        return `${v}nd`;
+      case 3:
+        return `${v}rd`;
+      default:
+        return `${v}th`;
+    }
+  };
+
+  const text = `${hi},
+
+You're a SuperCompress power user.
+
+You've crossed a million tokens. Congratulations — you're ${ordinal(rank)} all-time on the leaderboard.
+
+With SuperCompress you've saved about ${fmt(saved)} tokens across ${fmt(reqs)} requests (roughly ${cut}% cut). That's about ${more}% more usage from the same raw context budget.
+
+We just lowered our API costs by ~70%. Pay-as-you-go is only $0.30 per million tokens now.
+
+Load some credits here: ${billingUrl}
+
+— Arjun
+Founder, SuperCompress
+`;
+
+  const bodyHtml = `
+    ${eyebrow("Power user")}
+    ${displayHeadline(`${hi} — you're a SuperCompress power user`)}
+    <p style="margin:0 0 14px;">You've crossed a million tokens. Congrats.</p>
+    ${proofCallout(`All-time leaderboard: ${ordinal(rank)} overall.`)}
+    <p style="margin:0 0 12px;">Your stats with SuperCompress:</p>
+    <ul style="margin:0 0 16px;padding-left:18px;color:${INK};">
+      <li style="margin:0 0 6px;"><strong>${fmt(tin)}</strong> tokens in</li>
+      <li style="margin:0 0 6px;"><strong>${fmt(saved)}</strong> tokens saved (~${cut}% cut)</li>
+      <li style="margin:0 0 6px;"><strong>${fmt(reqs)}</strong> requests</li>
+      <li style="margin:0 0 6px;">~<strong>${more}%</strong> more usage from the same context budget</li>
+    </ul>
+    <p style="margin:0 0 12px;">We just lowered our API costs by ~70%. It's only <strong>$0.30 per million tokens</strong> now — you can load credits anytime.</p>
+    ${ctaButton("Load credits", billingUrl)}
+    ${signatureBlock()}
+  `;
+
+  const html = brandedEmailHtml({
+    preheader: `${name}, you crossed 1M tokens — #${rank} all-time. $0.30/1M now.`,
+    title: subject,
+    bodyHtml,
+    kind: "welcome",
+  });
+
+  return { subject, text, html, to: email };
+}
+
+async function sendPowerUserEmail(opts) {
+  if (!opts?.email || !String(opts.email).includes("@")) {
+    return { ok: false, error: "missing email" };
+  }
+  const copy = powerUserCopy(opts);
+  const result = await sendViaResend(copy);
+  return { ...result, subject: copy.subject, text: copy.text, html: copy.html };
+}
+
 function campaignKind(campaignId) {
   const id = String(campaignId || "");
   if (id.endsWith("-ship") || id.includes("-ship")) return "ship";
@@ -683,6 +780,7 @@ async function sendWeeklyEmail({ email, firstName, campaignId, unsubUrl, listUns
 
 module.exports = {
   welcomeCopy,
+  powerUserCopy,
   weeklyCopy,
   shipCopy,
   weeklyEmailCopy,
@@ -694,6 +792,7 @@ module.exports = {
   brandedEmailHtml,
   sendViaResend,
   sendWelcomeEmail,
+  sendPowerUserEmail,
   sendWeeklyEmail,
   DEFAULT_FROM,
 };

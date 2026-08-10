@@ -107,23 +107,9 @@ async function migrateAuthKeyToStore(authUser, secret) {
     return rec;
   });
 
-  // Best-effort remove stub from Auth so the dashboard shows real users only.
-  try {
-    if (!authUser.email && id.startsWith(KEY_UID_PREFIX)) {
-      await auth().deleteUser(id);
-      const owner = await auth().getUser(c.sc_owner).catch(() => null);
-      if (owner) {
-        const claims = { ...(owner.customClaims || {}) };
-        if (Array.isArray(claims.sc_key_ids)) {
-          claims.sc_key_ids = claims.sc_key_ids.filter((x) => x !== id);
-          await auth().setCustomUserClaims(owner.uid, claims);
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("migrateAuthKeyToStore: could not delete stub Auth user", id, err.message);
-  }
-
+  // Keep Auth stub — coding-agent keys authenticate via Auth first. Deleting the
+  // stub left hash_index/store as the only path; when store writes flake, keys
+  // vanished from Auth and usage stopped attributing to them.
   return migrated;
 }
 
@@ -157,9 +143,69 @@ async function listKeys(ownerUid) {
   }
 
   const fresh = await loadStore({ forceRemote: true });
+  const keys = listUserKeys(fresh, ownerUid).map(publicKey);
+  let usage = userUsage(fresh, ownerUid);
+
+  // Merge durable key_usage doc (survives monolithic store flakes).
+  // Prefer durable when it has data so we never double-count with legacy store.usage.
+  try {
+    const { loadKeyUsage, mergeKeySnaps, reconcileKeyUsageGap } = require("./store");
+    const durable = await loadKeyUsage(ownerUid);
+    const hasDurable = Object.values(durable || {}).some((s) => (s.total_tokens_in || 0) > 0);
+    if (hasDurable) {
+      const merged = {};
+      for (const k of keys) {
+        merged[k.id] = durable[k.id] || usage[k.id] || mergeKeySnaps({}, {});
+      }
+      // Include durable rows for keys not currently listed (revoked mid-month etc.)
+      for (const [id, snap] of Object.entries(durable)) {
+        if (!merged[id]) merged[id] = snap;
+      }
+      usage = merged;
+    } else {
+      for (const [id, snap] of Object.entries(durable || {})) {
+        usage[id] = mergeKeySnaps(usage[id] || {}, snap);
+      }
+      for (const k of keys) {
+        if (!usage[k.id]) usage[k.id] = mergeKeySnaps({}, {});
+      }
+    }
+  } catch (err) {
+    console.warn("listKeys: durable key_usage merge skipped:", err.message);
+  }
+
+  let account_usage = null;
+  try {
+    const owner = await ownerRecord(ownerUid);
+    const claims = owner.customClaims || {};
+    const month = new Date().toISOString().slice(0, 7);
+    const u = claims.sc_usage?.month === month ? claims.sc_usage : null;
+    if (u && ((u.tokens_in || 0) > 0 || (u.requests || 0) > 0)) {
+      account_usage = {
+        month,
+        requests: u.requests || 0,
+        tokens_in: u.tokens_in || 0,
+        tokens_out: u.tokens_out || 0,
+        tokens_saved: u.tokens_saved || 0,
+      };
+    }
+  } catch (_) {}
+
+  // Attribute billing-meter gap onto a real key so the table never shows
+  // "per-key store empty" when default + coding-agent keys exist.
+  if (account_usage && keys.length) {
+    try {
+      const { reconcileKeyUsageGap } = require("./store");
+      usage = await reconcileKeyUsageGap(ownerUid, keys, usage, account_usage);
+    } catch (err) {
+      console.warn("listKeys: reconcile skipped:", err.message);
+    }
+  }
+
   return {
-    keys: listUserKeys(fresh, ownerUid).map(publicKey),
-    usage: userUsage(fresh, ownerUid),
+    keys,
+    usage,
+    account_usage,
   };
 }
 
@@ -321,14 +367,45 @@ async function authenticateKey(secret) {
 
 async function recordUsage(keyRec, owner, compressed) {
   const keyId = keyRec.id || keyRec.uid;
+  const ownerUid = owner?.uid || keyRec.user_id;
   const day = new Date().toISOString().slice(0, 10);
   const tokensSaved = Math.max(0, compressed.original_tokens - compressed.kept_tokens);
   const now = new Date().toISOString();
 
+  // Primary: durable per-key usage doc (does not depend on monolithic config/store).
+  let durableOk = false;
+  try {
+    const { trackKeyUsage } = require("./store");
+    await trackKeyUsage(ownerUid, keyRec, {
+      day,
+      original_tokens: compressed.original_tokens,
+      kept_tokens: compressed.kept_tokens,
+      tokens_saved: tokensSaved,
+    });
+    durableOk = true;
+  } catch (err) {
+    console.warn("recordUsage: durable key_usage skipped:", err.message);
+  }
+
+  // Best-effort: upsert key + last_used. Only bump legacy store.usage if durable write failed.
   try {
     await mutateStore((store) => {
-      if (!store.keys[keyId]) return null;
-      store.keys[keyId].last_used_at = now;
+      if (!store.keys[keyId]) {
+        store.keys[keyId] = {
+          id: keyId,
+          user_id: ownerUid,
+          name: keyRec.name || "API key",
+          prefix: keyRec.prefix || "",
+          key_hash: keyRec.key_hash || null,
+          created_at: keyRec.created_at || now,
+          last_used_at: now,
+          revoked: false,
+        };
+        if (keyRec.key_hash) store.hash_index[keyRec.key_hash] = keyId;
+      } else {
+        store.keys[keyId].last_used_at = now;
+      }
+      if (durableOk) return store.keys[keyId];
       if (!store.usage[keyId]) store.usage[keyId] = {};
       if (!store.usage[keyId][day]) {
         store.usage[keyId][day] = {
@@ -349,6 +426,19 @@ async function recordUsage(keyRec, owner, compressed) {
   } catch (err) {
     // Compression already succeeded — don't 503 the client if store is flaky.
     console.warn("recordUsage: store update skipped:", err.message);
+  }
+
+  // Also stamp Auth stub last_used when present (coding-agent keys).
+  if (String(keyId).startsWith(KEY_UID_PREFIX)) {
+    try {
+      const stub = await auth().getUser(keyId).catch(() => null);
+      if (stub?.customClaims?.sc_api_key) {
+        await auth().setCustomUserClaims(keyId, {
+          ...stub.customClaims,
+          sc_last: now,
+        });
+      }
+    } catch (_) {}
   }
 
   // Owner monthly usage stays on the real Auth user for billing enforcement.

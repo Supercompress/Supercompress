@@ -26,8 +26,8 @@
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
   <meta name="theme-color" content="rgb(251,251,248)" />
-  <link rel="stylesheet" href="assets/css/supercompress.css?v=111" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
+  <link rel="stylesheet" href="assets/css/supercompress.css?v=112" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
 <style>
     /* Dashboard: no dark bg layers, full light page */
     html, body.dash-page {
@@ -396,154 +396,62 @@
       color: var(--text-muted);
     }
 
-    /* Analytics + dither-kit charts */
-    .dash-stat-hint {
-      display: block;
-      margin-top: 8px;
-      font-size: 12px;
-      color: var(--text-muted, #737373);
-    }
-    .dk-spark {
-      position: relative;
-      height: 36px;
-      margin-top: 12px;
-      border-radius: 2px;
-      overflow: hidden;
-      background: linear-gradient(180deg, rgba(53, 143, 243, 0.06), transparent);
-    }
-    .dash-stat-card--accent .dk-spark {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent);
-    }
-    .dash-analytics {
+    /* Keys summary cards (light) — Analytics charts are local-only for now */
+    .dash-panel-actions {
       display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 28px;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
     .dash-analytics-hero {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      gap: 12px;
+      margin-bottom: 20px;
     }
     @media (max-width: 900px) {
       .dash-analytics-hero { grid-template-columns: repeat(2, 1fr); }
     }
     .dash-analytics-kpi {
       padding: 18px 16px;
-      border: 0.5px solid var(--card-border, rgba(0,0,0,0.1));
-      border-radius: 4px;
-      background:
-        radial-gradient(120% 80% at 0% 0%, rgba(53, 143, 243, 0.08), transparent 55%),
-        #fff;
+      border: 0.5px solid rgba(15, 23, 42, 0.08);
+      border-radius: 12px;
+      background: #fff;
     }
-    .dash-analytics-kpi:first-child {
+    .dash-analytics-kpi--cut {
+      border-color: rgba(5, 102, 255, 0.22);
       background:
-        radial-gradient(120% 90% at 100% 0%, rgba(40, 210, 110, 0.14), transparent 50%),
+        linear-gradient(165deg, rgba(5, 102, 255, 0.1), transparent 70%),
         #fff;
     }
     .dash-analytics-kpi-l {
       display: block;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 650;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--text-muted, #737373);
+      color: #64748b;
     }
     .dash-analytics-kpi-n {
       display: block;
-      margin-top: 6px;
+      margin-top: 8px;
       font-family: var(--serif);
-      font-size: clamp(26px, 3.2vw, 36px);
+      font-size: clamp(28px, 3.4vw, 36px);
       font-weight: 300;
-      line-height: 1;
-      color: var(--text-primary, #111);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+      font-variant-numeric: tabular-nums;
     }
     .dash-analytics-kpi-s {
       display: block;
       margin-top: 8px;
       font-size: 12px;
-      color: var(--text-muted, #737373);
+      line-height: 1.35;
+      color: #64748b;
     }
-    .dash-analytics-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-    }
-    @media (max-width: 900px) {
-      .dash-analytics-grid { grid-template-columns: 1fr; }
-    }
-    .dash-chart-card {
-      padding: 18px 16px 12px;
-      border: 0.5px solid var(--card-border, rgba(0,0,0,0.1));
-      border-radius: 4px;
-      background:
-        linear-gradient(165deg, rgba(255,255,255,0.96), rgba(248,250,252,0.98)),
-        repeating-linear-gradient(
-          -12deg,
-          transparent,
-          transparent 7px,
-          rgba(17, 24, 39, 0.015) 7px,
-          rgba(17, 24, 39, 0.015) 8px
-        );
-    }
-    .dash-chart-card--wide { grid-column: 1 / -1; }
-    .dash-chart-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-    .dash-chart-head h2 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--text-primary, #111);
-    }
-    .dash-chart-head p {
-      margin: 4px 0 0;
-      font-size: 12px;
-      color: var(--text-muted, #737373);
-    }
-    .dash-chart-badge {
-      flex-shrink: 0;
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #2563eb;
-      background: rgba(37, 99, 235, 0.08);
-      border: 0.5px solid rgba(37, 99, 235, 0.18);
-      padding: 4px 8px;
-      border-radius: 999px;
-      white-space: nowrap;
-    }
-    .dk-chart-host {
-      position: relative;
-      width: 100%;
-      height: 200px;
-      border-radius: 2px;
-      overflow: hidden;
-      background: linear-gradient(180deg, rgba(53, 143, 243, 0.04), transparent 70%);
-    }
-    .dk-chart-host--lg { height: 240px; }
-    .dk-chart {
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
-    .dk-chart canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-      pointer-events: none;
-    }
-    .dk-chart .dk-crisp { z-index: 1; }
-    .dk-chart .dk-bloom { z-index: 0; }
     .dash-panel-head--tight {
-      margin-top: 8px;
+      margin-top: 28px;
       margin-bottom: 12px;
     }
     .dash-panel-head--tight h2.dash-subhead,
@@ -556,8 +464,8 @@
       display: inline-block;
       font-variant-numeric: tabular-nums;
       font-weight: 600;
-      color: #15803d;
-      background: rgba(40, 210, 110, 0.12);
+      color: #0039a6;
+      background: rgba(5, 102, 255, 0.12);
       padding: 2px 8px;
       border-radius: 999px;
       font-size: 12px;
@@ -634,8 +542,8 @@
           <a href="/changelog">Changelog</a>
           <a href="https://docs.supercompress.dev">Docs</a>
         </nav>
-        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
-                <div class="dash-profile hidden" id="dash-profile">
+        <a href="/dashboard?signup=1" class="df-nav-cta" id="dash-nav-cta">Get API key</a>
+        <div class="dash-profile hidden" id="dash-profile">
           <button type="button" class="dash-profile-btn" id="dash-profile-btn" aria-label="Account menu">
             <span class="dash-profile-initial" id="dash-profile-initial">?</span>
           </button>
@@ -654,7 +562,7 @@
           <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
           <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
         </a>
-        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact" id="dash-nav-cta-mobile">Get key</a>
         <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -664,8 +572,8 @@
       <a href="/blog">Blog</a>
       <a href="/changelog">Changelog</a>
       <a href="https://docs.supercompress.dev">Docs</a>
-      <a href="/dashboard?signup=1">Get API key</a>
-      <a href="/dashboard?login=1">Log in</a>
+      <a href="/dashboard?signup=1" class="df-nav-cta-mobile" id="dash-nav-cta-drawer">Get API key</a>
+      <a href="/dashboard?login=1" id="dash-nav-login-drawer">Log in</a>
       <a href="/playground">Playground</a>
       <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -676,12 +584,7 @@
       <div class="dash-auth-card">
         <p class="dash-section-label">Free to start</p>
         <h1 id="auth-title">Get your free API key</h1>
-        <p class="dash-auth-sub" id="auth-subtitle">5M free tokens/mo · then $1/1M. Google takes one click — your key is ready instantly.</p>
-        <ul class="dash-auth-perks" id="auth-perks">
-          <li>No credit card</li>
-          <li>Key created on signup</li>
-          <li>Works with Cursor, Claude Code, Codex &amp; any OpenAI-compatible agent</li>
-        </ul>
+        <p class="dash-auth-sub" id="auth-subtitle">1M free tokens/mo · then $0.30/1M. Google takes one click — your key is ready instantly.</p>
 
         <div id="firebase-auth-area">
           <button type="button" class="dash-btn-google" id="btn-google">
@@ -736,7 +639,6 @@
 
         <nav class="dash-topnav" aria-label="Dashboard sections">
           <button type="button" class="dash-topnav-item active" data-panel="keys">API keys</button>
-          <button type="button" class="dash-topnav-item" data-panel="usage">Analytics</button>
           <button type="button" class="dash-topnav-item" data-panel="agents">Coding Agents</button>
           <button type="button" class="dash-topnav-item" data-panel="billing">Billing</button>
           <a class="dash-topnav-item dash-topnav-link" href="https://docs.supercompress.dev" target="_blank" rel="noopener">Documentation ↗</a>
@@ -748,7 +650,22 @@
               <h1>API keys</h1>
               <p>Get a key, install the package, call <code>compress()</code>. That’s it.</p>
             </div>
-            <button type="button" class="btn-brand" id="btn-create-key">Create key</button>
+            <div class="dash-panel-actions">
+              <button type="button" class="btn-link-muted" id="btn-test-key">Send test request</button>
+              <button type="button" class="btn-brand" id="btn-create-key">Create key</button>
+            </div>
+          </div>
+
+          <!-- Hidden sync targets for updateStats() -->
+          <div class="hidden" aria-hidden="true">
+            <span id="stat-keys">0</span>
+            <span id="stat-requests">0</span>
+            <span id="stat-saved">0</span>
+            <span id="stat-cut">—</span>
+            <span id="stat-in">0 in</span>
+            <div id="spark-requests"></div>
+            <div id="spark-saved"></div>
+            <div id="keys-stats"></div>
           </div>
 
           <div class="dash-integrate" id="dash-integrate">
@@ -767,117 +684,37 @@
             </div>
           </div>
 
-          <div class="dash-stats" id="keys-stats">
-            <div class="dash-stat-card">
-              <span class="dash-stat-n" id="stat-keys">0</span>
-              <span class="dash-stat-l">Active keys</span>
+          <div class="dash-analytics-hero" id="keys-summary" aria-label="Key usage summary">
+            <div class="dash-analytics-kpi">
+              <span class="dash-analytics-kpi-l">API keys</span>
+              <strong class="dash-analytics-kpi-n" id="keys-kpi-count">0</strong>
+              <span class="dash-analytics-kpi-s" id="keys-kpi-count-sub">active keys</span>
             </div>
-            <div class="dash-stat-card dash-stat-card--accent">
-              <span class="dash-stat-n" id="stat-requests">0</span>
-              <span class="dash-stat-l">Total requests</span>
-              <div class="dk-spark" id="spark-requests" aria-hidden="true"></div>
+            <div class="dash-analytics-kpi">
+              <span class="dash-analytics-kpi-l">Input tokens</span>
+              <strong class="dash-analytics-kpi-n" id="keys-kpi-input">0</strong>
+              <span class="dash-analytics-kpi-s" id="keys-kpi-input-sub">tokens in</span>
             </div>
-            <div class="dash-stat-card">
-              <span class="dash-stat-n" id="stat-saved">0</span>
-              <span class="dash-stat-l">Tokens saved</span>
-              <div class="dk-spark" id="spark-saved" aria-hidden="true"></div>
+            <div class="dash-analytics-kpi">
+              <span class="dash-analytics-kpi-l">Tokens saved</span>
+              <strong class="dash-analytics-kpi-n" id="keys-kpi-saved">0</strong>
+              <span class="dash-analytics-kpi-s" id="keys-kpi-saved-sub">this month</span>
             </div>
-            <div class="dash-stat-card">
-              <span class="dash-stat-n" id="stat-cut">—</span>
-              <span class="dash-stat-l">Avg cut</span>
-              <span class="dash-stat-hint" id="stat-in">0 in</span>
+            <div class="dash-analytics-kpi dash-analytics-kpi--cut">
+              <span class="dash-analytics-kpi-l">Saved</span>
+              <strong class="dash-analytics-kpi-n" id="keys-kpi-pct">—</strong>
+              <span class="dash-analytics-kpi-s" id="keys-kpi-pct-sub">percentage cut</span>
             </div>
           </div>
 
           <div class="dash-keys-grid" id="keys-grid">
             <p class="dash-empty">No API keys yet. Create one to get started.</p>
           </div>
-        </div>
-
-        <div id="panel-usage" class="hidden">
-          <div class="dash-panel-head">
-            <div>
-              <h1>Analytics</h1>
-              <p>Token savings, requests, and agent mix — dithered charts for the metered <code>/api/v1/compress</code> traffic on your keys.</p>
-            </div>
-            <button type="button" class="btn-brand" id="btn-test-key">Send test request</button>
-          </div>
-
-          <div class="dash-analytics" id="usage-analytics">
-            <div class="dash-analytics-hero">
-              <div class="dash-analytics-kpi">
-                <span class="dash-analytics-kpi-l">Cut</span>
-                <strong class="dash-analytics-kpi-n" id="analytics-cut">—</strong>
-                <span class="dash-analytics-kpi-s" id="analytics-cut-sub">tokens saved / in</span>
-              </div>
-              <div class="dash-analytics-kpi">
-                <span class="dash-analytics-kpi-l">Saved</span>
-                <strong class="dash-analytics-kpi-n" id="analytics-saved">0</strong>
-                <span class="dash-analytics-kpi-s" id="analytics-saved-sub">lifetime</span>
-              </div>
-              <div class="dash-analytics-kpi">
-                <span class="dash-analytics-kpi-l">Requests</span>
-                <strong class="dash-analytics-kpi-n" id="analytics-requests">0</strong>
-                <span class="dash-analytics-kpi-s" id="analytics-requests-sub">all keys</span>
-              </div>
-              <div class="dash-analytics-kpi">
-                <span class="dash-analytics-kpi-l">Active days</span>
-                <strong class="dash-analytics-kpi-n" id="analytics-days">0</strong>
-                <span class="dash-analytics-kpi-s">with traffic</span>
-              </div>
-            </div>
-
-            <div class="dash-analytics-grid">
-              <section class="dash-chart-card dash-chart-card--wide">
-                <header class="dash-chart-head">
-                  <div>
-                    <h2>Tokens saved</h2>
-                    <p>Daily savings across all keys · last 30 days</p>
-                  </div>
-                  <span class="dash-chart-badge">dither area</span>
-                </header>
-                <div class="dk-chart-host dk-chart-host--lg" id="chart-saved-area" role="img" aria-label="Tokens saved over time"></div>
-              </section>
-
-              <section class="dash-chart-card">
-                <header class="dash-chart-head">
-                  <div>
-                    <h2>Requests</h2>
-                    <p>Compress calls · last 30 days</p>
-                  </div>
-                  <span class="dash-chart-badge">dither bars</span>
-                </header>
-                <div class="dk-chart-host" id="chart-requests-bars" role="img" aria-label="Requests by day"></div>
-              </section>
-
-              <section class="dash-chart-card">
-                <header class="dash-chart-head">
-                  <div>
-                    <h2>By coding agent</h2>
-                    <p>Share of tokens saved</p>
-                  </div>
-                  <span class="dash-chart-badge">dither donut</span>
-                </header>
-                <div class="dk-chart-host" id="chart-agents-pie" role="img" aria-label="Savings by coding agent"></div>
-              </section>
-
-              <section class="dash-chart-card dash-chart-card--wide">
-                <header class="dash-chart-head">
-                  <div>
-                    <h2>Key breakdown</h2>
-                    <p>Tokens saved per API key</p>
-                  </div>
-                  <span class="dash-chart-badge">dither bars</span>
-                </header>
-                <div class="dk-chart-host" id="chart-keys-bars" role="img" aria-label="Tokens saved by key"></div>
-              </section>
-            </div>
-          </div>
 
           <div class="dash-panel-head dash-panel-head--tight">
             <div>
               <h2 class="dash-subhead">Usage by key</h2>
-              <p>Every metered compress updates this table.</p>
+              <p>Metered compress traffic on each key.</p>
             </div>
           </div>
           <div class="dash-table-panel">
@@ -920,7 +757,7 @@
               <pre class="dash-coding-cta-code" id="coding-cta-code">npm install supercompress-proxy
 npm exec supercompress setup</pre>
               <div class="dash-coding-cta-actions">
-                <a href="https://www.supercompress.dev/docs/coding-agents" class="btn-brand" target="_blank" rel="noopener">Setup guide →</a>
+                <a href="https://docs.supercompress.dev/coding-agents" class="btn-brand" target="_blank" rel="noopener">Setup guide →</a>
                 <button type="button" class="btn-link-muted" id="btn-test-proxy">Already set up? Refresh stats</button>
               </div>
             </div>
@@ -935,7 +772,7 @@ npm exec supercompress setup</pre>
               <p class="dash-coding-connected-meta" id="coding-connected-meta"></p>
               <div class="dash-coding-cta-actions" style="margin-top:14px">
                 <button type="button" class="btn-link-muted" id="btn-refresh-agents">Refresh stats</button>
-                <a href="https://www.supercompress.dev/docs/coding-agents" class="btn-link-muted" target="_blank" rel="noopener">Setup guide →</a>
+                <a href="https://docs.supercompress.dev/coding-agents" class="btn-link-muted" target="_blank" rel="noopener">Setup guide →</a>
               </div>
             </div>
           </div>
@@ -988,7 +825,7 @@ npm exec supercompress setup</pre>
           <div class="dash-panel-head">
             <div>
               <h1>Usage &amp; billing</h1>
-              <p>Every account includes $5 free tokens each month (5M). After that, enable pay-as-you-go at $1 per 1M tokens.</p>
+              <p>Every account includes 1M free tokens each month. After that, pay-as-you-go is $0.30 per 1M tokens.</p>
             </div>
           </div>
 
@@ -1000,9 +837,9 @@ npm exec supercompress setup</pre>
           <div class="dash-plans-grid" id="plans-grid">
             <div class="dash-plan-card" data-plan="free">
               <div class="dash-plan-badge">Included free</div>
-              <div class="dash-plan-price">$5<span> / mo</span></div>
+              <div class="dash-plan-price">1M<span> free / mo</span></div>
               <ul class="dash-plan-features">
-                <li>5M tokens every month</li>
+                <li>1M tokens every month</li>
                 <li>Hard stop when allowance runs out</li>
                 <li>Up to 10 API keys</li>
               </ul>
@@ -1013,11 +850,11 @@ npm exec supercompress setup</pre>
 
             <div class="dash-plan-card dash-plan-card--featured" data-plan="payg">
               <div class="dash-plan-badge">Pay as you go</div>
-              <div class="dash-plan-price">$1<span> / 1M tokens</span></div>
+              <div class="dash-plan-price">$0.30<span> / 1M tokens</span></div>
               <ul class="dash-plan-features">
-                <li>Same 5M free included</li>
+                <li>Same 1M free included</li>
                 <li>Unlimited after free allowance</li>
-                <li>Card on file · billed monthly</li>
+                <li>Prepaid credits · auto-recharge optional</li>
               </ul>
               <div class="dash-plan-cta">
                 <button type="button" class="dash-plan-btn btn-brand" data-plan-btn="payg" id="btn-enable-payg">Add payment method</button>
@@ -1141,7 +978,7 @@ npm exec supercompress setup</pre>
               <li><a href="/playground">Playground</a></li>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
               <li><a href="/compare">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
@@ -1162,10 +999,10 @@ npm exec supercompress setup</pre>
             <p class="df-footer-heading">Documentation</p>
             <ul>
               <li><a href="https://docs.supercompress.dev">Documentation</a></li>
-              <li><a href="https://www.supercompress.dev/docs/quickstart">Quickstart</a></li>
-              <li><a href="https://www.supercompress.dev/docs/api-reference">API reference</a></li>
-              <li><a href="https://www.supercompress.dev/docs/environment">Environment</a></li>
-              <li><a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
             </ul>
           </div>
           <div>
@@ -1181,9 +1018,8 @@ npm exec supercompress setup</pre>
   </footer>
   <script src="assets/js/firebase-config.js?v=3"></script>
   <script src="assets/js/supercompress.js?v=1"></script>
-  <script src="assets/js/dither-kit-lite.js?v=2"></script>
-  <script type="module" src="assets/js/dashboard-api.js?v=23"></script>
+  <script type="module" src="assets/js/dashboard-api.js?v=32"></script>
   <script src="assets/js/affiliate-track.js?v=1"></script>
-  <script src="/assets/js/site-chrome.js?v=11"></script>
+  <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>
 </html>

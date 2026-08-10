@@ -7,7 +7,7 @@
       "tipBody": "Agents re-send huge context every turn. SuperCompress installs as MCP, keeps your login, and compresses dumps before they hit the model — typically ~65% fewer input tokens with ≥98% answer keep on our held-out suites.",
       "proof": "Install once. Works with Cursor, Claude Code, Codex, and more.",
       "ctaLabel": "Install coding agent plugin →",
-      "ctaUrl": "https://www.supercompress.dev/docs/coding-agents",
+      "ctaUrl": "https://docs.supercompress.dev/coding-agents",
       "command": "npm install -g supercompress-proxy && npx supercompress setup",
       "secondaryLabel": "See held-out benchmarks",
       "secondaryUrl": "https://www.supercompress.dev/benchmarks"
@@ -34,7 +34,7 @@
       "ctaUrl": "https://www.supercompress.dev/dashboard",
       "command": null,
       "secondaryLabel": "Pricing & quickstart",
-      "secondaryUrl": "https://www.supercompress.dev/docs/quickstart"
+      "secondaryUrl": "https://docs.supercompress.dev/quickstart"
     },
     {
       "id": "vs-truncation",
@@ -70,7 +70,7 @@
       "ctaUrl": "https://www.supercompress.dev/dashboard",
       "command": null,
       "secondaryLabel": "Coding agent setup",
-      "secondaryUrl": "https://www.supercompress.dev/docs/coding-agents"
+      "secondaryUrl": "https://docs.supercompress.dev/coding-agents"
     }
   ],
   "byCampaign": {}

@@ -86,7 +86,7 @@ module.exports = async (req, res) => {
         power_mwh_after: Math.round(after.watt_hours * 1000 * 1000) / 1000,
         power_mwh_saved: Math.round((before.watt_hours - after.watt_hours) * 1000 * 1000) / 1000,
         water_ml_saved: Math.max(0, Math.round((before.water_liters - after.water_liters) * 1_000_000) / 1000),
-        co2_g_saved: Math.max(0, Math.round((before.co2_grams - after.co2_grams) * 1_000_000) / 1000),
+        co2_g_saved: Math.max(0, Math.round((before.co2_grams - after.co2_grams) * 1000) / 1000),
         assumptions: ASSUMPTIONS,
         note: "Estimates from token counts and documented assumptions — not live metering.",
       },

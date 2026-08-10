@@ -13,7 +13,6 @@
  */
 
 const { initFirebaseAdmin } = require("./auth");
-const crypto = require("crypto");
 const { gistConfigured, loadGistStore, saveGistStore } = require("./gist-store");
 
 let /** @type {import("firebase-admin").firestore.Firestore | null} */ _db = null;
@@ -110,14 +109,6 @@ function auth() {
   return require("firebase-admin").auth();
 }
 
-function recordUid(type, id) {
-  if (type === "affiliate" && /^[a-zA-Z0-9_-]{1,110}$/.test(id)) {
-    return `sc_aff_${id}`;
-  }
-  const hash = crypto.createHash("sha256").update(String(id)).digest("hex").slice(0, 48);
-  return type === "tracking" ? `sc_at_${hash}` : `sc_ac_${hash}`;
-}
-
 function compactRecord(type, id, data) {
   if (type === "tracking") {
     return {
@@ -162,18 +153,6 @@ function compactRecord(type, id, data) {
   };
 }
 
-async function upsertAuthRecord(uid, claims) {
-  // Intentionally unused for writes: Auth must only contain real human accounts.
-  // Kept as a read-side helper name historical callers may expect.
-  void uid;
-  void claims;
-  throw storageError();
-}
-
-/**
- * Pull affiliate/tracking/conversion stubs that were wrongly stored as Auth users
- * into a store object (does not write Auth).
- */
 async function importAuthStoreRecordsInto(store) {
   const adminAuth = auth();
   let pageToken;
@@ -212,11 +191,6 @@ async function loadStoreFromAuth() {
   const store = emptyStore();
   await importAuthStoreRecordsInto(store);
   return normalizeStore(store);
-}
-
-async function saveStoreToAuth() {
-  // Never store application data as fake Auth users.
-  throw storageError();
 }
 
 // ---------------------------------------------------------------------------
@@ -446,6 +420,279 @@ function snapshotForKey(store, keyId) {
   return snap;
 }
 
+function emptyKeySnap() {
+  return {
+    total_requests: 0,
+    total_tokens_in: 0,
+    total_tokens_out: 0,
+    total_tokens_saved: 0,
+    by_day: {},
+  };
+}
+
+function mergeKeySnaps(a = {}, b = {}) {
+  const out = emptyKeySnap();
+  const days = new Set([
+    ...Object.keys(a.by_day || {}),
+    ...Object.keys(b.by_day || {}),
+  ]);
+  for (const day of days) {
+    const left = (a.by_day && a.by_day[day]) || {};
+    const right = (b.by_day && b.by_day[day]) || {};
+    const rec = {
+      key_id: left.key_id || right.key_id || null,
+      requests: (left.requests || 0) + (right.requests || 0),
+      tokens_in: (left.tokens_in || 0) + (right.tokens_in || 0),
+      tokens_out: (left.tokens_out || 0) + (right.tokens_out || 0),
+      tokens_saved: (left.tokens_saved || 0) + (right.tokens_saved || 0),
+    };
+    out.by_day[day] = rec;
+    out.total_requests += rec.requests;
+    out.total_tokens_in += rec.tokens_in;
+    out.total_tokens_out += rec.tokens_out;
+    out.total_tokens_saved += rec.tokens_saved;
+  }
+  // If either side only has totals (no by_day), fold them in once.
+  if (!days.size) {
+    out.total_requests = (a.total_requests || 0) + (b.total_requests || 0);
+    out.total_tokens_in = (a.total_tokens_in || 0) + (b.total_tokens_in || 0);
+    out.total_tokens_out = (a.total_tokens_out || 0) + (b.total_tokens_out || 0);
+    out.total_tokens_saved = (a.total_tokens_saved || 0) + (b.total_tokens_saved || 0);
+  }
+  return out;
+}
+
+/**
+ * Durable per-key usage — dedicated Firestore doc (same pattern as coding_agent_usage).
+ * The monolithic config/store was dropping key meters while Auth sc_usage (billing) kept growing.
+ */
+async function trackKeyUsage(ownerUid, keyRec, stats = {}) {
+  if (!ownerUid || !keyRec) return false;
+  const keyId = String(keyRec.id || keyRec.uid || "").trim();
+  if (!keyId) return false;
+  const day = String(stats.day || new Date().toISOString().slice(0, 10));
+  const tokensIn = Math.max(0, Number(stats.original_tokens) || 0);
+  const tokensOut = Math.max(0, Number(stats.kept_tokens) || 0);
+  const tokensSaved = Math.max(
+    0,
+    Number(stats.tokens_saved) || Math.max(0, tokensIn - tokensOut)
+  );
+  const now = new Date().toISOString();
+
+  const bump = (prev = {}) => {
+    const byDay = { ...(prev.by_day || {}) };
+    const dayRec = byDay[day] || {
+      key_id: keyId,
+      requests: 0,
+      tokens_in: 0,
+      tokens_out: 0,
+      tokens_saved: 0,
+    };
+    dayRec.requests += 1;
+    dayRec.tokens_in += tokensIn;
+    dayRec.tokens_out += tokensOut;
+    dayRec.tokens_saved += tokensSaved;
+    byDay[day] = dayRec;
+    return {
+      key_id: keyId,
+      name: keyRec.name || prev.name || null,
+      prefix: keyRec.prefix || prev.prefix || null,
+      requests: (prev.requests || 0) + 1,
+      tokens_in: (prev.tokens_in || 0) + tokensIn,
+      tokens_out: (prev.tokens_out || 0) + tokensOut,
+      tokens_saved: (prev.tokens_saved || 0) + tokensSaved,
+      first_seen: prev.first_seen || now,
+      last_seen: now,
+      by_day: byDay,
+    };
+  };
+
+  if (firestoreUnavailable) {
+    await mutateStore((store) => {
+      if (!store.keys[keyId]) {
+        store.keys[keyId] = {
+          id: keyId,
+          user_id: ownerUid,
+          name: keyRec.name || "API key",
+          prefix: keyRec.prefix || "",
+          key_hash: keyRec.key_hash || null,
+          created_at: keyRec.created_at || now,
+          last_used_at: now,
+          revoked: false,
+        };
+        if (keyRec.key_hash) store.hash_index[keyRec.key_hash] = keyId;
+      } else {
+        store.keys[keyId].last_used_at = now;
+      }
+      if (!store.usage[keyId]) store.usage[keyId] = {};
+      if (!store.usage[keyId][day]) {
+        store.usage[keyId][day] = {
+          key_id: keyId,
+          requests: 0,
+          tokens_in: 0,
+          tokens_out: 0,
+          tokens_saved: 0,
+        };
+      }
+      const u = store.usage[keyId][day];
+      u.requests += 1;
+      u.tokens_in += tokensIn;
+      u.tokens_out += tokensOut;
+      u.tokens_saved += tokensSaved;
+      return u;
+    });
+    return true;
+  }
+
+  const docRef = db().collection("key_usage").doc(ownerUid);
+  await db().runTransaction(async (tx) => {
+    const snap = await tx.get(docRef);
+    const data = snap.exists && snap.data() ? snap.data() : { keys: {} };
+    const keys = data.keys && typeof data.keys === "object" ? data.keys : {};
+    keys[keyId] = bump(keys[keyId]);
+    tx.set(docRef, { keys, updated_at: now }, { merge: true });
+  });
+  return true;
+}
+
+async function loadKeyUsage(ownerUid) {
+  if (!ownerUid) return {};
+  const out = {};
+  if (!firestoreUnavailable) {
+    try {
+      const snap = await db().collection("key_usage").doc(ownerUid).get();
+      if (snap.exists) {
+        const keys = snap.data()?.keys;
+        if (keys && typeof keys === "object") {
+          for (const [id, rec] of Object.entries(keys)) {
+            if (!rec || typeof rec !== "object") continue;
+            out[id] = {
+              total_requests: rec.requests || 0,
+              total_tokens_in: rec.tokens_in || 0,
+              total_tokens_out: rec.tokens_out || 0,
+              total_tokens_saved: rec.tokens_saved || 0,
+              by_day: rec.by_day || {},
+            };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("store: key_usage read failed:", err.message);
+      if (isFirestoreUnavailable(err)) firestoreUnavailable = true;
+    }
+  }
+  return out;
+}
+
+/**
+ * If Auth billing meter is ahead of durable key meters, attribute the gap to the
+ * owner's primary key so the dashboard never shows "per-key store empty" while
+ * billing has millions of tokens. Persists once into key_usage.
+ */
+async function reconcileKeyUsageGap(ownerUid, keys, usageMap, accountUsage) {
+  if (!ownerUid || !accountUsage || !keys?.length) return usageMap;
+  const acctIn = accountUsage.tokens_in || 0;
+  if (acctIn <= 0) return usageMap;
+
+  let sumIn = 0;
+  let sumOut = 0;
+  let sumSaved = 0;
+  let sumReqs = 0;
+  for (const snap of Object.values(usageMap || {})) {
+    sumIn += snap.total_tokens_in || 0;
+    sumOut += snap.total_tokens_out || 0;
+    sumSaved += snap.total_tokens_saved || 0;
+    sumReqs += snap.total_requests || 0;
+  }
+
+  const gapIn = acctIn - sumIn;
+  if (gapIn < 500) return usageMap; // close enough
+
+  const ranked = [...keys].sort((a, b) => {
+    const aT = a.last_used_at ? Date.parse(a.last_used_at) : 0;
+    const bT = b.last_used_at ? Date.parse(b.last_used_at) : 0;
+    if (bT !== aT) return bT - aT;
+    // Prefer coding-agent / default names
+    const score = (k) =>
+      /coding agent|default|production/i.test(k.name || "") ? 1 : 0;
+    return score(b) - score(a);
+  });
+  const target = ranked[0];
+  if (!target?.id) return usageMap;
+
+  const gapReqs = Math.max(0, (accountUsage.requests || 0) - sumReqs);
+  const gapOut = Math.max(0, (accountUsage.tokens_out || 0) - sumOut);
+  const gapSaved = Math.max(0, (accountUsage.tokens_saved || 0) - sumSaved);
+  const day = `reconcile-${accountUsage.month || new Date().toISOString().slice(0, 7)}`;
+
+  const next = { ...(usageMap || {}) };
+  const prev = next[target.id] || emptyKeySnap();
+  const byDay = { ...(prev.by_day || {}) };
+  byDay[day] = {
+    key_id: target.id,
+    requests: (byDay[day]?.requests || 0) + gapReqs,
+    tokens_in: (byDay[day]?.tokens_in || 0) + gapIn,
+    tokens_out: (byDay[day]?.tokens_out || 0) + gapOut,
+    tokens_saved: (byDay[day]?.tokens_saved || 0) + gapSaved,
+    reconciled: true,
+  };
+  next[target.id] = {
+    total_requests: (prev.total_requests || 0) + gapReqs,
+    total_tokens_in: (prev.total_tokens_in || 0) + gapIn,
+    total_tokens_out: (prev.total_tokens_out || 0) + gapOut,
+    total_tokens_saved: (prev.total_tokens_saved || 0) + gapSaved,
+    by_day: byDay,
+  };
+
+  // Persist reconciled bucket so refresh stays stable.
+  if (!firestoreUnavailable) {
+    try {
+      const now = new Date().toISOString();
+      const docRef = db().collection("key_usage").doc(ownerUid);
+      await db().runTransaction(async (tx) => {
+        const snap = await tx.get(docRef);
+        const data = snap.exists && snap.data() ? snap.data() : { keys: {} };
+        const keysMap = data.keys && typeof data.keys === "object" ? { ...data.keys } : {};
+        const prevRec = keysMap[target.id] || {};
+        const prevDays = { ...(prevRec.by_day || {}) };
+        if (prevDays[day]?.reconciled) {
+          // Already reconciled this month — don't double-apply.
+          return;
+        }
+        prevDays[day] = {
+          key_id: target.id,
+          requests: gapReqs,
+          tokens_in: gapIn,
+          tokens_out: gapOut,
+          tokens_saved: gapSaved,
+          reconciled: true,
+        };
+        keysMap[target.id] = {
+          key_id: target.id,
+          name: target.name || prevRec.name || null,
+          prefix: target.prefix || prevRec.prefix || null,
+          requests: (prevRec.requests || 0) + gapReqs,
+          tokens_in: (prevRec.tokens_in || 0) + gapIn,
+          tokens_out: (prevRec.tokens_out || 0) + gapOut,
+          tokens_saved: (prevRec.tokens_saved || 0) + gapSaved,
+          first_seen: prevRec.first_seen || now,
+          last_seen: now,
+          by_day: prevDays,
+        };
+        tx.set(
+          docRef,
+          { keys: keysMap, updated_at: now, reconciled_at: now },
+          { merge: true }
+        );
+      });
+    } catch (err) {
+      console.warn("store: key_usage reconcile failed:", err.message);
+    }
+  }
+
+  return next;
+}
+
 function publicKey(rec) {
   return {
     id: rec.id,
@@ -542,14 +789,71 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
   return true;
 }
 
+/**
+ * Cursor postToolUse used to default coding_agent to "Claude Code" whenever the
+ * hook payload had session_id/cwd (Cursor always does). Those rows look like
+ * claude_code + last_source tool_shell|tool_read|… Merge them into cursor.
+ */
+function repairMisattributedCodingAgents(agents) {
+  if (!agents || typeof agents !== "object") return { agents: {}, changed: false };
+  const next = { ...agents };
+  const bad = next.claude_code || next["claude-code"];
+  if (!bad || typeof bad !== "object") return { agents: next, changed: false };
+
+  const src = String(bad.last_source || "").toLowerCase();
+  const q = String(bad.last_query || "");
+  const looksLikeCursorTool =
+    /^tool_(shell|read|grep|task|awaitshell|await|webfetch|websearch|edit|write|glob|mcp)/i.test(
+      src
+    ) || /^Compress new .+ output for the current coding task/i.test(q);
+
+  if (!looksLikeCursorTool) return { agents: next, changed: false };
+
+  const cursor = next.cursor && typeof next.cursor === "object" ? next.cursor : null;
+  const merged = {
+    requests: (cursor?.requests || 0) + (bad.requests || 0),
+    tokens_in: (cursor?.tokens_in || 0) + (bad.tokens_in || 0),
+    tokens_out: (cursor?.tokens_out || 0) + (bad.tokens_out || 0),
+    tokens_saved: (cursor?.tokens_saved || 0) + (bad.tokens_saved || 0),
+    first_seen: [cursor?.first_seen, bad.first_seen].filter(Boolean).sort()[0] || bad.first_seen || null,
+    last_seen: [cursor?.last_seen, bad.last_seen].filter(Boolean).sort().slice(-1)[0] || bad.last_seen || null,
+    last_pct: bad.last_pct != null ? bad.last_pct : cursor?.last_pct ?? null,
+    last_query: bad.last_query || cursor?.last_query || null,
+    last_source: bad.last_source || cursor?.last_source || null,
+    latency_sum_ms: (cursor?.latency_sum_ms || 0) + (bad.latency_sum_ms || 0),
+    latency_samples: (cursor?.latency_samples || 0) + (bad.latency_samples || 0),
+    last_latency_ms: bad.last_latency_ms != null ? bad.last_latency_ms : cursor?.last_latency_ms ?? null,
+  };
+  if (merged.latency_samples > 0) {
+    merged.avg_latency_ms = Math.round(merged.latency_sum_ms / merged.latency_samples);
+  } else if (cursor?.avg_latency_ms != null || bad.avg_latency_ms != null) {
+    merged.avg_latency_ms = bad.avg_latency_ms != null ? bad.avg_latency_ms : cursor.avg_latency_ms;
+  }
+  next.cursor = merged;
+  delete next.claude_code;
+  delete next["claude-code"];
+  return { agents: next, changed: true };
+}
+
 async function loadCodingAgentUsage(ownerUid) {
   if (!ownerUid) return {};
   if (!firestoreUnavailable) {
     try {
-      const snap = await db().collection("coding_agent_usage").doc(ownerUid).get();
+      const docRef = db().collection("coding_agent_usage").doc(ownerUid);
+      const snap = await docRef.get();
       if (snap.exists) {
         const agents = snap.data()?.agents;
-        if (agents && typeof agents === "object") return agents;
+        if (agents && typeof agents === "object") {
+          const { agents: fixed, changed } = repairMisattributedCodingAgents(agents);
+          if (changed) {
+            // Persist repair so dashboard stays correct without re-deriving every read.
+            const now = new Date().toISOString();
+            docRef.set({ agents: fixed, updated_at: now, repaired_claude_to_cursor_at: now }, { merge: true }).catch((err) => {
+              console.warn("store: coding_agent_usage repair persist failed:", err.message);
+            });
+          }
+          return fixed;
+        }
       }
     } catch (err) {
       console.warn("store: coding_agent_usage read failed:", err.message);
@@ -557,7 +861,8 @@ async function loadCodingAgentUsage(ownerUid) {
     }
   }
   const store = await loadStore({ forceRemote: true });
-  return store.coding_agent_usage?.[ownerUid] || {};
+  const embedded = store.coding_agent_usage?.[ownerUid] || {};
+  return repairMisattributedCodingAgents(embedded).agents;
 }
 
 /**
@@ -630,8 +935,11 @@ module.exports = {
   publicKey,
   trackCodingAgentUsage,
   loadCodingAgentUsage,
+  trackKeyUsage,
+  loadKeyUsage,
+  mergeKeySnaps,
+  reconcileKeyUsageGap,
   loadAgentPluginLink,
   markAgentPluginLinked,
   importAuthStoreRecordsInto,
-  recordUid,
 };

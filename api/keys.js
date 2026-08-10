@@ -2,7 +2,7 @@ const { json } = require("./_lib/http");
 const { verifyUser } = require("./_lib/auth");
 const { getPlan } = require("./_lib/stripe");
 const { listKeys, createKey } = require("./_lib/firebase-key-store");
-const { loadCodingAgentUsage } = require("./_lib/store");
+const { loadCodingAgentUsage, loadAgentPluginLink } = require("./_lib/store");
 
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
@@ -13,10 +13,14 @@ module.exports = async (req, res) => {
     if (req.method === "GET") {
       const keys = await listKeys(user.uid);
       let coding_agent_usage = {};
+      let agent_plugin = { linked: false };
       try {
         coding_agent_usage = await loadCodingAgentUsage(user.uid);
       } catch (_) {}
-      return json(res, 200, { ...keys, coding_agent_usage });
+      try {
+        agent_plugin = await loadAgentPluginLink(user.uid);
+      } catch (_) {}
+      return json(res, 200, { ...keys, coding_agent_usage, agent_plugin });
     }
 
     if (req.method === "POST") {

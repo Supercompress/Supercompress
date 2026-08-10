@@ -54,6 +54,9 @@ let idToken = null;
 let currentUser = null;
 let keysData = [];
 let usageData = {};
+let accountUsage = null;
+let codingAgentUsage = {};
+let agentPluginLink = { linked: false };
 let renameKeyId = null;
 let auth = null;
 let apiMode = "remote";
@@ -388,6 +391,7 @@ async function loadKeysFresh(retries = 6) {
       const data = await apiFetch(`/api/keys?fresh=1&_=${Date.now()}`);
       keysData = data.keys || [];
       usageData = data.usage || {};
+      accountUsage = data.account_usage || null;
       codingAgentUsage = data.coding_agent_usage || {};
       agentPluginLink = data.agent_plugin || { linked: false };
       renderKeys();
@@ -403,9 +407,6 @@ async function loadKeysFresh(retries = 6) {
   }
   throw lastErr || new Error("Failed to refresh keys");
 }
-
-let codingAgentUsage = {};
-let agentPluginLink = { linked: false };
 
 function renderCodingAgents() {
   const tbody = $("coding-tbody");
@@ -484,6 +485,7 @@ function renderCodingAgents() {
 }
 
 function agentIcon(name) {
+  const key = String(name || "").toLowerCase().replace(/_/g, "-");
   const icons = {
     cursor: "🖱️",
     windsurf: "🏄",
@@ -493,10 +495,11 @@ function agentIcon(name) {
     aider: "🤝",
     copilot: "👻",
     codex: "📝",
+    mcp: "🔌",
     "openai-client": "🔵",
     "api-client": "🔌",
   };
-  return icons[name.toLowerCase()] || "⚡";
+  return icons[key] || "⚡";
 }
 
 async function loadKeys() {
@@ -504,6 +507,7 @@ async function loadKeys() {
     const data = await apiFetch("/api/keys");
     keysData = data.keys || [];
     usageData = data.usage || {};
+    accountUsage = data.account_usage || null;
     codingAgentUsage = data.coding_agent_usage || {};
     agentPluginLink = data.agent_plugin || { linked: false };
     renderKeys();
@@ -632,6 +636,7 @@ async function showDashboard(user) {
   hide(viewAuth);
   show(viewDash);
   show($("dash-profile"));
+  setNavCtaLoggedIn(true);
   const name = user.displayName || user.email?.split("@")[0] || "User";
   const nameEl = $("dash-profile-name");
   if (nameEl) nameEl.textContent = name;
@@ -659,6 +664,15 @@ function showAuth() {
   show(viewAuth);
   hide(viewDash);
   hide($("dash-profile"));
+  setNavCtaLoggedIn(false);
+}
+
+function setNavCtaLoggedIn(loggedIn) {
+  for (const id of ["dash-nav-cta", "dash-nav-cta-mobile", "dash-nav-cta-drawer", "dash-nav-login-drawer"]) {
+    const el = $(id);
+    if (!el) continue;
+    el.classList.toggle("hidden", Boolean(loggedIn));
+  }
 }
 
 function cleanAuthQuery() {
@@ -1201,6 +1215,118 @@ async function handleReactivateSubscription() {
   }
 }
 
+function formatMoneyUsd(n) {
+  const v = Number(n || 0);
+  if (!Number.isFinite(v)) return "$0";
+  return `$${v.toFixed(v >= 1 ? 2 : 2)}`;
+}
+
+function launchPayConfetti(durationMs = 3200) {
+  const canvas = document.createElement("canvas");
+  canvas.id = "sc-pay-confetti";
+  canvas.setAttribute("aria-hidden", "true");
+  Object.assign(canvas.style, {
+    position: "fixed",
+    inset: "0",
+    width: "100%",
+    height: "100%",
+    pointerEvents: "none",
+    zIndex: "9999",
+  });
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const resize = () => {
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  resize();
+  window.addEventListener("resize", resize);
+  const colors = ["#0566ff", "#0055df", "#7eb6ff", "#171717", "#f4c542", "#e85d4c"];
+  const pieces = Array.from({ length: 140 }, () => ({
+    x: Math.random() * window.innerWidth,
+    y: -20 - Math.random() * window.innerHeight * 0.4,
+    w: 6 + Math.random() * 8,
+    h: 8 + Math.random() * 10,
+    vx: -2 + Math.random() * 4,
+    vy: 2 + Math.random() * 5,
+    rot: Math.random() * Math.PI,
+    vr: -0.2 + Math.random() * 0.4,
+    color: colors[(Math.random() * colors.length) | 0],
+  }));
+  const started = performance.now();
+  let raf = 0;
+  const tick = (now) => {
+    const t = now - started;
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    for (const p of pieces) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05;
+      p.rot += p.vr;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+    if (t < durationMs) {
+      raf = requestAnimationFrame(tick);
+    } else {
+      window.removeEventListener("resize", resize);
+      canvas.remove();
+    }
+  };
+  raf = requestAnimationFrame(tick);
+  return () => {
+    cancelAnimationFrame(raf);
+    window.removeEventListener("resize", resize);
+    canvas.remove();
+  };
+}
+
+function showPaySuccessCelebration({ bonusTokens = 0, bonusUsd = 0, creditedUsd = 0 } = {}) {
+  launchPayConfetti();
+  let modal = document.getElementById("modal-pay-success");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modal-pay-success";
+    modal.className = "dash-modal";
+    modal.innerHTML = `
+      <div class="dash-modal-card" role="dialog" aria-modal="true" aria-labelledby="pay-success-title">
+        <h2 id="pay-success-title">Congratulations!</h2>
+        <p id="pay-success-body" class="dash-modal-lead"></p>
+        <p id="pay-success-bonus" class="dash-modal-bonus" hidden></p>
+        <button type="button" class="btn-brand" id="pay-success-dismiss">Nice</button>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector("#pay-success-dismiss")?.addEventListener("click", () => {
+      modal.classList.add("hidden");
+    });
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.classList.add("hidden");
+    });
+  }
+  const body = modal.querySelector("#pay-success-body");
+  const bonusEl = modal.querySelector("#pay-success-bonus");
+  if (body) {
+    body.textContent = creditedUsd
+      ? `You're officially on pay-as-you-go. ${formatMoneyUsd(creditedUsd)} in credits just landed.`
+      : "You're officially on pay-as-you-go. Welcome aboard.";
+  }
+  if (bonusEl) {
+    if (bonusTokens > 0) {
+      bonusEl.hidden = false;
+      bonusEl.textContent = `As a thank you, we added 1M tokens on the house (${formatMoneyUsd(bonusUsd || 0.3)}).`;
+    } else {
+      bonusEl.hidden = true;
+    }
+  }
+  modal.classList.remove("hidden");
+}
+
 function initBilling() {
   initCreditsModal();
   // Check URL params for billing success/cancel
@@ -1213,14 +1339,28 @@ function initBilling() {
       if (btn) btn.click();
     }, 500);
     // Webhook fallback: apply credits from Checkout session if Stripe delivery failed
+    const celebrate = (data) => {
+      showPaySuccessCelebration({
+        creditedUsd: Number(data?.credited_usd || 0),
+        bonusUsd: Number(data?.first_pay_bonus_usd || 0),
+        bonusTokens: Number(data?.first_pay_bonus_tokens || 0),
+      });
+    };
     if (sessionId.startsWith("cs_")) {
       apiFetch("/api/billing", {
         method: "POST",
         body: JSON.stringify({ action: "reconcile_checkout", session_id: sessionId }),
       })
-        .then(() => loadSubscription())
-        .catch((err) => console.warn("Checkout reconcile:", err?.message || err));
+        .then((data) => {
+          celebrate(data || {});
+          return loadSubscription();
+        })
+        .catch((err) => {
+          console.warn("Checkout reconcile:", err?.message || err);
+          showPaySuccessCelebration({});
+        });
     } else {
+      showPaySuccessCelebration({});
       setTimeout(() => loadSubscription(), 800);
     }
     // Clean URL
@@ -1230,24 +1370,68 @@ function initBilling() {
 
 function updateStats() {
   $("stat-keys").textContent = keysData.length;
-  let reqs = 0;
-  let saved = 0;
-  let tin = 0;
-  for (const snap of Object.values(usageData)) {
-    reqs += snap.total_requests || 0;
-    saved += snap.total_tokens_saved || 0;
-    tin += snap.total_tokens_in || 0;
-  }
-  const cutPct = tin > 0 ? Math.round((saved / tin) * 100) : null;
-  $("stat-requests").textContent = formatNum(reqs);
-  $("stat-saved").textContent = formatNum(saved);
+  const totals = usageTotals();
+  const cutPct = totals.tin > 0 ? Math.round((totals.saved / totals.tin) * 100) : null;
+  $("stat-requests").textContent = formatNum(totals.reqs);
+  $("stat-saved").textContent = formatNum(totals.saved);
   const cutEl = $("stat-cut");
   if (cutEl) cutEl.textContent = cutPct == null ? "—" : `${cutPct}%`;
   const inEl = $("stat-in");
-  if (inEl) inEl.textContent = `${formatNum(tin)} in`;
+  if (inEl) inEl.textContent = `${formatNum(totals.tin)} in`;
   renderAnalytics();
   renderActivationChecklist();
   if (lastBillingSub) renderPaygNudge(lastBillingSub);
+}
+
+/**
+ * Month totals for KPIs.
+ * Auth `sc_usage` (accountUsage) is the billing source of truth — per-key store
+ * can lag or under-count when store writes flake, so never prefer a smaller
+ * key-sum over the account meter.
+ */
+function usageTotals() {
+  let keyReqs = 0;
+  let keySaved = 0;
+  let keyTin = 0;
+  let keyTout = 0;
+  for (const snap of Object.values(usageData || {})) {
+    keyReqs += snap.total_requests || 0;
+    keySaved += snap.total_tokens_saved || 0;
+    keyTin += snap.total_tokens_in || 0;
+    keyTout += snap.total_tokens_out || 0;
+  }
+
+  const acctTin = accountUsage?.tokens_in || 0;
+  const acctReqs = accountUsage?.requests || 0;
+  const acctSaved = accountUsage?.tokens_saved || 0;
+  const acctTout = accountUsage?.tokens_out || 0;
+
+  // Prefer account meter whenever it has traffic (matches Billing / PAYG).
+  if (acctTin > 0 || acctReqs > 0) {
+    return {
+      reqs: acctReqs || keyReqs,
+      saved: acctSaved,
+      tin: acctTin,
+      tout: acctTout,
+      fromAccount: true,
+      keyReqs,
+      keyTin,
+      keySaved,
+      keyTout,
+    };
+  }
+
+  return {
+    reqs: keyReqs,
+    saved: keySaved,
+    tin: keyTin,
+    tout: keyTout,
+    fromAccount: false,
+    keyReqs,
+    keyTin,
+    keySaved,
+    keyTout,
+  };
 }
 
 /** Last N UTC calendar days as YYYY-MM-DD, oldest → newest. */
@@ -1287,6 +1471,19 @@ function aggregateUsageSeries(days = 30) {
       if ((rec.requests || 0) > 0 || (rec.tokens_saved || 0) > 0) dayHit.add(day);
     }
   }
+
+  // Claims-only fallback: put month totals on today so charts aren't blank zeros.
+  const hasSeries = saved.some((r) => r.y > 0) || requests.some((r) => r.y > 0);
+  if (!hasSeries && accountUsage && ((accountUsage.tokens_saved || 0) > 0 || (accountUsage.requests || 0) > 0)) {
+    const today = keys[keys.length - 1];
+    const i = byDayIndex[today];
+    if (i != null) {
+      saved[i].y = accountUsage.tokens_saved || 0;
+      requests[i].y = accountUsage.requests || 0;
+      dayHit.add(today);
+    }
+  }
+
   activeDays = dayHit.size;
   return { saved, requests, activeDays, dayKeys: keys };
 }
@@ -1296,121 +1493,47 @@ function cutPercent(saved, tin) {
   return Math.round((Number(saved) / Number(tin)) * 100);
 }
 
-let analyticsResizeBound = false;
+function setText(id, v) {
+  const el = $(id);
+  if (el) el.textContent = v;
+}
+
+function renderKeysSummary() {
+  const totals = usageTotals();
+  const cut = cutPercent(totals.saved, totals.tin);
+  const n = keysData.length;
+  setText("keys-kpi-count", String(n));
+  setText("keys-kpi-count-sub", n === 1 ? "active key" : "active keys");
+  setText("keys-kpi-input", formatNum(totals.tin));
+  setText(
+    "keys-kpi-input-sub",
+    totals.tin
+      ? totals.fromAccount
+        ? "this month · all compress traffic"
+        : "tokens compressed in"
+      : "no traffic yet"
+  );
+  setText("keys-kpi-saved", formatNum(totals.saved));
+  setText(
+    "keys-kpi-saved-sub",
+    totals.fromAccount ? "this month · billing meter" : "this month"
+  );
+  setText("keys-kpi-pct", cut == null ? "—" : `${cut}%`);
+  setText(
+    "keys-kpi-pct-sub",
+    totals.tin > 0 ? `${formatNum(totals.saved)} of ${formatNum(totals.tin)}` : "percentage cut"
+  );
+}
+
+/** Analytics charts removed from production — local preview only (`local/analytics-preview.html`). */
+function paintAnalyticsCharts() {}
 
 function renderAnalytics() {
-  const DK = typeof window !== "undefined" ? window.DitherKitLite : null;
-  const series = aggregateUsageSeries(30);
-
-  let reqs = 0;
-  let saved = 0;
-  let tin = 0;
-  for (const snap of Object.values(usageData || {})) {
-    reqs += snap.total_requests || 0;
-    saved += snap.total_tokens_saved || 0;
-    tin += snap.total_tokens_in || 0;
-  }
-  const cut = cutPercent(saved, tin);
-  const setText = (id, v) => {
-    const el = $(id);
-    if (el) el.textContent = v;
-  };
-  setText("analytics-cut", cut == null ? "—" : `${cut}%`);
-  setText("analytics-saved", formatNum(saved));
-  setText("analytics-requests", formatNum(reqs));
-  setText("analytics-days", String(series.activeDays));
-  setText(
-    "analytics-cut-sub",
-    tin > 0 ? `${formatNum(saved)} saved · ${formatNum(tin)} in` : "tokens saved / in"
-  );
-  setText("analytics-saved-sub", series.activeDays ? "lifetime · spark below on keys" : "lifetime");
-  setText(
-    "analytics-requests-sub",
-    keysData.length ? `${keysData.length} key${keysData.length === 1 ? "" : "s"}` : "all keys"
-  );
-
-  if (!DK) return;
-
-  const hasSeries =
-    series.saved.some((r) => r.y > 0) || series.requests.some((r) => r.y > 0);
-
-  DK.renderSparkline($("spark-requests"), series.requests.map((r) => r.y), {
-    color: "blue",
-    bloom: "low",
-  });
-  DK.renderSparkline($("spark-saved"), series.saved.map((r) => r.y), {
-    color: "green",
-    bloom: "low",
-  });
-
-  DK.renderAreaChart($("chart-saved-area"), {
-    data: series.saved,
-    color: "green",
-    variant: "gradient",
-    bloom: "aura",
-    empty: !hasSeries,
-  });
-  DK.renderBarChart($("chart-requests-bars"), {
-    data: series.requests.map((r) => ({ label: r.x, value: r.y })),
-    orientation: "vertical",
-    color: "blue",
-    variant: "gradient",
-    bloom: "low",
-    maxBars: 30,
-    empty: !hasSeries,
-  });
-
-  const agentEntries = Object.entries(codingAgentUsage || {})
-    .map(([label, a]) => ({
-      label,
-      value: a.tokens_saved || a.total_tokens_saved || a.requests || 0,
-    }))
-    .filter((d) => d.value > 0)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 8);
-  DK.renderPieChart($("chart-agents-pie"), {
-    data: agentEntries,
-    bloom: "aura",
-  });
-
-  const keyBars = keysData
-    .map((k) => {
-      const snap = usageData[k.id] || {};
-      return {
-        label: (k.name || k.prefix || "key").slice(0, 18),
-        value: snap.total_tokens_saved || 0,
-      };
-    })
-    .filter((d) => d.value > 0)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 8);
-  DK.renderBarChart($("chart-keys-bars"), {
-    data: keyBars.length ? keyBars : [{ label: "No savings yet", value: 0 }],
-    color: "purple",
-    variant: "hatched",
-    bloom: "low",
-    empty: !keyBars.length,
-  });
-
-  if (!analyticsResizeBound) {
-    analyticsResizeBound = true;
-    let t = 0;
-    const onResize = () => {
-      clearTimeout(t);
-      t = setTimeout(() => renderAnalytics(), 120);
-    };
-    window.addEventListener("resize", onResize);
-    if (typeof ResizeObserver !== "undefined") {
-      const host = $("usage-analytics");
-      if (host) {
-        const ro = new ResizeObserver(onResize);
-        ro.observe(host);
-      }
-    }
-  }
+  renderKeysSummary();
 }
 
 function renderKeys() {
+  renderKeysSummary();
   if (!keysData.length) {
     keysGrid.innerHTML = `<div class="dash-empty"><strong>No API keys yet.</strong><br/>Click <em>Create key</em> above to get your <code>sc_live_…</code> key.</div>`;
     return;
@@ -1446,33 +1569,92 @@ function renderKeys() {
 }
 
 function renderUsage() {
-  if (!keysData.length) {
+  if (!keysData.length && !(accountUsage && (accountUsage.tokens_in || accountUsage.requests || accountUsage.tokens_saved))) {
     usageTbody.innerHTML = `<tr><td colspan="7" class="dash-empty">No usage yet.</td></tr>`;
+    renderAnalytics();
     return;
   }
-  usageTbody.innerHTML = keysData
-    .map((k) => {
-      const snap = usageData[k.id] || {};
-      const tin = snap.total_tokens_in || 0;
-      const saved = snap.total_tokens_saved || 0;
-      const cut = cutPercent(saved, tin);
-      const cutHtml =
-        cut == null
-          ? `<span class="dash-cut-pill dash-cut-pill--muted">—</span>`
-          : `<span class="dash-cut-pill">${cut}%</span>`;
-      return `
+
+  const rows = [];
+  // Always show per-key rows when keys exist. Account total only when meter is ahead.
+  const totals = usageTotals();
+  const keyTin = totals.keyTin || 0;
+  const keyReqs = totals.keyReqs || 0;
+  const keySaved = totals.keySaved || 0;
+  const keyTout = totals.keyTout || 0;
+  const acctTin = accountUsage?.tokens_in || 0;
+  const acctReqs = accountUsage?.requests || 0;
+  const acctSaved = accountUsage?.tokens_saved || 0;
+  const acctTout = accountUsage?.tokens_out || 0;
+
+  if (accountUsage && (acctTin > 0 || acctReqs > 0 || acctSaved > 0) && acctTin > keyTin + 500) {
+    const cut = cutPercent(acctSaved, acctTin);
+    const cutHtml =
+      cut == null
+        ? `<span class="dash-cut-pill dash-cut-pill--muted">—</span>`
+        : `<span class="dash-cut-pill">${cut}%</span>`;
+    rows.push(`
+        <tr>
+          <td><strong>Account total (this month)</strong><br/><span class="dash-empty">billing meter · ${formatNum(keyTin)} attributed to keys</span></td>
+          <td>${acctReqs || 0}</td>
+          <td>${formatNum(acctTin)}</td>
+          <td>${formatNum(acctTout)}</td>
+          <td>${formatNum(acctSaved)}</td>
+          <td>${cutHtml}</td>
+          <td>—</td>
+        </tr>`);
+  }
+
+  for (const k of keysData) {
+    const snap = usageData[k.id] || {};
+    const tin = snap.total_tokens_in || 0;
+    const saved = snap.total_tokens_saved || 0;
+    const reqs = snap.total_requests || 0;
+    const cut = cutPercent(saved, tin);
+    const cutHtml =
+      cut == null
+        ? `<span class="dash-cut-pill dash-cut-pill--muted">—</span>`
+        : `<span class="dash-cut-pill">${cut}%</span>`;
+    rows.push(`
         <tr>
           <td><strong>${escapeHtml(k.name)}</strong><br/><code>${escapeHtml(k.prefix)}…</code></td>
-          <td>${snap.total_requests || 0}</td>
+          <td>${reqs}</td>
           <td>${formatNum(tin)}</td>
           <td>${formatNum(snap.total_tokens_out || 0)}</td>
           <td>${formatNum(saved)}</td>
           <td>${cutHtml}</td>
           <td>${formatDate(k.last_used_at)}</td>
-        </tr>`;
-    })
-    .join("");
-  // Charts live above the table; keep them in sync when usage refreshes.
+        </tr>`);
+  }
+
+  // If account meter is ahead of per-key store, show the unallocated gap explicitly.
+  if (acctTin > keyTin + 100 || acctReqs > keyReqs) {
+    const gapIn = Math.max(0, acctTin - keyTin);
+    const gapSaved = Math.max(0, acctSaved - keySaved);
+    const gapOut = Math.max(0, acctTout - keyTout);
+    const gapReqs = Math.max(0, acctReqs - keyReqs);
+    const cut = cutPercent(gapSaved, gapIn);
+    const cutHtml =
+      cut == null
+        ? `<span class="dash-cut-pill dash-cut-pill--muted">—</span>`
+        : `<span class="dash-cut-pill">${cut}%</span>`;
+    rows.push(`
+        <tr>
+          <td><strong>Unallocated</strong><br/><span class="dash-empty">metered but not yet in per-key store</span></td>
+          <td>${gapReqs}</td>
+          <td>${formatNum(gapIn)}</td>
+          <td>${formatNum(gapOut)}</td>
+          <td>${formatNum(gapSaved)}</td>
+          <td>${cutHtml}</td>
+          <td>—</td>
+        </tr>`);
+  }
+
+  if (!rows.length) {
+    usageTbody.innerHTML = `<tr><td colspan="7" class="dash-empty">No usage yet.</td></tr>`;
+  } else {
+    usageTbody.innerHTML = rows.join("");
+  }
   renderAnalytics();
 }
 
@@ -1559,9 +1741,8 @@ function initPanels() {
       const panelEl = $(`panel-${panel}`);
       if (panelEl) panelEl.classList.remove("hidden");
       if (panel === "billing") loadSubscription();
-      // Canvas hosts are 0-width while hidden — paint after the panel is visible.
-      if (panel === "usage" || panel === "keys") {
-        requestAnimationFrame(() => renderAnalytics());
+      if (panel === "keys") {
+        requestAnimationFrame(() => renderKeysSummary());
       }
     });
   });
@@ -1677,7 +1858,6 @@ async function initFirebaseAuth() {
       const title = $("auth-title");
       const subtitle = $("auth-subtitle");
       const label = document.querySelector(".dash-auth-card .dash-section-label");
-      const perks = $("auth-perks");
       if (label) label.textContent = authTab === "signup" ? "Free to start" : "Welcome back";
       if (title) {
         title.textContent = authTab === "signup" ? "Get your free API key" : "Log in";
@@ -1688,7 +1868,6 @@ async function initFirebaseAuth() {
             ? "1M free tokens/mo · then $0.30/1M. Google takes one click — your key is ready instantly."
             : "Sign in to manage API keys, usage, and billing.";
       }
-      if (perks) perks.classList.toggle("hidden", authTab !== "signup");
       document.querySelectorAll(".dash-auth-tab").forEach((t) => {
         t.setAttribute("aria-selected", t.dataset.tab === authTab ? "true" : "false");
       });
@@ -1701,14 +1880,12 @@ async function initFirebaseAuth() {
     const title = $("auth-title");
     const subtitle = $("auth-subtitle");
     const label = document.querySelector(".dash-auth-card .dash-section-label");
-    const perks = $("auth-perks");
     if (label) label.textContent = "Coding agent plugin";
     if (title) title.textContent = "Connect your SuperCompress account";
     if (subtitle) {
       subtitle.textContent =
         "Sign in to link this device. SuperCompress will create your account key automatically for the plugin.";
     }
-    if (perks) perks.classList.add("hidden");
   }
 
   document.querySelectorAll(".dash-auth-tab").forEach((tab) => {

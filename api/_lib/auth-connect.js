@@ -90,6 +90,30 @@ async function createAuthPluginKey(ownerUid, name = "Coding agent") {
     console.warn("createAuthPluginKey: owner claim update skipped:", err.message);
   }
 
+  // Mirror into Firestore store immediately so listKeys/usage attribution work
+  // without waiting for the first compress migrate.
+  try {
+    const { mutateStore } = require("./store");
+    await mutateStore((store) => {
+      store.keys[gen.uid] = {
+        id: gen.uid,
+        user_id: ownerUid,
+        name: displayName,
+        prefix: gen.prefix,
+        key_hash: gen.key_hash,
+        created_at: created,
+        last_used_at: null,
+        revoked: false,
+        plugin: true,
+      };
+      store.hash_index[gen.key_hash] = gen.uid;
+      if (!store.usage[gen.uid]) store.usage[gen.uid] = {};
+      return store.keys[gen.uid];
+    });
+  } catch (err) {
+    console.warn("createAuthPluginKey: store mirror skipped:", err.message);
+  }
+
   return {
     key: {
       id: gen.uid,

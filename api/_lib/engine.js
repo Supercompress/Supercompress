@@ -128,9 +128,7 @@ async function ccrStoreFirestore(hash, originalText, meta = {}) {
   }
 }
 
-/** Alias used by older call sites. */
-const ccrStoreBlob = ccrStoreFirestore;
-
+/** Persist CCR payloads in Firestore (owner-scoped). */
 async function storeCcrBlocks(ccr, fullText, meta = {}) {
   const hashes = Array.isArray(ccr?.marker_hashes) ? ccr.marker_hashes : [];
   const storedHashes = [];
@@ -163,7 +161,6 @@ module.exports = {
   simpleHash,
   ccrOwnerDocPath,
   ccrStoreFirestore,
-  ccrStoreBlob,
   storeCcrBlocks,
   wrapCompressedForCache,
 };

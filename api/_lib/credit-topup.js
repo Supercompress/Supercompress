@@ -7,10 +7,16 @@ const {
   normalizeCreditLimitUsd,
   DEFAULT_CREDIT_LIMIT_USD,
   roundUsd,
+  tokensToUsd,
+  TOKENS_PER_BILLING_UNIT,
 } = require("./stripe");
 const { mutateStore } = require("./store");
 const { initFirebaseAdmin } = require("./auth");
 const admin = require("firebase-admin");
+
+/** Thank-you grant on first successful credit top-up (1M tokens @ current PAYG rate). */
+const FIRST_PAY_BONUS_TOKENS = TOKENS_PER_BILLING_UNIT;
+const FIRST_PAY_BONUS_USD = tokensToUsd(FIRST_PAY_BONUS_TOKENS);
 
 async function updateBillingClaims(userId, data) {
   if (!userId || !initFirebaseAdmin()) return;
@@ -33,6 +39,8 @@ async function updateBillingClaims(userId, data) {
     next.sc_default_payment_method = data.sc_default_payment_method;
   }
   if (data.sc_credited_sessions) next.sc_credited_sessions = data.sc_credited_sessions;
+  if (data.sc_first_pay_bonus_at) next.sc_first_pay_bonus_at = data.sc_first_pay_bonus_at;
+  if (data.sc_first_pay_bonus_usd != null) next.sc_first_pay_bonus_usd = data.sc_first_pay_bonus_usd;
   await admin.auth().setCustomUserClaims(userId, next);
   return next;
 }
@@ -90,11 +98,16 @@ async function applyCreditTopUp(session) {
     : [];
   if (credited.includes(session.id)) {
     console.log("Credit top-up already applied:", session.id);
+    const alreadyBonus = prev.sc_first_pay_bonus_at
+      ? Number(prev.sc_first_pay_bonus_usd || FIRST_PAY_BONUS_USD)
+      : 0;
     return {
       applied: true,
       already: true,
       balance: roundUsd(Number(prev.sc_credit_balance_usd || 0)),
       creditUsd: 0,
+      firstPayBonusUsd: alreadyBonus,
+      firstPayBonusTokens: alreadyBonus > 0 ? FIRST_PAY_BONUS_TOKENS : 0,
     };
   }
 
@@ -125,10 +138,12 @@ async function applyCreditTopUp(session) {
     console.warn("Could not attach default PM:", err.message || err);
   }
 
-  const newBalance = roundUsd(Number(prev.sc_credit_balance_usd || 0) + creditUsd);
+  const grantFirstPayBonus = !prev.sc_first_pay_bonus_at;
+  const bonusUsd = grantFirstPayBonus ? FIRST_PAY_BONUS_USD : 0;
+  const newBalance = roundUsd(Number(prev.sc_credit_balance_usd || 0) + creditUsd + bonusUsd);
   const nextCredited = [...credited.slice(-40), session.id];
 
-  await persistSubscription(userId, {
+  const persistPayload = {
     stripe_customer_id: session.customer,
     stripe_subscription_id: prev.sc_subscription_id || null,
     plan_id: "payg",
@@ -149,10 +164,25 @@ async function applyCreditTopUp(session) {
     ),
     auto_recharge: autoRecharge,
     updated_at: new Date().toISOString(),
-  });
+  };
+  if (grantFirstPayBonus) {
+    persistPayload.sc_first_pay_bonus_at = new Date().toISOString();
+    persistPayload.sc_first_pay_bonus_usd = bonusUsd;
+  }
 
-  console.log(`Credited $${creditUsd} to ${userId}; balance=$${newBalance}`);
-  return { applied: true, already: false, balance: newBalance, creditUsd };
+  await persistSubscription(userId, persistPayload);
+
+  console.log(
+    `Credited $${creditUsd}${bonusUsd ? ` + $${bonusUsd} first-pay bonus` : ""} to ${userId}; balance=$${newBalance}`
+  );
+  return {
+    applied: true,
+    already: false,
+    balance: newBalance,
+    creditUsd,
+    firstPayBonusUsd: bonusUsd,
+    firstPayBonusTokens: grantFirstPayBonus ? FIRST_PAY_BONUS_TOKENS : 0,
+  };
 }
 
 /**
@@ -186,6 +216,8 @@ async function reconcileCreditCheckout({ userId, sessionId }) {
     ok: true,
     credit_balance_usd: result.balance,
     credited_usd: result.creditUsd,
+    first_pay_bonus_usd: result.firstPayBonusUsd || 0,
+    first_pay_bonus_tokens: result.firstPayBonusTokens || 0,
     already: Boolean(result.already),
   };
 }
@@ -195,4 +227,6 @@ module.exports = {
   persistSubscription,
   updateBillingClaims,
   reconcileCreditCheckout,
+  FIRST_PAY_BONUS_TOKENS,
+  FIRST_PAY_BONUS_USD,
 };
