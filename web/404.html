@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>404 — Page compressed away | SuperCompress</title>
-  <meta name="description" content="This page isn’t here. SuperCompress may have been a little too aggressive." />
+  <title>Page not found | SuperCompress</title>
+  <meta name="description" content="This page isn’t on SuperCompress. Head home, open docs, or get an API key." />
   <meta name="robots" content="noindex, follow" />
-  <meta property="og:title" content="404 — Page compressed away | SuperCompress" />
-  <meta property="og:description" content="This path wasn’t found. Head home, or try the playground." />
+  <meta property="og:title" content="Page not found | SuperCompress" />
+  <meta property="og:description" content="This path wasn’t found. Head home, open docs, or try the playground." />
   <meta property="og:url" content="https://www.supercompress.dev/404" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SuperCompress" />
@@ -15,235 +15,97 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="theme-color" content="rgb(251,251,248)" />
+  <link rel="canonical" href="https://www.supercompress.dev/404" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-  <link rel="stylesheet" href="/assets/css/supercompress.css?v=118" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/landing-motion.css?v=8" />
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
   <style>
-    .nf-page {
-      position: relative;
-      min-height: 100vh;
-      overflow: hidden;
-      background: var(--bg-page);
-      color: var(--text-primary);
-      font-family: var(--sans);
-    }
-
-    .nf-hands {
-      pointer-events: none;
-      position: absolute;
-      inset: -8% -12% -18% -12%;
-      z-index: 0;
+    .nf {
+      min-height: calc(100vh - var(--nav-h) - 120px);
       display: flex;
       align-items: center;
-      justify-content: center;
-      opacity: 0.22;
+      background: var(--paper, #fbfbf8);
+      color: var(--text-primary, #171717);
     }
-    .nf-hands img {
-      width: min(1100px, 120%);
-      height: auto;
-      object-fit: contain;
-      animation: nf-drift 18s ease-in-out infinite alternate;
-    }
-    @keyframes nf-drift {
-      from { transform: translate3d(-1.5%, 0.5%, 0) scale(1.02); }
-      to   { transform: translate3d(1.5%, -1%, 0) scale(1.06); }
-    }
-
-    .nf-grain {
-      pointer-events: none;
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      opacity: 0.035;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    }
-
-    .nf-shell {
-      position: relative;
-      z-index: 2;
-      max-width: 920px;
+    .nf-inner {
+      width: 100%;
+      max-width: var(--max-w, 1400px);
       margin: 0 auto;
-      padding: clamp(88px, 14vh, 140px) var(--frame-buffer) 64px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      padding: clamp(48px, 10vh, 96px) var(--frame-buffer, 40px) 72px;
     }
-
-    .nf-brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: clamp(40px, 8vh, 72px);
-      width: fit-content;
-      opacity: 0;
-      animation: nf-in 0.7s ease forwards;
-    }
-    .nf-brand .sc-logo-mark { width: 28px; height: 28px; }
-    .nf-brand .df-logo-word { font-size: 22px; }
-
     .nf-kicker {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+      margin: 0 0 18px;
+      font-family: var(--sans, Geist, system-ui, sans-serif);
       font-size: 12px;
       font-weight: 500;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--brand);
-      margin-bottom: 18px;
-      opacity: 0;
-      animation: nf-in 0.7s ease 0.08s forwards;
+      color: var(--brand, #0566ff);
     }
-    .nf-kicker-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--brand);
-      box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45);
-      animation: nf-pulse 1.8s ease-out infinite;
-    }
-    @keyframes nf-pulse {
-      0%   { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45); }
-      70%  { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
-    }
-
     .nf-code {
-      font-family: var(--serif);
+      margin: 0 0 16px;
+      font-family: var(--serif, Platypi, Georgia, serif);
       font-weight: 300;
-      font-size: clamp(5.5rem, 18vw, 9.5rem);
-      line-height: 0.85;
+      font-size: clamp(4.5rem, 14vw, 7.5rem);
+      line-height: 0.9;
       letter-spacing: -0.06em;
-      margin: 0 0 18px;
-      color: var(--text-primary);
     }
     .nf-code em {
       font-style: italic;
       font-weight: 400;
-      color: var(--brand);
+      color: var(--brand, #0566ff);
     }
-    .nf-code span {
-      display: inline-block;
-      opacity: 0;
-      transform: translateY(0.35em);
-      animation: nf-word 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    }
-    .nf-code span:nth-child(1) { animation-delay: 0.12s; }
-    .nf-code span:nth-child(2) { animation-delay: 0.22s; }
-    .nf-code span:nth-child(3) { animation-delay: 0.32s; }
-
     .nf-title {
-      font-family: var(--serif);
+      margin: 0 0 14px;
+      max-width: 18ch;
+      font-family: var(--serif, Platypi, Georgia, serif);
       font-weight: 300;
-      font-size: clamp(1.65rem, 4.2vw, 2.55rem);
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
       line-height: 1.15;
       letter-spacing: -0.03em;
-      max-width: 16ch;
-      margin: 0 0 14px;
-      opacity: 0;
-      animation: nf-in 0.8s ease 0.28s forwards;
     }
-
     .nf-lead {
-      max-width: 38rem;
-      font-size: clamp(1rem, 1.6vw, 1.125rem);
-      line-height: 1.65;
-      color: var(--text-body);
       margin: 0 0 28px;
-      opacity: 0;
-      animation: nf-in 0.8s ease 0.38s forwards;
+      max-width: 36rem;
+      font-family: var(--sans, Geist, system-ui, sans-serif);
+      font-size: clamp(1rem, 1.5vw, 1.125rem);
+      line-height: 1.65;
+      color: #4a4a45;
     }
-
+    .nf-path {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(10, 10, 10, 0.04);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      color: #171717;
+      word-break: break-all;
+    }
     .nf-actions {
       display: flex;
       flex-wrap: wrap;
+      gap: 12px;
       align-items: center;
-      gap: 10px 14px;
-      margin-bottom: clamp(36px, 6vh, 56px);
-      opacity: 0;
-      animation: nf-in 0.8s ease 0.48s forwards;
     }
-    .nf-actions .btn-brand { padding: 10px 18px; }
-    .nf-actions .btn-link-muted { margin-left: 0; }
-
-    .nf-receipt {
-      margin-top: auto;
-      max-width: 34rem;
-      border-top: 1px solid rgba(10, 10, 10, 0.12);
-      padding-top: 22px;
-      opacity: 0;
-      animation: nf-in 0.85s ease 0.62s forwards;
-    }
-    .nf-receipt-label {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-    }
-    .nf-receipt-row {
-      display: grid;
-      grid-template-columns: 7.5rem 1fr;
-      gap: 10px;
-      font-size: 13px;
-      line-height: 1.5;
-      padding: 5px 0;
-      border-bottom: 1px dashed rgba(10, 10, 10, 0.08);
-    }
-    .nf-receipt-row:last-child { border-bottom: none; }
-    .nf-receipt-k { color: var(--text-muted); }
-    .nf-receipt-v {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 12.5px;
-      color: var(--text-primary);
-      word-break: break-all;
-    }
-    .nf-receipt-v--cut { color: var(--brand); }
-    .nf-receipt-v--gone {
-      text-decoration: line-through;
-      text-decoration-thickness: 1px;
-      color: #9a9a9a;
-    }
-
-    @keyframes nf-in {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: none; }
-    }
-    @keyframes nf-word {
-      from { opacity: 0; transform: translateY(0.35em); }
-      to   { opacity: 1; transform: none; }
-    }
-
-    @media (max-width: 639px) {
-      .nf-hands { opacity: 0.16; }
-      .nf-receipt-row { grid-template-columns: 1fr; gap: 2px; padding: 8px 0; }
-    }
-
+    .nf-actions .button { text-decoration: none; }
     @media (prefers-reduced-motion: reduce) {
-      .nf-hands img,
-      .nf-kicker-dot,
-      .nf-brand,
-      .nf-kicker,
-      .nf-code span,
-      .nf-title,
-      .nf-lead,
-      .nf-actions,
-      .nf-receipt {
-        animation: none !important;
-        opacity: 1 !important;
-        transform: none !important;
-      }
+      .nf * { animation: none !important; transition: none !important; }
     }
   </style>
   <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
-<header class="df-header">
+  <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
       <a href="/" class="df-logo-desktop">
@@ -285,70 +147,26 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<div class="nf-page">
-    <div class="nf-hands" aria-hidden="true">
-      <img src="/assets/img/hero-stipple-hands.jpg?v=1" alt="" width="1920" height="1080" decoding="async" />
-    </div>
-    <div class="nf-grain" aria-hidden="true"></div>
 
-    <div class="nf-shell">
-      <a href="/" class="nf-brand" aria-label="SuperCompress home">
-        <img src="/assets/img/logo-chevrons.png" alt="" class="sc-logo-mark" width="28" height="28" />
-        <span class="df-logo-word">Super<em>Compress</em></span>
-      </a>
-
-      <p class="nf-kicker"><span class="nf-kicker-dot" aria-hidden="true"></span> Context dropped</p>
-
-      <h1 class="nf-code" aria-label="404">
-        <span>4</span><span>0</span><span><em>4</em></span>
-      </h1>
-
-      <h2 class="nf-title">This path was compressed out of the page.</h2>
+  <main class="nf">
+    <div class="nf-inner">
+      <p class="nf-kicker">404</p>
+      <h1 class="nf-code" aria-label="404">4<em>0</em>4</h1>
+      <h2 class="nf-title">This page isn’t here.</h2>
       <p class="nf-lead">
-        Nothing lives here — or our policy got a little eager and treated it as low-value context.
-        Pick a destination below, or go home and start fresh.
+        That URL doesn’t match anything on SuperCompress.
+        <span class="nf-path" id="nf-path">/</span>
       </p>
-
       <div class="nf-actions">
-        <a class="btn-brand" href="/">Back home</a>
-        <a class="btn-link-muted" href="/playground">Playground</a>
-        <a class="btn-link-muted" href="https://docs.supercompress.dev">Docs</a>
-        <a class="btn-link-muted" href="/playground">Live demo</a>
-      </div>
-
-      <div class="nf-receipt" role="status" aria-live="polite">
-        <p class="nf-receipt-label">Compression receipt</p>
-        <div class="nf-receipt-row">
-          <span class="nf-receipt-k">Requested</span>
-          <span class="nf-receipt-v nf-receipt-v--gone" id="nf-path">/</span>
-        </div>
-        <div class="nf-receipt-row">
-          <span class="nf-receipt-k">Kept</span>
-          <span class="nf-receipt-v">0 tokens</span>
-        </div>
-        <div class="nf-receipt-row">
-          <span class="nf-receipt-k">Dropped</span>
-          <span class="nf-receipt-v nf-receipt-v--cut" id="nf-cut">100% · path not found</span>
-        </div>
-        <div class="nf-receipt-row">
-          <span class="nf-receipt-k">Hint</span>
-          <span class="nf-receipt-v">try /playground or /docs</span>
-        </div>
+        <a class="button button-primary" href="/">Back home</a>
+        <a class="button button-secondary" href="https://docs.supercompress.dev">Docs</a>
+        <a class="button button-secondary" href="/dashboard?signup=1">Get API key</a>
+        <a class="button button-secondary" href="/playground">Playground</a>
       </div>
     </div>
-  </div>
+  </main>
 
-  <script>
-    (function () {
-      var path = window.location.pathname || "/";
-      if (path === "/404" || path === "/404.html") path = "/(missing)";
-      var el = document.getElementById("nf-path");
-      var cut = document.getElementById("nf-cut");
-      if (el) el.textContent = path;
-      if (cut) cut.textContent = "100% · " + path + " not found";
-    })();
-  </script>
-<footer class="df-footer">
+  <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
         <div class="df-footer-brand">
@@ -369,46 +187,15 @@
               <li><a href="/changelog">Changelog</a></li>
               <li><a href="https://docs.supercompress.dev">Docs</a></li>
               <li><a href="/dashboard?signup=1">Get API key</a></li>
-              <li><a href="/dashboard?login=1">Log in</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Resources</p>
             <ul>
               <li><a href="/playground">Playground</a></li>
-              <li><a href="/token-compression">Token compression guide</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
               <li><a href="/compare">Compare methods</a></li>
-              <li><a href="/research">Research</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">Blog</p>
-            <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
-              <li><a href="/token-compression">Token compression</a></li>
-              <li><a href="/prompt-compression">Prompt compression</a></li>
-              <li><a href="/context-compression">Context compression</a></li>
-              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
-              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
-              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">Documentation</p>
-            <ul>
-              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
-              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
-              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
-              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
-              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">Social</p>
-            <ul>
-              <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
             </ul>
           </div>
         </div>
@@ -416,6 +203,15 @@
       <p class="df-footer-copy">© SuperCompress · MIT License</p>
     </div>
   </footer>
+
+  <script>
+    (function () {
+      var path = window.location.pathname || "/";
+      if (path === "/404" || path === "/404.html") path = "/(missing)";
+      var el = document.getElementById("nf-path");
+      if (el) el.textContent = path;
+    })();
+  </script>
   <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>
 </html>

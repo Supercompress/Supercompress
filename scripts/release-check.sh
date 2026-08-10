@@ -16,7 +16,6 @@ const required = [
   'id="coding-agents"',
   'supercompress-proxy',
   'supercompress setup',
-  'assets/js/compress-engine.js',
 ];
 const installOk =
   html.includes('npm install -g supercompress-proxy') ||
@@ -24,7 +23,9 @@ const installOk =
 if (!installOk) throw new Error('landing page missing npm install for supercompress-proxy');
 const cssOk =
   html.includes('assets/css/supercompress.css') ||
-  html.includes('assets/css/sc-sm.css');
+  html.includes('assets/css/sc-sm.css') ||
+  html.includes('assets/css/landing-motion.css') ||
+  html.includes('assets/css/landing-chrome.css');
 if (!cssOk) throw new Error('landing page missing stylesheet');
 for (const value of required) {
   if (!html.includes(value)) throw new Error(`landing page missing: ${value}`);

@@ -74,6 +74,26 @@
       "permanent": true
     },
     {
+      "source": "/pricing",
+      "destination": "/dashboard?signup=1",
+      "permanent": true
+    },
+    {
+      "source": "/login",
+      "destination": "/dashboard?login=1",
+      "permanent": true
+    },
+    {
+      "source": "/signup",
+      "destination": "/dashboard?signup=1",
+      "permanent": true
+    },
+    {
+      "source": "/account",
+      "destination": "/dashboard",
+      "permanent": true
+    },
+    {
       "source": "/headroom",
       "destination": "/headroom-api",
       "permanent": true
