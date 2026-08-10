@@ -14,7 +14,7 @@
 
 const path = require("path");
 const fs = require("fs");
-const { spawn } = require("child_process");
+const { spawn, execFileSync } = require("child_process");
 const http = require("http");
 const crypto = require("crypto");
 const VERSION = require("../package.json").version;
@@ -37,10 +37,15 @@ function loadConfig() {
 }
 
 function saveConfig(config) {
-  if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
-  }
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+  fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+  try {
+    fs.chmodSync(CONFIG_DIR, 0o700);
+  } catch {}
+  const payload = `${JSON.stringify(config, null, 2)}\n`;
+  fs.writeFileSync(CONFIG_PATH, payload, { mode: 0o600 });
+  try {
+    fs.chmodSync(CONFIG_PATH, 0o600);
+  } catch {}
 }
 
 function printLogo() {
@@ -167,20 +172,32 @@ async function main() {
         console.log("  ✗ Not configured. Run `supercompress setup` first.");
         process.exit(1);
       }
+      const port = config.port || 8080;
       // A launchd/systemd-managed proxy does not create our PID file. The
       // health endpoint is the source of truth for both managed and manual runs.
-      if (await isHealthy(config.port || 8080)) {
-        console.log("  ✓ Proxy is already running on port " + (config.port || 8080));
-        return;
+      const health = await fetchHealth(port);
+      if (health) {
+        if (health.version && health.version !== VERSION) {
+          console.log(
+            `  → Restarting proxy (running v${health.version}, package is v${VERSION})`
+          );
+          stopServer(port);
+          await new Promise((r) => setTimeout(r, 400));
+        } else {
+          console.log("  ✓ Proxy is already running on port " + port);
+          return;
+        }
       }
-      if (isRunning()) stopServer();
+      if (isRunning()) stopServer(port);
       await startServer(config);
       break;
     }
 
-    case "stop":
-      stopServer();
+    case "stop": {
+      const config = loadConfig();
+      stopServer(config?.port || 8080);
       break;
+    }
 
     case "status": {
       const config = loadConfig();
@@ -438,10 +455,35 @@ function waitForHealth(port, timeoutMs = 5000) {
   });
 }
 
-async function isHealthy(port) {
+async function fetchHealth(port) {
   try {
-    await waitForHealth(port, 700);
-    return true;
+    return await waitForHealth(port, 700);
+  } catch {
+    return null;
+  }
+}
+
+async function isHealthy(port) {
+  return Boolean(await fetchHealth(port));
+}
+
+function killListenerOnPort(port) {
+  try {
+    const out = execFileSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (!out) return false;
+    let killed = false;
+    for (const line of out.split("\n")) {
+      const pid = parseInt(line.trim(), 10);
+      if (!pid || pid === process.pid) continue;
+      try {
+        process.kill(pid, "SIGTERM");
+        killed = true;
+      } catch {}
+    }
+    return killed;
   } catch {
     return false;
   }
@@ -483,17 +525,23 @@ async function startServer(config) {
   console.log("  → Run `supercompress status` to check.");
 }
 
-function stopServer() {
+function stopServer(port) {
+  let stopped = false;
   try {
     if (fs.existsSync(PID_PATH)) {
       const pid = parseInt(fs.readFileSync(PID_PATH, "utf8").trim(), 10);
       try {
         process.kill(pid, "SIGTERM");
-        console.log("  ✓ Proxy stopped.");
+        stopped = true;
       } catch {}
       try { fs.unlinkSync(PID_PATH); } catch {}
     }
   } catch {}
+  // Also clear orphaned listeners (stale PID / launchd / older installs).
+  const targetPort = port || loadConfig()?.port || 8080;
+  if (killListenerOnPort(targetPort)) stopped = true;
+  if (stopped) console.log("  ✓ Proxy stopped.");
+  else console.log("  ○ Proxy was not running.");
 }
 
 async function printAccount() {
