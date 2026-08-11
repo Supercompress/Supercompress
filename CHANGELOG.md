@@ -35,10 +35,18 @@ Public page: https://www.supercompress.dev/changelog
 - Fix `/api/v1/compress` 504s: kill O(n²) token-entropy scans in the engine, skip unused line annotations on the hosted path, soft-timeout Firestore side-effects, raise route `maxDuration` to 60s
 - Harden billing: fail-closed `recordUsage`, atomic free-quota/wallet rejection (no clamp-to-zero), permanent `billing_credits/{id}` idempotency, ledger-only claim mirroring
 - Compress POST-only (no query API keys/context); durable rate-limit fail-closed; CCR strips retrieve markers if persistence fails; dashboard reads billing ledger
+- **Request-level billing idempotency** (`billing_usage/{uid}:{requestId}` + `Idempotency-Key`) so billing timeouts cannot double-charge on retry
+- Bill before per-key analytics; skip analytics on idempotent replay
+- Auto-recharge once when balance is positive but insufficient, then retry the same request id
+- First-pay bonus create-once via `billing_bonus/{uid}:first_pay`; honest Checkout replay (`already: true`, `creditUsd: 0`)
+- Cumulative micro-USD rounding (`ceil(totalAfter) − ceil(totalBefore)`); idempotent durable rate-limit hits
 
 ### Coding agent plugin
 - Protocol/runtime safety: native `fetch` (drop `node-fetch`), owned-PID-only stop, buffered SSE that preserves `tool_calls`, skip compression for structured tool/Responses items, inject digests as user (not system), fail-open on compress timeout/5xx, block browser `Origin` on local proxy, zstd size caps, spawn via `process.execPath`
 - Non-destructive setup: only clear SuperCompress-owned base URLs; backup before plugin writers; fix instruction-block idempotency; don’t markSeen on compress timeout/error; don’t split long asks without paragraph breaks; secure inbox/session modes; fail connect instead of rotating production API keys; atomic device-link consume via Firestore
+- **Preserve tool-call / tool-result order** when splitting compressible history (no reverse via `unshift`)
+- Rank structured-history compression against the **latest user ask in the full thread**, not an older compressible-prefix turn
+- Send `Idempotency-Key` on compress API calls for safer retries
 - See **[0.5.17](#0517--2026-08-10)** / **[0.5.16](#0516--2026-08-09)** below
 
 ### Repository hygiene

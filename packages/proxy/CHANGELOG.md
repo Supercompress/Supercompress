@@ -2,6 +2,12 @@
 
 Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
 
+## [Unreleased]
+
+- **Preserve tool-call / tool-result order** when splitting compressible history (no reverse via `unshift`).
+- Rank structured-history compression against the **latest user ask in the full thread**, not an older compressible-prefix turn.
+- Send `Idempotency-Key` on compress API calls for safer retries with request-level billing idempotency.
+
 ## [0.5.17] — 2026-08-10
 
 - **Fix agent attribution**: Cursor postToolUse no longer mislabels usage as `claude_code` when the payload has `session_id`/`cwd` (Cursor always does).

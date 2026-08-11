@@ -220,6 +220,77 @@
     </header>
 
     <div class="cl-feed">
+      <article class="cl-entry" id="unreleased">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#unreleased">Unreleased</a>
+          <span class="cl-date">shipping on main</span>
+          <span class="cl-badge cl-badge--unreleased">main</span>
+        </div>
+        <div class="cl-body">
+          <h3>API / billing</h3>
+          <ul>
+            <li><strong>Request-level billing idempotency</strong> (<code>Idempotency-Key</code> / <code>billing_usage/{uid}:{requestId}</code>) so billing timeouts cannot double-charge on retry.</li>
+            <li>Bill before per-key analytics; auto-recharge when balance is positive but insufficient, then retry the same request id.</li>
+            <li>Transactional first-pay bonus; honest Checkout replay flags; cumulative micro-USD rounding; idempotent durable rate-limit hits.</li>
+            <li>Earlier: fail-closed usage burns, permanent Stripe credit idempotency, POST-only compress, CCR marker cleanup, billing ledger as source of truth.</li>
+          </ul>
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li><strong>Preserve tool-call order</strong> when splitting compressible history; rank compression against the latest user ask in the full thread.</li>
+            <li>Proxy sends <code>Idempotency-Key</code> on compress API calls.</li>
+            <li>See <a href="#v0.5.17">0.5.17</a> / <a href="#v0.5.16">0.5.16</a> for the latest published npm fixes.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="cl-entry" id="v0.5.17">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.17">0.5.17</a>
+          <span class="cl-date">2026-08-10</span>
+          <span class="cl-badge">proxy</span>
+        </div>
+        <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li><strong>Fix agent attribution:</strong> Cursor postToolUse no longer mislabels usage as <code>claude_code</code>.</li>
+            <li>Cursor hooks set <code>SUPERCOMPRESS_AGENT_NAME=Cursor</code> explicitly.</li>
+            <li>Stop using <code>configured_agents[0]</code> as the compress agent name.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="cl-entry" id="v0.5.16">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.16">0.5.16</a>
+          <span class="cl-date">2026-08-09</span>
+          <span class="cl-badge">proxy</span>
+        </div>
+        <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li><strong>Hard paywall surfacing:</strong> hooks + MCP no longer silently fail-open on HTTP 402.</li>
+            <li>Loud <code>[SuperCompress PAYWALL]</code> CTA; proxy returns 402 with billing URL.</li>
+            <li>Restore missing <code>compressIncremental</code> export used by MCP <code>compress_context</code>.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="cl-entry" id="v0.5.15">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.15">0.5.15</a>
+          <span class="cl-date">2026-08-09</span>
+          <span class="cl-badge">proxy</span>
+        </div>
+        <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li><strong>Setup-first:</strong> <code>supercompress setup</code> / <code>plugin</code> is the recommended path (auto MCP + hooks). <code>wrap</code> deprecated.</li>
+            <li><strong>Zed:</strong> detect macOS Zed app; write MCP via <code>context_servers</code>.</li>
+            <li>Docs/links prefer <code>https://docs.supercompress.dev/...</code>.</li>
+          </ul>
+        </div>
+      </article>
+
       <article class="cl-entry" id="v0.5.8">
         <div class="cl-meta">
           <a class="cl-ver" href="#v0.5.8">0.5.8</a>
