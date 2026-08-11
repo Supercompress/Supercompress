@@ -192,16 +192,22 @@
       Number(agentT.requests || 0)
     );
 
-    // If we only have month totals (no ISO by_day), park them on today so the chart isn't blank.
-    if (daySaved === 0 && dayReq === 0 && (saved > 0 || req > 0)) {
+    // Month meter ahead of ISO by_day (common when ledger/agent totals exist but
+    // daily rows lagged). Fold the gap onto today so the area chart matches KPIs.
+    const gapSaved = saved - daySaved;
+    const gapIn = tin - dayIn;
+    const gapReq = req - dayReq;
+    if (gapSaved > 500 || gapIn > 500 || gapReq > 0) {
       const today = keys[keys.length - 1];
-      const ratio = tin > 0 ? saved / tin : 0.55;
+      const cur = bundle.byDay[today] || emptyDay();
       bundle.byDay[today] = {
-        tokens_saved: saved,
-        tokens_in: tin || Math.round(saved / Math.max(ratio, 0.01)),
-        requests: req || 1,
+        tokens_saved: cur.tokens_saved + Math.max(0, gapSaved),
+        tokens_in: cur.tokens_in + Math.max(0, gapIn),
+        requests: cur.requests + Math.max(0, gapReq),
       };
-      return meterFromBundle({ ...bundle, account: null, keyTotals: null, agentTotals: null });
+      daySaved = saved;
+      dayIn = tin;
+      dayReq = req;
     }
 
     return { saved, tin, req, daySaved, dayIn, dayReq };
@@ -234,7 +240,7 @@
       const pct = Math.round(((second - first) / first) * 100);
       deltaLabel = `${pct >= 0 ? "+" : ""}${pct}% vs prior`;
     } else if (second > 0) {
-      deltaLabel = meter.daySaved === 0 && saved > 0 ? "month total · daily starts next call" : "new activity";
+      deltaLabel = "new activity";
     }
 
     const agents = (bundle.agents || []).map((a) =>
