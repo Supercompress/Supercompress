@@ -75,6 +75,39 @@ async function main() {
     assert.deepEqual(out.messages, messages);
   });
 
+  await test("splitCompressiblePrefix keeps tool-call order and uses full-history query", () => {
+    const filler = (n) => ({ role: "user", content: `old ask ${n} ` + "z".repeat(40) });
+    const messages = [
+      filler(1),
+      filler(2),
+      {
+        role: "assistant",
+        content: null,
+        tool_calls: [{ id: "A", type: "function", function: { name: "a", arguments: "{}" } }],
+      },
+      { role: "tool", tool_call_id: "A", content: "result A" },
+      {
+        role: "assistant",
+        content: null,
+        tool_calls: [{ id: "B", type: "function", function: { name: "b", arguments: "{}" } }],
+      },
+      { role: "tool", tool_call_id: "B", content: "result B" },
+      filler(3),
+      filler(4),
+      filler(5),
+      filler(6),
+      { role: "user", content: "current coding task" },
+      { role: "assistant", content: "working" },
+    ];
+    const split = compressor.splitCompressiblePrefix(messages);
+    const ids = split.preserved
+      .map((m) => m.tool_call_id || m.tool_calls?.[0]?.id)
+      .filter(Boolean);
+    assert.deepEqual(ids, ["A", "A", "B", "B"]);
+    assert.equal(split.query, "current coding task");
+    assert.ok(split.compressible.some((m) => String(m.content).includes("old ask")));
+  });
+
   await test("responsesInputHasStructuredItems detects function_call", () => {
     assert.equal(
       forwarder.responsesInputHasStructuredItems([

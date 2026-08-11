@@ -11,6 +11,7 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const crypto = require("crypto");
 
 const SUPERCOMPRESS_API =
   process.env.SUPERCOMPRESS_API_URL || "https://www.supercompress.dev/api/v1/compress";
@@ -167,7 +168,7 @@ function splitCompressiblePrefix(messages) {
     return { systemMsgs, compressible: [], preserved: rest, query: "" };
   }
   const compressible = [];
-  const preserved = rest.slice(-KEEP_TAIL);
+  const preservedHead = [];
   const head = rest.slice(0, -KEEP_TAIL);
   for (const msg of head) {
     const structured =
@@ -178,14 +179,17 @@ function splitCompressiblePrefix(messages) {
       msg.tool_call_id ||
       Array.isArray(msg.content);
     if (structured) {
-      // Keep structured tool turns verbatim in the preserved prefix area.
-      preserved.unshift(msg);
+      // Keep structured tool turns verbatim, in original order (never unshift).
+      preservedHead.push(msg);
     } else {
       compressible.push(msg);
     }
   }
+  const preserved = [...preservedHead, ...rest.slice(-KEEP_TAIL)];
+  // Rank against the active user ask from the full history (usually in the tail),
+  // not an older user turn that happened to land in the compressible prefix.
   let query = "Continue the conversation.";
-  const lastUser = [...compressible].reverse().find((m) => m.role === "user");
+  const lastUser = [...rest].reverse().find((m) => m.role === "user");
   if (lastUser) query = messageText(lastUser.content) || query;
   return { systemMsgs, compressible, preserved, query };
 }
@@ -210,12 +214,14 @@ async function compress(messages, agentName) {
     const agent = agentName || detectAgentName();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), COMPRESS_TIMEOUT_MS);
+    const idempotencyKey = crypto.randomUUID();
     try {
       const response = await fetch(SUPERCOMPRESS_API, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-API-Key": apiKey,
+          "Idempotency-Key": idempotencyKey,
         },
         body: JSON.stringify({
           context,
@@ -223,6 +229,7 @@ async function compress(messages, agentName) {
           mode: "compiler",
           coding_agent: agent,
           source: "agent",
+          request_id: idempotencyKey,
         }),
         signal: controller.signal,
       });
@@ -279,6 +286,7 @@ async function compress(messages, agentName) {
   const agent = agentName || detectAgentName();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), COMPRESS_TIMEOUT_MS);
+  const idempotencyKey = crypto.randomUUID();
 
   let response;
   try {
@@ -287,12 +295,14 @@ async function compress(messages, agentName) {
       headers: {
         "Content-Type": "application/json",
         "X-API-Key": apiKey,
+        "Idempotency-Key": idempotencyKey,
       },
       body: JSON.stringify({
         context,
         query,
         mode: "compiler",
         coding_agent: agent,
+        request_id: idempotencyKey,
       }),
       signal: controller.signal,
     });
@@ -384,4 +394,5 @@ module.exports = {
   getApiKey,
   hasStructuredProtocol,
   messageText,
+  splitCompressiblePrefix,
 };
