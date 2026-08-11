@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execSync, execFileSync } = require("child_process");
 const os = require("os");
 
 const HOME = os.homedir();
@@ -112,22 +112,23 @@ function registerService(configDir, configPath) {
       fs.writeFileSync(plistPath, plistContent);
       fs.chmodSync(plistPath, 0o644);
 
-      // Load the service
+    // Load the service
       try {
-        execSync(`launchctl load ${plistPath}`, { stdio: "ignore" });
+        execFileSync("launchctl", ["load", plistPath], { stdio: "ignore" });
       } catch (loadErr) {
         // Try unloading first (in case it's already loaded)
         try {
-          execSync(`launchctl unload ${plistPath}`, { stdio: "ignore" });
+          execFileSync("launchctl", ["unload", plistPath], { stdio: "ignore" });
         } catch {}
+        
         try {
-          execSync(`launchctl load ${plistPath}`, { stdio: "ignore" });
+          execFileSync("launchctl", ["load", plistPath], { stdio: "ignore" });
         } catch (e2) {
           console.error(`  ⚠ Could not load launchd service: ${e2.message}`);
           return false;
         }
       }
-
+      
       return true;
     } else if (platform === "linux") {
       // ── Linux: systemd user unit ──
