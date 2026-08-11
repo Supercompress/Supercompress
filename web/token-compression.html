@@ -34,10 +34,12 @@
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+
 <link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
-    <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=1" />
-  <script type="application/ld+json">
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=2" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=2" />
+<script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -60,265 +62,6 @@
     ]
   }
   </script>
-<style>
-    .guide-head {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 60px 24px 32px;
-      text-align: center;
-    }
-    .guide-head .kicker {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-    }
-    .guide-head h1 {
-      font-family: var(--serif);
-      font-weight: 300;
-      font-size: clamp(2rem, 5vw, 3rem);
-      line-height: 1.05;
-      letter-spacing: -0.02em;
-      margin-bottom: 16px;
-    }
-    .guide-head .subtitle {
-      font-size: 1.05rem;
-      color: var(--text-body);
-      line-height: 1.6;
-      max-width: 640px;
-      margin: 0 auto;
-    }
-    .guide-head .meta {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 16px;
-    }
-    .guide-head .meta strong { color: var(--text-primary); }
-
-    .guide-toc {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 32px 24px;
-      background: var(--feat-blue);
-      border: 0.5px solid var(--card-border);
-      border-radius: 4px;
-    }
-    .guide-toc h2 {
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--brand-dark);
-      margin-bottom: 16px;
-    }
-    .guide-toc ol {
-      list-style: none;
-      padding: 0;
-      display: grid;
-      gap: 8px;
-    }
-    .guide-toc ol li {
-      counter-increment: toc-counter;
-      font-size: 14px;
-    }
-    .guide-toc ol li::before {
-      content: counter(toc-counter) ". ";
-      color: var(--brand);
-      font-weight: 600;
-      margin-right: 4px;
-    }
-    .guide-toc ol li a {
-      color: var(--text-primary);
-      text-decoration: none;
-      border-bottom: 1px solid transparent;
-    }
-    .guide-toc ol li a:hover {
-      border-bottom-color: var(--brand);
-      color: var(--brand);
-    }
-
-    .guide-body {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 40px 24px 80px;
-    }
-    .guide-body section {
-      margin-bottom: 48px;
-    }
-    .guide-body h2 {
-      font-family: var(--serif);
-      font-weight: 300;
-      font-size: clamp(1.4rem, 3vw, 1.8rem);
-      line-height: 1.15;
-      letter-spacing: -0.01em;
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 0.5px solid var(--card-border);
-    }
-    .guide-body h3 {
-      font-size: 1.15rem;
-      font-weight: 600;
-      margin-bottom: 8px;
-      margin-top: 24px;
-    }
-    .guide-body p {
-      font-size: 15px;
-      color: var(--text-body);
-      line-height: 1.7;
-      margin-bottom: 16px;
-    }
-    .guide-body ul, .guide-body ol {
-      font-size: 15px;
-      color: var(--text-body);
-      line-height: 1.7;
-      margin-bottom: 16px;
-      padding-left: 20px;
-    }
-    .guide-body li { margin-bottom: 6px; }
-    .guide-body strong { color: var(--text-primary); }
-    .guide-body code {
-      background: #f4f4f0;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 13px;
-    }
-    .guide-body pre {
-      background: #f4f4f0;
-      border: 0.5px solid var(--card-border);
-      border-radius: 4px;
-      padding: 16px 20px;
-      overflow-x: auto;
-      font-size: 13px;
-      line-height: 1.6;
-      margin-bottom: 20px;
-    }
-    .guide-body .callout {
-      background: var(--feat-blue);
-      border-left: 3px solid var(--brand);
-      padding: 16px 20px;
-      border-radius: 0 4px 4px 0;
-      margin-bottom: 20px;
-      font-size: 14px;
-      color: var(--text-body);
-    }
-    .guide-body .callout strong { color: var(--brand-dark); }
-
-    .guide-body table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-    .guide-body th {
-      background: #f9f9f6;
-      text-align: left;
-      padding: 10px 14px;
-      font-weight: 600;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--text-body);
-      border-bottom: 0.5px solid var(--card-border);
-    }
-    .guide-body td {
-      padding: 10px 14px;
-      border-bottom: 0.5px solid var(--card-border);
-    }
-    .guide-body .best-row { background: var(--feat-blue); font-weight: 600; }
-    .guide-body .best-badge {
-      display: inline-block;
-      background: #dbeafe;
-      color: #1e40af;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .guide-body .stat-highlight {
-      display: inline-block;
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: -8px;
-      margin-bottom: 20px;
-    }
-
-    .guide-cta {
-      text-align: center;
-      padding: 48px 24px;
-      background: var(--feat-blue);
-      border-top: 0.5px solid var(--card-border);
-      border-bottom: 0.5px solid var(--card-border);
-      margin: 48px 0;
-    }
-    .guide-cta h3 {
-      font-family: var(--serif);
-      font-weight: 300;
-      font-size: 1.5rem;
-      margin-bottom: 8px;
-    }
-    .guide-cta p {
-      font-size: 15px;
-      color: var(--text-body);
-      margin-bottom: 20px;
-      max-width: 480px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .guide-methods {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    @media (max-width: 640px) {
-      .guide-methods { grid-template-columns: 1fr; }
-    }
-    .method-card {
-      border: 0.5px solid var(--card-border);
-      border-radius: 4px;
-      padding: 20px;
-      background: #fff;
-    }
-    .method-card h4 {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .method-card .method-score {
-      font-size: 24px;
-      font-weight: 300;
-      color: var(--brand);
-      margin-bottom: 4px;
-    }
-    .method-card p {
-      font-size: 13px !important;
-      color: var(--text-body);
-      line-height: 1.5;
-    }
-    .method-card.best {
-      border-color: var(--brand);
-      background: var(--feat-blue);
-    }
-
-    .guide-nav {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 24px;
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .guide-nav a {
-      font-size: 14px;
-      color: var(--brand);
-      text-decoration: none;
-    }
-    .guide-nav a:hover { text-decoration: underline; }
-  </style>
 </head>
 <body>
   <div class="df-page-bg-top" aria-hidden="true"></div>
@@ -368,10 +111,10 @@
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
 <!-- Guide Header -->
-    <header class="guide-head">
-      <p class="kicker">Definitive Resource · Updated 2026</p>
+    <main class="seo-page">
+      <p class="seo-kicker">Definitive Resource · Updated 2026</p>
       <h1>Token Compression for LLMs:<br />The Complete Guide</h1>
-      <p class="subtitle">Everything you need to know about LLM token compression — what it is, why it matters, how much it saves, and how to implement it with open-source tools. Includes benchmarks, comparison tables, and an interactive demo.</p>
+      <p class="seo-lead">Everything you need to know about LLM token compression — what it is, why it matters, how much it saves, and how to implement it with open-source tools. Includes benchmarks, comparison tables, and an interactive demo.</p>
 
 <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
   <a href="/reduce-llm-costs">Reduce LLM costs</a>
@@ -410,8 +153,7 @@
   <p><a href="/supercompress-vs-headroom">Read the full SuperCompress vs Headroom comparison →</a></p>
 </section>
 
-<p class="meta">Written by <strong>Arjun Shah</strong> · Creator of <a href="/">SuperCompress</a> · <strong>~3,500 words</strong></p>
-    </header>
+<p class="seo-author">Written by <strong>Arjun Shah</strong> · Creator of <a href="/">SuperCompress</a> · <strong>~3,500 words</strong></p>
 
     <!-- Table of Contents -->
     <nav class="guide-toc" aria-label="Table of contents">
@@ -453,17 +195,17 @@
         <h2>Why Token Compression Matters</h2>
         <p>Token compression addresses three converging pressures on every LLM-powered application:</p>
 
-        <h3>💰 Cost</h3>
+        <h3>Cost</h3>
         <p>
           LLM APIs charge by the token — both input and output. If 65% of your input tokens are irrelevant to the answer, you're paying for compute that doesn't improve your results. For a typical agent making 100 calls/day, that's thousands of wasted tokens daily. At scale (1M+ calls/month), the savings from token compression reach thousands of dollars.
         </p>
 
-        <h3>⚡ Latency</h3>
+        <h3>Latency</h3>
         <p>
           LLM inference time scales with input length (especially with attention's quadratic complexity in prefill). Compressing tokens before inference means faster responses. In agent loops, where context grows with every turn, token compression keeps latency from ballooning over time.
         </p>
 
-        <h3>🌍 Environmental Impact</h3>
+        <h3>Environmental Impact</h3>
         <p>
           Every token processed by a GPU consumes electricity and cooling water. Data centers used 415 TWh globally in 2024 and are on track to double by 2030. Token compression directly reduces the compute needed per query. At 10M calls/month, SuperCompress avoids ~120 kg CO₂ and ~1,000 L of cooling water.
         </p>
@@ -730,7 +472,8 @@ class CompressionCallback(BaseCallbackHandler):
     </div>
 
     <!-- Footer -->
-    <footer class="df-footer">
+    </main>
+<footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
         <div class="df-footer-brand">
