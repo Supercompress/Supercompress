@@ -366,6 +366,15 @@ async function handleUsage(req, res) {
       agentTotal.tokens_saved
     );
 
+    // Always expose the same maxed meter as totals — clients (CLI, analytics)
+    // must not see account_usage:null while total_* is non-zero.
+    const account_usage = {
+      month,
+      requests: total_requests,
+      tokens_in: total_tokens_in,
+      tokens_out: total_tokens_out,
+      tokens_saved: total_tokens_saved,
+    };
     return json(res, 200, {
       owner_uid: ownerUid,
       total_requests,
@@ -374,7 +383,8 @@ async function handleUsage(req, res) {
       total_tokens_saved,
       coding_agent_usage: normalizeAgentUsage(usage),
       coding_agent_totals: agentTotal,
-      account_usage: ledgerMatchesMonth
+      account_usage,
+      ledger_usage: ledgerMatchesMonth
         ? {
             month,
             requests: Number(ledger.requests || 0),

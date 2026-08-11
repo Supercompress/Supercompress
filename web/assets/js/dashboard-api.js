@@ -1385,9 +1385,8 @@ function updateStats() {
 
 /**
  * Month totals for KPIs.
- * Auth `sc_usage` (accountUsage) is the billing source of truth — per-key store
- * can lag or under-count when store writes flake, so never prefer a smaller
- * key-sum over the account meter.
+ * Prefer account meter (billing ledger / maxed claims) when present; otherwise
+ * max(key usage, coding-agent usage) so agent-only traffic still fills KPIs.
  */
 function usageTotals() {
   let keyReqs = 0;
@@ -1401,6 +1400,17 @@ function usageTotals() {
     keyTout += snap.total_tokens_out || 0;
   }
 
+  let agentReqs = 0;
+  let agentSaved = 0;
+  let agentTin = 0;
+  let agentTout = 0;
+  for (const snap of Object.values(codingAgentUsage || {})) {
+    agentReqs += snap.requests || 0;
+    agentSaved += snap.tokens_saved || 0;
+    agentTin += snap.tokens_in || 0;
+    agentTout += snap.tokens_out || 0;
+  }
+
   const acctTin = accountUsage?.tokens_in || 0;
   const acctReqs = accountUsage?.requests || 0;
   const acctSaved = accountUsage?.tokens_saved || 0;
@@ -1409,10 +1419,10 @@ function usageTotals() {
   // Prefer account meter whenever it has traffic (matches Billing / PAYG).
   if (acctTin > 0 || acctReqs > 0) {
     return {
-      reqs: acctReqs || keyReqs,
-      saved: acctSaved,
-      tin: acctTin,
-      tout: acctTout,
+      reqs: Math.max(acctReqs, keyReqs, agentReqs),
+      saved: Math.max(acctSaved, keySaved, agentSaved),
+      tin: Math.max(acctTin, keyTin, agentTin),
+      tout: Math.max(acctTout, keyTout, agentTout),
       fromAccount: true,
       keyReqs,
       keyTin,
@@ -1422,10 +1432,10 @@ function usageTotals() {
   }
 
   return {
-    reqs: keyReqs,
-    saved: keySaved,
-    tin: keyTin,
-    tout: keyTout,
+    reqs: Math.max(keyReqs, agentReqs),
+    saved: Math.max(keySaved, agentSaved),
+    tin: Math.max(keyTin, agentTin),
+    tout: Math.max(keyTout, agentTout),
     fromAccount: false,
     keyReqs,
     keyTin,
@@ -1471,7 +1481,7 @@ function renderKeysSummary() {
   );
 }
 
-/** KPI cards on API keys panel (charts live only in local/analytics-preview.html). */
+/** KPI cards on API keys panel (full charts on /analytics). */
 function renderAnalytics() {
   renderKeysSummary();
 }

@@ -54,6 +54,8 @@ jobs:
           node --check packages/proxy/src/server.js
       - name: Billing ledger unit tests
         run: node api/_lib/billing-ledger.test.js
+      - name: Analytics aggregation unit tests
+        run: node web/assets/js/analytics-data.test.js
       - name: Proxy package tests
         run: |
           cd packages/proxy

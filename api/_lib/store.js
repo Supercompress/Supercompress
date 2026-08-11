@@ -623,11 +623,20 @@ async function reconcileKeyUsageGap(ownerUid, keys, usageMap, accountUsage) {
   const gapReqs = Math.max(0, (accountUsage.requests || 0) - sumReqs);
   const gapOut = Math.max(0, (accountUsage.tokens_out || 0) - sumOut);
   const gapSaved = Math.max(0, (accountUsage.tokens_saved || 0) - sumSaved);
-  const day = `reconcile-${accountUsage.month || new Date().toISOString().slice(0, 7)}`;
+  // ISO day so analytics charts can plot the gap. Once-per-month via reconciled flag.
+  const day = new Date().toISOString().slice(0, 10);
+  const month = String(accountUsage.month || day.slice(0, 7));
 
   const next = { ...(usageMap || {}) };
   const prev = next[target.id] || emptyKeySnap();
   const byDay = { ...(prev.by_day || {}) };
+  const alreadyReconciled = Object.entries(byDay).some(([k, v]) => {
+    if (!v || !v.reconciled) return false;
+    if (k === `reconcile-${month}`) return true;
+    return String(k).startsWith(`${month}-`);
+  });
+  if (alreadyReconciled) return usageMap;
+
   byDay[day] = {
     key_id: target.id,
     requests: (byDay[day]?.requests || 0) + gapReqs,
@@ -655,8 +664,12 @@ async function reconcileKeyUsageGap(ownerUid, keys, usageMap, accountUsage) {
         const keysMap = data.keys && typeof data.keys === "object" ? { ...data.keys } : {};
         const prevRec = keysMap[target.id] || {};
         const prevDays = { ...(prevRec.by_day || {}) };
-        if (prevDays[day]?.reconciled) {
-          // Already reconciled this month — don't double-apply.
+        const txAlready = Object.entries(prevDays).some(([k, v]) => {
+          if (!v || !v.reconciled) return false;
+          if (k === `reconcile-${month}`) return true;
+          return String(k).startsWith(`${month}-`);
+        });
+        if (txAlready) {
           return;
         }
         prevDays[day] = {

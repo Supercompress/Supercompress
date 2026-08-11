@@ -1229,6 +1229,10 @@
       "destination": "/dashboard.html"
     },
     {
+      "source": "/analytics",
+      "destination": "/analytics.html"
+    },
+    {
       "source": "/playground",
       "destination": "/playground.html"
     },

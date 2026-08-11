@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SuperCompress · Analytics</title>
+  <meta name="description" content="Token savings analytics — daily charts, coding agents, and API key breakdown for your SuperCompress account." />
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Regular.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Geist";
+      src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Medium.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Geist";
+      src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Medium.woff2") format("woff2");
+      font-weight: 600;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --brand: #0566ff;
+      --brand-soft: #eef4ff;
+      --brand-ink: #0039a6;
+      --ink: #171717;
+      --muted: #5c5a55;
+      --faint: #9a9892;
+      --line: #e6e7eb;
+      --paper: #f4f5f8;
+      --card: #ffffff;
+      --serif: "Platypi", "EB Garamond", Georgia, serif;
+      --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --shadow: 0 1px 2px rgba(23, 23, 23, 0.04);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 8% -10%, rgba(5, 102, 255, 0.10), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(5, 102, 255, 0.06), transparent 50%),
+        linear-gradient(180deg, #f7f8fb 0%, var(--paper) 40%, #eef0f4 100%);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='1' height='1' fill='%23000000'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23000000'/%3E%3C/svg%3E");
+      background-size: 8px 8px;
+      z-index: 0;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 36px;
+      animation: rise 0.55s ease both;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+    }
+    .brand img { width: 28px; height: 28px; display: block; }
+    .brand-name {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+    .brand-name span { color: var(--brand); }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .pill::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--brand);
+      box-shadow: 0 0 0 3px rgba(5, 102, 255, 0.18);
+    }
+    .pill--live {
+      background: #e8f7ee;
+      color: #0f7a3a;
+    }
+    .pill--live::before {
+      background: #16a34a;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+    }
+    .pill--demo {
+      background: #f4f1ea;
+      color: #7a6a4a;
+    }
+    .pill--demo::before {
+      background: #c4a574;
+      box-shadow: 0 0 0 3px rgba(196, 165, 116, 0.22);
+    }
+    .auth-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin: -8px 0 20px;
+      animation: rise 0.55s 0.04s ease both;
+    }
+    .auth-bar button {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 0.5px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+    .auth-bar button.primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+    }
+    .auth-bar .auth-note {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .hero h1 .bayer,
+    .hero p .bayer {
+      color: var(--brand);
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .hero {
+      margin-bottom: 28px;
+      animation: rise 0.65s 0.05s ease both;
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--brand);
+    }
+    .hero h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(36px, 5vw, 52px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+    .hero p {
+      margin: 12px 0 0;
+      max-width: 46ch;
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    /* ── KPI strip — dither wash only, no mini charts ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .kpi {
+      position: relative;
+      min-height: 132px;
+      padding: 18px 18px 16px;
+      border: 0.5px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      isolation: isolate;
+      animation: rise 0.7s ease both;
+    }
+    .kpi:nth-child(1) { animation-delay: 0.08s; }
+    .kpi:nth-child(2) { animation-delay: 0.12s; }
+    .kpi:nth-child(3) { animation-delay: 0.16s; }
+    .kpi:nth-child(4) { animation-delay: 0.2s; }
+    .kpi--cut {
+      border-color: rgba(5, 102, 255, 0.28);
+      background:
+        linear-gradient(165deg, rgba(5, 102, 255, 0.08), transparent 58%),
+        var(--card);
+    }
+    .kpi--cut .kpi-n { color: var(--brand); }
+    .kpi-wash {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 1;
+      mask-image: linear-gradient(115deg, transparent 18%, #000 72%);
+      -webkit-mask-image: linear-gradient(115deg, transparent 18%, #000 72%);
+    }
+    .kpi-wash canvas,
+    .dk-wash-canvas {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+    .kpi-body {
+      position: relative;
+      z-index: 1;
+    }
+    .kpi-l {
+      display: block;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .kpi-n {
+      display: block;
+      margin-top: 12px;
+      font-family: var(--serif);
+      font-size: clamp(30px, 3.5vw, 38px);
+      font-weight: 300;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi-s {
+      display: block;
+      margin-top: 12px;
+      max-width: 18ch;
+      font-family: var(--sans);
+      font-size: 12.5px;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 14px;
+      animation: rise 0.75s 0.18s ease both;
+    }
+    .panel {
+      padding: 18px 18px 16px;
+      border: 0.5px solid var(--line);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .panel--wide { grid-column: 1 / -1; }
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .panel-head h2 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+    }
+    .panel-head p {
+      margin: 4px 0 0;
+      font-family: var(--sans);
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .chip {
+      flex-shrink: 0;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--brand-soft);
+      color: var(--brand-ink);
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .chip--cut {
+      background: var(--brand-soft);
+      color: var(--brand-ink);
+    }
+
+    .chart-well {
+      position: relative;
+      width: 100%;
+      height: 260px;
+      border-radius: 12px;
+      overflow: hidden;
+      isolation: isolate;
+      contain: paint;
+      background:
+        radial-gradient(90% 80% at 0% 0%, rgba(5, 102, 255, 0.07), transparent 55%),
+        radial-gradient(70% 60% at 100% 100%, rgba(5, 102, 255, 0.05), transparent 50%),
+        #f7f8fb;
+      border: 0.5px solid rgba(5, 102, 255, 0.06);
+      transition: box-shadow 0.2s ease;
+    }
+    .chart-well.dk-hovering {
+      box-shadow: inset 0 0 0 1px rgba(5, 102, 255, 0.18);
+    }
+    .dk-tip {
+      position: absolute;
+      z-index: 5;
+      min-width: 118px;
+      max-width: 220px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.92);
+      color: #f8fafc;
+      font-family: var(--sans);
+      font-size: 12px;
+      line-height: 1.35;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(0);
+      transition: opacity 0.12s ease;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+      backdrop-filter: blur(8px);
+    }
+    .dk-tip strong {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(148, 163, 184, 0.95);
+      margin-bottom: 4px;
+    }
+    .dk-tip span {
+      display: block;
+      color: rgba(226, 232, 240, 0.92);
+      margin-bottom: 2px;
+    }
+    .dk-tip em {
+      display: block;
+      font-style: normal;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    .chart-well--lg { height: 300px; }
+    .chart-well--sm { height: 168px; }
+    .dk-chart {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+    }
+    .dk-chart canvas {
+      position: absolute;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+    .chart-well.dk-chart { height: 260px; }
+    .chart-well--lg.dk-chart { height: 300px; }
+    .chart-well--sm.dk-chart { height: 168px; }
+
+    /* Ranked agent / key rows — no pie chart */
+    .rank-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .rank-row {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f7f8fb;
+      border: 0.5px solid rgba(5, 102, 255, 0.06);
+      animation: rise 0.55s ease both;
+      transition: transform 0.18s ease, background 0.18s ease;
+    }
+    .rank-row:hover {
+      background: #f0f4ff;
+      transform: translateY(-1px);
+    }
+    .rank-row:nth-child(1) { animation-delay: 0.22s; }
+    .rank-row:nth-child(2) { animation-delay: 0.28s; }
+    .rank-row:nth-child(3) { animation-delay: 0.34s; }
+    .rank-row:nth-child(4) { animation-delay: 0.4s; }
+    .rank-idx {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-family: var(--serif);
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--brand);
+      background: var(--brand-soft);
+    }
+    .rank-main { min-width: 0; }
+    .rank-name {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+    .rank-meta {
+      margin: 2px 0 8px;
+      font-family: var(--sans);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .rank-track {
+      position: relative;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(5, 102, 255, 0.08);
+      overflow: hidden;
+    }
+    .rank-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0;
+      border-radius: inherit;
+      background:
+        repeating-linear-gradient(
+          -45deg,
+          rgba(5, 102, 255, 0.95),
+          rgba(5, 102, 255, 0.95) 1px,
+          rgba(94, 156, 255, 0.55) 1px,
+          rgba(94, 156, 255, 0.55) 3px
+        );
+      transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .rank-val {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .rank-val small {
+      display: block;
+      margin-top: 2px;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+      text-align: right;
+    }
+
+    .key-list .rank-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .key-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brand);
+      box-shadow: 0 0 0 3px rgba(5, 102, 255, 0.14);
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .key-list .rank-name {
+      display: flex;
+      align-items: center;
+    }
+
+    .footnote {
+      margin-top: 22px;
+      font-family: var(--sans);
+      font-size: 12px;
+      color: var(--faint);
+      text-align: center;
+      animation: rise 0.8s 0.25s ease both;
+    }
+    .footnote code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (max-width: 900px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts { grid-template-columns: 1fr; }
+      .panel--wide { grid-column: auto; }
+    }
+    @media (max-width: 520px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+      .topbar { flex-wrap: wrap; }
+      .rank-row { grid-template-columns: 28px minmax(0, 1fr); }
+      .rank-val { grid-column: 2; justify-self: start; }
+      .key-list .rank-row { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <a class="brand" href="/">
+        <img src="/assets/img/logo-chevrons.png" alt="" width="28" height="28" />
+        <span class="brand-name">Super<span>Compress</span></span>
+      </a>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <a href="/dashboard" style="font-family:var(--sans);font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;">Dashboard</a>
+        <span class="pill pill--demo" id="data-pill">Loading…</span>
+      </div>
+    </header>
+
+    <div class="auth-bar" id="auth-bar">
+      <span class="auth-note" id="auth-note">Sign in to load your real usage.</span>
+      <button type="button" class="primary" id="btn-signin">Sign in with Google</button>
+    </div>
+
+    <section class="hero">
+      <p class="eyebrow">Dashboard analytics</p>
+      <h1>See what you cut.</h1>
+      <p>
+        Token savings, <span class="bayer">in Bayer</span> — real meter from your keys and coding agents, last 30 days.
+      </p>
+    </section>
+
+    <div class="kpi-grid">
+      <article class="kpi kpi--cut">
+        <div class="kpi-wash" id="wash-cut" aria-hidden="true"></div>
+        <div class="kpi-body">
+          <span class="kpi-l">Cut</span>
+          <strong class="kpi-n" id="kpi-cut">0%</strong>
+          <span class="kpi-s" id="kpi-cut-sub">—</span>
+        </div>
+      </article>
+      <article class="kpi">
+        <div class="kpi-wash" id="wash-saved" aria-hidden="true"></div>
+        <div class="kpi-body">
+          <span class="kpi-l">Saved</span>
+          <strong class="kpi-n" id="kpi-saved">0</strong>
+          <span class="kpi-s">this month · billing meter</span>
+        </div>
+      </article>
+      <article class="kpi">
+        <div class="kpi-wash" id="wash-in" aria-hidden="true"></div>
+        <div class="kpi-body">
+          <span class="kpi-l">Input</span>
+          <strong class="kpi-n" id="kpi-in">0</strong>
+          <span class="kpi-s">tokens compressed in</span>
+        </div>
+      </article>
+      <article class="kpi">
+        <div class="kpi-wash" id="wash-req" aria-hidden="true"></div>
+        <div class="kpi-body">
+          <span class="kpi-l">Requests</span>
+          <strong class="kpi-n" id="kpi-req">0</strong>
+          <span class="kpi-s" id="kpi-req-sub">—</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="charts">
+      <section class="panel panel--wide">
+        <header class="panel-head">
+          <div>
+            <h2>Tokens saved</h2>
+            <p>Daily · last 30 days · hover a day</p>
+          </div>
+          <span class="chip chip--cut" id="chip-delta">—</span>
+        </header>
+        <div class="chart-well chart-well--lg" id="area"></div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head">
+          <div>
+            <h2>Requests</h2>
+            <p>Compress calls · last 30 days</p>
+          </div>
+          <span class="chip">30 days</span>
+        </header>
+        <div class="chart-well" id="bars"></div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head">
+          <div>
+            <h2>By coding agent</h2>
+            <p>Share of tokens saved</p>
+          </div>
+        </header>
+        <ol class="rank-list" id="agents"></ol>
+      </section>
+
+      <section class="panel panel--wide">
+        <header class="panel-head">
+          <div>
+            <h2>Key breakdown</h2>
+            <p>Tokens saved per API key</p>
+          </div>
+        </header>
+        <ul class="rank-list key-list" id="keys"></ul>
+      </section>
+    </div>
+
+    <p class="footnote">
+      Signed-in usage from your SuperCompress account · last 30 days
+    </p>
+  </div>
+
+    <script src="/assets/js/dither-kit-lite.js?v=10"></script>
+  <script src="/assets/js/analytics-data.js?v=1"></script>
+  <script src="/assets/js/analytics-page.js?v=2"></script>
+
+</body>
+</html>

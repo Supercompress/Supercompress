@@ -20,7 +20,29 @@ module.exports = async (req, res) => {
       try {
         agent_plugin = await loadAgentPluginLink(user.uid);
       } catch (_) {}
-      return json(res, 200, { ...keys, coding_agent_usage, agent_plugin });
+      // Prefer max(ledger/claims, coding-agent totals) so analytics KPIs never
+      // under-report when the billing ledger lags agent metering.
+      let account_usage = keys.account_usage || null;
+      const agentTotals = Object.values(coding_agent_usage || {}).reduce(
+        (acc, snap) => ({
+          requests: acc.requests + (snap.requests || 0),
+          tokens_in: acc.tokens_in + (snap.tokens_in || 0),
+          tokens_out: acc.tokens_out + (snap.tokens_out || 0),
+          tokens_saved: acc.tokens_saved + (snap.tokens_saved || 0),
+        }),
+        { requests: 0, tokens_in: 0, tokens_out: 0, tokens_saved: 0 }
+      );
+      if (agentTotals.tokens_in > 0 || agentTotals.requests > 0) {
+        const month = new Date().toISOString().slice(0, 7);
+        account_usage = {
+          month: (account_usage && account_usage.month) || month,
+          requests: Math.max(Number(account_usage?.requests || 0), agentTotals.requests),
+          tokens_in: Math.max(Number(account_usage?.tokens_in || 0), agentTotals.tokens_in),
+          tokens_out: Math.max(Number(account_usage?.tokens_out || 0), agentTotals.tokens_out),
+          tokens_saved: Math.max(Number(account_usage?.tokens_saved || 0), agentTotals.tokens_saved),
+        };
+      }
+      return json(res, 200, { ...keys, account_usage, coding_agent_usage, agent_plugin });
     }
 
     if (req.method === "POST") {
