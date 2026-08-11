@@ -996,29 +996,6 @@ html.js-reveal .df-reveal-stagger:not(.is-visible) > * {
   color: var(--brand);
 }
 
-.docs-site-footer {
-  border-top: 1px solid var(--line);
-  background: #0a0a0a;
-  color: #a3a3a3;
-  margin-left: calc(-1 * var(--docs-sidebar-width));
-  width: calc(100% + var(--docs-sidebar-width));
-}
-.docs-site-footer-inner {
-  max-width: var(--max);
-  margin: 0 auto;
-  padding: 28px var(--frame);
-}
-.docs-site-footer a {
-  color: #e5e5e5;
-  text-decoration: none;
-}
-.docs-site-footer a:hover {
-  color: #fff;
-  text-decoration: underline;
-}
+
 @media (max-width: 900px) {
-  .docs-site-footer {
-    margin-left: 0;
-    width: 100%;
-  }
 }
