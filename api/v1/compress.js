@@ -18,6 +18,8 @@ const {
   attemptAutoRecharge,
   roundUsd,
 } = require("../_lib/stripe");
+const crypto = require("crypto");
+const { sanitizeRequestId } = require("../_lib/billing-ledger");
 
 const V1_RPM = 90; // per API key (in-memory fast path)
 const V1_IP_HOURLY = 600; // durable per-IP ceiling (stops stolen-key / fan-out abuse)
@@ -136,6 +138,19 @@ function stripRetrieveMarkers(text) {
     .trim();
 }
 
+function resolveRequestId(req, body) {
+  const header =
+    req.headers["idempotency-key"] ||
+    req.headers["x-idempotency-key"] ||
+    req.headers["x-request-id"];
+  return (
+    sanitizeRequestId(header) ||
+    sanitizeRequestId(body?.idempotency_key) ||
+    sanitizeRequestId(body?.request_id) ||
+    crypto.randomUUID()
+  );
+}
+
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
   // Compression is POST-only — never accept API keys or context in query strings.
@@ -151,12 +166,17 @@ module.exports = async (req, res) => {
   const requestStarted = Date.now();
   // Leave headroom under function maxDuration (60s for this route) for response flush.
   const HARD_BUDGET_MS = 55_000;
+  let requestId = null;
 
   try {
     const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization);
     if (!raw || !raw.startsWith(KEY_PREFIX)) {
       return json(res, 401, { detail: "Missing or invalid API key" });
     }
+
+    // Parse body early so Idempotency-Key can come from JSON when header omitted.
+    const body = readBody(req);
+    requestId = resolveRequestId(req, body);
 
     // ── Rate limit: fast per-key + durable per-IP hourly ceiling ──
     const keyPrefix = raw.slice(0, 24);
@@ -166,12 +186,16 @@ module.exports = async (req, res) => {
       return jsonWithRateLimit(res, 429, {
         detail: `Rate limit exceeded (${V1_RPM} requests/minute per key). Reduce request frequency or contact support.`,
         retry_after_seconds: Math.max(1, Math.ceil((rlMem.resetMs - Date.now()) / 1000)),
+        request_id: requestId,
       }, rlMem);
     }
     let rl;
     try {
       rl = await withTimeout(
-        enforceRateLimits([{ key: `v1ip:h:${ip}`, max: V1_IP_HOURLY, windowMs: 60 * 60_000 }]),
+        enforceRateLimits(
+          [{ key: `v1ip:h:${ip}`, max: V1_IP_HOURLY, windowMs: 60 * 60_000 }],
+          { requestId }
+        ),
         2000,
         "rate_limit"
       );
@@ -179,25 +203,27 @@ module.exports = async (req, res) => {
       return json(res, 503, {
         detail: "Rate limit service unavailable. Retry shortly.",
         code: "rate_limit_unavailable",
-      });
+        request_id: requestId,
+      }, { "Idempotency-Key": requestId });
     }
     if (rl.backend && rl.backend !== "firestore") {
       return json(res, 503, {
         detail: "Rate limit service unavailable. Retry shortly.",
         code: "rate_limit_unavailable",
-      });
+        request_id: requestId,
+      }, { "Idempotency-Key": requestId });
     }
     if (!rl.allowed) {
       return jsonWithRateLimit(res, 429, {
         detail: `IP rate limit exceeded (${V1_IP_HOURLY}/hour). Spread traffic or contact support.`,
         retry_after_seconds: Math.max(1, Math.ceil((rl.resetMs - Date.now()) / 1000)),
+        request_id: requestId,
       }, rl);
     }
     // Prefer showing the tighter remaining of the two windows
     rl.remaining = Math.min(rl.remaining, rlMem.remaining);
     rl.limit = V1_RPM;
 
-    const body = readBody(req);
     const context = body.context || "";
     const query = body.query || "Summarize this context.";
     const mode = body.mode || "compiler";
@@ -210,10 +236,14 @@ module.exports = async (req, res) => {
     const session_id = body.session_id || null;
 
     if (!context.trim()) {
-      return json(res, 422, { detail: "context required" });
+      return json(res, 422, { detail: "context required", request_id: requestId }, {
+        "Idempotency-Key": requestId,
+      });
     }
     if (context.length > 120_000) {
-      return json(res, 422, { detail: "context too long (120k max)" });
+      return json(res, 422, { detail: "context too long (120k max)", request_id: requestId }, {
+        "Idempotency-Key": requestId,
+      });
     }
 
     const authenticated = await withTimeout(authenticateKey(raw), 8000, "authenticate");
@@ -235,7 +265,7 @@ module.exports = async (req, res) => {
     // Billing is fail-closed: never return compressed text without a durable charge/quota write.
     try {
       await withTimeout(
-        recordUsage(authenticated.user, authenticated.owner, result),
+        recordUsage(authenticated.user, authenticated.owner, result, { requestId }),
         Math.max(1500, Math.min(12000, remainingMs() - 2000)),
         "record_usage"
       );
@@ -243,11 +273,12 @@ module.exports = async (req, res) => {
       if (err.paywall || err.status === 402) throw err;
       const e = new Error(
         err.code === "timeout"
-          ? "Billing timed out — compression not delivered. Retry."
-          : "Billing unavailable — compression not delivered. Retry."
+          ? "Billing timed out — compression not delivered. Retry with the same Idempotency-Key."
+          : "Billing unavailable — compression not delivered. Retry with the same Idempotency-Key."
       );
       e.status = err.status || 503;
       e.code = err.code || "billing_unavailable";
+      e.requestId = requestId;
       throw e;
     }
 
@@ -380,6 +411,7 @@ module.exports = async (req, res) => {
       ? wrapCompressedForCache(rawText, query).wrapped
       : rawText;
 
+    res.setHeader("Idempotency-Key", requestId);
     return jsonWithRateLimit(res, 200, {
       compressed_text: finalText,
       original_tokens: result.original_tokens,
@@ -406,6 +438,7 @@ module.exports = async (req, res) => {
       latency_ms: latencyMs,
       coding_agent: coding_agent || null,
       source: inferredSource,
+      request_id: requestId,
     }, rl);
   } catch (err) {
     let status = err.status || 500;
@@ -414,16 +447,19 @@ module.exports = async (req, res) => {
     // inflating Vercel Observability error rate via console.error.
     if (status >= 500) console.error("compress error", err);
     else console.warn("compress client error", status, err.message || err);
+    const idHeaders = requestId ? { "Idempotency-Key": requestId } : undefined;
     if (err.paywall && err.payload) {
       return json(res, status, {
         ...err.payload,
         detail: err.payload.detail || err.message || String(err),
-      });
+        ...(requestId ? { request_id: requestId } : {}),
+      }, idHeaders);
     }
     return json(res, status, {
       detail: err.message || String(err),
       ...(err.code ? { code: err.code } : {}),
       ...(err.paywall ? { paywall: true } : {}),
-    });
+      ...(requestId ? { request_id: requestId } : {}),
+    }, idHeaders);
   }
 };

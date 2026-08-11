@@ -138,18 +138,17 @@ async function applyCreditTopUp(session) {
     console.warn("Could not attach default PM:", err.message || err);
   }
 
-  const grantFirstPayBonus = !prev.sc_first_pay_bonus_at;
-  const bonusUsd = grantFirstPayBonus ? FIRST_PAY_BONUS_USD : 0;
+  const grantFirstPayBonusUsd = FIRST_PAY_BONUS_USD;
   const limitUsd = normalizeCreditLimitUsd(
     session.metadata?.credit_usd || prev.sc_credit_limit_usd,
     creditUsd
   );
 
-  // Ledger first (idempotent by session.id) — Auth claims mirror from ledger.
+  // Ledger first (idempotent by session.id). First-pay bonus is create-once in txn.
   const { creditBalance } = require("./billing-ledger");
   const ledgerResult = await creditBalance({
     uid: userId,
-    creditUsd: creditUsd + bonusUsd,
+    creditUsd,
     creditKey: session.id,
     claims: prev,
     patch: {
@@ -157,7 +156,26 @@ async function applyCreditTopUp(session) {
       auto_recharge: autoRecharge,
       customer_id: session.customer,
     },
+    firstPayBonusUsd: grantFirstPayBonusUsd,
   });
+
+  if (ledgerResult.already) {
+    console.log("Credit top-up already applied (ledger):", session.id);
+    return {
+      applied: true,
+      already: true,
+      balance: roundUsd(
+        ledgerResult.balance != null
+          ? ledgerResult.balance
+          : Number(prev.sc_credit_balance_usd || 0)
+      ),
+      creditUsd: 0,
+      firstPayBonusUsd: 0,
+      firstPayBonusTokens: 0,
+    };
+  }
+
+  const bonusUsd = Number(ledgerResult.bonus_usd || 0);
   const newBalance = roundUsd(
     ledgerResult.balance != null
       ? ledgerResult.balance
@@ -183,7 +201,7 @@ async function applyCreditTopUp(session) {
     auto_recharge: autoRecharge,
     updated_at: new Date().toISOString(),
   };
-  if (grantFirstPayBonus) {
+  if (bonusUsd > 0) {
     persistPayload.sc_first_pay_bonus_at = new Date().toISOString();
     persistPayload.sc_first_pay_bonus_usd = bonusUsd;
   }
@@ -199,7 +217,7 @@ async function applyCreditTopUp(session) {
     balance: newBalance,
     creditUsd,
     firstPayBonusUsd: bonusUsd,
-    firstPayBonusTokens: grantFirstPayBonus ? FIRST_PAY_BONUS_TOKENS : 0,
+    firstPayBonusTokens: bonusUsd > 0 ? FIRST_PAY_BONUS_TOKENS : 0,
   };
 }
 

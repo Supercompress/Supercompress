@@ -124,25 +124,15 @@ function readBody(req) {
   return {};
 }
 
-module.exports = {
-  cors,
-  json,
-  jsonWithRateLimit,
-  methodNotAllowed,
-  securityHeaders,
-  rateLimitHeaders,
-  checkRateLimit,
-  clientIp,
-  readBody,
-  MAX_BODY_BYTES,
-};
-
 /* ── Response helpers ── */
 
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-API-Key, Idempotency-Key, X-Request-Id"
+  );
 }
 
 /** Attach security headers to every response. */

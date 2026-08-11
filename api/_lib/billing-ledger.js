@@ -6,8 +6,10 @@
  * read-modify-write claims directly.
  *
  * Firestore:
- *   billing/{uid}              — monthly usage + wallet balance
- *   billing_credits/{creditKey} — permanent Stripe session / PI idempotency
+ *   billing/{uid}                    — monthly usage + wallet balance
+ *   billing_credits/{creditKey}      — permanent Stripe session / PI idempotency
+ *   billing_usage/{uid}:{requestId}  — per-request usage burn idempotency
+ *   billing_bonus/{uid}:first_pay    — one-time first-pay bonus create-once
  */
 const { initFirebaseAdmin } = require("./auth");
 const {
@@ -177,8 +179,9 @@ function planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims = {} }
   if (wallet) {
     const prevBillable = billableTokens(prevTokensIn);
     const newBillable = billableTokens(nextTokensIn);
-    const deltaBillable = Math.max(0, newBillable - prevBillable);
-    burned_micros = tokensToMicros(deltaBillable);
+    // Cumulative ceil so fractional micro-USD amortizes across requests
+    // instead of ceil(delta * price) over-charging every tiny burn.
+    burned_micros = Math.max(0, tokensToMicros(newBillable) - tokensToMicros(prevBillable));
     if (burned_micros > nextBalance) {
       throw billingError(
         "credits_exhausted",
@@ -258,52 +261,140 @@ async function mirrorClaims(uid, ledger) {
 }
 
 /**
+ * Sanitize client/server request ids for Firestore doc ids.
+ * @returns {string|null}
+ */
+function sanitizeRequestId(raw) {
+  const s = String(raw || "").trim();
+  if (!s || s.length < 8 || s.length > 128) return null;
+  if (!/^[\w.:-]+$/.test(s)) return null;
+  return s;
+}
+
+/**
  * Atomically record usage and burn prepaid credit.
+ * Idempotent via billing_usage/{uid}:{requestId} (create-once).
  * Throws paywall / billing_unavailable — never silently under-charges.
  */
-async function applyUsageAndBurn({ uid, tokensIn, tokensOut, tokensSaved, claims = {} }) {
+async function applyUsageAndBurn({
+  uid,
+  tokensIn,
+  tokensOut,
+  tokensSaved,
+  claims = {},
+  requestId,
+}) {
   if (!uid) throw new Error("uid required");
+  const rid = sanitizeRequestId(requestId);
+  if (!rid) {
+    throw billingError("billing_unavailable", "Billing request id required");
+  }
   if (!initFirebaseAdmin()) {
     throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
 
   const ref = db().collection("billing").doc(uid);
+  const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
   const result = await db().runTransaction(async (tx) => {
+    // All reads before writes (Firestore txn rule).
+    const usageSnap = await tx.get(usageRef);
     const snap = await tx.get(ref);
     const ledger = normalizeLedger(snap.exists ? snap.data() : null, claims);
+
+    if (usageSnap.exists) {
+      const prev = usageSnap.data() || {};
+      return {
+        burned_micros: Number(prev.burned_micros || 0),
+        ledger,
+        already: true,
+        request_id: rid,
+      };
+    }
+
     const planned = planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims });
     tx.set(ref, planned.ledger, { merge: true });
-    return planned;
+    tx.set(
+      usageRef,
+      {
+        uid,
+        request_id: rid,
+        tokens_in: Number(tokensIn) || 0,
+        tokens_out: Number(tokensOut) || 0,
+        tokens_saved: Number(tokensSaved) || 0,
+        burned_micros: planned.burned_micros,
+        created_at: new Date().toISOString(),
+      },
+      { merge: false }
+    );
+    return { ...planned, already: false, request_id: rid };
   });
 
-  await mirrorClaims(uid, result.ledger);
+  if (!result.already) {
+    await mirrorClaims(uid, result.ledger);
+  }
   return result;
 }
 
 /**
  * Credit prepaid balance. Idempotent via permanent billing_credits/{creditKey}.
+ * Optional first-pay bonus is create-once via billing_bonus/{uid}:first_pay
+ * (not Auth claims — avoids concurrent Checkout double-bonus races).
+ *
+ * @param {number} [firstPayBonusUsd=0] candidate bonus; txn grants at most once ever
  */
-async function creditBalance({ uid, creditUsd, creditKey, claims = {}, patch = {} }) {
+async function creditBalance({
+  uid,
+  creditUsd,
+  creditKey,
+  claims = {},
+  patch = {},
+  firstPayBonusUsd = 0,
+}) {
   if (!uid || !creditKey) return { applied: false, reason: "missing_args" };
   if (!initFirebaseAdmin()) return { applied: false, reason: "firebase_unavailable" };
 
   const ref = db().collection("billing").doc(uid);
   const creditRef = db().collection("billing_credits").doc(String(creditKey));
+  const bonusRef = db().collection("billing_bonus").doc(`${uid}:first_pay`);
+  const wantBonus = Math.max(0, Number(firstPayBonusUsd) || 0);
+
   const result = await db().runTransaction(async (tx) => {
     const creditSnap = await tx.get(creditRef);
+    const bonusSnap = wantBonus > 0 ? await tx.get(bonusRef) : null;
     const snap = await tx.get(ref);
     const ledger = normalizeLedger(snap.exists ? snap.data() : null, claims);
 
     if (creditSnap.exists) {
+      const prevCredit = creditSnap.data() || {};
       return {
         applied: true,
         already: true,
         ledger,
         balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
+        credit_usd: Number(prevCredit.credit_usd || 0),
+        bonus_usd: Number(prevCredit.bonus_usd || 0),
       };
     }
 
-    const add = usdToMicros(creditUsd);
+    let bonusUsd = 0;
+    if (wantBonus > 0 && bonusSnap && !bonusSnap.exists) {
+      bonusUsd = wantBonus;
+      tx.set(
+        bonusRef,
+        {
+          uid,
+          kind: "first_pay",
+          credit_usd: bonusUsd,
+          credit_key: String(creditKey),
+          created_at: new Date().toISOString(),
+        },
+        { merge: false }
+      );
+    }
+
+    const paymentUsd = Number(creditUsd) || 0;
+    const totalUsd = paymentUsd + bonusUsd;
+    const add = usdToMicros(totalUsd);
     ledger.credit_balance_micros = Number(ledger.credit_balance_micros || 0) + add;
     if (patch.credit_limit_usd != null) {
       ledger.credit_limit_usd = normalizeCreditLimitUsd(patch.credit_limit_usd);
@@ -318,7 +409,8 @@ async function creditBalance({ uid, creditUsd, creditKey, claims = {}, patch = {
       creditRef,
       {
         uid,
-        credit_usd: Number(creditUsd) || 0,
+        credit_usd: paymentUsd,
+        bonus_usd: bonusUsd,
         created_at: new Date().toISOString(),
       },
       { merge: false }
@@ -329,6 +421,8 @@ async function creditBalance({ uid, creditUsd, creditKey, claims = {}, patch = {
       already: false,
       ledger,
       balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
+      credit_usd: paymentUsd,
+      bonus_usd: bonusUsd,
     };
   });
 
@@ -337,6 +431,13 @@ async function creditBalance({ uid, creditUsd, creditKey, claims = {}, patch = {
     try {
       const fresh = await admin().auth().getUser(uid);
       const prev = { ...(fresh.customClaims || {}) };
+      const bonusPatch =
+        result.bonus_usd > 0
+          ? {
+              sc_first_pay_bonus_at: new Date().toISOString(),
+              sc_first_pay_bonus_usd: result.bonus_usd,
+            }
+          : {};
       await admin().auth().setCustomUserClaims(uid, {
         ...prev,
         sc_plan: prev.sc_plan || "payg",
@@ -353,6 +454,7 @@ async function creditBalance({ uid, creditUsd, creditKey, claims = {}, patch = {
         sc_credit_limit_usd: result.ledger.credit_limit_usd,
         sc_auto_recharge: Boolean(result.ledger.auto_recharge),
         ...(result.ledger.customer_id ? { sc_customer_id: result.ledger.customer_id } : {}),
+        ...bonusPatch,
       });
     } catch (err) {
       console.warn("credit claim mirror failed:", err.message || err);
@@ -420,5 +522,6 @@ module.exports = {
   usdToMicros,
   microsToUsd,
   monthKey,
+  sanitizeRequestId,
   FREE_TOKENS_PER_MONTH,
 };

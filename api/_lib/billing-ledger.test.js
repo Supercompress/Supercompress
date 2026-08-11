@@ -112,6 +112,28 @@ mustThrow(
   assert.strictEqual(r.ledger.tokens_in, FREE_TOKENS_PER_MONTH + billable);
 }
 
+// Cumulative micro-USD: many 1-token burns must not over-charge vs ceil(total)
+{
+  const claims = { sc_plan: "payg", sc_metered: false, sc_credit_balance_usd: 1 };
+  let state = ledger({
+    tokens_in: FREE_TOKENS_PER_MONTH,
+    credit_balance_micros: 1_000_000, // $1
+  });
+  let totalBurned = 0;
+  for (let i = 0; i < 10; i++) {
+    const r = planUsageBurn(state, {
+      tokensIn: 1,
+      tokensOut: 0,
+      tokensSaved: 1,
+      claims,
+    });
+    totalBurned += r.burned_micros;
+    state = r.ledger;
+  }
+  assert.strictEqual(totalBurned, tokensToMicros(10));
+  assert.ok(totalBurned < 10, "must be cheaper than 10× ceil(1-token)");
+}
+
 // Comped skips gates
 {
   const r = planUsageBurn(ledger({ tokens_in: FREE_TOKENS_PER_MONTH * 5 }), {

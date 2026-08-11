@@ -365,97 +365,79 @@ async function authenticateKey(secret) {
   return { user: rec, owner, ownerUid: rec.user_id, keyId: rec.id };
 }
 
-async function recordUsage(keyRec, owner, compressed) {
+async function recordUsage(keyRec, owner, compressed, opts = {}) {
   const keyId = keyRec.id || keyRec.uid;
   const ownerUid = owner?.uid || keyRec.user_id;
   const day = new Date().toISOString().slice(0, 10);
   const tokensSaved = Math.max(0, compressed.original_tokens - compressed.kept_tokens);
   const now = new Date().toISOString();
+  const crypto = require("crypto");
+  const { sanitizeRequestId, applyUsageAndBurn, microsToUsd } = require("./billing-ledger");
+  const {
+    reportPaygUsage,
+    isPaygEnabled,
+    isComped,
+    isLegacyMetered,
+    roundUsd,
+    attemptAutoRecharge,
+  } = require("./stripe");
 
-  // Primary: durable per-key usage doc (does not depend on monolithic config/store).
-  let durableOk = false;
-  try {
-    const { trackKeyUsage } = require("./store");
-    await trackKeyUsage(ownerUid, keyRec, {
-      day,
-      original_tokens: compressed.original_tokens,
-      kept_tokens: compressed.kept_tokens,
-      tokens_saved: tokensSaved,
-    });
-    durableOk = true;
-  } catch (err) {
-    console.warn("recordUsage: durable key_usage skipped:", err.message);
-  }
+  const requestId =
+    sanitizeRequestId(opts.requestId) ||
+    sanitizeRequestId(opts.idempotencyKey) ||
+    crypto.randomUUID();
 
-  // Best-effort: upsert key + last_used. Only bump legacy store.usage if durable write failed.
-  try {
-    await mutateStore((store) => {
-      if (!store.keys[keyId]) {
-        store.keys[keyId] = {
-          id: keyId,
-          user_id: ownerUid,
-          name: keyRec.name || "API key",
-          prefix: keyRec.prefix || "",
-          key_hash: keyRec.key_hash || null,
-          created_at: keyRec.created_at || now,
-          last_used_at: now,
-          revoked: false,
-        };
-        if (keyRec.key_hash) store.hash_index[keyRec.key_hash] = keyId;
-      } else {
-        store.keys[keyId].last_used_at = now;
-      }
-      if (durableOk) return store.keys[keyId];
-      if (!store.usage[keyId]) store.usage[keyId] = {};
-      if (!store.usage[keyId][day]) {
-        store.usage[keyId][day] = {
-          key_id: keyId,
-          requests: 0,
-          tokens_in: 0,
-          tokens_out: 0,
-          tokens_saved: 0,
-        };
-      }
-      const u = store.usage[keyId][day];
-      u.requests += 1;
-      u.tokens_in += compressed.original_tokens;
-      u.tokens_out += compressed.kept_tokens;
-      u.tokens_saved += tokensSaved;
-      return u;
-    });
-  } catch (err) {
-    // Compression already succeeded — don't 503 the client if store is flaky.
-    console.warn("recordUsage: store update skipped:", err.message);
-  }
-
-  // Also stamp Auth stub last_used when present (coding-agent keys).
-  if (String(keyId).startsWith(KEY_UID_PREFIX)) {
-    try {
-      const stub = await auth().getUser(keyId).catch(() => null);
-      if (stub?.customClaims?.sc_api_key) {
-        await auth().setCustomUserClaims(keyId, {
-          ...stub.customClaims,
-          sc_last: now,
-        });
-      }
-    } catch (_) {}
-  }
-
-  // Owner monthly usage + wallet burn — transactional Firestore ledger (not Auth RMW).
   const ownerClaims = owner.customClaims || {};
-  const { applyUsageAndBurn, microsToUsd } = require("./billing-ledger");
-  const { reportPaygUsage, isPaygEnabled, isComped, isLegacyMetered, roundUsd } = require("./stripe");
 
-  // Billing is fail-closed: never invent a fake usage object on ledger failure.
-  const applied = await applyUsageAndBurn({
-    uid: owner.uid,
-    tokensIn: compressed.original_tokens,
-    tokensOut: compressed.kept_tokens,
-    tokensSaved,
-    claims: ownerClaims,
-  });
+  // Authoritative wallet/quota first — never bump analytics before a durable burn.
+  let applied;
+  try {
+    applied = await applyUsageAndBurn({
+      uid: owner.uid,
+      tokensIn: compressed.original_tokens,
+      tokensOut: compressed.kept_tokens,
+      tokensSaved,
+      claims: ownerClaims,
+      requestId,
+    });
+  } catch (err) {
+    // Positive-but-insufficient balance: recharge once, retry same request id.
+    if (err.code === "credits_exhausted") {
+      let autoOn = Boolean(ownerClaims.sc_auto_recharge);
+      if (!autoOn) {
+        try {
+          const { loadLedger } = require("./billing-ledger");
+          const led = await loadLedger(owner.uid, ownerClaims);
+          autoOn = Boolean(led.auto_recharge);
+        } catch (_) {}
+      }
+      if (autoOn) {
+        const recharge = await attemptAutoRecharge(owner);
+        if (recharge.ok) {
+          try {
+            const fresh = await auth().getUser(owner.uid);
+            owner.customClaims = fresh.customClaims || owner.customClaims;
+          } catch (_) {}
+          applied = await applyUsageAndBurn({
+            uid: owner.uid,
+            tokensIn: compressed.original_tokens,
+            tokensOut: compressed.kept_tokens,
+            tokensSaved,
+            claims: owner.customClaims || ownerClaims,
+            requestId,
+          });
+        } else {
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    } else {
+      throw err;
+    }
+  }
+
   const ledger = applied.ledger;
-
   const ownerUsage = {
     month: ledger.month,
     requests: ledger.requests,
@@ -464,6 +446,75 @@ async function recordUsage(keyRec, owner, compressed) {
     tokens_saved: ledger.tokens_saved,
     tokens_reported: ledger.tokens_reported || 0,
   };
+
+  // Per-key analytics only after successful (or idempotent replay) billing.
+  // Skip on replay so timeout→retry does not inflate dashboard counters twice.
+  if (!applied.already) {
+    let durableOk = false;
+    try {
+      const { trackKeyUsage } = require("./store");
+      await trackKeyUsage(ownerUid, keyRec, {
+        day,
+        original_tokens: compressed.original_tokens,
+        kept_tokens: compressed.kept_tokens,
+        tokens_saved: tokensSaved,
+      });
+      durableOk = true;
+    } catch (err) {
+      console.warn("recordUsage: durable key_usage skipped:", err.message);
+    }
+
+    try {
+      await mutateStore((store) => {
+        if (!store.keys[keyId]) {
+          store.keys[keyId] = {
+            id: keyId,
+            user_id: ownerUid,
+            name: keyRec.name || "API key",
+            prefix: keyRec.prefix || "",
+            key_hash: keyRec.key_hash || null,
+            created_at: keyRec.created_at || now,
+            last_used_at: now,
+            revoked: false,
+          };
+          if (keyRec.key_hash) store.hash_index[keyRec.key_hash] = keyId;
+        } else {
+          store.keys[keyId].last_used_at = now;
+        }
+        if (durableOk) return store.keys[keyId];
+        if (!store.usage[keyId]) store.usage[keyId] = {};
+        if (!store.usage[keyId][day]) {
+          store.usage[keyId][day] = {
+            key_id: keyId,
+            requests: 0,
+            tokens_in: 0,
+            tokens_out: 0,
+            tokens_saved: 0,
+          };
+        }
+        const u = store.usage[keyId][day];
+        u.requests += 1;
+        u.tokens_in += compressed.original_tokens;
+        u.tokens_out += compressed.kept_tokens;
+        u.tokens_saved += tokensSaved;
+        return u;
+      });
+    } catch (err) {
+      console.warn("recordUsage: store update skipped:", err.message);
+    }
+
+    if (String(keyId).startsWith(KEY_UID_PREFIX)) {
+      try {
+        const stub = await auth().getUser(keyId).catch(() => null);
+        if (stub?.customClaims?.sc_api_key) {
+          await auth().setCustomUserClaims(keyId, {
+            ...stub.customClaims,
+            sc_last: now,
+          });
+        }
+      } catch (_) {}
+    }
+  }
 
   // Legacy metered: report to Stripe meters (idempotent watermark on ledger).
   try {
@@ -487,7 +538,6 @@ async function recordUsage(keyRec, owner, compressed) {
     console.warn("PAYG meter skipped:", err.message || err);
   }
 
-  // Refresh in-memory owner claims from ledger mirror (applyUsageAndBurn already wrote Auth).
   try {
     const fresh = await auth().getUser(owner.uid);
     owner.customClaims = fresh.customClaims || {
@@ -506,6 +556,8 @@ async function recordUsage(keyRec, owner, compressed) {
         : {}),
     };
   }
+  ownerUsage.request_id = requestId;
+  ownerUsage.billing_already = Boolean(applied.already);
   return ownerUsage;
 }
 
