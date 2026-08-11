@@ -83,4 +83,38 @@ assert.strictEqual(s2.totalSaved, 2000);
 assert.strictEqual(s2.totalIn, 5000);
 assert.strictEqual(s2.totalReq, 10);
 
+// Month meter ahead of partial by_day — chart catches up on today.
+const partial = aggregateUsage({
+  keys: [{ id: "k1", name: "Production" }],
+  usage: {
+    k1: {
+      total_requests: 10,
+      total_tokens_in: 100000,
+      total_tokens_saved: 50000,
+      by_day: {
+        [new Date().toISOString().slice(0, 10)]: {
+          tokens_saved: 10000,
+          tokens_in: 20000,
+          requests: 2,
+        },
+      },
+    },
+  },
+  coding_agent_usage: {},
+  account_usage: {
+    month: "2026-08",
+    requests: 100,
+    tokens_in: 500000,
+    tokens_saved: 250000,
+    tokens_out: 250000,
+  },
+});
+const s3 = bundleToSeries(partial);
+assert.strictEqual(s3.totalSaved, 250000);
+assert.strictEqual(
+  s3.areaData.reduce((s, d) => s + d.y, 0),
+  250000,
+  "chart area matches month meter after gap fold"
+);
+
 console.log("analytics-data.test.js: ok");
