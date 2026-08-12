@@ -12,11 +12,15 @@
  */
 
 const crypto = require("crypto");
-const { json, readBody, softProbe } = require("./_lib/http");
+const { json, readBody, checkRateLimit, jsonWithRateLimit } = require("./_lib/http");
 const { loadStore, mutateStore } = require("./_lib/store");
 const { verifyUser } = require("./_lib/auth");
+const { checkDurableRateLimit } = require("./_lib/rate-limit-durable");
 
 const REF_BASE = "https://supercompress.dev";
+const TRACK_RPM = 30;
+const TRACK_FIELD_MAX = 300;
+const AFFILIATE_DAILY_RETENTION_DAYS = 120;
 const FOUNDER_EMAILS = new Set(
   String(process.env.FOUNDER_ADMIN_EMAILS || "arjunkshah21@gmail.com")
     .split(",")
@@ -70,19 +74,30 @@ function clientIp(req) {
   );
 }
 
-function computeAffiliateStats(affiliate, tracking, conversions) {
+function computeAffiliateStats(affiliate, tracking, conversions, daily = {}) {
   const slug = affiliate.referral_slug;
-  const visits = Object.values(tracking).filter((v) => v.ref === slug);
-  const uniqueIps = new Set(visits.map((v) => v.ip));
-  const claims = Object.values(conversions).filter((c) => c.ref === slug);
+  const legacyVisits = Object.values(tracking || {}).filter((v) => v.ref === slug);
+  const uniqueIps = new Set(legacyVisits.map((v) => v.ip).filter(Boolean));
+
+  let dailyVisits = 0;
+  let dailyUnique = 0;
+  for (const [key, rec] of Object.entries(daily || {})) {
+    if (!rec || typeof rec !== "object") continue;
+    if (rec.ref === slug || String(key).startsWith(`${slug}:`)) {
+      dailyVisits += Number(rec.visits || 0);
+      dailyUnique += Array.isArray(rec.ip_hashes) ? rec.ip_hashes.length : Number(rec.unique_ips || 0);
+    }
+  }
+
+  const claims = Object.values(conversions || {}).filter((c) => c.ref === slug);
   const pendingPayouts = claims.filter((c) => c.status === "pending");
   const confirmedPayouts = claims.filter((c) => c.status === "confirmed");
   const totalPendingCents = pendingPayouts.length * 800;
   const totalPaidCents = confirmedPayouts.length * 800;
 
   return {
-    total_visits: visits.length,
-    unique_visitors: uniqueIps.size,
+    total_visits: legacyVisits.length + dailyVisits,
+    unique_visitors: uniqueIps.size + dailyUnique,
     total_conversions: claims.length,
     pending_conversions: pendingPayouts.length,
     confirmed_conversions: confirmedPayouts.length,
@@ -95,6 +110,21 @@ function computeAffiliateStats(affiliate, tracking, conversions) {
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 10),
   };
+}
+
+function clipField(value, max = TRACK_FIELD_MAX) {
+  const s = String(value == null ? "" : value);
+  return s.length > max ? s.slice(0, max) : s;
+}
+
+function pruneAffiliateDaily(daily, keepDays = AFFILIATE_DAILY_RETENTION_DAYS) {
+  if (!daily || typeof daily !== "object") return;
+  const cutoff = Date.now() - keepDays * 24 * 60 * 60 * 1000;
+  for (const [key, rec] of Object.entries(daily)) {
+    const day = String(rec?.day || key.split(":").slice(-1)[0] || "");
+    const ts = Date.parse(`${day}T00:00:00.000Z`);
+    if (Number.isFinite(ts) && ts < cutoff) delete daily[key];
+  }
 }
 
 /* ── Route handler ── */
@@ -148,7 +178,7 @@ module.exports = async (req, res) => {
     return handleList(req, res);
   }
 
-  return softProbe(res, "Method not allowed", { allow: "GET, POST" });
+  return json(res, 405, { detail: "Method not allowed" });
 };
 
 /* ── Public register (from affiliates.html) ── */
@@ -157,11 +187,10 @@ async function handlePublicRegister(req, res, body) {
   try {
     const { name, email, website, audience } = body;
     if (!name || !email) {
-      // Empty scanner POSTs — soft 200 (Observability error rate).
-      return softProbe(res, "Name and email are required.");
+      return json(res, 400, { detail: "Name and email are required." });
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return softProbe(res, "Invalid email address.");
+      return json(res, 400, { detail: "Invalid email address." });
     }
 
     const cleanName = name.trim().slice(0, 120);
@@ -209,33 +238,66 @@ async function handlePublicRegister(req, res, body) {
   }
 }
 
-/* ── Track visit ── */
+/* ── Track visit ──
+ * Never write per-visit rows into config/store (DoS / size bomb).
+ * Only valid active affiliates get a bounded {slug, day} counter bump.
+ */
 
 async function handleTrack(req, res, body) {
   try {
-    const ref = (body.ref || "").trim().toLowerCase();
-    if (!ref || ref.length < 2 || ref.length > 60) {
+    const ip = clientIp(req);
+    const mem = checkRateLimit(`aff-track:${ip}`, TRACK_RPM);
+    if (!mem.allowed) {
+      return jsonWithRateLimit(res, 429, { tracked: false, detail: "rate_limited" }, mem);
+    }
+    try {
+      const durable = await checkDurableRateLimit(`aff-track:${ip}`, TRACK_RPM, 60_000);
+      if (durable.backend === "firestore" && !durable.allowed) {
+        return jsonWithRateLimit(res, 429, { tracked: false, detail: "rate_limited" }, durable);
+      }
+    } catch (_) {
+      /* memory limit already applied */
+    }
+
+    const ref = clipField((body.ref || "").trim().toLowerCase(), 60);
+    if (!ref || ref.length < 2) {
       return json(res, 200, { tracked: false });
     }
+
+    // Invalid / unknown slugs: acknowledge but do not touch the shared store.
     const affiliate = await validateSlug(ref);
-    const ip = clientIp(req);
-    const visitId = `${ref}_${Date.now()}_${ip}`.replace(
-      /[^a-zA-Z0-9_-]/g,
-      "_"
-    );
+    if (!affiliate) {
+      return json(res, 200, { tracked: false, reason: "unknown_ref" });
+    }
+
+    const day = new Date().toISOString().slice(0, 10);
+    const dayKey = `${ref}:${day}`;
+    const ipHash = crypto.createHash("sha256").update(String(ip)).digest("hex").slice(0, 12);
 
     await mutateStore((store) => {
-      if (!store.affiliate_tracking) store.affiliate_tracking = {};
-      store.affiliate_tracking[visitId] = {
+      if (!store.affiliate_daily) store.affiliate_daily = {};
+      pruneAffiliateDaily(store.affiliate_daily);
+      const prev = store.affiliate_daily[dayKey] || {
         ref,
-        ip,
-        page: body.page || "/",
-        referrer: body.referrer || null,
-        user_agent: req.headers["user-agent"] || null,
-        affiliate_exists: !!affiliate,
-        ts: body.ts || new Date().toISOString(),
-        logged_at: new Date().toISOString(),
+        day,
+        visits: 0,
+        ip_hashes: [],
+        updated_at: null,
       };
+      const hashes = Array.isArray(prev.ip_hashes) ? prev.ip_hashes.slice(0, 64) : [];
+      if (!hashes.includes(ipHash) && hashes.length < 64) hashes.push(ipHash);
+      store.affiliate_daily[dayKey] = {
+        ref,
+        day,
+        visits: Number(prev.visits || 0) + 1,
+        ip_hashes: hashes,
+        // Cap optional debug fields — never store raw multi-KB page/UA blobs.
+        last_page: clipField(body.page || "/", TRACK_FIELD_MAX),
+        last_referrer: clipField(body.referrer || "", TRACK_FIELD_MAX) || null,
+        updated_at: new Date().toISOString(),
+      };
+      // Do not write affiliate_tracking per-visit rows anymore.
+      return { tracked: true };
     });
 
     return json(res, 200, { tracked: true });
@@ -248,14 +310,28 @@ async function handleTrack(req, res, body) {
 
 async function handleClaim(req, res, body) {
   try {
+    // Must be the signed-in user claiming their own signup — otherwise anyone can
+    // spam pending commissions for arbitrary emails.
+    let user;
+    try {
+      user = await verifyUser(req);
+    } catch {
+      return json(res, 401, { detail: "Sign in required to claim a referral." });
+    }
+
     const ref = (body.ref || "").trim().toLowerCase();
-    const userEmail = (body.user_email || "").trim().toLowerCase();
+    const userEmail = String(user.email || body.user_email || "")
+      .trim()
+      .toLowerCase();
     const action = body.action_type || "signup";
 
     if (!ref || !userEmail) {
       return json(res, 400, {
-        detail: "Both 'ref' and 'user_email' are required.",
+        detail: "Both 'ref' and a verified account email are required.",
       });
+    }
+    if (body.user_email && String(body.user_email).trim().toLowerCase() !== userEmail) {
+      return json(res, 403, { detail: "user_email must match the signed-in account." });
     }
 
     const affiliate = await validateSlug(ref);
@@ -263,14 +339,19 @@ async function handleClaim(req, res, body) {
       return json(res, 404, { detail: "Affiliate not found or inactive." });
     }
 
+    // Self-referral / same email as affiliate
+    if (String(affiliate.email || "").trim().toLowerCase() === userEmail) {
+      return json(res, 400, { detail: "You cannot claim your own referral link." });
+    }
+
     const store = await loadStore();
     const conversions = store.affiliate_conversions || {};
     for (const conv of Object.values(conversions)) {
-      if (conv.user_email === userEmail && conv.ref === ref) {
+      if (conv.user_email === userEmail) {
         return json(res, 200, {
           claimed: true,
           duplicate: true,
-          detail: "Referral already claimed.",
+          detail: "Referral already claimed for this account.",
         });
       }
     }
@@ -288,6 +369,7 @@ async function handleClaim(req, res, body) {
         affiliate_email: affiliate.email,
         affiliate_name: affiliate.name,
         user_email: userEmail,
+        user_id: user.uid,
         action,
         status: "pending",
         commission_pct: 40,
@@ -416,6 +498,7 @@ async function handleMeView(req, res) {
     const store = await loadStore();
     const affiliates = store.affiliates || {};
     const tracking = store.affiliate_tracking || {};
+    const daily = store.affiliate_daily || {};
     const conversions = store.affiliate_conversions || {};
 
     const affiliate = Object.values(affiliates).find(
@@ -430,7 +513,7 @@ async function handleMeView(req, res) {
     }
 
     const isFounder = FOUNDER_EMAILS.has(email);
-    const stats = computeAffiliateStats(affiliate, tracking, conversions);
+    const stats = computeAffiliateStats(affiliate, tracking, conversions, daily);
 
     return json(res, 200, { affiliate, stats, is_founder: isFounder });
   } catch (err) {
@@ -455,11 +538,12 @@ async function handleAdminView(req, res) {
     const store = await loadStore();
     const affiliates = store.affiliates || {};
     const tracking = store.affiliate_tracking || {};
+    const daily = store.affiliate_daily || {};
     const conversions = store.affiliate_conversions || {};
 
     const list = Object.values(affiliates).map((a) => ({
       ...a,
-      stats: computeAffiliateStats(a, tracking, conversions),
+      stats: computeAffiliateStats(a, tracking, conversions, daily),
     }));
 
     const totalAffiliates = list.length;

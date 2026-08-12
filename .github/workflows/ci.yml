@@ -54,6 +54,8 @@ jobs:
           node --check packages/proxy/src/server.js
       - name: Billing ledger unit tests
         run: node api/_lib/billing-ledger.test.js
+      - name: Credit amount helpers
+        run: node api/_lib/credit-amount.test.js
       - name: Coding agent monthly usage unit tests
         run: node api/_lib/coding-agent-usage.test.js
       - name: Soft-probe unit tests

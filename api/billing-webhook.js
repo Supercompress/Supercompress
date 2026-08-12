@@ -51,7 +51,8 @@ module.exports = async (req, res) => {
     const event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
 
     switch (event.type) {
-      case "checkout.session.completed": {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
         const session = event.data.object;
         const kind = session.metadata?.kind || "";
         if (kind.startsWith("credit_")) {
@@ -135,11 +136,13 @@ module.exports = async (req, res) => {
         // Auto-recharge credits balance when charged off-session (idempotent via PI id in credited list)
         const pi = event.data.object;
         if (pi.metadata?.kind === "credit_auto_recharge" && pi.metadata?.user_id) {
+          if (pi.metadata?.sc_credited === "true") break;
           const fakeSession = {
             id: `pi_${pi.id}`,
             metadata: {
               user_id: pi.metadata.user_id,
               kind: "credit_auto_recharge",
+              // credit_usd metadata is informational only — applyCreditTopUp uses amount_total
               credit_usd: pi.metadata.credit_usd,
               auto_recharge: "true",
             },

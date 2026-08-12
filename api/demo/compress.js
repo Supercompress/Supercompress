@@ -1,11 +1,13 @@
 /**
  * Public demo compress — compiler mode, no API key.
- * Rate-limited: 30 req/min per IP.
+ * Rate-limited: 30 req/min per IP (memory + durable when Firestore is up).
  */
-const { json, jsonWithRateLimit, checkRateLimit, clientIp, readBody, softProbe } = require("../_lib/http");
+const { json, jsonWithRateLimit, checkRateLimit, clientIp, readBody } = require("../_lib/http");
+const { checkDurableRateLimit } = require("../_lib/rate-limit-durable");
 const { compressAdaptive, getEngine } = require("../_lib/engine");
 
 const DEMO_RPM = 30;
+const DEMO_MAX_CHARS = 20_000;
 
 const ASSUMPTIONS = {
   tokens_per_gpu_second: 2500,
@@ -29,18 +31,31 @@ function envForTokenCount(tokenCount) {
 
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
-  if (req.method !== "POST") {
-    return softProbe(res, "Method not allowed", { allow: "POST" });
-  }
+  if (req.method !== "POST") return json(res, 405, { detail: "Method not allowed" });
 
-  // ── Rate limit by IP ──
+  // ── Rate limit by IP (memory + durable when available) ──
   const ip = clientIp(req);
-  const rl = checkRateLimit(`demo:${ip}`, DEMO_RPM);
-  if (!rl.allowed) {
+  const rlMem = checkRateLimit(`demo:${ip}`, DEMO_RPM);
+  if (!rlMem.allowed) {
     return jsonWithRateLimit(res, 429, {
       detail: `Rate limit exceeded (${DEMO_RPM} requests/minute). Try again shortly or use your own API key via POST /api/v1/compress.`,
-      retry_after_seconds: Math.max(1, Math.ceil((rl.resetMs - Date.now()) / 1000)),
-    }, rl);
+      retry_after_seconds: Math.max(1, Math.ceil((rlMem.resetMs - Date.now()) / 1000)),
+    }, rlMem);
+  }
+  let rl = rlMem;
+  try {
+    const durable = await checkDurableRateLimit(`demo:${ip}`, DEMO_RPM, 60_000);
+    if (durable.backend === "firestore") {
+      if (!durable.allowed) {
+        return jsonWithRateLimit(res, 429, {
+          detail: `Rate limit exceeded (${DEMO_RPM} requests/minute). Try again shortly or use your own API key via POST /api/v1/compress.`,
+          retry_after_seconds: Math.max(1, Math.ceil((durable.resetMs - Date.now()) / 1000)),
+        }, durable);
+      }
+      rl = { ...durable, remaining: Math.min(durable.remaining, rlMem.remaining) };
+    }
+  } catch (_) {
+    /* memory already applied */
   }
 
   try {
@@ -48,16 +63,9 @@ module.exports = async (req, res) => {
     const context = body.context || "";
     const query = body.query || "Summarize this context.";
 
-    // Empty-body scanner POSTs — soft 200 (Observability error rate).
-    if (!context.trim()) {
-      return jsonWithRateLimit(res, 200, {
-        ok: false,
-        probe: true,
-        detail: "context required",
-      }, rl);
-    }
-    if (context.length > 80_000) return jsonWithRateLimit(res, 422, {
-      detail: "context too long (80k max for demo)"
+    if (!context.trim()) return jsonWithRateLimit(res, 422, { detail: "context required" }, rl);
+    if (context.length > DEMO_MAX_CHARS) return jsonWithRateLimit(res, 422, {
+      detail: `context too long (${DEMO_MAX_CHARS / 1000}k max for demo)`
     }, rl);
 
     const result = await compressAdaptive(context, query);

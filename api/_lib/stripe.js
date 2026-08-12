@@ -295,7 +295,7 @@ async function createCreditTopUpCheckout({
         credit_usd: String(amount),
       },
     },
-    allow_promotion_codes: true,
+    allow_promotion_codes: false,
     billing_address_collection: "auto",
   });
 
@@ -372,9 +372,14 @@ async function attemptAutoRecharge(owner) {
       return { ok: false, error: `payment_${pi.status}`, paymentIntentId: pi.id };
     }
 
+    const paidUsd = roundUsd(Number(pi.amount || 0) / 100);
+    if (paidUsd <= 0) {
+      return { ok: false, error: "invalid_paid_amount", paymentIntentId: pi.id };
+    }
+
     const credited = await creditBalance({
       uid: owner.uid,
-      creditUsd: amount,
+      creditUsd: paidUsd,
       creditKey: `pi_${pi.id}`,
       claims,
       patch: {
@@ -384,9 +389,17 @@ async function attemptAutoRecharge(owner) {
       },
     });
 
+    try {
+      await stripe.paymentIntents.update(pi.id, {
+        metadata: { ...(pi.metadata || {}), sc_credited: "true" },
+      });
+    } catch (err) {
+      console.warn("Could not stamp auto-recharge PI:", err.message || err);
+    }
+
     return {
       ok: true,
-      balanceAdd: credited.already ? 0 : amount,
+      balanceAdd: credited.already ? 0 : paidUsd,
       paymentIntentId: pi.id,
       balance: credited.balance,
     };

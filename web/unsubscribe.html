@@ -83,6 +83,27 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
+          if (res.status === 401 || data.code === "invalid_token") {
+            status.innerHTML = "That unsubscribe link is invalid or expired. " +
+              "<button type=\"button\" id=\"resend\" style=\"margin-left:8px;color:var(--brand);background:none;border:none;cursor:pointer;text-decoration:underline\">Email me a fresh link</button>";
+            document.getElementById("resend")?.addEventListener("click", async () => {
+              status.textContent = "Sending…";
+              try {
+                const r2 = await fetch("/api/account?op=weekly-unsub-link", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Accept: "application/json" },
+                  body: JSON.stringify({ email }),
+                });
+                const d2 = await r2.json().catch(() => ({}));
+                status.textContent = r2.ok
+                  ? "Check your inbox for a fresh unsubscribe link."
+                  : (d2.detail || "Could not send a link. Reply to any email instead.");
+              } catch {
+                status.textContent = "Network error sending link.";
+              }
+            });
+            return;
+          }
           status.textContent = data.detail || "Could not unsubscribe. Reply to any email and ask Arjun to remove you.";
           return;
         }

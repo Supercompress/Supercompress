@@ -1289,6 +1289,10 @@
       "destination": "/api/account?op=welcome-drain"
     },
     {
+      "source": "/api/weekly/unsubscribe",
+      "destination": "/api/account?op=weekly-unsubscribe"
+    },
+    {
       "source": "/dashboard",
       "destination": "/dashboard.html"
     },

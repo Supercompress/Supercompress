@@ -1,4 +1,4 @@
-const { json, readBody, checkRateLimit, softProbe, hasAuthCredentials } = require("./_lib/http");
+const { json, readBody, checkRateLimit } = require("./_lib/http");
 const { verifyUser, bearerToken } = require("./_lib/auth");
 const { KEY_PREFIX } = require("./_lib/keys");
 const { createKey, revokeKey, listKeys, authenticateKey } = require("./_lib/firebase-key-store");
@@ -267,7 +267,7 @@ async function handleConnectDevice(req, res) {
     }
   }
 
-  if (req.method !== "POST") return softProbe(res, "Method not allowed", { allow: "POST" });
+  if (req.method !== "POST") return json(res, 405, { detail: "Method not allowed" });
 
   try {
     const user = await verifyUser(req);
@@ -311,7 +311,7 @@ async function handleConnectDevice(req, res) {
 }
 
 async function handleUsage(req, res) {
-  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
 
   try {
     const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization) || (req.query && req.query.api_key);
@@ -399,9 +399,9 @@ async function handleUsage(req, res) {
       ...planUsage(owner, total_tokens_in),
     });
   } catch (err) {
-    // Unauthenticated scanner GETs — soft 200 so Observability error rate stays ~0.
-    if ((err.status || 401) === 401 && !hasAuthCredentials(req)) {
-      return softProbe(res, err.message || "Authorization required", { auth: "required" });
+    // Unauthenticated scanner GETs — soft 200 so Observability error rate stays honest.
+    if ((err.status || 401) === 401) {
+      return json(res, 200, { ok: false, auth: "required", detail: err.message || "Authorization required" });
     }
     return json(res, err.status || 500, { detail: err.message });
   }
@@ -424,7 +424,7 @@ async function resolveOwnerFromReq(req) {
 }
 
 async function handleMe(req, res) {
-  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
   try {
     const { uid, owner, via, key_prefix } = await resolveOwnerFromReq(req);
     const { loadAgentPluginLink, loadCodingAgentUsage } = require("./_lib/store");
@@ -485,7 +485,7 @@ async function handleMe(req, res) {
 }
 
 async function handleCompressLog(req, res) {
-  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
   try {
     const { uid } = await resolveOwnerFromReq(req);
     const limit = Number(req.query?.limit) || 40;
@@ -501,7 +501,7 @@ async function handleCompressLog(req, res) {
 }
 
 async function handleAuthStatus(req, res) {
-  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
 
   const hasJson = Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim());
   const hasParts = Boolean(
@@ -727,19 +727,55 @@ module.exports = async (req, res) => {
     } catch {
       /* keep raw */
     }
-    const confirmOnly =
-      body.confirm === true ||
-      body.confirm === "1" ||
-      String(req.query?.confirm || "") === "1";
     try {
-      return json(res, 200, await unsubscribeEmail(email, token, { confirmOnly }));
+      // Authenticated account may unsubscribe their own verified email without the mail token.
+      let authedSelf = false;
+      try {
+        const user = await verifyUser(req);
+        if (user?.email && String(user.email).trim().toLowerCase() === email.toLowerCase()) {
+          authedSelf = true;
+        }
+      } catch (_) {
+        /* anonymous one-click from email */
+      }
+      if (authedSelf && !token) {
+        const { unsubToken } = require("./_lib/weekly");
+        token = unsubToken(email);
+      }
+      return json(res, 200, await unsubscribeEmail(email, token));
     } catch (err) {
+      // Broken / missing token → tell the client to request a fresh signed link (do not unsub).
+      if (err.status === 401 || err.code === "invalid_token") {
+        return json(res, 401, {
+          detail: err.message || "Invalid unsubscribe token",
+          code: "invalid_token",
+          hint: "Request a fresh signed link via weekly-unsub-link",
+        });
+      }
       return json(res, err.status || 500, { detail: err.message || "Unsubscribe failed" });
     }
   }
   if (op === "weekly-unsub-link" && req.method === "POST") {
     const body = readBody(req) || {};
     const email = String(body.email || "").trim();
+    const { checkRateLimit, clientIp, jsonWithRateLimit } = require("./_lib/http");
+    const { checkDurableRateLimit } = require("./_lib/rate-limit-durable");
+    const ip = clientIp(req);
+    const mem = checkRateLimit(`unsub-link:${ip}`, 5);
+    if (!mem.allowed) {
+      return jsonWithRateLimit(res, 429, { detail: "Too many requests. Try again later." }, mem);
+    }
+    const recipKey = `unsub-link-to:${String(email).trim().toLowerCase()}`;
+    const recipMem = checkRateLimit(recipKey, 2, 60 * 60_000);
+    if (!recipMem.allowed) {
+      return json(res, 429, { detail: "A link was already sent recently. Check your inbox." });
+    }
+    try {
+      const durable = await checkDurableRateLimit(`unsub-link:${ip}`, 10, 60 * 60_000);
+      if (durable.backend === "firestore" && !durable.allowed) {
+        return jsonWithRateLimit(res, 429, { detail: "Too many requests. Try again later." }, durable);
+      }
+    } catch (_) {}
     try {
       return json(res, 200, await sendUnsubscribeLink(email));
     } catch (err) {

@@ -10,6 +10,10 @@ const {
   tokensToUsd,
   TOKENS_PER_BILLING_UNIT,
 } = require("./stripe");
+const {
+  paidCreditUsdFromSession,
+  isCreditablePaidUsd,
+} = require("./credit-amount");
 const { mutateStore } = require("./store");
 const { initFirebaseAdmin } = require("./auth");
 const admin = require("firebase-admin");
@@ -17,6 +21,50 @@ const admin = require("firebase-admin");
 /** Thank-you grant on first successful credit top-up (1M tokens @ current PAYG rate). */
 const FIRST_PAY_BONUS_TOKENS = TOKENS_PER_BILLING_UNIT;
 const FIRST_PAY_BONUS_USD = tokensToUsd(FIRST_PAY_BONUS_TOKENS);
+
+function stripeAlreadyCredited(session) {
+  const meta = session?.metadata || {};
+  return meta.sc_credited === "true" || meta.sc_credited === true;
+}
+
+/**
+ * Durable idempotency beyond the sliding sc_credited_sessions window:
+ * stamp the Checkout session / PaymentIntent so reconcile cannot re-mint credits
+ * after old session ids age out of Auth claims.
+ */
+async function markStripeCredited(session) {
+  if (!session?.id || stripeAlreadyCredited(session)) return;
+  try {
+    const stripe = getStripe();
+    const stamp = {
+      sc_credited: "true",
+      sc_credited_at: new Date().toISOString().slice(0, 19) + "Z",
+    };
+    const id = String(session.id);
+    if (id.startsWith("cs_")) {
+      await stripe.checkout.sessions.update(id, {
+        metadata: { ...(session.metadata || {}), ...stamp },
+      });
+      return;
+    }
+    // Synthetic PI sessions use id `pi_<PaymentIntentId>` or bare PI id.
+    const piId = id.startsWith("pi_pi_")
+      ? id.slice(3)
+      : id.startsWith("pi_")
+        ? id
+        : session.payment_intent
+          ? String(session.payment_intent)
+          : null;
+    if (piId) {
+      const pi = await stripe.paymentIntents.retrieve(piId);
+      await stripe.paymentIntents.update(piId, {
+        metadata: { ...(pi.metadata || {}), ...stamp },
+      });
+    }
+  } catch (err) {
+    console.warn("Could not stamp Stripe sc_credited:", err.message || err);
+  }
+}
 
 async function updateBillingClaims(userId, data) {
   if (!userId || !initFirebaseAdmin()) return;
@@ -86,8 +134,35 @@ async function applyCreditTopUp(session) {
   if (!userId || !kind.startsWith("credit_")) {
     return { applied: false, reason: "not_credit_session" };
   }
+  // Require an explicit paid signal when present. Synthetic PI sessions set payment_status.
   if (session.payment_status && session.payment_status !== "paid") {
     return { applied: false, reason: "not_paid" };
+  }
+  // Never credit "complete but unpaid" async Checkout (e.g. bank debits still pending).
+  if (session.status === "complete" && session.payment_status && session.payment_status !== "paid") {
+    return { applied: false, reason: "not_paid" };
+  }
+
+  if (stripeAlreadyCredited(session)) {
+    if (!initFirebaseAdmin()) {
+      return { applied: true, already: true, balance: 0, creditUsd: 0 };
+    }
+    const u = await admin.auth().getUser(userId);
+    const prev = u.customClaims || {};
+    return {
+      applied: true,
+      already: true,
+      balance: roundUsd(Number(prev.sc_credit_balance_usd || 0)),
+      creditUsd: 0,
+      firstPayBonusUsd: 0,
+      firstPayBonusTokens: 0,
+    };
+  }
+
+  // Dollars credited = what Stripe charged, never metadata.credit_usd (promo / mismatch / spoof).
+  const creditUsd = paidCreditUsdFromSession(session);
+  if (!isCreditablePaidUsd(creditUsd)) {
+    return { applied: false, reason: "invalid_paid_amount", creditUsd };
   }
 
   if (!initFirebaseAdmin()) return { applied: false, reason: "firebase_unavailable" };
@@ -98,6 +173,7 @@ async function applyCreditTopUp(session) {
     : [];
   if (credited.includes(session.id)) {
     console.log("Credit top-up already applied:", session.id);
+    await markStripeCredited(session);
     const alreadyBonus = prev.sc_first_pay_bonus_at
       ? Number(prev.sc_first_pay_bonus_usd || FIRST_PAY_BONUS_USD)
       : 0;
@@ -111,10 +187,6 @@ async function applyCreditTopUp(session) {
     };
   }
 
-  const creditUsd = normalizeCreditLimitUsd(
-    session.metadata?.credit_usd || (session.amount_total != null ? session.amount_total / 100 : null),
-    DEFAULT_CREDIT_LIMIT_USD
-  );
   const autoRecharge =
     session.metadata?.auto_recharge === "true"
       ? true
@@ -127,6 +199,17 @@ async function applyCreditTopUp(session) {
     const stripe = getStripe();
     if (session.payment_intent) {
       const pi = await stripe.paymentIntents.retrieve(String(session.payment_intent));
+      if (pi.metadata?.sc_credited === "true") {
+        await markStripeCredited(session);
+        return {
+          applied: true,
+          already: true,
+          balance: roundUsd(Number(prev.sc_credit_balance_usd || 0)),
+          creditUsd: 0,
+          firstPayBonusUsd: 0,
+          firstPayBonusTokens: 0,
+        };
+      }
       paymentMethod = pi.payment_method || paymentMethod;
       if (paymentMethod && session.customer) {
         await stripe.customers.update(session.customer, {
@@ -139,9 +222,10 @@ async function applyCreditTopUp(session) {
   }
 
   const grantFirstPayBonusUsd = FIRST_PAY_BONUS_USD;
+  // Recharge threshold stays a pack size (min $10), independent of this payment's amount.
   const limitUsd = normalizeCreditLimitUsd(
-    session.metadata?.credit_usd || prev.sc_credit_limit_usd,
-    creditUsd
+    prev.sc_credit_limit_usd || session.metadata?.credit_usd,
+    Math.max(DEFAULT_CREDIT_LIMIT_USD, creditUsd)
   );
 
   // Ledger first (idempotent by session.id). First-pay bonus is create-once in txn.
@@ -161,6 +245,7 @@ async function applyCreditTopUp(session) {
 
   if (ledgerResult.already) {
     console.log("Credit top-up already applied (ledger):", session.id);
+    await markStripeCredited(session);
     return {
       applied: true,
       already: true,
@@ -207,6 +292,7 @@ async function applyCreditTopUp(session) {
   }
 
   await persistSubscription(userId, persistPayload);
+  await markStripeCredited(session);
 
   console.log(
     `Credited $${creditUsd}${bonusUsd ? ` + $${bonusUsd} first-pay bonus` : ""} to ${userId}; balance=$${newBalance}`
@@ -305,8 +391,13 @@ async function reconcileOutstandingCreditCheckouts({
   for (const session of sessions.data) {
     const kind = session.metadata?.kind || "";
     if (!kind.startsWith("credit_")) continue;
-    if (session.payment_status !== "paid" && session.status !== "complete") continue;
+    // Strict: only settle money that Stripe confirms paid (not async-pending "complete").
+    if (session.payment_status !== "paid") continue;
     if (session.metadata?.user_id && session.metadata.user_id !== userId) continue;
+    if (session.metadata?.sc_credited === "true") {
+      already.add(session.id);
+      continue;
+    }
     if (already.has(session.id)) continue;
     try {
       const result = await applyCreditTopUp(session);
@@ -320,6 +411,7 @@ async function reconcileOutstandingCreditCheckouts({
         applied: Boolean(result.applied),
         already: Boolean(result.already),
         creditUsd: result.creditUsd || 0,
+        reason: result.reason,
       });
     } catch (err) {
       console.error("outstanding credit reconcile failed:", session.id, err?.message || err);
