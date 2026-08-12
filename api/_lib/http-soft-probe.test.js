@@ -4,6 +4,7 @@
  */
 const assert = require("assert");
 const { softProbe, hasAuthCredentials, json } = require("./http");
+const { hasDrainCredentials } = require("./welcome");
 
 function mockRes() {
   const out = { statusCode: 0, body: null, headers: {} };
@@ -19,6 +20,10 @@ function mockRes() {
 assert.strictEqual(hasAuthCredentials({ headers: {} }), false);
 assert.strictEqual(hasAuthCredentials({ headers: { authorization: "Bearer x" } }), true);
 assert.strictEqual(hasAuthCredentials({ headers: { "x-api-key": "sc_live_x" } }), true);
+
+assert.strictEqual(hasDrainCredentials({ headers: {}, query: {} }, {}), false);
+assert.strictEqual(hasDrainCredentials({ headers: { "x-welcome-secret": "x" }, query: {} }, {}), true);
+assert.strictEqual(hasDrainCredentials({ headers: { authorization: "Bearer x" }, query: {} }, {}), true);
 
 const res = mockRes();
 softProbe(res, "hi", { allow: "POST" });
