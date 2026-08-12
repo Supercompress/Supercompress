@@ -252,7 +252,7 @@ async function createCreditTopUpCheckout({
   customerId,
   userId,
   creditUsd,
-  autoRecharge = false,
+  autoRecharge = true,
   baseUrl = "https://www.supercompress.dev",
   kind = "credit_topup",
 }) {
@@ -307,11 +307,23 @@ async function createCreditTopUpCheckout({
  * On success, credits Auth claims immediately (webhook is idempotent via PI id).
  * Returns { ok, balanceAdd, paymentIntentId, balance } or { ok:false, error }.
  */
+/** Auto-recharge defaults ON for Stripe-linked / credit wallets; explicit false opts out. */
+function isAutoRechargeEnabled(claims = {}, ledger = {}) {
+  if (ledger.auto_recharge === false || claims.sc_auto_recharge === false) return false;
+  if (ledger.auto_recharge === true || claims.sc_auto_recharge === true) return true;
+  return Boolean(
+    claims.sc_customer_id ||
+      ledger.customer_id ||
+      isCreditWallet(claims) ||
+      isPaygEnabled(claims.sc_plan)
+  );
+}
+
 async function attemptAutoRecharge(owner) {
   const claims = owner.customClaims || {};
   const { loadLedger, acquireRechargeLock, creditBalance } = require("./billing-ledger");
   const ledger = await loadLedger(owner.uid, claims);
-  if (!(claims.sc_auto_recharge || ledger.auto_recharge)) {
+  if (!isAutoRechargeEnabled(claims, ledger)) {
     return { ok: false, error: "auto_recharge_disabled" };
   }
   const customerId = claims.sc_customer_id || ledger.customer_id;
@@ -436,4 +448,5 @@ module.exports = {
   isCreditWallet,
   createCreditTopUpCheckout,
   attemptAutoRecharge,
+  isAutoRechargeEnabled,
 };

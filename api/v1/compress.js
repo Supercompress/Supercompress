@@ -105,7 +105,8 @@ async function enforceUsageLimit(owner) {
   );
   if (balance > 0) return;
 
-  if (claims.sc_auto_recharge || ledger.auto_recharge) {
+  const { isAutoRechargeEnabled } = require("../_lib/stripe");
+  if (isAutoRechargeEnabled(claims, ledger)) {
     const recharge = await attemptAutoRecharge(owner);
     if (recharge.ok) {
       const freshLedger = await loadLedger(owner.uid, owner.customClaims || claims);

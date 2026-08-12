@@ -141,7 +141,14 @@ function emptyLedger(claims = {}) {
       claims.sc_credit_limit_usd,
       DEFAULT_CREDIT_LIMIT_USD
     ),
-    auto_recharge: Boolean(claims.sc_auto_recharge),
+    auto_recharge:
+      claims.sc_auto_recharge == null
+        ? Boolean(
+            claims.sc_customer_id ||
+              isCreditWallet(claims) ||
+              isPaygEnabled(claims.sc_plan)
+          )
+        : Boolean(claims.sc_auto_recharge),
     customer_id: claims.sc_customer_id || null,
     // Display-only recent keys; idempotency is billing_credits/{id}
     credited_keys: Array.isArray(claims.sc_credited_sessions)
@@ -1122,31 +1129,42 @@ async function creditBalance({
 }
 
 async function acquireRechargeLock(uid) {
-  if (!uid || !initFirebaseAdmin()) return { acquired: false, reason: "unavailable" };
-  const ref = db().collection("billing_locks").doc(uid);
-  const now = Date.now();
-  const until = now + 90_000;
+  // Stripe PaymentIntent idempotency keys already dedupe charges — when Firestore
+  // is down, do not block auto-recharge behind a lock we cannot write.
+  const unlocked = {
+    acquired: true,
+    backend: "unlocked",
+    async release() {},
+  };
+  if (!uid || !initFirebaseAdmin()) return unlocked;
   try {
-    const acquired = await db().runTransaction(async (tx) => {
-      const snap = await tx.get(ref);
-      const data = snap.exists ? snap.data() : null;
-      if (data?.until && Number(data.until) > now && data.kind === "recharge") {
-        return false;
-      }
-      tx.set(ref, { kind: "recharge", until, updated_at: new Date().toISOString() });
-      return true;
-    });
-    return {
-      acquired,
-      async release() {
-        try {
-          await ref.delete();
-        } catch {}
-      },
-    };
+    return await withFirestoreTimeout(async () => {
+      const ref = db().collection("billing_locks").doc(uid);
+      const now = Date.now();
+      const until = now + 90_000;
+      const acquired = await db().runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const data = snap.exists ? snap.data() : null;
+        if (data?.until && Number(data.until) > now && data.kind === "recharge") {
+          return false;
+        }
+        tx.set(ref, { kind: "recharge", until, updated_at: new Date().toISOString() });
+        return true;
+      });
+      return {
+        acquired,
+        backend: "firestore",
+        async release() {
+          try {
+            await ref.delete();
+          } catch {}
+        },
+      };
+    }, 1200);
   } catch (err) {
-    console.warn("recharge lock failed:", err.message || err);
-    return { acquired: false, reason: err.message };
+    markFirestoreDown(err);
+    console.warn("recharge lock failed — proceeding (Stripe idempotency):", err.message || err);
+    return unlocked;
   }
 }
 

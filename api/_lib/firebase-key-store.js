@@ -462,13 +462,14 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
     }
     // Positive-but-insufficient balance: recharge once, retry same request id.
     if (err.code === "credits_exhausted") {
-      let autoOn = Boolean(ownerClaims.sc_auto_recharge);
-      if (!autoOn) {
-        try {
-          const { loadLedger } = require("./billing-ledger");
-          const led = await loadLedger(owner.uid, ownerClaims);
-          autoOn = Boolean(led.auto_recharge);
-        } catch (_) {}
+      let autoOn = false;
+      try {
+        const { isAutoRechargeEnabled } = require("./stripe");
+        const { loadLedger } = require("./billing-ledger");
+        const led = await loadLedger(owner.uid, ownerClaims);
+        autoOn = isAutoRechargeEnabled(ownerClaims, led);
+      } catch (_) {
+        autoOn = ownerClaims.sc_auto_recharge !== false;
       }
       if (autoOn) {
         const recharge = await attemptAutoRecharge(owner);

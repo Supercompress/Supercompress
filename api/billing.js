@@ -244,7 +244,11 @@ async function handleGet(req, res, user) {
       ? claims.sc_credit_balance_usd
       : (sub?.credit_balance_usd != null ? sub.credit_balance_usd : (payg && creditWallet ? 0 : null))
   );
-  const autoRecharge = Boolean(claims.sc_auto_recharge ?? sub?.auto_recharge);
+  const { isAutoRechargeEnabled } = require("./_lib/stripe");
+  const autoRecharge = isAutoRechargeEnabled(claims, {
+    auto_recharge: sub?.auto_recharge,
+    customer_id: claims.sc_customer_id || sub?.stripe_customer_id,
+  });
 
   return json(res, 200, {
     plan: plan.id,
@@ -323,7 +327,8 @@ async function handleGet(req, res, user) {
 
 async function startCreditCheckout(req, res, user, body, existingSub, stripeBilling) {
   const creditUsd = normalizeCreditLimitUsd(body.credit_limit_usd, DEFAULT_CREDIT_LIMIT_USD);
-  const autoRecharge = body.auto_recharge === true || body.auto_recharge === "true";
+  // Default ON — only an explicit false opts out (dashboard checkbox is checked by default).
+  const autoRecharge = !(body.auto_recharge === false || body.auto_recharge === "false");
   const kind = body.action === "top_up" ? "credit_topup" : "credit_enable";
 
   const customerId = await ensureCustomer(user, existingSub, stripeBilling);

@@ -187,12 +187,8 @@ async function applyCreditTopUp(session) {
     };
   }
 
-  const autoRecharge =
-    session.metadata?.auto_recharge === "true"
-      ? true
-      : session.metadata?.auto_recharge === "false"
-        ? false
-        : Boolean(prev.sc_auto_recharge);
+  // Default ON for new purchases; only an explicit "false" in Checkout metadata opts out.
+  const autoRecharge = session.metadata?.auto_recharge !== "false";
 
   let paymentMethod = prev.sc_default_payment_method || null;
   try {
