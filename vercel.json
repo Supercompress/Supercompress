@@ -1531,6 +1531,10 @@
     {
       "source": "/assets/img/icon-192.png",
       "destination": "/assets/img/icon-192.png"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/soft-probe"
     }
   ],
   "functions": {
