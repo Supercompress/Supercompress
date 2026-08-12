@@ -277,11 +277,43 @@ function planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims = {} }
 function isFirestoreBackendDown(err) {
   if (!err) return false;
   const code = err.code;
-  if (code === 7 || code === "7" || code === "SERVICE_DISABLED") return true;
+  if (code === 7 || code === "7" || code === "SERVICE_DISABLED" || code === "timeout") return true;
   const msg = String(err.message || err || "");
-  return /SERVICE_DISABLED|Cloud Firestore API has not been used|firestore\.googleapis\.com|PERMISSION_DENIED: Cloud Firestore/i.test(
+  return /SERVICE_DISABLED|Cloud Firestore API has not been used|firestore\.googleapis\.com|PERMISSION_DENIED: Cloud Firestore|firestore txn timed out|firestore_skipped/i.test(
     msg
   );
+}
+
+/** Once Firestore is known-down in this isolate, skip it so claims fallback can run. */
+let firestoreLedgerDown = false;
+
+function markFirestoreDown(err) {
+  if (isFirestoreBackendDown(err)) firestoreLedgerDown = true;
+}
+
+function firestoreUnavailableError() {
+  const err = new Error("firestore_skipped");
+  err.code = "SERVICE_DISABLED";
+  return err;
+}
+
+async function withFirestoreTimeout(work, timeoutMs = 1200) {
+  if (firestoreLedgerDown) throw firestoreUnavailableError();
+  let timer;
+  try {
+    return await Promise.race([
+      work(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          const err = new Error("firestore txn timed out");
+          err.code = "timeout";
+          reject(err);
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 async function loadLedger(uid, claims = {}) {
@@ -289,10 +321,14 @@ async function loadLedger(uid, claims = {}) {
     throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
   try {
-    const snap = await db().collection("billing").doc(uid).get();
+    const snap = await withFirestoreTimeout(
+      () => db().collection("billing").doc(uid).get(),
+      1200
+    );
     return normalizeLedger(snap.exists ? snap.data() : null, claims);
   } catch (err) {
     if (err.code === "billing_unavailable") throw err;
+    markFirestoreDown(err);
     console.warn("billing-ledger load failed — using Auth claims:", err.message || err);
     return normalizeLedger(null, claims);
   }
@@ -416,9 +452,10 @@ async function reserveIdempotencyLease(uid, requestId, fingerprint) {
   if (!uid || !rid || !initFirebaseAdmin()) {
     throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
-  const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
   try {
-    return await db().runTransaction(async (tx) => {
+    return await withFirestoreTimeout(() => {
+      const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
+      return db().runTransaction(async (tx) => {
       const snap = await tx.get(usageRef);
       const now = Date.now();
       if (snap.exists) {
@@ -465,10 +502,12 @@ async function reserveIdempotencyLease(uid, requestId, fingerprint) {
       );
       return { status: "acquired" };
     });
+    });
   } catch (err) {
     if (err.paywall || err.code === "idempotency_conflict") {
       throw err;
     }
+    markFirestoreDown(err);
     console.warn("reserveIdempotencyLease unavailable — claims fallback:", err?.message || err);
     try {
       const fresh = await admin().auth().getUser(uid);
@@ -655,11 +694,12 @@ async function applyUsageAndBurn({
     throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
 
-  const ref = db().collection("billing").doc(uid);
-  const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
   let result;
   try {
-    result = await db().runTransaction(async (tx) => {
+    result = await withFirestoreTimeout(() => {
+      const ref = db().collection("billing").doc(uid);
+      const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
+      return db().runTransaction(async (tx) => {
       const usageSnap = await tx.get(usageRef);
       const snap = await tx.get(ref);
       const ledger = normalizeLedger(snap.exists ? snap.data() : null, claims);
@@ -752,10 +792,12 @@ async function applyUsageAndBurn({
         response: replay,
       };
     });
+    });
   } catch (err) {
     if (err.paywall || err.code === "free_quota_exhausted" || err.code === "credits_exhausted" || err.code === "idempotency_conflict") {
       throw err;
     }
+    markFirestoreDown(err);
     console.warn(
       "billing-ledger: Firestore txn failed — claims billing fallback:",
       err?.code,
@@ -897,14 +939,15 @@ async function creditBalance({
   if (!uid || !creditKey) return { applied: false, reason: "missing_args" };
   if (!initFirebaseAdmin()) return { applied: false, reason: "firebase_unavailable" };
 
-  const ref = db().collection("billing").doc(uid);
-  const creditRef = db().collection("billing_credits").doc(String(creditKey));
-  const bonusRef = db().collection("billing_bonus").doc(`${uid}:first_pay`);
   const wantBonus = Math.max(0, Number(firstPayBonusUsd) || 0);
 
   let result;
   try {
-    result = await db().runTransaction(async (tx) => {
+    result = await withFirestoreTimeout(() => {
+      const ref = db().collection("billing").doc(uid);
+      const creditRef = db().collection("billing_credits").doc(String(creditKey));
+      const bonusRef = db().collection("billing_bonus").doc(`${uid}:first_pay`);
+      return db().runTransaction(async (tx) => {
       const creditSnap = await tx.get(creditRef);
       const bonusSnap = wantBonus > 0 ? await tx.get(bonusRef) : null;
       const snap = await tx.get(ref);
@@ -971,7 +1014,9 @@ async function creditBalance({
         bonus_usd: bonusUsd,
       };
     });
+    });
   } catch (err) {
+    markFirestoreDown(err);
     console.warn(
       "billing-ledger: credit txn failed — claims credit fallback:",
       err?.code,
