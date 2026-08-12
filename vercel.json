@@ -1257,6 +1257,10 @@
       "destination": "/api/billing-webhook"
     },
     {
+      "source": "/api/resend/webhook",
+      "destination": "/api/resend-webhook"
+    },
+    {
       "source": "/api/auth-status",
       "destination": "/api/account?op=auth-status"
     },

@@ -28,6 +28,7 @@ const EXTRA_PROTECTED = [
   "/api/usage",
   "/api/billing",
   "/api/billing/webhook",
+  "/api/resend/webhook",
   "/api/me",
   "/me",
   "/api/stats",
