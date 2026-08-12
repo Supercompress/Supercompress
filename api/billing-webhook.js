@@ -159,6 +159,11 @@ module.exports = async (req, res) => {
   } catch (err) {
     console.error("Webhook error:", err);
     corsHeaders(res);
-    return res.status(400).json({ detail: `Webhook Error: ${err.message}` });
+    // Signature / parse failures → 400 (no retry useful). Processing failures → 500 so Stripe retries.
+    const msg = String(err?.message || err || "");
+    const isSig =
+      /signature|No signatures found|Invalid signature|payload/i.test(msg) ||
+      err?.type === "StripeSignatureVerificationError";
+    return res.status(isSig ? 400 : 500).json({ detail: `Webhook Error: ${msg}` });
   }
 };

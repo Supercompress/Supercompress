@@ -258,11 +258,91 @@ async function reconcileCreditCheckout({ userId, sessionId }) {
   };
 }
 
+/**
+ * Self-heal: find recent paid credit Checkout sessions for this user that never
+ * landed in sc_credited_sessions, and apply them. Covers webhook drops + Firestore
+ * outages without requiring the customer to paste a session_id.
+ *
+ * Bounded lookback (default 14 sessions / ~30d of Stripe list pages) so billing GET
+ * stays cheap.
+ */
+async function reconcileOutstandingCreditCheckouts({
+  userId,
+  customerId = null,
+  claims = null,
+  limit = 14,
+} = {}) {
+  if (!userId || !initFirebaseAdmin()) {
+    return { ok: false, applied: 0, credited_usd: 0, detail: "unavailable" };
+  }
+  const stripe = getStripe();
+  let custId = customerId;
+  if (!custId) {
+    const matches = await stripe.customers.search({
+      query: `metadata['user_id']:'${String(userId).replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`,
+      limit: 1,
+    });
+    custId = matches.data[0]?.id || null;
+  }
+  if (!custId) {
+    return { ok: true, applied: 0, credited_usd: 0, sessions: [] };
+  }
+
+  const fresh = await admin.auth().getUser(userId);
+  const liveClaims = claims || fresh.customClaims || {};
+  const already = new Set(
+    Array.isArray(liveClaims.sc_credited_sessions) ? liveClaims.sc_credited_sessions : []
+  );
+
+  const sessions = await stripe.checkout.sessions.list({
+    customer: custId,
+    limit: Math.max(1, Math.min(25, Number(limit) || 14)),
+  });
+
+  let applied = 0;
+  let creditedUsd = 0;
+  const results = [];
+  for (const session of sessions.data) {
+    const kind = session.metadata?.kind || "";
+    if (!kind.startsWith("credit_")) continue;
+    if (session.payment_status !== "paid" && session.status !== "complete") continue;
+    if (session.metadata?.user_id && session.metadata.user_id !== userId) continue;
+    if (already.has(session.id)) continue;
+    try {
+      const result = await applyCreditTopUp(session);
+      if (result.applied && !result.already) {
+        applied += 1;
+        creditedUsd = roundUsd(creditedUsd + Number(result.creditUsd || 0) + Number(result.firstPayBonusUsd || 0));
+      }
+      already.add(session.id);
+      results.push({
+        id: session.id,
+        applied: Boolean(result.applied),
+        already: Boolean(result.already),
+        creditUsd: result.creditUsd || 0,
+      });
+    } catch (err) {
+      console.error("outstanding credit reconcile failed:", session.id, err?.message || err);
+      results.push({ id: session.id, error: err?.message || String(err) });
+    }
+  }
+
+  const after = await admin.auth().getUser(userId);
+  return {
+    ok: true,
+    applied,
+    credited_usd: creditedUsd,
+    credit_balance_usd: roundUsd(Number(after.customClaims?.sc_credit_balance_usd || 0)),
+    sessions: results,
+  };
+}
+
 module.exports = {
   applyCreditTopUp,
   persistSubscription,
   updateBillingClaims,
   reconcileCreditCheckout,
+  reconcileOutstandingCreditCheckouts,
   FIRST_PAY_BONUS_TOKENS,
   FIRST_PAY_BONUS_USD,
 };

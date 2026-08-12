@@ -1352,18 +1352,33 @@ function initBilling() {
       });
     };
     if (sessionId.startsWith("cs_")) {
-      apiFetch("/api/billing", {
-        method: "POST",
-        body: JSON.stringify({ action: "reconcile_checkout", session_id: sessionId }),
-      })
-        .then((data) => {
-          celebrate(data || {});
-          return loadSubscription();
-        })
-        .catch((err) => {
-          console.warn("Checkout reconcile:", err?.message || err);
-          showPaySuccessCelebration({});
+      const reconcileOnce = () =>
+        apiFetch("/api/billing", {
+          method: "POST",
+          body: JSON.stringify({ action: "reconcile_checkout", session_id: sessionId }),
         });
+      // Retry a few times — covers brief Auth/claims races after Checkout return.
+      (async () => {
+        let last = null;
+        for (let i = 0; i < 4; i++) {
+          try {
+            last = await reconcileOnce();
+            if (last && (last.credited_usd > 0 || last.already || last.credit_balance_usd > 0)) {
+              break;
+            }
+          } catch (err) {
+            last = { error: err };
+            console.warn("Checkout reconcile attempt", i + 1, err?.message || err);
+          }
+          await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+        }
+        if (last && !last.error) {
+          celebrate(last);
+        } else {
+          showPaySuccessCelebration({});
+        }
+        await loadSubscription();
+      })();
     } else {
       showPaySuccessCelebration({});
       setTimeout(() => loadSubscription(), 800);

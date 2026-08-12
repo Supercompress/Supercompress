@@ -33,7 +33,10 @@ const {
   createCreditTopUpCheckout,
   roundUsd,
 } = require("./_lib/stripe");
-const { reconcileCreditCheckout } = require("./_lib/credit-topup");
+const {
+  reconcileCreditCheckout,
+  reconcileOutstandingCreditCheckouts,
+} = require("./_lib/credit-topup");
 const { loadStore, mutateStore } = require("./_lib/store");
 
 const BASE_URL = "https://www.supercompress.dev";
@@ -121,8 +124,33 @@ async function patchCreditClaims(userId, patch) {
 async function handleGet(req, res, user) {
   const store = await loadStoreOrEmpty();
   initFirebaseAdmin();
-  const owner = await admin.auth().getUser(user.uid).catch(() => ({ uid: user.uid, customClaims: {} }));
-  const claims = owner.customClaims || {};
+  let owner = await admin.auth().getUser(user.uid).catch(() => ({ uid: user.uid, customClaims: {} }));
+  let claims = owner.customClaims || {};
+
+  // Self-heal paid Checkout that never credited (webhook / Firestore outage).
+  // Only when wallet looks empty — happy-path GET stays cheap; success-page
+  // reconcile + webhook cover top-ups while balance > 0.
+  const looksEmpty =
+    claims.sc_credit_balance_usd == null || Number(claims.sc_credit_balance_usd) <= 0;
+  if (looksEmpty) {
+    try {
+      const healed = await reconcileOutstandingCreditCheckouts({
+        userId: user.uid,
+        customerId: claims.sc_customer_id || null,
+        claims,
+        limit: 14,
+      });
+      if (healed.applied > 0) {
+        owner = await admin.auth().getUser(user.uid);
+        claims = owner.customClaims || {};
+        console.log(
+          `billing GET healed ${healed.applied} credit session(s) for ${user.uid}; balance=$${healed.credit_balance_usd}`
+        );
+      }
+    } catch (err) {
+      console.warn("outstanding credit reconcile skipped:", err.message || err);
+    }
+  }
 
   let sub = store.subscriptions?.[user.uid];
   if (!sub) {
