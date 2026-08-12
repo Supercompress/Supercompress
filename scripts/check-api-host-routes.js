@@ -73,6 +73,7 @@ function isCatchAllOrRegex(source) {
   if (/\(\?|\[\^|\|/.test(src)) return true; // lookahead / char-class / alternation
   if (src === "/*" || src === "/:path*" || src === "/:path(.*)" || src === "/(.*)") return true;
   if (/^\/:[A-Za-z0-9_]+\*$/.test(src)) return true; // /:splat*
+  if (/^\/:[A-Za-z0-9_]+\(\.\*\)$/.test(src)) return true; // /:splat(.*) or /:rest(.*)
   // "/((?!api...).*)" style
   if (src.includes("(?!") || src.includes("(?:")) return true;
   return false;

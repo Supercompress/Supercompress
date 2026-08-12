@@ -23,6 +23,11 @@ Public page: https://www.supercompress.dev/changelog
 - Keep user emails / outreach dumps / welcome-drain ops **out of OSS** (gitignore + CI PII gate); drain scripts live under `~/agent-bridge/private/supercompress-email/`
 
 ### API / dashboard
+- **Security:** affiliate `track` no longer writes per-visit rows into `config/store` (daily counters + field caps + IP rate limit); invalid refs are ignored
+- **Security:** `/api/weekly/unsubscribe` is a real route; tokenless confirm can no longer unsubscribe third parties; `weekly-unsub-link` is rate-limited
+- Demo compress uses durable IP rate limit when available and caps context at 20k chars
+- `mutateStore` only updates `writeCache` after a successful commit
+- Power-user 1M email awaits the durable claim before async Resend delivery
 - Auto branded **power-user email** when someone *newly* crosses 1M tokens (once ever; no backfill of current 1M+ accounts)
 - **Dashboard Analytics panel** (dither charts): live usage from `/api/keys` after sign-in — tokens saved, requests, coding agents, and key breakdown. `/analytics` stays inside `/dashboard?panel=analytics`.
 - Fix Analytics chart paint: Bayer wells + stacked dither canvases, wait for layout before draw, no demo/fake flash on production.

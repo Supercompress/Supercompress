@@ -52,6 +52,7 @@ function emptyStore() {
     subscriptions: {},
     affiliates: {},
     affiliate_tracking: {},
+    affiliate_daily: {},
     affiliate_conversions: {},
     connections: {},
     coding_agent_usage: {},
@@ -79,6 +80,7 @@ function normalizeStore(raw) {
     subscriptions: raw.subscriptions && typeof raw.subscriptions === "object" ? raw.subscriptions : {},
     affiliates: raw.affiliates && typeof raw.affiliates === "object" ? raw.affiliates : {},
     affiliate_tracking: raw.affiliate_tracking && typeof raw.affiliate_tracking === "object" ? raw.affiliate_tracking : {},
+    affiliate_daily: raw.affiliate_daily && typeof raw.affiliate_daily === "object" ? raw.affiliate_daily : {},
     affiliate_conversions: raw.affiliate_conversions && typeof raw.affiliate_conversions === "object" ? raw.affiliate_conversions : {},
     connections: raw.connections && typeof raw.connections === "object" ? raw.connections : {},
     coding_agent_usage: raw.coding_agent_usage && typeof raw.coding_agent_usage === "object" ? raw.coding_agent_usage : {},
@@ -351,7 +353,7 @@ async function mutateStore(mutator) {
 
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
-      return await db().runTransaction(async (tx) => {
+      const committed = await db().runTransaction(async (tx) => {
         const snap = await tx.get(docRef);
         const store = snap.exists ? normalizeStore(snap.data()) : emptyStore();
 
@@ -364,16 +366,18 @@ async function mutateStore(mutator) {
 
         tx.set(docRef, store);
 
-        // Update in-memory cache
-        writeCache = cloneStore(store);
-
-        return result;
+        // Return snapshot only after txn body finishes; writeCache updates
+        // AFTER runTransaction resolves so failed txns cannot poison warm lambdas.
+        return { result, snapshot: cloneStore(store) };
       });
+      writeCache = committed.snapshot;
+      return committed.result;
     } catch (err) {
+      // Always drop cache on failure — never keep a speculative store.
+      invalidateCache();
       // Firestore throws code 10 (ABORTED) when a transaction conflicts.
       // Retry with exponential backoff.
       if (attempt < 4 && err.code === 10) {
-        invalidateCache();
         await new Promise((r) => setTimeout(r, 80 + attempt * 60));
         continue;
       }
@@ -848,6 +852,39 @@ function repairMisattributedCodingAgents(agents) {
   if (!looksLikeCursorTool) return { agents: next, changed: false };
 
   const cursor = next.cursor && typeof next.cursor === "object" ? next.cursor : null;
+  const mergedMonths = {};
+  for (const srcMonths of [cursor?.months, bad.months]) {
+    if (!srcMonths || typeof srcMonths !== "object") continue;
+    for (const [month, snap] of Object.entries(srcMonths)) {
+      if (!snap || typeof snap !== "object") continue;
+      const prev = mergedMonths[month] || {};
+      mergedMonths[month] = {
+        requests: (prev.requests || 0) + (snap.requests || 0),
+        tokens_in: (prev.tokens_in || 0) + (snap.tokens_in || 0),
+        tokens_out: (prev.tokens_out || 0) + (snap.tokens_out || 0),
+        tokens_saved: (prev.tokens_saved || 0) + (snap.tokens_saved || 0),
+        first_seen:
+          [prev.first_seen, snap.first_seen].filter(Boolean).sort()[0] || snap.first_seen || null,
+        last_seen:
+          [prev.last_seen, snap.last_seen].filter(Boolean).sort().slice(-1)[0] ||
+          snap.last_seen ||
+          null,
+        last_pct: snap.last_pct != null ? snap.last_pct : prev.last_pct ?? null,
+        last_query: snap.last_query || prev.last_query || null,
+        last_source: snap.last_source || prev.last_source || null,
+        latency_sum_ms: (prev.latency_sum_ms || 0) + (snap.latency_sum_ms || 0),
+        latency_samples: (prev.latency_samples || 0) + (snap.latency_samples || 0),
+        last_latency_ms:
+          snap.last_latency_ms != null ? snap.last_latency_ms : prev.last_latency_ms ?? null,
+      };
+      if (mergedMonths[month].latency_samples > 0) {
+        mergedMonths[month].avg_latency_ms = Math.round(
+          mergedMonths[month].latency_sum_ms / mergedMonths[month].latency_samples
+        );
+      }
+    }
+  }
+
   const merged = {
     requests: (cursor?.requests || 0) + (bad.requests || 0),
     tokens_in: (cursor?.tokens_in || 0) + (bad.tokens_in || 0),
@@ -862,6 +899,7 @@ function repairMisattributedCodingAgents(agents) {
     latency_samples: (cursor?.latency_samples || 0) + (bad.latency_samples || 0),
     last_latency_ms: bad.last_latency_ms != null ? bad.last_latency_ms : cursor?.last_latency_ms ?? null,
   };
+  if (Object.keys(mergedMonths).length) merged.months = mergedMonths;
   if (merged.latency_samples > 0) {
     merged.avg_latency_ms = Math.round(merged.latency_sum_ms / merged.latency_samples);
   } else if (cursor?.avg_latency_ms != null || bad.avg_latency_ms != null) {

@@ -506,23 +506,19 @@ async function weeklyTick(opts = {}) {
   };
 }
 
-async function unsubscribeEmail(email, token, { confirmOnly = false } = {}) {
+async function unsubscribeEmail(email, token) {
   const clean = String(email || "").trim().toLowerCase();
   if (!clean.includes("@")) {
     const err = new Error("Invalid email");
     err.status = 422;
     throw err;
   }
-  // Signed token from email links, OR explicit confirm (tokenless / broken links).
-  if (!confirmOnly && !verifyUnsubToken(clean, token)) {
+  // State mutation requires a valid signed token (or caller already authenticated).
+  // Tokenless "confirm" must NOT permanently unsubscribe third parties.
+  if (!verifyUnsubToken(clean, token)) {
     const err = new Error("Invalid unsubscribe token");
     err.status = 401;
-    throw err;
-  }
-  if (confirmOnly && token && !verifyUnsubToken(clean, token)) {
-    // If a token was supplied with confirm, still require it to be valid.
-    const err = new Error("Invalid unsubscribe token");
-    err.status = 401;
+    err.code = "invalid_token";
     throw err;
   }
   await mutateStore((store) => {
@@ -530,7 +526,7 @@ async function unsubscribeEmail(email, token, { confirmOnly = false } = {}) {
     store.weekly_unsubscribes[clean] = {
       email: clean,
       at: new Date().toISOString(),
-      via: confirmOnly && !token ? "confirm" : "token",
+      via: "token",
     };
     // Cancel pending for this email
     for (const [key, rec] of Object.entries(store.weekly_emails || {})) {
@@ -546,6 +542,7 @@ async function unsubscribeEmail(email, token, { confirmOnly = false } = {}) {
 /**
  * For broken / tokenless links: email a fresh signed unsubscribe URL.
  * Always returns ok (don't leak whether the address exists) when email looks valid.
+ * Callers MUST rate-limit — this hits Resend.
  */
 async function sendUnsubscribeLink(email) {
   const clean = String(email || "").trim().toLowerCase();

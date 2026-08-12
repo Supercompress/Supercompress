@@ -276,7 +276,7 @@ export async function fetchAccount(): Promise<AccountSnap> {
     const data = await fetchJson(ME_URL, cfg.api_key)
     const activity: AccountSnap["activity"] = []
     try {
-      const log = await fetchJson(`${ACTIVITY_URL}?limit=8`, cfg.api_key)
+      const log = await fetchJson(`${ACTIVITY_URL}&limit=8`, cfg.api_key)
       for (const e of ((log.entries as unknown[]) || []).slice(0, 8) as Record<string, unknown>[]) {
         activity.push({
           at: String(e.at || "?"),

@@ -422,10 +422,10 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
 
   // Authoritative wallet/quota first — never bump analytics before a durable burn.
   let applied;
-  const schedulePowerUserIfCrossed = (prevTokens, nextTokens, extra = {}) => {
+  const reservePowerUserIfCrossed = async (prevTokens, nextTokens, extra = {}) => {
     try {
-      const { schedulePowerUserEmail } = require("./power-user");
-      schedulePowerUserEmail({
+      const { reserveThenDeliverPowerUser } = require("./power-user");
+      await reserveThenDeliverPowerUser({
         uid: owner.uid,
         email: owner.email || extra.email || "",
         displayName: owner.displayName || extra.displayName || "",
@@ -454,7 +454,7 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
   } catch (err) {
     if (err.code === "free_quota_exhausted") {
       const prev = Number(ownerClaims.sc_usage?.tokens_in || 0);
-      schedulePowerUserIfCrossed(prev, prev + Number(compressed.original_tokens || 0), {
+      await reservePowerUserIfCrossed(prev, prev + Number(compressed.original_tokens || 0), {
         tokensSaved: Number(ownerClaims.sc_usage?.tokens_saved || 0),
         requests: Number(ownerClaims.sc_usage?.requests || 0),
         source: "free_quota_wall",
@@ -515,7 +515,7 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
       0,
       Number(ledger.tokens_in || 0) - Number(compressed.original_tokens || 0)
     );
-    schedulePowerUserIfCrossed(prevMonthly, Number(ledger.tokens_in || 0), {
+    await reservePowerUserIfCrossed(prevMonthly, Number(ledger.tokens_in || 0), {
       tokensSaved: Number(ledger.tokens_saved || 0),
       requests: Number(ledger.requests || 0),
     });

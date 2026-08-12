@@ -727,19 +727,55 @@ module.exports = async (req, res) => {
     } catch {
       /* keep raw */
     }
-    const confirmOnly =
-      body.confirm === true ||
-      body.confirm === "1" ||
-      String(req.query?.confirm || "") === "1";
     try {
-      return json(res, 200, await unsubscribeEmail(email, token, { confirmOnly }));
+      // Authenticated account may unsubscribe their own verified email without the mail token.
+      let authedSelf = false;
+      try {
+        const user = await verifyUser(req);
+        if (user?.email && String(user.email).trim().toLowerCase() === email.toLowerCase()) {
+          authedSelf = true;
+        }
+      } catch (_) {
+        /* anonymous one-click from email */
+      }
+      if (authedSelf && !token) {
+        const { unsubToken } = require("./_lib/weekly");
+        token = unsubToken(email);
+      }
+      return json(res, 200, await unsubscribeEmail(email, token));
     } catch (err) {
+      // Broken / missing token → tell the client to request a fresh signed link (do not unsub).
+      if (err.status === 401 || err.code === "invalid_token") {
+        return json(res, 401, {
+          detail: err.message || "Invalid unsubscribe token",
+          code: "invalid_token",
+          hint: "Request a fresh signed link via weekly-unsub-link",
+        });
+      }
       return json(res, err.status || 500, { detail: err.message || "Unsubscribe failed" });
     }
   }
   if (op === "weekly-unsub-link" && req.method === "POST") {
     const body = readBody(req) || {};
     const email = String(body.email || "").trim();
+    const { checkRateLimit, clientIp, jsonWithRateLimit } = require("./_lib/http");
+    const { checkDurableRateLimit } = require("./_lib/rate-limit-durable");
+    const ip = clientIp(req);
+    const mem = checkRateLimit(`unsub-link:${ip}`, 5);
+    if (!mem.allowed) {
+      return jsonWithRateLimit(res, 429, { detail: "Too many requests. Try again later." }, mem);
+    }
+    const recipKey = `unsub-link-to:${String(email).trim().toLowerCase()}`;
+    const recipMem = checkRateLimit(recipKey, 2, 60 * 60_000);
+    if (!recipMem.allowed) {
+      return json(res, 429, { detail: "A link was already sent recently. Check your inbox." });
+    }
+    try {
+      const durable = await checkDurableRateLimit(`unsub-link:${ip}`, 10, 60 * 60_000);
+      if (durable.backend === "firestore" && !durable.allowed) {
+        return jsonWithRateLimit(res, 429, { detail: "Too many requests. Try again later." }, durable);
+      }
+    } catch (_) {}
     try {
       return json(res, 200, await sendUnsubscribeLink(email));
     } catch (err) {

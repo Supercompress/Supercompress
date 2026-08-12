@@ -9,7 +9,8 @@ const ALLOW = [
   /arjunkshah21@gmail\.com/i, // public founder support / reply-to
   /you@company\.com/i,
   /user@example\.com/i,
-  /example\.com/i,
+  /example\.com$/i,
+  /@example\.com$/i,
   /noreply@/i,
   /no-reply@/i,
   /jack@greensock\.com/i, // vendored gsap license header

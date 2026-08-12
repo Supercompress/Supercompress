@@ -186,8 +186,82 @@ async function maybeNotifyPowerUser({
   return { ok: false, sent: false, queued: true, reason: result.error || "send_failed" };
 }
 
+/**
+ * Await the durable pending claim, then deliver Resend asynchronously.
+ * Exactly-once claim must not depend on unawaited work surviving the lambda.
+ */
+async function reserveThenDeliverPowerUser(opts = {}) {
+  const {
+    uid,
+    email,
+    displayName,
+    prevTokens,
+    nextTokens,
+    tokensSaved,
+    requests,
+    source = "compress",
+  } = opts;
+  if (!uid) return { ok: true, sent: false, reason: "no_uid" };
+  if (!crossedPowerUser(prevTokens, nextTokens)) {
+    return { ok: true, sent: false, reason: "not_crossed" };
+  }
+
+  const to = String(email || "").trim();
+  const firstName = firstNameFromUser({ displayName, email: to });
+  const { claimed, record, reason } = await claimPowerUser(uid, {
+    email: to,
+    first_name: firstName,
+    tokens_in: Number(nextTokens) || 0,
+    tokens_saved: Number(tokensSaved) || 0,
+    requests: Number(requests) || 0,
+    source,
+  });
+  if (!claimed) {
+    return { ok: true, sent: false, reason: reason || "already_claimed", record };
+  }
+  if (!to.includes("@")) {
+    await markPowerUser(uid, {
+      status: "skipped_no_email",
+      skipped_at: new Date().toISOString(),
+    });
+    return { ok: true, sent: false, reason: "no_email" };
+  }
+
+  void (async () => {
+    const result = await sendPowerUserEmail({
+      email: to,
+      firstName,
+      ...statsFromUsage({
+        tokensIn: nextTokens,
+        tokensSaved,
+        requests,
+      }),
+    });
+    if (result.ok) {
+      await markPowerUser(uid, {
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        provider: result.provider || "resend",
+        error: null,
+      });
+    } else {
+      await markPowerUser(uid, {
+        status: "pending",
+        error: result.error || "send_failed",
+        failed_at: new Date().toISOString(),
+      });
+    }
+  })().catch((err) => {
+    console.warn("power-user email delivery skipped:", err.message || err);
+  });
+
+  return { ok: true, sent: false, queued: true, claimed: true };
+}
+
 function schedulePowerUserEmail(opts) {
-  void maybeNotifyPowerUser(opts).catch((err) => {
+  // Prefer reserveThenDeliverPowerUser from billing (awaits claim).
+  // This helper remains for callers that cannot await — still tries claim+send.
+  void reserveThenDeliverPowerUser(opts).catch((err) => {
     console.warn("power-user email skipped:", err.message || err);
   });
 }
@@ -202,5 +276,6 @@ module.exports = {
   markPowerUser,
   maybeNotifyPowerUser,
   drainPendingPowerUsers,
+  reserveThenDeliverPowerUser,
   schedulePowerUserEmail,
 };
