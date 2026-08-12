@@ -120,9 +120,13 @@ async function handleToolCall(name, args = {}) {
     // 128-bit pairing code (was 32-bit) — must match server normalizeCode length rules
     const code = require("crypto").randomBytes(16).toString("hex");
     const url = `${CONNECT_URL}${code}`;
-    const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
     try {
-      execFile(opener, [url]);
+      if (process.platform === "win32") {
+        execFile("cmd.exe", ["/c", "start", "", url]);
+      } else {
+        const opener = process.platform === "darwin" ? "open" : "xdg-open";
+        execFile(opener, [url]);
+      }
     } catch (err) {
       log("open browser failed:", err.message || err);
     }

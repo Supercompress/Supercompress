@@ -89,8 +89,14 @@ async function connectAccount() {
   // 128-bit pairing code (was 32-bit) — hardens device-link against enumeration
   const code = crypto.randomBytes(16).toString("hex");
   const connectUrl = `https://www.supercompress.dev/dashboard?connect=${code}&source=cli`;
-  const openCommand = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
-  try { require("child_process").execFileSync(openCommand, [connectUrl], { stdio: "ignore" }); } catch {}
+  try {
+    if (process.platform === "win32") {
+      require("child_process").execFileSync("cmd.exe", ["/c", "start", "", connectUrl], { stdio: "ignore" });
+    } else {
+      const openCommand = process.platform === "darwin" ? "open" : "xdg-open";
+      require("child_process").execFileSync(openCommand, [connectUrl], { stdio: "ignore" });
+    }
+  } catch {}
   console.log(`  → Finish sign-in in the browser to link this install.`);
   console.log(`  → If the dashboard is already open, refresh that tab.`);
   console.log(`  → Connection code: ${code}`);

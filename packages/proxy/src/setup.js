@@ -37,10 +37,13 @@ async function connectViaBrowser() {
   // 128-bit pairing code (was 32-bit) — hardens device-link against enumeration
   const code = crypto.randomBytes(16).toString("hex");
   const connectUrl = `https://www.supercompress.dev/dashboard?connect=${code}&source=setup`;
-  const openCommand = process.platform === "darwin" ? "open" :
-    process.platform === "win32" ? "start" : "xdg-open";
   try {
-    execSync(`${openCommand} "${connectUrl}"`, { stdio: "ignore" });
+    if (process.platform === "win32") {
+      execSync(`start "" "${connectUrl}"`, { stdio: "ignore" });
+    } else {
+      const openCommand = process.platform === "darwin" ? "open" : "xdg-open";
+      execSync(`${openCommand} "${connectUrl}"`, { stdio: "ignore" });
+    }
   } catch {}
 
   console.log("  → Finish sign-in in the browser to connect your account.");
