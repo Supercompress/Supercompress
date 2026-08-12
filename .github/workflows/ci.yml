@@ -58,6 +58,8 @@ jobs:
         run: node api/_lib/coding-agent-usage.test.js
       - name: Power-user milestone unit tests
         run: node api/_lib/power-user.test.js
+      - name: Resend webhook signature unit tests
+        run: node api/_lib/resend-webhook.test.js
       - name: Analytics aggregation unit tests
         run: node web/assets/js/analytics-data.test.js
       - name: Proxy package tests
