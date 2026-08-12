@@ -18,6 +18,7 @@
 
   let loadedOnce = false;
   let loading = false;
+  let lastSeries = null;
 
   function setPill(mode, text) {
     const pill = $("an-data-pill");
@@ -38,18 +39,31 @@
     if (message) el.textContent = message;
   }
 
-  function animateNumber(el, to, { suffix = "", compact = false } = {}) {
+  function animateNumber(el, to, { suffix = "", compact = false, duration = 900 } = {}) {
     const kit = DK();
     if (!el) return;
     const n = Number(to);
-    const v = Number.isFinite(n) ? Math.max(0, n) : 0;
-    el.textContent = (compact && kit ? kit.formatCompact(v) : String(Math.round(v))) + suffix;
+    const target = Number.isFinite(n) ? Math.max(0, n) : 0;
+    if (!kit) {
+      el.textContent = (compact ? String(Math.round(target)) : String(Math.round(target))) + suffix;
+      return;
+    }
+    const t0 = performance.now();
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    const frame = (now) => {
+      const p = Math.min(1, (now - t0) / duration);
+      const v = target * ease(p);
+      el.textContent = (compact ? kit.formatCompact(v) : String(Math.round(v))) + suffix;
+      if (p < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
   }
 
   function paint(series) {
     const kit = DK();
     const data = DATA();
     if (!kit || !data) return;
+    lastSeries = series;
 
     setPill(series.live ? "live" : "err", series.live ? "Live · your account" : "Could not load live usage");
 
@@ -89,41 +103,64 @@
       yMax: areaMax,
       empty: !series.areaData.some((d) => d.y > 0),
       emptyLabel: "No daily savings yet",
-      data: series.areaData,
-      interactive: true,
     };
-    kit.renderAreaChart(areaEl, areaOpts);
-    kit.startChartDitherLoop(areaEl, { kind: "area", ...areaOpts });
+    kit.animateChart((p) => {
+      kit.renderAreaChart(areaEl, {
+        ...areaOpts,
+        data: series.areaData.map((d) => ({ x: d.x, y: d.y * p, iso: d.iso })),
+        interactive: false,
+      });
+      if (p > 0.98) {
+        kit.renderAreaChart(areaEl, {
+          ...areaOpts,
+          data: series.areaData,
+          interactive: true,
+        });
+        kit.startChartDitherLoop(areaEl, {
+          kind: "area",
+          ...areaOpts,
+          data: series.areaData,
+          interactive: true,
+        });
+      }
+    }, 1100);
 
-    const barOpts = {
-      data: series.reqs.map((r) => ({ label: r.label, value: r.value, full: r.full })),
-      orientation: "vertical",
-      color: "brand",
-      variant: "gradient",
-      bloom: "aura",
-      maxBars: 30,
-      progress: 1,
-      yMax: reqMax,
-      unit: "requests",
-      tooltipTitle: "Requests",
-      interactive: true,
-      empty: !series.reqs.some((r) => r.value > 0),
-      emptyLabel: "No requests yet",
-    };
-    kit.renderBarChart(barsEl, barOpts);
-    kit.startChartDitherLoop(barsEl, { kind: "bar", ...barOpts });
+    kit.animateChart((p) => {
+      const done = p > 0.98;
+      const barOpts = {
+        data: series.reqs.map((r) => ({ label: r.label, value: r.value, full: r.full })),
+        orientation: "vertical",
+        color: "brand",
+        variant: "gradient",
+        bloom: "aura",
+        maxBars: 30,
+        progress: done ? 1 : p,
+        yMax: reqMax,
+        unit: "requests",
+        tooltipTitle: "Requests",
+        interactive: done,
+        empty: !series.reqs.some((r) => r.value > 0),
+        emptyLabel: "No requests yet",
+      };
+      kit.renderBarChart(barsEl, barOpts);
+      if (done) {
+        kit.startChartDitherLoop(barsEl, { kind: "bar", ...barOpts, progress: 1, interactive: true });
+      }
+    }, 1100);
 
     const esc = data.escapeHtml;
+    const logoHtml = data.agentLogoHtml || (() => "");
     const agentTotal = series.agents.reduce((s, a) => s + a.value, 0) || 1;
     if ($("an-agents")) {
       $("an-agents").innerHTML = series.agents.length
         ? series.agents
             .map((a, i) => {
               const pct = Math.round((a.value / agentTotal) * 100);
+              const logo = logoHtml(a.label, { size: 18 });
               return `<li class="rank-row">
                 <span class="rank-idx">${i + 1}</span>
                 <div class="rank-main">
-                  <p class="rank-name">${esc(a.label)}</p>
+                  <p class="rank-name">${logo}<span>${esc(a.label)}</span></p>
                   <p class="rank-meta">${kit.formatCompact(a.value)} tokens saved</p>
                   <div class="rank-track"><span class="rank-fill" data-w="${pct}"></span></div>
                 </div>
@@ -162,13 +199,26 @@
     loadedOnce = true;
   }
 
-  async function fetchKeys(idToken) {
-    const res = await fetch(`/api/keys?fresh=1&_=${Date.now()}`, {
+  async function fetchKeys(idToken, { fresh = false } = {}) {
+    const q = fresh ? `?fresh=1&_=${Date.now()}` : `?_=${Date.now()}`;
+    const res = await fetch(`/api/keys${q}`, {
       headers: { Authorization: `Bearer ${idToken}` },
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`keys ${res.status}`);
     return res.json();
+  }
+
+  function waitForLayout(maxFrames = 12) {
+    return new Promise((resolve) => {
+      let n = maxFrames;
+      const tick = () => {
+        const w = $("an-area")?.getBoundingClientRect().width || 0;
+        if (w > 40 || n-- <= 0) return resolve();
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
   }
 
   async function show({ getIdToken, force = false } = {}) {
@@ -180,7 +230,8 @@
       return;
     }
     if (loading) return;
-    if (loadedOnce && !force) {
+
+    if (loadedOnce && !force && lastSeries) {
       const areaH = $("an-area")?.querySelector("canvas")?.getBoundingClientRect().height || 0;
       if (areaH >= 80) {
         for (const [id, opts] of washes) {
@@ -189,27 +240,37 @@
         }
         return;
       }
-      // First paint happened while the panel was 0×0 — do a full redraw.
     }
 
     loading = true;
     setLoading(true, "Loading your live usage…");
     setPill("load", "Live · loading…");
     try {
-      await new Promise((resolve) => {
-        let n = 16;
-        const tick = () => {
-          const w = $("an-area")?.getBoundingClientRect().width || 0;
-          if (w > 40 || n-- <= 0) return resolve();
-          requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      });
-      const token = await getIdToken();
-      if (!token) throw new Error("Not signed in");
-      const payload = await fetchKeys(token);
+      await waitForLayout(12);
+
+      // Prefer keys payload already loaded by the dashboard (same session).
+      let payload = !force && window.__scLastKeysPayload ? window.__scLastKeysPayload : null;
+      if (!payload) {
+        const token = await getIdToken();
+        if (!token) throw new Error("Not signed in");
+        payload = await fetchKeys(token, { fresh: false });
+        window.__scLastKeysPayload = payload;
+      }
+
       paint(data.bundleToSeries(data.aggregateUsage(payload)));
       setLoading(false);
+
+      // Soft refresh in background so charts stay current without blocking UI.
+      if (!force) {
+        getIdToken()
+          .then((token) => (token ? fetchKeys(token, { fresh: true }) : null))
+          .then((fresh) => {
+            if (!fresh) return;
+            window.__scLastKeysPayload = fresh;
+            paint(data.bundleToSeries(data.aggregateUsage(fresh)));
+          })
+          .catch(() => {});
+      }
     } catch (err) {
       console.error(err);
       setPill("err", "Load failed");

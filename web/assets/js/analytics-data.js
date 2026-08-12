@@ -279,24 +279,58 @@
     );
 
     // Month meter ahead of ISO by_day (common when ledger/agent totals exist but
-    // daily rows lagged). Fold the gap onto today so the area chart matches KPIs.
-    const gapSaved = saved - daySaved;
-    const gapIn = tin - dayIn;
-    const gapReq = req - dayReq;
+    // daily rows lagged). Spread the gap across days in the current calendar
+    // month (within the 30-day window) so charts aren't a single today-spike.
+    const gapSaved = Math.max(0, saved - daySaved);
+    const gapIn = Math.max(0, tin - dayIn);
+    const gapReq = Math.max(0, req - dayReq);
     if (gapSaved > 500 || gapIn > 500 || gapReq > 0) {
-      const today = keys[keys.length - 1];
-      const cur = bundle.byDay[today] || emptyDay();
-      bundle.byDay[today] = {
-        tokens_saved: cur.tokens_saved + Math.max(0, gapSaved),
-        tokens_in: cur.tokens_in + Math.max(0, gapIn),
-        requests: cur.requests + Math.max(0, gapReq),
-      };
+      distributeMeterGap(bundle.byDay, keys, gapSaved, gapIn, gapReq);
       daySaved = saved;
       dayIn = tin;
       dayReq = req;
     }
 
-    return { saved, tin, req, daySaved, dayIn, dayReq };
+    return { saved, tin, req, daySaved, dayIn, dayReq, gapFolded: gapSaved > 500 || gapIn > 500 || gapReq > 0 };
+  }
+
+  /**
+   * Spread unattributed month-meter gap across days in the current month.
+   * Prefers days that already have activity; otherwise every day in-month.
+   */
+  function distributeMeterGap(byDay, keys, gapSaved, gapIn, gapReq) {
+    const monthPrefix = new Date().toISOString().slice(0, 7);
+    const monthDays = keys.filter((iso) => String(iso).startsWith(monthPrefix));
+    const pool = monthDays.length ? monthDays : keys.slice();
+    const active = pool.filter((iso) => {
+      const d = byDay[iso] || emptyDay();
+      return d.tokens_saved > 0 || d.tokens_in > 0 || d.requests > 0;
+    });
+    // If we only have 0–1 real days, fill the whole month strip so the chart
+    // reads as a month — not one lonely spike + empty axis.
+    const days = active.length >= 2 ? active : pool;
+    const n = Math.max(1, days.length);
+    let remS = gapSaved;
+    let remI = gapIn;
+    let remR = gapReq;
+    const baseS = Math.floor(gapSaved / n);
+    const baseI = Math.floor(gapIn / n);
+    const baseR = Math.floor(gapReq / n);
+    days.forEach((iso, i) => {
+      const last = i === days.length - 1;
+      const addS = last ? remS : baseS;
+      const addI = last ? remI : baseI;
+      const addR = last ? remR : baseR;
+      remS -= addS;
+      remI -= addI;
+      remR -= addR;
+      const cur = byDay[iso] || emptyDay();
+      byDay[iso] = {
+        tokens_saved: cur.tokens_saved + addS,
+        tokens_in: cur.tokens_in + addI,
+        requests: cur.requests + addR,
+      };
+    });
   }
 
   function bundleToSeries(bundle) {
@@ -365,6 +399,39 @@
       .replace(/'/g, "&#39;");
   }
 
+  /** Map coding-agent label → logo under /assets/logos/ (null = no logo). */
+  function agentLogoSrc(name) {
+    const key = String(name || "")
+      .toLowerCase()
+      .replace(/_/g, "-")
+      .replace(/\s+/g, "-");
+    const map = {
+      cursor: "/assets/logos/cursor.svg",
+      "claude-code": "/assets/logos/claude.png",
+      claude: "/assets/logos/claude.png",
+      anthropic: "/assets/logos/anthropic.svg",
+      codex: "/assets/logos/codex.png",
+      "openai-client": "/assets/logos/openai.png",
+      openai: "/assets/logos/openai.png",
+      copilot: "/assets/logos/copilot.png",
+      "github-copilot": "/assets/logos/copilot.png",
+      windsurf: "/assets/logos/windsurf.png",
+      opencode: "/assets/logos/opencode.png",
+      gemini: "/assets/logos/gemini.png",
+      "google-gemini": "/assets/logos/gemini.png",
+      vscode: "/assets/logos/vscode.png",
+      "vs-code": "/assets/logos/vscode.png",
+    };
+    return map[key] || null;
+  }
+
+  function agentLogoHtml(name, { size = 18 } = {}) {
+    const src = agentLogoSrc(name);
+    if (!src) return "";
+    const alt = escapeHtml(String(name || "agent"));
+    return `<img class="sc-agent-logo" src="${src}" alt="${alt}" width="${size}" height="${size}" loading="lazy" decoding="async" />`;
+  }
+
   const api = {
     dayKeys,
     labelDay,
@@ -376,6 +443,9 @@
     escapeHtml,
     sumAgents,
     sumKeys,
+    distributeMeterGap,
+    agentLogoSrc,
+    agentLogoHtml,
   };
 
   root.SCAnalyticsData = api;

@@ -127,5 +127,19 @@ assert.strictEqual(
   250000,
   "chart area matches month meter after gap fold"
 );
+assert.ok(
+  s3.activeDays >= 2,
+  "gap spread across multiple days, not a single today spike"
+);
+const todayIso = new Date().toISOString().slice(0, 10);
+const todayY = s3.areaData.find((d) => d.iso === todayIso)?.y || 0;
+assert.ok(
+  todayY < 250000,
+  "today should not hold the entire month gap alone"
+);
+
+assert.ok(typeof require("./analytics-data.js").agentLogoSrc === "function");
+assert.strictEqual(require("./analytics-data.js").agentLogoSrc("Cursor"), "/assets/logos/cursor.svg");
+assert.ok(require("./analytics-data.js").agentLogoHtml("Claude Code").includes("claude.png"));
 
 console.log("analytics-data.test.js: ok");

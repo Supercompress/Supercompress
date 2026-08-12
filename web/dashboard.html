@@ -28,7 +28,7 @@
   <meta name="theme-color" content="rgb(251,251,248)" />
   <link rel="stylesheet" href="assets/css/supercompress.css?v=112" />
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
-  <link rel="stylesheet" href="/assets/css/dashboard-analytics.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/dashboard-analytics.css?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
 <style>
     /* Dashboard: no dark bg layers, full light page */
@@ -133,16 +133,46 @@
     .dash-billing-usage-fill {
       height: 100%;
       border-radius: 4px;
-      background: var(--brand);
+      background: transparent;
       transition: width 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dash-billing-usage-dither {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    .dash-billing-usage-fill--high .dash-billing-usage-dither,
+    .dash-billing-usage-fill--full .dash-billing-usage-dither {
+      filter: none;
     }
 
     .dash-billing-usage-fill--high {
-      background: #f59e0b;
+      background: transparent;
     }
 
     .dash-billing-usage-fill--full {
-      background: #ef4444;
+      background: transparent;
+    }
+
+    .sc-agent-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sc-agent-logo {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+      flex-shrink: 0;
+      border-radius: 3px;
     }
 
     .dash-plans-grid {
@@ -1119,9 +1149,9 @@ npm exec supercompress setup</pre>
   <script src="assets/js/firebase-config.js?v=3"></script>
   <script src="assets/js/supercompress.js?v=1"></script>
   <script src="/assets/js/dither-kit-lite.js?v=12"></script>
-  <script src="/assets/js/analytics-data.js?v=3"></script>
-  <script src="/assets/js/dashboard-analytics.js?v=5"></script>
-  <script type="module" src="assets/js/dashboard-api.js?v=36"></script>
+  <script src="/assets/js/analytics-data.js?v=4"></script>
+  <script src="/assets/js/dashboard-analytics.js?v=6"></script>
+  <script type="module" src="assets/js/dashboard-api.js?v=37"></script>
   <script src="assets/js/affiliate-track.js?v=1"></script>
   <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>

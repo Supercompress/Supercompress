@@ -23,6 +23,8 @@ Public page: https://www.supercompress.dev/changelog
 - Keep user emails / outreach dumps / welcome-drain ops **out of OSS** (gitignore + CI PII gate); drain scripts live under `~/agent-bridge/private/supercompress-email/`
 
 ### API / dashboard
+- Analytics: charts animate in; reuse signed-in keys cache for faster panel open; month-meter gaps spread across the month (not a single today spike)
+- Coding agents use real logos when detected; billing free-allowance bar is Bayer-dithered
 - Auto branded **power-user email** when someone *newly* crosses 1M tokens (once ever; no backfill of current 1M+ accounts)
 - **Dashboard Analytics panel** (dither charts): live usage from `/api/keys` after sign-in — tokens saved, requests, coding agents, and key breakdown. `/analytics` stays inside `/dashboard?panel=analytics`.
 - Fix Analytics chart paint: Bayer wells + stacked dither canvases, wait for layout before draw, no demo/fake flash on production.

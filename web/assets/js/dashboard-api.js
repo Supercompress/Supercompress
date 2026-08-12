@@ -472,7 +472,7 @@ function renderCodingAgents() {
       const savedPct = a.tokens_in > 0 ? Math.round((a.tokens_saved / a.tokens_in) * 100) : 0;
       const icon = agentIcon(name);
       return `<tr>
-        <td><strong>${icon} ${escapeHtml(name)}</strong></td>
+        <td><strong class="sc-agent-cell">${icon}<span>${escapeHtml(name)}</span></strong></td>
         <td>${a.requests || 0}</td>
         <td>${n(a.tokens_in || 0)}</td>
         <td>${n(a.tokens_out || 0)}</td>
@@ -485,26 +485,26 @@ function renderCodingAgents() {
 }
 
 function agentIcon(name) {
-  const key = String(name || "").toLowerCase().replace(/_/g, "-");
+  const logo =
+    (window.SCAnalyticsData && typeof window.SCAnalyticsData.agentLogoHtml === "function"
+      ? window.SCAnalyticsData.agentLogoHtml(name, { size: 16 })
+      : "") || "";
+  if (logo) return logo;
+  const key = String(name || "").toLowerCase().replace(/_/g, "-").replace(/\s+/g, "-");
   const icons = {
-    cursor: "🖱️",
-    windsurf: "🏄",
     continue: "▶️",
     cline: "🤖",
-    "claude-code": "🧠",
     aider: "🤝",
-    copilot: "👻",
-    codex: "📝",
     mcp: "🔌",
-    "openai-client": "🔵",
     "api-client": "🔌",
   };
-  return icons[key] || "⚡";
+  return icons[key] || "";
 }
 
 async function loadKeys() {
   try {
     const data = await apiFetch("/api/keys");
+    window.__scLastKeysPayload = data;
     keysData = data.keys || [];
     usageData = data.usage || {};
     accountUsage = data.account_usage || null;
@@ -870,6 +870,58 @@ function renderPaygNudge(sub) {
   }
 }
 
+function paintBillingUsageDither() {
+  const BAYER4 = [
+    [0, 8, 2, 10],
+    [12, 4, 14, 6],
+    [3, 11, 1, 9],
+    [15, 7, 13, 5],
+  ];
+  const fill = document.querySelector(".dash-billing-usage-fill");
+  if (!fill) return;
+  const canvas = fill.querySelector("canvas.dash-billing-usage-dither");
+  if (!canvas) return;
+  const pct = Math.max(0, Math.min(100, Number(fill.getAttribute("data-pct") || 0)));
+  const tone = fill.classList.contains("dash-billing-usage-fill--full")
+    ? [239, 68, 68]
+    : fill.classList.contains("dash-billing-usage-fill--high")
+      ? [245, 158, 11]
+      : [5, 102, 255];
+  const paint = () => {
+    const cssW = Math.max(1, Math.round(fill.clientWidth || 1));
+    const cssH = Math.max(1, Math.round(fill.clientHeight || 8));
+    const cell = 2;
+    const w = Math.max(1, Math.floor(cssW / cell));
+    const h = Math.max(1, Math.floor(cssH / cell));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const [r, g, b] = tone;
+    ctx.clearRect(0, 0, w, h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const edge = w > 1 ? x / (w - 1) : 1;
+        const density = 0.22 + edge * 0.7;
+        const t = (BAYER4[y & 3][x & 3] + 0.5) / 16;
+        if (t < density) {
+          ctx.fillStyle = `rgb(${r},${g},${b})`;
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+  };
+  requestAnimationFrame(paint);
+  if (!paintBillingUsageDither._bound) {
+    paintBillingUsageDither._bound = true;
+    window.addEventListener("resize", () => paintBillingUsageDither(), { passive: true });
+  }
+  // silence unused pct — width already encodes usage; density uses full fill
+  void pct;
+}
+
 function renderActivationChecklist() {
   /* Activation checklist removed from dashboard UI. */
 }
@@ -945,7 +997,9 @@ function renderSubscription(sub) {
         <span>${pct}%</span>
       </div>
       <div class="dash-billing-usage-track">
-        <div class="dash-billing-usage-fill ${fillClass}" style="width:${pct}%"></div>
+        <div class="dash-billing-usage-fill ${fillClass}" style="width:${pct}%" data-pct="${pct}" aria-hidden="true">
+          <canvas class="dash-billing-usage-dither"></canvas>
+        </div>
       </div>
     </div>
     ${creditWallet || hasCreditBalance
@@ -961,6 +1015,7 @@ function renderSubscription(sub) {
   `;
 
   $("btn-paywall-unlock")?.addEventListener("click", () => handleEnablePayg());
+  paintBillingUsageDither();
   // Update plan cards
   document.querySelectorAll(".dash-plan-card").forEach((card) => {
     const plan = card.dataset.plan;
