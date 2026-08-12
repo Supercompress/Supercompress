@@ -339,6 +339,55 @@ function mergeLiveClaims(freshCustomClaims, staleClaims = {}) {
   return { ...(staleClaims || {}), ...(freshCustomClaims || {}) };
 }
 
+const AUTH_CLAIMS_MAX_BYTES = 1000;
+
+function claimsByteLength(claims) {
+  return Buffer.byteLength(JSON.stringify(claims || {}));
+}
+
+/** Firebase custom claims cap at 1000 bytes — drop bulky non-ledger fields to fit. */
+function fitCustomClaims(claims) {
+  const next = { ...(claims || {}) };
+  const steps = [
+    () => {
+      delete next.sc_agent_plugin;
+    },
+    () => {
+      if (Array.isArray(next.sc_recent_billing)) next.sc_recent_billing = next.sc_recent_billing.slice(0, 1);
+    },
+    () => {
+      delete next.sc_recent_billing;
+    },
+    () => {
+      if (Array.isArray(next.sc_key_ids)) next.sc_key_ids = next.sc_key_ids.slice(-2);
+    },
+    () => {
+      delete next.sc_key_ids;
+    },
+    () => {
+      delete next.sc_plan_updated;
+    },
+    () => {
+      if (Array.isArray(next.sc_credited_sessions)) {
+        next.sc_credited_sessions = next.sc_credited_sessions.slice(-8);
+      }
+    },
+  ];
+  let i = 0;
+  while (claimsByteLength(next) > AUTH_CLAIMS_MAX_BYTES && i < steps.length) {
+    steps[i++]();
+  }
+  return next;
+}
+
+async function setBillingClaims(uid, claims) {
+  const fitted = fitCustomClaims(claims);
+  if (claimsByteLength(fitted) > AUTH_CLAIMS_MAX_BYTES) {
+    throw billingError("billing_unavailable", "Billing claims payload too large");
+  }
+  await admin().auth().setCustomUserClaims(uid, fitted);
+}
+
 /**
  * When Cloud Firestore is disabled/unavailable, bill via Auth claims only.
  * Replay text is not stored (claims size); retries recompress but do not
@@ -403,9 +452,9 @@ async function applyUsageAndBurnClaimsFallback({
       t: Date.now(),
     },
     ...recent,
-  ].slice(0, 5);
+  ].slice(0, 2);
 
-  await admin().auth().setCustomUserClaims(uid, {
+  await setBillingClaims(uid, {
     ...liveClaims,
     sc_usage: {
       month: planned.ledger.month,
@@ -889,7 +938,7 @@ async function creditBalanceClaimsFallback({
         }
       : {};
 
-  await admin().auth().setCustomUserClaims(uid, {
+  await setBillingClaims(uid, {
     ...liveClaims,
     sc_plan: liveClaims.sc_plan || "payg",
     sc_metered: false,
