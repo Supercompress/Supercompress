@@ -610,9 +610,98 @@ async function applyUsageAndBurn({
 }
 
 /**
+ * When Cloud Firestore is disabled/unavailable, credit via Auth claims only.
+ * Idempotent on sc_credited_sessions / credited_keys. First-pay bonus uses
+ * sc_first_pay_bonus_at (weaker than Firestore billing_bonus, but keeps Checkout
+ * from silently charging without balance when Firestore is down).
+ */
+async function creditBalanceClaimsFallback({
+  uid,
+  creditUsd,
+  creditKey,
+  claims = {},
+  patch = {},
+  firstPayBonusUsd = 0,
+}) {
+  const key = String(creditKey);
+  const fresh = await admin().auth().getUser(uid);
+  const liveClaims = { ...(fresh.customClaims || {}), ...claims };
+  const credited = Array.isArray(liveClaims.sc_credited_sessions)
+    ? liveClaims.sc_credited_sessions
+    : [];
+  const ledger = normalizeLedger(null, liveClaims);
+  const keys = Array.isArray(ledger.credited_keys) ? ledger.credited_keys : [];
+
+  if (credited.includes(key) || keys.includes(key)) {
+    return {
+      applied: true,
+      already: true,
+      ledger,
+      balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
+      credit_usd: 0,
+      bonus_usd: 0,
+      backend: "claims-fallback",
+    };
+  }
+
+  const paymentUsd = Number(creditUsd) || 0;
+  const wantBonus = Math.max(0, Number(firstPayBonusUsd) || 0);
+  const bonusUsd = wantBonus > 0 && !liveClaims.sc_first_pay_bonus_at ? wantBonus : 0;
+  const add = usdToMicros(paymentUsd + bonusUsd);
+  ledger.credit_balance_micros = Number(ledger.credit_balance_micros || 0) + add;
+  if (patch.credit_limit_usd != null) {
+    ledger.credit_limit_usd = normalizeCreditLimitUsd(patch.credit_limit_usd);
+  }
+  if (patch.auto_recharge != null) ledger.auto_recharge = Boolean(patch.auto_recharge);
+  if (patch.customer_id) ledger.customer_id = patch.customer_id;
+  ledger.credited_keys = [...keys.filter((k) => k !== key).slice(-39), key];
+  ledger.updated_at = new Date().toISOString();
+
+  const nextCredited = [...credited.filter((k) => k !== key).slice(-39), key];
+  const bonusPatch =
+    bonusUsd > 0
+      ? {
+          sc_first_pay_bonus_at: new Date().toISOString(),
+          sc_first_pay_bonus_usd: bonusUsd,
+        }
+      : {};
+
+  await admin().auth().setCustomUserClaims(uid, {
+    ...liveClaims,
+    sc_plan: liveClaims.sc_plan || "payg",
+    sc_metered: false,
+    sc_usage: {
+      month: ledger.month,
+      requests: ledger.requests,
+      tokens_in: ledger.tokens_in,
+      tokens_out: ledger.tokens_out,
+      tokens_saved: ledger.tokens_saved,
+      tokens_reported: ledger.tokens_reported || 0,
+    },
+    sc_credit_balance_usd: roundUsd(microsToUsd(ledger.credit_balance_micros)),
+    sc_credit_limit_usd: ledger.credit_limit_usd,
+    sc_auto_recharge: Boolean(ledger.auto_recharge),
+    sc_credited_sessions: nextCredited,
+    ...(ledger.customer_id ? { sc_customer_id: ledger.customer_id } : {}),
+    ...bonusPatch,
+  });
+
+  return {
+    applied: true,
+    already: false,
+    ledger,
+    balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
+    credit_usd: paymentUsd,
+    bonus_usd: bonusUsd,
+    backend: "claims-fallback",
+  };
+}
+
+/**
  * Credit prepaid balance. Idempotent via permanent billing_credits/{creditKey}.
  * Optional first-pay bonus is create-once via billing_bonus/{uid}:first_pay
  * (not Auth claims — avoids concurrent Checkout double-bonus races).
+ * Falls back to Auth claims when Cloud Firestore is disabled/unavailable.
  *
  * @param {number} [firstPayBonusUsd=0] candidate bonus; txn grants at most once ever
  */
@@ -632,73 +721,90 @@ async function creditBalance({
   const bonusRef = db().collection("billing_bonus").doc(`${uid}:first_pay`);
   const wantBonus = Math.max(0, Number(firstPayBonusUsd) || 0);
 
-  const result = await db().runTransaction(async (tx) => {
-    const creditSnap = await tx.get(creditRef);
-    const bonusSnap = wantBonus > 0 ? await tx.get(bonusRef) : null;
-    const snap = await tx.get(ref);
-    const ledger = normalizeLedger(snap.exists ? snap.data() : null, claims);
+  let result;
+  try {
+    result = await db().runTransaction(async (tx) => {
+      const creditSnap = await tx.get(creditRef);
+      const bonusSnap = wantBonus > 0 ? await tx.get(bonusRef) : null;
+      const snap = await tx.get(ref);
+      const ledger = normalizeLedger(snap.exists ? snap.data() : null, claims);
 
-    if (creditSnap.exists) {
-      const prevCredit = creditSnap.data() || {};
-      return {
-        applied: true,
-        already: true,
-        ledger,
-        balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
-        credit_usd: Number(prevCredit.credit_usd || 0),
-        bonus_usd: Number(prevCredit.bonus_usd || 0),
-      };
-    }
+      if (creditSnap.exists) {
+        const prevCredit = creditSnap.data() || {};
+        return {
+          applied: true,
+          already: true,
+          ledger,
+          balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
+          credit_usd: Number(prevCredit.credit_usd || 0),
+          bonus_usd: Number(prevCredit.bonus_usd || 0),
+        };
+      }
 
-    let bonusUsd = 0;
-    if (wantBonus > 0 && bonusSnap && !bonusSnap.exists) {
-      bonusUsd = wantBonus;
+      let bonusUsd = 0;
+      if (wantBonus > 0 && bonusSnap && !bonusSnap.exists) {
+        bonusUsd = wantBonus;
+        tx.set(
+          bonusRef,
+          {
+            uid,
+            kind: "first_pay",
+            credit_usd: bonusUsd,
+            credit_key: String(creditKey),
+            created_at: new Date().toISOString(),
+          },
+          { merge: false }
+        );
+      }
+
+      const paymentUsd = Number(creditUsd) || 0;
+      const totalUsd = paymentUsd + bonusUsd;
+      const add = usdToMicros(totalUsd);
+      ledger.credit_balance_micros = Number(ledger.credit_balance_micros || 0) + add;
+      if (patch.credit_limit_usd != null) {
+        ledger.credit_limit_usd = normalizeCreditLimitUsd(patch.credit_limit_usd);
+      }
+      if (patch.auto_recharge != null) ledger.auto_recharge = Boolean(patch.auto_recharge);
+      if (patch.customer_id) ledger.customer_id = patch.customer_id;
+      const keys = Array.isArray(ledger.credited_keys) ? ledger.credited_keys : [];
+      ledger.credited_keys = [...keys.filter((k) => k !== creditKey).slice(-39), creditKey];
+      ledger.updated_at = new Date().toISOString();
+
       tx.set(
-        bonusRef,
+        creditRef,
         {
           uid,
-          kind: "first_pay",
-          credit_usd: bonusUsd,
-          credit_key: String(creditKey),
+          credit_usd: paymentUsd,
+          bonus_usd: bonusUsd,
           created_at: new Date().toISOString(),
         },
         { merge: false }
       );
-    }
-
-    const paymentUsd = Number(creditUsd) || 0;
-    const totalUsd = paymentUsd + bonusUsd;
-    const add = usdToMicros(totalUsd);
-    ledger.credit_balance_micros = Number(ledger.credit_balance_micros || 0) + add;
-    if (patch.credit_limit_usd != null) {
-      ledger.credit_limit_usd = normalizeCreditLimitUsd(patch.credit_limit_usd);
-    }
-    if (patch.auto_recharge != null) ledger.auto_recharge = Boolean(patch.auto_recharge);
-    if (patch.customer_id) ledger.customer_id = patch.customer_id;
-    const keys = Array.isArray(ledger.credited_keys) ? ledger.credited_keys : [];
-    ledger.credited_keys = [...keys.filter((k) => k !== creditKey).slice(-39), creditKey];
-    ledger.updated_at = new Date().toISOString();
-
-    tx.set(
-      creditRef,
-      {
-        uid,
+      tx.set(ref, ledger, { merge: true });
+      return {
+        applied: true,
+        already: false,
+        ledger,
+        balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
         credit_usd: paymentUsd,
         bonus_usd: bonusUsd,
-        created_at: new Date().toISOString(),
-      },
-      { merge: false }
+      };
+    });
+  } catch (err) {
+    console.warn(
+      "billing-ledger: credit txn failed — claims credit fallback:",
+      err?.code,
+      err?.message || err
     );
-    tx.set(ref, ledger, { merge: true });
-    return {
-      applied: true,
-      already: false,
-      ledger,
-      balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
-      credit_usd: paymentUsd,
-      bonus_usd: bonusUsd,
-    };
-  });
+    return creditBalanceClaimsFallback({
+      uid,
+      creditUsd,
+      creditKey,
+      claims,
+      patch,
+      firstPayBonusUsd,
+    });
+  }
 
   // Patch payg flags only when this credit actually applied (not on replay).
   if (result.applied && !result.already) {
