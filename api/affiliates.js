@@ -12,7 +12,7 @@
  */
 
 const crypto = require("crypto");
-const { json, readBody, checkRateLimit, jsonWithRateLimit } = require("./_lib/http");
+const { json, readBody, checkRateLimit, jsonWithRateLimit, softProbe, hasAuthCredentials } = require("./_lib/http");
 const { loadStore, mutateStore } = require("./_lib/store");
 const { verifyUser } = require("./_lib/auth");
 const { checkDurableRateLimit } = require("./_lib/rate-limit-durable");
@@ -178,7 +178,7 @@ module.exports = async (req, res) => {
     return handleList(req, res);
   }
 
-  return json(res, 405, { detail: "Method not allowed" });
+  return softProbe(res, "Method not allowed", { allow: "GET, POST" });
 };
 
 /* ── Public register (from affiliates.html) ── */
@@ -187,10 +187,11 @@ async function handlePublicRegister(req, res, body) {
   try {
     const { name, email, website, audience } = body;
     if (!name || !email) {
-      return json(res, 400, { detail: "Name and email are required." });
+      // Empty scanner POSTs — soft 200 (Observability error rate).
+      return softProbe(res, "Name and email are required.");
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return json(res, 400, { detail: "Invalid email address." });
+      return softProbe(res, "Invalid email address.");
     }
 
     const cleanName = name.trim().slice(0, 120);
@@ -316,6 +317,9 @@ async function handleClaim(req, res, body) {
     try {
       user = await verifyUser(req);
     } catch {
+      if (!hasAuthCredentials(req)) {
+        return softProbe(res, "Sign in required to claim a referral.", { auth: "required" });
+      }
       return json(res, 401, { detail: "Sign in required to claim a referral." });
     }
 
@@ -517,6 +521,9 @@ async function handleMeView(req, res) {
 
     return json(res, 200, { affiliate, stats, is_founder: isFounder });
   } catch (err) {
+    if ((err.status || 401) === 401 && !hasAuthCredentials(req)) {
+      return softProbe(res, err.message || "Authorization required", { auth: "required" });
+    }
     return json(res, err.status || 500, {
       detail: err.message || "Failed to get stats.",
     });
@@ -576,6 +583,9 @@ async function handleAdminView(req, res) {
       ),
     });
   } catch (err) {
+    if ((err.status || 401) === 401 && !hasAuthCredentials(req)) {
+      return softProbe(res, err.message || "Authorization required", { auth: "required" });
+    }
     return json(res, err.status || 500, {
       detail: err.message || "Failed to load admin view.",
     });

@@ -2,7 +2,7 @@
  * Public demo compress — compiler mode, no API key.
  * Rate-limited: 30 req/min per IP (memory + durable when Firestore is up).
  */
-const { json, jsonWithRateLimit, checkRateLimit, clientIp, readBody } = require("../_lib/http");
+const { json, jsonWithRateLimit, checkRateLimit, clientIp, readBody, softProbe } = require("../_lib/http");
 const { checkDurableRateLimit } = require("../_lib/rate-limit-durable");
 const { compressAdaptive, getEngine } = require("../_lib/engine");
 
@@ -31,7 +31,9 @@ function envForTokenCount(tokenCount) {
 
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
-  if (req.method !== "POST") return json(res, 405, { detail: "Method not allowed" });
+  if (req.method !== "POST") {
+    return softProbe(res, "Method not allowed", { allow: "POST" });
+  }
 
   // ── Rate limit by IP (memory + durable when available) ──
   const ip = clientIp(req);
@@ -63,7 +65,9 @@ module.exports = async (req, res) => {
     const context = body.context || "";
     const query = body.query || "Summarize this context.";
 
-    if (!context.trim()) return jsonWithRateLimit(res, 422, { detail: "context required" }, rl);
+    if (!context.trim()) {
+      return softProbe(res, "context required");
+    }
     if (context.length > DEMO_MAX_CHARS) return jsonWithRateLimit(res, 422, {
       detail: `context too long (${DEMO_MAX_CHARS / 1000}k max for demo)`
     }, rl);

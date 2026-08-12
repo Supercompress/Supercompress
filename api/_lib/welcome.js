@@ -29,6 +29,17 @@ function drainSecretOk(req, body = {}) {
   return false;
 }
 
+/** True when the request *attempted* drain auth (vs scanner with nothing). */
+function hasDrainCredentials(req, body = {}) {
+  if (typeof req.query?.secret === "string" && req.query.secret.trim()) return true;
+  if (body && typeof body.secret === "string" && body.secret.trim()) return true;
+  if (req.headers?.["x-welcome-secret"] && String(req.headers["x-welcome-secret"]).trim()) return true;
+  if (req.headers?.["x-vercel-cron"] === "1") return true;
+  const auth = String(req.headers?.authorization || "");
+  if (auth.toLowerCase().startsWith("bearer ") && auth.slice(7).trim()) return true;
+  return false;
+}
+
 function firstNameFromUser(user) {
   const raw = user.displayName || user.name || "";
   if (raw && String(raw).trim()) return String(raw).trim().split(/\s+/)[0];
@@ -190,6 +201,7 @@ async function drainPendingWelcomes() {
 
 module.exports = {
   drainSecretOk,
+  hasDrainCredentials,
   handleSignupWelcome,
   listPendingWelcomes,
   markWelcome,
