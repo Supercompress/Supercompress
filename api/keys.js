@@ -1,4 +1,4 @@
-const { json } = require("./_lib/http");
+const { json, softProbe, hasAuthCredentials } = require("./_lib/http");
 const { verifyUser } = require("./_lib/auth");
 const { getPlan } = require("./_lib/stripe");
 const { listKeys, createKey } = require("./_lib/firebase-key-store");
@@ -55,8 +55,13 @@ module.exports = async (req, res) => {
       return json(res, 200, await createKey(user.uid, name, plan.max_keys));
     }
 
-    return json(res, 405, { detail: "Method not allowed" });
+    return softProbe(res, "Method not allowed", { allow: "GET, POST" });
   } catch (err) {
-    return json(res, err.status || 500, { detail: err.message });
+    const status = err.status || 500;
+    // Scanner GETs/POSTs without auth — soft 200 (Vercel Observability error rate).
+    if (status === 401 && !hasAuthCredentials(req)) {
+      return softProbe(res, err.message || "Authorization required", { auth: "required" });
+    }
+    return json(res, status, { detail: err.message });
   }
 };

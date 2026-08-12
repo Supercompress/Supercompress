@@ -56,6 +56,8 @@ jobs:
         run: node api/_lib/billing-ledger.test.js
       - name: Coding agent monthly usage unit tests
         run: node api/_lib/coding-agent-usage.test.js
+      - name: Soft-probe unit tests
+        run: node api/_lib/http-soft-probe.test.js
       - name: Power-user milestone unit tests
         run: node api/_lib/power-user.test.js
       - name: Analytics aggregation unit tests

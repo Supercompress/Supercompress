@@ -1,4 +1,4 @@
-const { json } = require("./_lib/http");
+const { json, softProbe } = require("./_lib/http");
 
 function normalizeDomain(value) {
   const raw = String(value || '').trim();
@@ -60,6 +60,6 @@ async function scoreWithContextDev(req, res) {
 module.exports = (req, res) => {
   if (req.query?.op === 'aiscore') return scoreWithContextDev(req, res);
   if (req.method === "OPTIONS") return json(res, 204, {});
-  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
+  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
   return json(res, 200, { ok: true, service: "supercompress-vercel" });
 };

@@ -30,10 +30,17 @@ function readRawBody(req) {
 
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") { corsHeaders(res); return res.status(204).end(); }
-  if (req.method !== "POST") { corsHeaders(res); return res.status(405).json({ detail: "Method not allowed" }); }
+  // Scanner GETs / missing signature — soft 200 (Vercel Observability error rate).
+  if (req.method !== "POST") {
+    corsHeaders(res);
+    return res.status(200).json({ ok: false, probe: true, detail: "Method not allowed", allow: "POST" });
+  }
 
   const sig = req.headers["stripe-signature"];
-  if (!sig) { corsHeaders(res); return res.status(400).json({ detail: "Missing Stripe-Signature header" }); }
+  if (!sig) {
+    corsHeaders(res);
+    return res.status(200).json({ ok: false, probe: true, detail: "Missing Stripe-Signature header" });
+  }
 
   const webhookSecret = (process.env.STRIPE_WEBHOOK_SECRET || "").trim();
   if (!webhookSecret) { corsHeaders(res); return res.status(503).json({ detail: "Webhook secret not configured" }); }

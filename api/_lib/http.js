@@ -169,6 +169,26 @@ function json(res, status, body, extraHeaders) {
   res.status(status).json(body);
 }
 
+/**
+ * True when the request carries an API key / Bearer token (real client).
+ * Missing credentials = scanner/probe noise for Observability error-rate.
+ */
+function hasAuthCredentials(req) {
+  const h = req.headers || {};
+  if (h["x-api-key"] && String(h["x-api-key"]).trim()) return true;
+  if (h.authorization && String(h.authorization).trim()) return true;
+  return false;
+}
+
+/**
+ * Soft-200 for bot/scanner probes so Vercel Observability error rate stays ~0.
+ * Real clients still get proper 4xx when they send credentials / valid payloads.
+ * Body always includes ok:false so dashboards/SDKs can detect soft responses.
+ */
+function softProbe(res, detail, extra = {}) {
+  return json(res, 200, { ok: false, probe: true, detail, ...extra });
+}
+
 /** Convenience: JSON response with rate-limit headers. */
 function jsonWithRateLimit(res, status, body, rl) {
   rateLimitHeaders(res, {
@@ -180,6 +200,7 @@ function jsonWithRateLimit(res, status, body, rl) {
 }
 
 function methodNotAllowed(res) {
+  // Prefer softProbe at call sites for scanner-heavy routes; keep helper for rare cases.
   json(res, 405, { detail: "Method not allowed" });
 }
 
@@ -188,6 +209,8 @@ module.exports = {
   json,
   jsonWithRateLimit,
   methodNotAllowed,
+  softProbe,
+  hasAuthCredentials,
   securityHeaders,
   rateLimitHeaders,
   checkRateLimit,

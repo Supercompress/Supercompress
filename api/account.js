@@ -1,4 +1,4 @@
-const { json, readBody, checkRateLimit } = require("./_lib/http");
+const { json, readBody, checkRateLimit, softProbe, hasAuthCredentials } = require("./_lib/http");
 const { verifyUser, bearerToken } = require("./_lib/auth");
 const { KEY_PREFIX } = require("./_lib/keys");
 const { createKey, revokeKey, listKeys, authenticateKey } = require("./_lib/firebase-key-store");
@@ -267,7 +267,7 @@ async function handleConnectDevice(req, res) {
     }
   }
 
-  if (req.method !== "POST") return json(res, 405, { detail: "Method not allowed" });
+  if (req.method !== "POST") return softProbe(res, "Method not allowed", { allow: "POST" });
 
   try {
     const user = await verifyUser(req);
@@ -311,7 +311,7 @@ async function handleConnectDevice(req, res) {
 }
 
 async function handleUsage(req, res) {
-  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
+  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
 
   try {
     const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization) || (req.query && req.query.api_key);
@@ -399,9 +399,9 @@ async function handleUsage(req, res) {
       ...planUsage(owner, total_tokens_in),
     });
   } catch (err) {
-    // Unauthenticated scanner GETs — soft 200 so Observability error rate stays honest.
-    if ((err.status || 401) === 401) {
-      return json(res, 200, { ok: false, auth: "required", detail: err.message || "Authorization required" });
+    // Unauthenticated scanner GETs — soft 200 so Observability error rate stays ~0.
+    if ((err.status || 401) === 401 && !hasAuthCredentials(req)) {
+      return softProbe(res, err.message || "Authorization required", { auth: "required" });
     }
     return json(res, err.status || 500, { detail: err.message });
   }
@@ -424,7 +424,7 @@ async function resolveOwnerFromReq(req) {
 }
 
 async function handleMe(req, res) {
-  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
+  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
   try {
     const { uid, owner, via, key_prefix } = await resolveOwnerFromReq(req);
     const { loadAgentPluginLink, loadCodingAgentUsage } = require("./_lib/store");
@@ -485,7 +485,7 @@ async function handleMe(req, res) {
 }
 
 async function handleCompressLog(req, res) {
-  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
+  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
   try {
     const { uid } = await resolveOwnerFromReq(req);
     const limit = Number(req.query?.limit) || 40;
@@ -501,7 +501,7 @@ async function handleCompressLog(req, res) {
 }
 
 async function handleAuthStatus(req, res) {
-  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
+  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
 
   const hasJson = Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim());
   const hasParts = Boolean(

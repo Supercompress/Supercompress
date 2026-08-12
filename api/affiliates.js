@@ -12,7 +12,7 @@
  */
 
 const crypto = require("crypto");
-const { json, readBody } = require("./_lib/http");
+const { json, readBody, softProbe } = require("./_lib/http");
 const { loadStore, mutateStore } = require("./_lib/store");
 const { verifyUser } = require("./_lib/auth");
 
@@ -148,7 +148,7 @@ module.exports = async (req, res) => {
     return handleList(req, res);
   }
 
-  return json(res, 405, { detail: "Method not allowed" });
+  return softProbe(res, "Method not allowed", { allow: "GET, POST" });
 };
 
 /* ── Public register (from affiliates.html) ── */
@@ -157,10 +157,11 @@ async function handlePublicRegister(req, res, body) {
   try {
     const { name, email, website, audience } = body;
     if (!name || !email) {
-      return json(res, 400, { detail: "Name and email are required." });
+      // Empty scanner POSTs — soft 200 (Observability error rate).
+      return softProbe(res, "Name and email are required.");
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return json(res, 400, { detail: "Invalid email address." });
+      return softProbe(res, "Invalid email address.");
     }
 
     const cleanName = name.trim().slice(0, 120);

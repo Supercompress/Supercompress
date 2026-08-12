@@ -2,7 +2,7 @@
  * Public demo compress — compiler mode, no API key.
  * Rate-limited: 30 req/min per IP.
  */
-const { json, jsonWithRateLimit, checkRateLimit, clientIp, readBody } = require("../_lib/http");
+const { json, jsonWithRateLimit, checkRateLimit, clientIp, readBody, softProbe } = require("../_lib/http");
 const { compressAdaptive, getEngine } = require("../_lib/engine");
 
 const DEMO_RPM = 30;
@@ -29,7 +29,9 @@ function envForTokenCount(tokenCount) {
 
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
-  if (req.method !== "POST") return json(res, 405, { detail: "Method not allowed" });
+  if (req.method !== "POST") {
+    return softProbe(res, "Method not allowed", { allow: "POST" });
+  }
 
   // ── Rate limit by IP ──
   const ip = clientIp(req);
@@ -46,7 +48,14 @@ module.exports = async (req, res) => {
     const context = body.context || "";
     const query = body.query || "Summarize this context.";
 
-    if (!context.trim()) return jsonWithRateLimit(res, 422, { detail: "context required" }, rl);
+    // Empty-body scanner POSTs — soft 200 (Observability error rate).
+    if (!context.trim()) {
+      return jsonWithRateLimit(res, 200, {
+        ok: false,
+        probe: true,
+        detail: "context required",
+      }, rl);
+    }
     if (context.length > 80_000) return jsonWithRateLimit(res, 422, {
       detail: "context too long (80k max for demo)"
     }, rl);

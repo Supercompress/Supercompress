@@ -3,7 +3,7 @@
  * Authenticated compression endpoint.
  * Rate-limited: 120 req/min per API key + monthly plan token limit.
  */
-const { json, jsonWithRateLimit, checkRateLimit, clientIp, readBody } = require("../_lib/http");
+const { json, jsonWithRateLimit, checkRateLimit, clientIp, readBody, softProbe, hasAuthCredentials } = require("../_lib/http");
 const { enforceRateLimits } = require("../_lib/rate-limit-durable");
 const { bearerToken } = require("../_lib/auth");
 const { KEY_PREFIX } = require("../_lib/keys");
@@ -159,14 +159,16 @@ function stripRetrieveMarkers(text) {
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
   // Compression is POST-only — never accept API keys or context in query strings.
+  // Scanner GETs must not inflate Vercel Observability error rate.
   if (req.method === "GET") {
-    return json(res, 405, {
-      ok: false,
-      detail: "Use POST /api/v1/compress with X-API-Key (or Authorization: Bearer). Query-string keys/context are not supported.",
-      allow: "POST",
-    });
+    return softProbe(res,
+      "Use POST /api/v1/compress with X-API-Key (or Authorization: Bearer). Query-string keys/context are not supported.",
+      { allow: "POST" }
+    );
   }
-  if (req.method !== "POST") return json(res, 405, { detail: "Method not allowed" });
+  if (req.method !== "POST") {
+    return softProbe(res, "Method not allowed", { allow: "POST" });
+  }
 
   const requestStarted = Date.now();
   // Leave headroom under function maxDuration (60s for this route) for response flush.
@@ -176,6 +178,10 @@ module.exports = async (req, res) => {
   try {
     const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization);
     if (!raw || !raw.startsWith(KEY_PREFIX)) {
+      // No credentials at all = probe; present-but-wrong = real 401 for SDKs.
+      if (!hasAuthCredentials(req)) {
+        return softProbe(res, "Missing or invalid API key", { auth: "required" });
+      }
       return json(res, 401, { detail: "Missing or invalid API key" });
     }
 

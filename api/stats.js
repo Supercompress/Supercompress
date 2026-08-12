@@ -5,7 +5,7 @@
  * reinstalls inflate that number. Signed-up users = Firebase Auth accounts
  * with an email (real humans who finished dashboard / setup connect).
  */
-const { json } = require("./_lib/http");
+const { json, softProbe } = require("./_lib/http");
 const { initFirebaseAdmin } = require("./_lib/auth");
 const admin = require("firebase-admin");
 
@@ -50,7 +50,7 @@ function fmtDownloads(n) {
 
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
-  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
+  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
 
   try {
     if (cache.payload && Date.now() - cache.at < CACHE_MS) {

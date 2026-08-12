@@ -23,6 +23,7 @@ Public page: https://www.supercompress.dev/changelog
 - Keep user emails / outreach dumps / welcome-drain ops **out of OSS** (gitignore + CI PII gate); drain scripts live under `~/agent-bridge/private/supercompress-email/`
 
 ### API / dashboard
+- Soft-200 scanner/probe noise (`softProbe`) so Vercel Observability error rate stays ~0; real clients with credentials still get proper 4xx
 - Auto branded **power-user email** when someone *newly* crosses 1M tokens (once ever; no backfill of current 1M+ accounts)
 - **Dashboard Analytics panel** (dither charts): live usage from `/api/keys` after sign-in — tokens saved, requests, coding agents, and key breakdown. `/analytics` stays inside `/dashboard?panel=analytics`.
 - Fix Analytics chart paint: Bayer wells + stacked dither canvases, wait for layout before draw, no demo/fake flash on production.
