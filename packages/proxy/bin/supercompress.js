@@ -91,7 +91,8 @@ async function connectAccount() {
   const connectUrl = `https://www.supercompress.dev/dashboard?connect=${code}&source=cli`;
   try {
     if (process.platform === "win32") {
-      require("child_process").execFileSync("cmd.exe", ["/c", "start", "", connectUrl], { stdio: "ignore" });
+      // Use execSync with a quoted URL so cmd.exe does not split the URL at &
+      require("child_process").execSync(`start "" "${connectUrl}"`, { stdio: "ignore" });
     } else {
       const openCommand = process.platform === "darwin" ? "open" : "xdg-open";
       require("child_process").execFileSync(openCommand, [connectUrl], { stdio: "ignore" });

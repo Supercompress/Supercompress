@@ -122,7 +122,8 @@ async function handleToolCall(name, args = {}) {
     const url = `${CONNECT_URL}${code}`;
     try {
       if (process.platform === "win32") {
-        execFile("cmd.exe", ["/c", "start", "", url]);
+        // Use execSync with a quoted URL so cmd.exe does not split the URL at &
+        require("child_process").execSync(`start "" "${url}"`, { stdio: "ignore" });
       } else {
         const opener = process.platform === "darwin" ? "open" : "xdg-open";
         execFile(opener, [url]);
