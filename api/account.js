@@ -1,4 +1,4 @@
-const { json, readBody, checkRateLimit, softProbe, hasAuthCredentials } = require("./_lib/http");
+const { json, readBody, checkRateLimit } = require("./_lib/http");
 const { verifyUser, bearerToken } = require("./_lib/auth");
 const { KEY_PREFIX } = require("./_lib/keys");
 const { createKey, revokeKey, listKeys, authenticateKey } = require("./_lib/firebase-key-store");
@@ -268,7 +268,7 @@ async function handleConnectDevice(req, res) {
     }
   }
 
-  if (req.method !== "POST") return softProbe(res, "Method not allowed");
+  if (req.method !== "POST") return json(res, 405, { detail: "Method not allowed" });
 
   try {
     const user = await verifyUser(req);
@@ -312,10 +312,10 @@ async function handleConnectDevice(req, res) {
 }
 
 async function handleUsage(req, res) {
-  if (req.method !== "GET") return softProbe(res, "Method not allowed");
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
 
   try {
-    const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization) || (req.query && req.query.api_key);
+    const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization);
     let ownerUid;
     let owner;
     if (raw && raw.startsWith(KEY_PREFIX)) {
@@ -402,14 +402,14 @@ async function handleUsage(req, res) {
   } catch (err) {
     // Unauthenticated scanner GETs — soft 200 so Observability error rate stays honest.
     if ((err.status || 401) === 401) {
-      return json(res, 200, { ok: false, auth: "required", detail: err.message || "Authorization required" });
+      return json(res, 401, { ok: false, auth: "required", detail: err.message || "Authorization required" });
     }
     return json(res, err.status || 500, { detail: err.message });
   }
 }
 
 async function resolveOwnerFromReq(req) {
-  const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization) || (req.query && req.query.api_key);
+  const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization);
   if (raw && String(raw).startsWith(KEY_PREFIX)) {
     const authenticated = await authenticateKey(raw);
     return {
@@ -425,7 +425,7 @@ async function resolveOwnerFromReq(req) {
 }
 
 async function handleMe(req, res) {
-  if (req.method !== "GET") return softProbe(res, "Method not allowed");
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
   try {
     const { uid, owner, via, key_prefix } = await resolveOwnerFromReq(req);
     const { loadAgentPluginLink, loadCodingAgentUsage } = require("./_lib/store");
@@ -479,14 +479,14 @@ async function handleMe(req, res) {
     });
   } catch (err) {
     if ((err.status || 401) === 401) {
-      return json(res, 200, { ok: false, auth: "required", detail: err.message || "Authorization required" });
+      return json(res, 401, { ok: false, auth: "required", detail: err.message || "Authorization required" });
     }
     return json(res, err.status || 500, { detail: err.message });
   }
 }
 
 async function handleCompressLog(req, res) {
-  if (req.method !== "GET") return softProbe(res, "Method not allowed");
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
   try {
     const { uid } = await resolveOwnerFromReq(req);
     const limit = Number(req.query?.limit) || 40;
@@ -495,14 +495,14 @@ async function handleCompressLog(req, res) {
     return json(res, 200, { owner_uid: uid, ...data });
   } catch (err) {
     if ((err.status || 401) === 401) {
-      return json(res, 200, { ok: false, auth: "required", detail: err.message || "Authorization required" });
+      return json(res, 401, { ok: false, auth: "required", detail: err.message || "Authorization required" });
     }
     return json(res, err.status || 500, { detail: err.message });
   }
 }
 
 async function handleAuthStatus(req, res) {
-  if (req.method !== "GET") return softProbe(res, "Method not allowed");
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
 
   const hasJson = Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim());
   const hasParts = Boolean(
@@ -553,10 +553,7 @@ module.exports = async (req, res) => {
     }
   }
   if (op === "welcome-pending" && req.method === "GET") {
-    if (!drainSecretOk(req)) {
-      if (!hasDrainCredentials(req)) return softProbe(res, "Unauthorized", { auth: "required" });
-      return json(res, 401, { detail: "Unauthorized" });
-    }
+    if (!drainSecretOk(req)) return json(res, 401, { detail: "Unauthorized" });
     try {
       const pending = await listPendingWelcomes();
       return json(res, 200, { pending, count: pending.length });
@@ -566,10 +563,7 @@ module.exports = async (req, res) => {
   }
   if (op === "welcome-mark" && req.method === "POST") {
     const body = readBody(req);
-    if (!drainSecretOk(req, body)) {
-      if (!hasDrainCredentials(req, body)) return softProbe(res, "Unauthorized", { auth: "required" });
-      return json(res, 401, { detail: "Unauthorized" });
-    }
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     const uid = String(body.uid || "").trim();
     if (!uid) return json(res, 422, { detail: "uid required" });
     const status = body.status === "failed" ? "failed" : "sent";
@@ -587,10 +581,7 @@ module.exports = async (req, res) => {
   }
   if (op === "welcome-drain" && (req.method === "POST" || req.method === "GET")) {
     const body = req.method === "POST" ? readBody(req) : {};
-    if (!drainSecretOk(req, body)) {
-      if (!hasDrainCredentials(req, body)) return softProbe(res, "Unauthorized", { auth: "required" });
-      return json(res, 401, { detail: "Unauthorized" });
-    }
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     try {
       const result = await drainPendingWelcomes();
       let power_user = null;
@@ -615,10 +606,7 @@ module.exports = async (req, res) => {
   // Weekly product emails to all users
   if (op === "weekly-tick" && (req.method === "POST" || req.method === "GET")) {
     const body = req.method === "POST" ? readBody(req) : {};
-    if (!drainSecretOk(req, body)) {
-      if (!hasDrainCredentials(req, body)) return softProbe(res, "Unauthorized", { auth: "required" });
-      return json(res, 401, { detail: "Unauthorized" });
-    }
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     try {
       const force = String(body.force || req.query?.force || "").trim();
       return json(res, 200, await weeklyTick(force ? { force } : {}));
@@ -628,10 +616,7 @@ module.exports = async (req, res) => {
   }
   if (op === "weekly-enqueue" && (req.method === "POST" || req.method === "GET")) {
     const body = req.method === "POST" ? readBody(req) : {};
-    if (!drainSecretOk(req, body)) {
-      if (!hasDrainCredentials(req, body)) return softProbe(res, "Unauthorized", { auth: "required" });
-      return json(res, 401, { detail: "Unauthorized" });
-    }
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     try {
       const force = String(body.force || req.query?.force || "").trim();
       const defaultId =
@@ -649,10 +634,7 @@ module.exports = async (req, res) => {
     }
   }
   if (op === "weekly-pending" && req.method === "GET") {
-    if (!drainSecretOk(req)) {
-      if (!hasDrainCredentials(req)) return softProbe(res, "Unauthorized", { auth: "required" });
-      return json(res, 401, { detail: "Unauthorized" });
-    }
+    if (!drainSecretOk(req)) return json(res, 401, { detail: "Unauthorized" });
     try {
       // Always include branded HTML — Resend + preview tooling need it (plain text alone looks unstyled).
       const pending = await listPendingWeekly(req.query?.campaign_id || null, {
@@ -669,10 +651,7 @@ module.exports = async (req, res) => {
   }
   if (op === "weekly-drain" && (req.method === "POST" || req.method === "GET")) {
     const body = req.method === "POST" ? readBody(req) : {};
-    if (!drainSecretOk(req, body)) {
-      if (!hasDrainCredentials(req, body)) return softProbe(res, "Unauthorized", { auth: "required" });
-      return json(res, 401, { detail: "Unauthorized" });
-    }
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     try {
       const limit = Number(body.limit || req.query?.limit || 0) || undefined;
       return json(res, 200, {
@@ -685,10 +664,7 @@ module.exports = async (req, res) => {
   }
   if (op === "weekly-mark" && req.method === "POST") {
     const body = readBody(req);
-    if (!drainSecretOk(req, body)) {
-      if (!hasDrainCredentials(req, body)) return softProbe(res, "Unauthorized", { auth: "required" });
-      return json(res, 401, { detail: "Unauthorized" });
-    }
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     const key = String(body.key || "").trim();
     if (!key) return json(res, 422, { detail: "key required" });
     const status = body.status === "failed" ? "failed" : "sent";
@@ -706,10 +682,7 @@ module.exports = async (req, res) => {
   }
   if (op === "weekly-mark-campaign" && req.method === "POST") {
     const body = readBody(req);
-    if (!drainSecretOk(req, body)) {
-      if (!hasDrainCredentials(req, body)) return softProbe(res, "Unauthorized", { auth: "required" });
-      return json(res, 401, { detail: "Unauthorized" });
-    }
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     const campaignId = String(body.campaign_id || "").trim();
     if (!campaignId) return json(res, 422, { detail: "campaign_id required" });
     const status = body.status === "failed" ? "failed" : "sent";
@@ -772,14 +745,6 @@ module.exports = async (req, res) => {
       }
       return json(res, 200, await unsubscribeEmail(email, token));
     } catch (err) {
-      // Scanner / empty query → soft 200 (Observability). Real broken tokens stay 401.
-      const msg = String(err.message || "");
-      if (!email || /invalid email/i.test(msg)) {
-        return softProbe(res, err.message || "Invalid email");
-      }
-      if (!token && !hasAuthCredentials(req)) {
-        return softProbe(res, "Unsubscribe token required", { auth: "required" });
-      }
       // Broken / missing token → tell the client to request a fresh signed link (do not unsub).
       if (err.status === 401 || err.code === "invalid_token") {
         return json(res, 401, {

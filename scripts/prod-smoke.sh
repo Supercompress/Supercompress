@@ -134,9 +134,8 @@ check "auth-status" 200 "$WWW/api/auth-status"
 expect_body "auth-status firestore" '"storage":"firestore"' "$TMP/body"
 check "firebase-config" 200 "$WWW/api/firebase-config"
 expect_body "firebase-config key" 'apiKey' "$TMP/body"
-check "usage requires auth" 200 "$WWW/api/usage"
-expect_body "usage auth" 'auth' "$TMP/body"
-check "billing requires auth" 200 "$WWW/api/billing"
+check "usage requires auth" 401 "$WWW/api/usage"
+check "billing requires auth" 401 "$WWW/api/billing"
 
 # Compress entrypoints (must reject missing key, never 5xx / DEPLOYMENT_NOT_FOUND)
 COMPRESS_JSON='{"context":"production smoke context for supercompress","query":"smoke"}'

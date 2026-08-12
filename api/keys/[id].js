@@ -1,4 +1,4 @@
-const { json, softProbe, hasAuthCredentials } = require("../_lib/http");
+const { json } = require("../_lib/http");
 const { verifyUser } = require("../_lib/auth");
 const {
   getOwnedKey,
@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
 
   const keyId = req.query?.id;
-  if (!keyId) return softProbe(res, "Key id required");
+  if (!keyId) return json(res, 400, { detail: "Key id required" });
 
   try {
     const user = await verifyUser(req);
@@ -36,12 +36,9 @@ module.exports = async (req, res) => {
       return json(res, 200, { revoked: true });
     }
 
-    return softProbe(res, "Method not allowed", { allow: "GET, PATCH, DELETE" });
+    return json(res, 405, { detail: "Method not allowed", allow: "GET, PATCH, DELETE" });
   } catch (err) {
     const status = err.status || 500;
-    if (status === 401 && !hasAuthCredentials(req)) {
-      return softProbe(res, err.message || "Authorization required", { auth: "required" });
-    }
     return json(res, status, { detail: err.message });
   }
 };

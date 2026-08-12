@@ -293,100 +293,106 @@ async function loadLedger(uid, claims = {}) {
     return normalizeLedger(snap.exists ? snap.data() : null, claims);
   } catch (err) {
     if (err.code === "billing_unavailable") throw err;
-    console.warn("billing-ledger load failed — using Auth claims:", err.message || err);
-    return normalizeLedger(null, claims);
+    console.error("billing-ledger load failed (fail-closed):", err.message || err);
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
 }
 
+const IDEMPOTENCY_LEASE_MS = 90_000;
+/** Keep replayable compressed_text this long; billing metadata is retained longer. */
+const REPLAY_TTL_MS = 48 * 60 * 60 * 1000;
+
+function usageDocExpiredReplay(data) {
+  if (!data || !data.response) return true;
+  const created = Date.parse(data.response_expires_at || data.created_at || 0);
+  if (!Number.isFinite(created)) return false;
+  // Prefer explicit expiry; else created_at + TTL
+  if (data.response_expires_at) return Date.now() > created;
+  return Date.now() - created > REPLAY_TTL_MS;
+}
+
 /**
- * When Cloud Firestore is disabled/unavailable, bill via Auth claims only.
- * Do not depend on gist here — gist rate limits caused the outage recovery path
- * to fail. Replay text is not stored (claims size); retries recompress but do
- * not double-bill (request id watermark on claims).
+ * Pre-compression single-flight lease for Idempotency-Key.
+ * @returns {{ status: 'acquired'|'completed'|'pending', data?: object }}
  */
-async function applyUsageAndBurnClaimsFallback({
-  uid,
-  tokensIn,
-  tokensOut,
-  tokensSaved,
-  claims = {},
-  requestId,
-  fingerprint,
-  response = null,
-}) {
+async function reserveIdempotencyLease(uid, requestId, fingerprint) {
   const rid = sanitizeRequestId(requestId);
   const fp = String(fingerprint || "").trim() || null;
-  if (!rid) throw billingError("billing_unavailable", "Billing request id required");
-
-  const fresh = await admin().auth().getUser(uid);
-  const liveClaims = { ...(fresh.customClaims || {}), ...claims };
-  const recent = Array.isArray(liveClaims.sc_recent_billing)
-    ? liveClaims.sc_recent_billing
-    : [];
-  const prior = recent.find((r) => r && r.i === rid);
-  if (prior) {
-    assertUsageIdempotencyMatch(
-      {
-        fingerprint: prior.f || null,
-        tokens_in: prior.tin,
-        tokens_out: prior.tout,
-        tokens_saved: prior.ts,
-      },
-      {
-        fingerprint: fp,
-        tokensIn,
-        tokensOut,
-        tokensSaved,
-      }
-    );
-    return {
-      burned_micros: Number(prior.b || 0),
-      ledger: normalizeLedger(null, liveClaims),
-      already: true,
-      request_id: rid,
-      fingerprint: prior.f || fp || null,
-      response: null,
-      backend: "claims-fallback",
-    };
+  if (!uid || !rid || !initFirebaseAdmin()) {
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
+  const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
+  try {
+    return await db().runTransaction(async (tx) => {
+      const snap = await tx.get(usageRef);
+      const now = Date.now();
+      if (snap.exists) {
+        const prev = snap.data() || {};
+        if (prev.status === "completed" || (prev.response && prev.status !== "pending")) {
+          assertUsageIdempotencyMatch(prev, {
+            fingerprint: fp,
+            tokensIn: prev.tokens_in,
+            tokensOut: prev.tokens_out,
+            tokensSaved: prev.tokens_saved,
+          });
+          return { status: "completed", data: prev };
+        }
+        if (prev.status === "pending") {
+          const until = Number(prev.lease_until || 0);
+          if (until > now) {
+            if (prev.fingerprint && fp && prev.fingerprint !== fp) {
+              throw billingError(
+                "idempotency_conflict",
+                "Idempotency-Key reused with a different request payload"
+              );
+            }
+            return { status: "pending", data: prev };
+          }
+          // Expired lease — take over.
+        } else if (prev.fingerprint && fp && prev.fingerprint !== fp) {
+          throw billingError(
+            "idempotency_conflict",
+            "Idempotency-Key reused with a different request payload"
+          );
+        }
+      }
+      tx.set(
+        usageRef,
+        {
+          uid,
+          request_id: rid,
+          fingerprint: fp,
+          status: "pending",
+          lease_until: now + IDEMPOTENCY_LEASE_MS,
+          created_at: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      return { status: "acquired" };
+    });
+  } catch (err) {
+    if (err.paywall || err.code === "idempotency_conflict" || err.code === "billing_unavailable") {
+      throw err;
+    }
+    console.error("reserveIdempotencyLease failed (fail-closed):", err?.message || err);
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
+  }
+}
 
-  const ledger = normalizeLedger(null, liveClaims);
-  const planned = planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims: liveClaims });
-  const nextRecent = [
-    {
-      i: rid.slice(0, 64),
-      f: fp ? String(fp).slice(0, 32) : null,
-      tin: Number(tokensIn) || 0,
-      tout: Number(tokensOut) || 0,
-      ts: Number(tokensSaved) || 0,
-      b: planned.burned_micros,
-      t: Date.now(),
-    },
-    ...recent,
-  ].slice(0, 5);
-
-  await admin().auth().setCustomUserClaims(uid, {
-    ...liveClaims,
-    sc_usage: {
-      month: planned.ledger.month,
-      requests: planned.ledger.requests,
-      tokens_in: planned.ledger.tokens_in,
-      tokens_out: planned.ledger.tokens_out,
-      tokens_saved: planned.ledger.tokens_saved,
-      tokens_reported: planned.ledger.tokens_reported || 0,
-    },
-    sc_credit_balance_usd: roundUsd(microsToUsd(planned.ledger.credit_balance_micros)),
-    sc_recent_billing: nextRecent,
-  });
-
-  return {
-    ...planned,
-    already: false,
-    request_id: rid,
-    fingerprint: fp,
-    response: sanitizeReplayResponse(response),
-    backend: "claims-fallback",
-  };
+async function releaseIdempotencyLease(uid, requestId) {
+  const rid = sanitizeRequestId(requestId);
+  if (!uid || !rid || !initFirebaseAdmin()) return;
+  try {
+    const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
+    await db().runTransaction(async (tx) => {
+      const snap = await tx.get(usageRef);
+      if (!snap.exists) return;
+      const prev = snap.data() || {};
+      if (prev.status === "pending") tx.delete(usageRef);
+    });
+  } catch (err) {
+    console.warn("releaseIdempotencyLease failed:", err?.message || err);
+  }
 }
 
 /**
@@ -472,22 +478,27 @@ async function lookupUsageReplay(uid, requestId) {
   if (!uid || !rid || !initFirebaseAdmin()) return null;
   try {
     const snap = await db().collection("billing_usage").doc(`${uid}:${rid}`).get();
-    if (snap.exists) return snap.data() || null;
-  } catch (err) {
-    if (!isFirestoreBackendDown(err)) {
-      console.warn("lookupUsageReplay failed:", err?.message || err);
+    if (!snap.exists) return null;
+    const data = snap.data() || null;
+    if (!data || data.status === "pending") return null;
+    if (data.response && usageDocExpiredReplay(data)) {
+      // Drop expired replay body; keep billing metadata for audit / conflict checks.
+      const { response, ...meta } = data;
+      try {
+        await db().collection("billing_usage").doc(`${uid}:${rid}`).set(
+          { response: null, response_expired_at: new Date().toISOString() },
+          { merge: true }
+        );
+      } catch (_) {
+        /* best-effort TTL scrub */
+      }
+      return { ...meta, response: null };
     }
-  }
-  // Firestore-down fallback: gist-backed idempotency rows.
-  try {
-    const { loadStore } = require("./store");
-    const store = await loadStore();
-    const prev = store.billing_usage_fallback?.[`${uid}:${rid}`];
-    if (prev) return prev;
+    return data;
   } catch (err) {
-    console.warn("lookupUsageReplay fallback failed:", err?.message || err);
+    console.error("lookupUsageReplay failed (fail-closed):", err?.message || err);
+    return null;
   }
-  return null;
 }
 
 async function applyUsageAndBurn({
@@ -516,10 +527,10 @@ async function applyUsageAndBurn({
   let result;
   try {
     result = await db().runTransaction(async (tx) => {
-      // All reads before writes (Firestore txn rule).
       const usageSnap = await tx.get(usageRef);
       const snap = await tx.get(ref);
       const ledger = normalizeLedger(snap.exists ? snap.data() : null, claims);
+      const expiresAt = new Date(Date.now() + REPLAY_TTL_MS).toISOString();
 
       if (usageSnap.exists) {
         const prev = usageSnap.data() || {};
@@ -529,9 +540,46 @@ async function applyUsageAndBurn({
           tokensOut,
           tokensSaved,
         });
-        // Backfill response on legacy rows that billed before replay storage existed.
+
+        // Complete a pending lease from reserveIdempotencyLease (single-flight).
+        if (prev.status === "pending") {
+          const planned = planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims });
+          tx.set(ref, planned.ledger, { merge: true });
+          tx.set(
+            usageRef,
+            {
+              uid,
+              request_id: rid,
+              fingerprint: fp,
+              status: "completed",
+              tokens_in: Number(tokensIn) || 0,
+              tokens_out: Number(tokensOut) || 0,
+              tokens_saved: Number(tokensSaved) || 0,
+              burned_micros: planned.burned_micros,
+              created_at: prev.created_at || new Date().toISOString(),
+              completed_at: new Date().toISOString(),
+              response_expires_at: expiresAt,
+              ...(replay ? { response: replay } : {}),
+              lease_until: null,
+            },
+            { merge: true }
+          );
+          return {
+            ...planned,
+            already: false,
+            request_id: rid,
+            fingerprint: fp,
+            response: replay,
+          };
+        }
+
+        // Already completed — optional response backfill.
         if (replay && !prev.response) {
-          tx.set(usageRef, { response: replay }, { merge: true });
+          tx.set(
+            usageRef,
+            { response: replay, response_expires_at: expiresAt, status: "completed" },
+            { merge: true }
+          );
         }
         return {
           burned_micros: Number(prev.burned_micros || 0),
@@ -551,11 +599,14 @@ async function applyUsageAndBurn({
           uid,
           request_id: rid,
           fingerprint: fp,
+          status: "completed",
           tokens_in: Number(tokensIn) || 0,
           tokens_out: Number(tokensOut) || 0,
           tokens_saved: Number(tokensSaved) || 0,
           burned_micros: planned.burned_micros,
           created_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          response_expires_at: expiresAt,
           ...(replay ? { response: replay } : {}),
         },
         { merge: false }
@@ -572,35 +623,13 @@ async function applyUsageAndBurn({
     if (err.paywall || err.code === "free_quota_exhausted" || err.code === "credits_exhausted" || err.code === "idempotency_conflict") {
       throw err;
     }
-    // Any Firestore outage (disabled API, timeout, permission) must not 100%-down compress.
-    console.warn(
-      "billing-ledger: Firestore txn failed — claims/gist billing fallback:",
+    // Money path is fail-closed — never bill via non-transactional Auth claims.
+    console.error(
+      "billing-ledger: Firestore txn failed (fail-closed):",
       err?.code,
       err?.message || err
     );
-    try {
-      return await applyUsageAndBurnClaimsFallback({
-        uid,
-        tokensIn,
-        tokensOut,
-        tokensSaved,
-        claims,
-        requestId: rid,
-        fingerprint: fp,
-        response,
-      });
-    } catch (fallbackErr) {
-      if (
-        fallbackErr.paywall ||
-        fallbackErr.code === "free_quota_exhausted" ||
-        fallbackErr.code === "credits_exhausted" ||
-        fallbackErr.code === "idempotency_conflict"
-      ) {
-        throw fallbackErr;
-      }
-      console.error("billing-ledger claims fallback failed:", fallbackErr?.message || fallbackErr);
-      throw billingError("billing_unavailable", "Billing ledger unavailable");
-    }
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
 
   if (!result.already) {
@@ -610,98 +639,10 @@ async function applyUsageAndBurn({
 }
 
 /**
- * When Cloud Firestore is disabled/unavailable, credit via Auth claims only.
- * Idempotent on sc_credited_sessions / credited_keys. First-pay bonus uses
- * sc_first_pay_bonus_at (weaker than Firestore billing_bonus, but keeps Checkout
- * from silently charging without balance when Firestore is down).
- */
-async function creditBalanceClaimsFallback({
-  uid,
-  creditUsd,
-  creditKey,
-  claims = {},
-  patch = {},
-  firstPayBonusUsd = 0,
-}) {
-  const key = String(creditKey);
-  const fresh = await admin().auth().getUser(uid);
-  const liveClaims = { ...(fresh.customClaims || {}), ...claims };
-  const credited = Array.isArray(liveClaims.sc_credited_sessions)
-    ? liveClaims.sc_credited_sessions
-    : [];
-  const ledger = normalizeLedger(null, liveClaims);
-  const keys = Array.isArray(ledger.credited_keys) ? ledger.credited_keys : [];
-
-  if (credited.includes(key) || keys.includes(key)) {
-    return {
-      applied: true,
-      already: true,
-      ledger,
-      balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
-      credit_usd: 0,
-      bonus_usd: 0,
-      backend: "claims-fallback",
-    };
-  }
-
-  const paymentUsd = Number(creditUsd) || 0;
-  const wantBonus = Math.max(0, Number(firstPayBonusUsd) || 0);
-  const bonusUsd = wantBonus > 0 && !liveClaims.sc_first_pay_bonus_at ? wantBonus : 0;
-  const add = usdToMicros(paymentUsd + bonusUsd);
-  ledger.credit_balance_micros = Number(ledger.credit_balance_micros || 0) + add;
-  if (patch.credit_limit_usd != null) {
-    ledger.credit_limit_usd = normalizeCreditLimitUsd(patch.credit_limit_usd);
-  }
-  if (patch.auto_recharge != null) ledger.auto_recharge = Boolean(patch.auto_recharge);
-  if (patch.customer_id) ledger.customer_id = patch.customer_id;
-  ledger.credited_keys = [...keys.filter((k) => k !== key).slice(-39), key];
-  ledger.updated_at = new Date().toISOString();
-
-  const nextCredited = [...credited.filter((k) => k !== key).slice(-39), key];
-  const bonusPatch =
-    bonusUsd > 0
-      ? {
-          sc_first_pay_bonus_at: new Date().toISOString(),
-          sc_first_pay_bonus_usd: bonusUsd,
-        }
-      : {};
-
-  await admin().auth().setCustomUserClaims(uid, {
-    ...liveClaims,
-    sc_plan: liveClaims.sc_plan || "payg",
-    sc_metered: false,
-    sc_usage: {
-      month: ledger.month,
-      requests: ledger.requests,
-      tokens_in: ledger.tokens_in,
-      tokens_out: ledger.tokens_out,
-      tokens_saved: ledger.tokens_saved,
-      tokens_reported: ledger.tokens_reported || 0,
-    },
-    sc_credit_balance_usd: roundUsd(microsToUsd(ledger.credit_balance_micros)),
-    sc_credit_limit_usd: ledger.credit_limit_usd,
-    sc_auto_recharge: Boolean(ledger.auto_recharge),
-    sc_credited_sessions: nextCredited,
-    ...(ledger.customer_id ? { sc_customer_id: ledger.customer_id } : {}),
-    ...bonusPatch,
-  });
-
-  return {
-    applied: true,
-    already: false,
-    ledger,
-    balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
-    credit_usd: paymentUsd,
-    bonus_usd: bonusUsd,
-    backend: "claims-fallback",
-  };
-}
-
-/**
  * Credit prepaid balance. Idempotent via permanent billing_credits/{creditKey}.
  * Optional first-pay bonus is create-once via billing_bonus/{uid}:first_pay
  * (not Auth claims — avoids concurrent Checkout double-bonus races).
- * Falls back to Auth claims when Cloud Firestore is disabled/unavailable.
+ * Fail-closed when Firestore is unavailable (no Auth-claims billing ledger).
  *
  * @param {number} [firstPayBonusUsd=0] candidate bonus; txn grants at most once ever
  */
@@ -714,7 +655,9 @@ async function creditBalance({
   firstPayBonusUsd = 0,
 }) {
   if (!uid || !creditKey) return { applied: false, reason: "missing_args" };
-  if (!initFirebaseAdmin()) return { applied: false, reason: "firebase_unavailable" };
+  if (!initFirebaseAdmin()) {
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
+  }
 
   const ref = db().collection("billing").doc(uid);
   const creditRef = db().collection("billing_credits").doc(String(creditKey));
@@ -791,19 +734,12 @@ async function creditBalance({
       };
     });
   } catch (err) {
-    console.warn(
-      "billing-ledger: credit txn failed — claims credit fallback:",
+    console.error(
+      "billing-ledger: credit txn failed (fail-closed):",
       err?.code,
       err?.message || err
     );
-    return creditBalanceClaimsFallback({
-      uid,
-      creditUsd,
-      creditKey,
-      claims,
-      patch,
-      firstPayBonusUsd,
-    });
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
 
   // Patch payg flags only when this credit actually applied (not on replay).
@@ -896,6 +832,8 @@ module.exports = {
   lookupUsageReplay,
   sanitizeReplayResponse,
   creditBalance,
+  reserveIdempotencyLease,
+  releaseIdempotencyLease,
   acquireRechargeLock,
   markTokensReported,
   mirrorClaims,
@@ -908,4 +846,6 @@ module.exports = {
   computeCompressFingerprint,
   assertUsageIdempotencyMatch,
   FREE_TOKENS_PER_MONTH,
+  REPLAY_TTL_MS,
+  IDEMPOTENCY_LEASE_MS,
 };

@@ -3,7 +3,7 @@
  * Authenticated compression endpoint.
  * Rate-limited: 120 req/min per API key + monthly plan token limit.
  */
-const { json, jsonWithRateLimit, checkRateLimit, clientIp, readBody, softProbe, hasAuthCredentials } = require("../_lib/http");
+const { json, jsonWithRateLimit, checkRateLimit, clientIp, readBody } = require("../_lib/http");
 const { enforceRateLimits } = require("../_lib/rate-limit-durable");
 const { bearerToken } = require("../_lib/auth");
 const { KEY_PREFIX } = require("../_lib/keys");
@@ -24,6 +24,8 @@ const {
   computeCompressFingerprint,
   lookupUsageReplay,
   assertUsageIdempotencyMatch,
+  reserveIdempotencyLease,
+  releaseIdempotencyLease,
 } = require("../_lib/billing-ledger");
 
 const V1_RPM = 90; // per API key (in-memory fast path)
@@ -161,27 +163,25 @@ module.exports = async (req, res) => {
   // Compression is POST-only — never accept API keys or context in query strings.
   // Scanner GETs must not inflate Vercel Observability error rate.
   if (req.method === "GET") {
-    return softProbe(res,
-      "Use POST /api/v1/compress with X-API-Key (or Authorization: Bearer). Query-string keys/context are not supported.",
-      { allow: "POST" }
-    );
+    return json(res, 405, {
+      detail: "Use POST /api/v1/compress with X-API-Key (or Authorization: Bearer). Query-string keys/context are not supported.",
+      allow: "POST",
+    });
   }
   if (req.method !== "POST") {
-    return softProbe(res, "Method not allowed", { allow: "POST" });
+    return json(res, 405, { detail: "Method not allowed", allow: "POST" });
   }
 
   const requestStarted = Date.now();
   // Leave headroom under function maxDuration (60s for this route) for response flush.
   const HARD_BUDGET_MS = 55_000;
   let requestId = null;
+  let leaseHeld = false;
+  let leaseOwnerUid = null;
 
   try {
     const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization);
     if (!raw || !raw.startsWith(KEY_PREFIX)) {
-      // No credentials at all = probe; present-but-wrong = real 401 for SDKs.
-      if (!hasAuthCredentials(req)) {
-        return softProbe(res, "Missing or invalid API key", { auth: "required" });
-      }
       return json(res, 401, { detail: "Missing or invalid API key" });
     }
 
@@ -274,25 +274,16 @@ module.exports = async (req, res) => {
 
     const authenticated = await withTimeout(authenticateKey(raw), 8000, "authenticate");
 
-    // Replay BEFORE quota/credit gates so a successfully billed request stays
-    // replayable after free quota is exhausted (and does not trigger auto-recharge).
+    // Single-flight lease BEFORE compress so concurrent identical Idempotency-Keys
+    // cannot run the engine N times. Completed rows replay; in-flight returns 409.
     if (clientIdem) {
-      const prev = await withTimeout(
-        lookupUsageReplay(authenticated.ownerUid, clientIdem),
-        3000,
-        "idempotency_lookup"
+      const lease = await withTimeout(
+        reserveIdempotencyLease(authenticated.ownerUid, clientIdem, fingerprint),
+        4000,
+        "idempotency_lease"
       );
-      if (prev) {
-        try {
-          assertUsageIdempotencyMatch(prev, {
-            fingerprint,
-            tokensIn: prev.tokens_in,
-            tokensOut: prev.tokens_out,
-            tokensSaved: prev.tokens_saved,
-          });
-        } catch (err) {
-          throw err;
-        }
+      if (lease.status === "completed") {
+        const prev = lease.data || {};
         if (prev.response?.compressed_text) {
           res.setHeader("Idempotency-Key", requestId);
           return jsonWithRateLimit(
@@ -306,6 +297,18 @@ module.exports = async (req, res) => {
             rl
           );
         }
+        // Billed but replay body expired — fall through to recompute without re-billing
+        // (applyUsageAndBurn will see completed row and already:true).
+      } else if (lease.status === "pending") {
+        const err = new Error(
+          "A request with this Idempotency-Key is already in progress. Retry shortly."
+        );
+        err.status = 409;
+        err.code = "idempotency_in_progress";
+        throw err;
+      } else {
+        leaseHeld = true;
+        leaseOwnerUid = authenticated.ownerUid;
       }
     }
 
@@ -510,6 +513,11 @@ module.exports = async (req, res) => {
     res.setHeader("Idempotency-Key", requestId);
     return jsonWithRateLimit(res, 200, responseBody, rl);
   } catch (err) {
+    if (leaseHeld && leaseOwnerUid && requestId) {
+      try {
+        await releaseIdempotencyLease(leaseOwnerUid, requestId);
+      } catch (_) {}
+    }
     let status = err.status || 500;
     if (err.code === "timeout" && !err.status) status = 504;
     // Expected auth/validation failures are not production incidents — avoid

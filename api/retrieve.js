@@ -9,7 +9,7 @@
  * that stored the hash may retrieve it.
  */
 
-const { json, checkRateLimit, readBody, softProbe, hasAuthCredentials } = require("./_lib/http");
+const { json, checkRateLimit, readBody } = require("./_lib/http");
 const { bearerToken } = require("./_lib/auth");
 const { KEY_PREFIX } = require("./_lib/keys");
 const { authenticateKey } = require("./_lib/firebase-key-store");
@@ -61,12 +61,8 @@ module.exports = async (req, res) => {
 
   try {
     const raw = req.headers["x-api-key"]
-      || bearerToken(req.headers.authorization)
-      || (req.query && req.query.api_key);
+      || bearerToken(req.headers.authorization);
     if (!raw || !raw.startsWith(KEY_PREFIX)) {
-      if (!hasAuthCredentials(req) || req.method === "GET") {
-        return softProbe(res, "Pass X-API-Key to retrieve CCR blocks.", { auth: "required" });
-      }
       return json(res, 401, { detail: "Missing or invalid API key" });
     }
 
@@ -86,11 +82,11 @@ module.exports = async (req, res) => {
       const body = readBody(req);
       hash = body.hash || "";
     } else {
-      return softProbe(res, "Method not allowed", { allow: "GET, POST" });
+      return json(res, 405, { detail: "Method not allowed", allow: "GET, POST" });
     }
 
     if (!hash || !isValidHash(hash)) {
-      return softProbe(res, "Invalid hash format. Expected format: 8-hex-chars_hex-length (e.g. 'a1b2c3d4_2f')");
+      return json(res, 400, { detail: "Invalid hash format. Expected format: 8-hex-chars_hex-length (e.g. 'a1b2c3d4_2f')" });
     }
 
     const authenticated = await authenticateKey(raw);

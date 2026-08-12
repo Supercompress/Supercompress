@@ -9,7 +9,7 @@
  *   { action: "reconcile_checkout", session_id } → apply paid credit session (webhook fallback)
  *   { action: "portal" } | { action: "cancel" | "reactivate" }
  */
-const { json, softProbe, hasAuthCredentials } = require("./_lib/http");
+const { json } = require("./_lib/http");
 const { verifyUser, initFirebaseAdmin } = require("./_lib/auth");
 const admin = require("firebase-admin");
 const {
@@ -565,13 +565,9 @@ module.exports = async (req, res) => {
     if (req.method === "GET") return handleGet(req, res, user);
     if (req.method === "POST") return handlePost(req, res, user);
 
-    return softProbe(res, "Method not allowed", { allow: "GET, POST" });
+    return json(res, 405, { detail: "Method not allowed", allow: "GET, POST" });
   } catch (err) {
     const status = err.status || 500;
-    // Scanner without auth — soft 200 so Observability error rate stays ~0.
-    if (status === 401 && !hasAuthCredentials(req)) {
-      return softProbe(res, err.message || "Authorization required", { auth: "required" });
-    }
     if (status >= 500) console.error("billing error:", err);
     else console.warn("billing client error:", err.message || err);
     return json(res, status, { detail: err.message || String(err) });

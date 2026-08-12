@@ -1,5 +1,5 @@
 /** Public Firebase client config — read from env at runtime (no rebuild needed). */
-const { json, softProbe } = require("./_lib/http");
+const { json } = require("./_lib/http");
 
 function clean(value) {
   return String(value || "").trim().split(/\s+/)[0] || "";
@@ -7,7 +7,7 @@ function clean(value) {
 
 module.exports = (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
-  if (req.method !== "GET") return softProbe(res, "Method not allowed", { allow: "GET" });
+  if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed", allow: "GET" });
 
   return json(res, 200, {
     apiKey: clean(process.env.FIREBASE_API_KEY),

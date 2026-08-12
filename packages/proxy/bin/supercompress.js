@@ -656,7 +656,7 @@ async function printAccount() {
   printPlanStatus(data);
 
   try {
-    const log = await fetchJson(`${ACTIVITY_URL}?limit=5`, config.api_key);
+    const log = await fetchJson(`${ACTIVITY_URL}&limit=5`, config.api_key);
     const entries = log.entries || [];
     if (entries.length) {
       console.log("\n  Recent compress activity (previews only):");

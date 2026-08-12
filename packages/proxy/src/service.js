@@ -66,6 +66,15 @@ function launchdPlist(configDir, configPath) {
 </plist>`;
 }
 
+function systemdEscape(pathValue) {
+  // systemd unit values with spaces/special chars must be quoted.
+  const s = String(pathValue || "");
+  if (/[\s\\"'`$]/.test(s)) {
+    return `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  }
+  return s;
+}
+
 /**
  * Generate the systemd user unit content for Linux.
  * API key is NOT stored in the unit — the server reads it from
@@ -74,18 +83,21 @@ function launchdPlist(configDir, configPath) {
 function systemdUnit(configDir, configPath) {
   const serverPath = path.join(__dirname, "server.js");
   const nodePath = process.execPath || "/usr/bin/node";
+  const execStart = [nodePath, serverPath, "8080"].map(systemdEscape).join(" ");
+  const envDir = systemdEscape(configDir);
+  const logPath = systemdEscape(path.join(configDir, "proxy.log"));
   return `[Unit]
 Description=SuperCompress Proxy — LLM context compression for coding agents
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=${nodePath} ${serverPath} 8080
+ExecStart=${execStart}
 Restart=on-failure
 RestartSec=5
-Environment=SUPERCOMPRESS_CONFIG_DIR=${configDir}
-StandardOutput=append:${configDir}/proxy.log
-StandardError=append:${configDir}/proxy.log
+Environment=SUPERCOMPRESS_CONFIG_DIR=${envDir}
+StandardOutput=append:${logPath}
+StandardError=append:${logPath}
 
 [Install]
 WantedBy=default.target
