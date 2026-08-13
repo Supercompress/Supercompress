@@ -64,6 +64,8 @@ jobs:
         run: node api/_lib/firebase-off.test.js
       - name: Power-user milestone unit tests
         run: node api/_lib/power-user.test.js
+      - name: Auth key-limit helpers
+        run: node api/_lib/auth-connect.test.js
       - name: Analytics aggregation unit tests
         run: node web/assets/js/analytics-data.test.js
       - name: Proxy package tests

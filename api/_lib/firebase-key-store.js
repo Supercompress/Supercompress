@@ -298,7 +298,7 @@ async function createKey(ownerUid, name, maxKeys) {
     }
   }
   const { createAuthPluginKey } = require("./auth-connect");
-  return createAuthPluginKey(ownerUid, name || "Production");
+  return createAuthPluginKey(ownerUid, name || "Production", { maxKeys });
 }
 
 async function getOwnedKey(ownerUid, keyUid) {

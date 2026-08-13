@@ -103,18 +103,9 @@ async function markPowerUser(uid, patch) {
 async function stampPowerMailSent(uid) {
   if (!uid) return false;
   const { initFirebaseAdmin } = require("./auth");
-  const admin = require("firebase-admin");
   if (!initFirebaseAdmin()) return false;
-  const { setBillingClaims } = require("./billing-ledger");
-  for (let i = 0; i < 3; i++) {
-    const user = await admin.auth().getUser(uid);
-    const prev = user.customClaims || {};
-    if (prev[POWER_MAIL_CLAIM] === "sent") return true;
-    await setBillingClaims(uid, { ...prev, [POWER_MAIL_CLAIM]: "sent" });
-    const after = await admin.auth().getUser(uid);
-    if ((after.customClaims || {})[POWER_MAIL_CLAIM] === "sent") return true;
-  }
-  return false;
+  const { stampOwnerClaim } = require("./billing-ledger");
+  return stampOwnerClaim(uid, POWER_MAIL_CLAIM, "sent");
 }
 
 function isDrainablePowerUser(rec) {

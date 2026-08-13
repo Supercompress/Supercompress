@@ -2,8 +2,9 @@
  * Transactional billing ledger — source of truth for monthly usage + prepaid balance.
  *
  * Auth custom claims (`sc_usage`, `sc_credit_balance_usd`) are mirrored after
- * commit for dashboard/compat reads. Concurrent compressions must not
- * read-modify-write claims directly.
+ * commit for dashboard/compat reads. When Firestore is skipped, claims are the
+ * live wallet — writers must go through `patchUserClaims` (live merge + write_id).
+ * That shrinks lost-update windows; it is not a true compare-and-swap ledger.
  *
  * Firestore:
  *   billing/{uid}                    — monthly usage + wallet balance
@@ -11,6 +12,7 @@
  *   billing_usage/{uid}:{requestId}  — per-request usage burn + compress response replay
  *   billing_bonus/{uid}:first_pay    — one-time first-pay bonus create-once
  */
+const crypto = require("crypto");
 const { initFirebaseAdmin } = require("./auth");
 const {
   FREE_TOKENS_PER_MONTH,
@@ -361,7 +363,7 @@ function claimsByteLength(claims) {
 
 /** Firebase custom claims cap at 1000 bytes — drop bulky non-ledger fields to fit.
  * Never delete sc_recent_billing entirely (idempotency watermarks). Never delete
- * sc_power_mail, sc_welcome, sc_wk, sc_unsub, or sc_ku. */
+ * sc_power_mail, sc_welcome, sc_wk, sc_unsub, sc_ku, or sc_write_id. */
 function fitCustomClaims(claims) {
   const next = { ...(claims || {}) };
   const steps = [
@@ -420,11 +422,86 @@ async function setBillingClaims(uid, claims) {
   await admin().auth().setCustomUserClaims(uid, fitted);
 }
 
+function newClaimsWriteId() {
+  return crypto.randomBytes(6).toString("hex");
+}
+
+function claimsWriteHeld(after, writeId) {
+  return String(after?.sc_write_id || "") === String(writeId || "");
+}
+
+function claimsConflictToken(claims) {
+  return `${Number(claims?.sc_billing_rev || 0)}:${String(claims?.sc_write_id || "")}`;
+}
+
+/**
+ * Read-modify-write Auth custom claims from a live snapshot.
+ * Re-reads once before writing; retries if billing rev/write_id moved.
+ * Stamps `sc_write_id` and verifies it stuck so a stale overlapping write
+ * cannot both "succeed" at the same revision.
+ *
+ * This is not compare-and-swap. Auth has no conditional writes. A writer that
+ * verifies, then gets overwritten, can still lose. Do not add more monetary
+ * state to claims — use a transactional store for a real ledger.
+ */
+async function patchUserClaims(uid, mutator, opts = {}) {
+  const verify = opts.verify;
+  const attempts = Math.max(1, Number(opts.attempts) || 5);
+  let lastErr = null;
+  for (let i = 0; i < attempts; i++) {
+    const first = await admin().auth().getUser(uid);
+    const before = { ...(first.customClaims || {}) };
+    const token = claimsConflictToken(before);
+    const draft = mutator({ ...before });
+    if (!draft || typeof draft !== "object") {
+      throw new Error("patchUserClaims mutator must return a claims object");
+    }
+    const writeId = newClaimsWriteId();
+    const intended = { ...draft, sc_write_id: writeId };
+
+    const second = await admin().auth().getUser(uid);
+    if (claimsConflictToken(second.customClaims || {}) !== token) {
+      lastErr = new Error("claims_patch_conflict");
+      continue;
+    }
+
+    await setBillingClaims(uid, intended);
+    const after = (await admin().auth().getUser(uid)).customClaims || {};
+    const held = claimsWriteHeld(after, writeId);
+    const extraOk = verify ? verify(after, { before, intended }) : true;
+    if (held && extraOk) return after;
+    lastErr = new Error("claims_patch_conflict");
+  }
+  const err = lastErr || new Error("claims_patch_conflict");
+  err.code = "claims_patch_conflict";
+  throw err;
+}
+
+async function stampOwnerClaim(uid, field, value) {
+  if (!uid || !initFirebaseAdmin()) return false;
+  try {
+    await patchUserClaims(
+      uid,
+      (live) => ({ ...live, [field]: value }),
+      { verify: (after) => after[field] === value }
+    );
+    return true;
+  } catch (err) {
+    console.warn("stampOwnerClaim failed:", field, err.message || err);
+    return false;
+  }
+}
+
+function recentBillingRow(recent, rid) {
+  const rows = Array.isArray(recent) ? recent : [];
+  return rows.find((r) => r && r.i === rid) || null;
+}
+
 /**
  * When Cloud Firestore is disabled/unavailable, bill via Auth claims only.
- * Optimistic CAS via sc_billing_rev + post-write verify (retry on conflict).
- * Replay text is not stored (claims size); retries recompress but do not
- * double-bill (request id watermark on sc_recent_billing — keep up to 8).
+ * Uses patchUserClaims (live merge + unique sc_write_id). Replay text is not
+ * stored (claims size); retries recompress but do not double-bill when the
+ * request id is already on sc_recent_billing.
  */
 async function applyUsageAndBurnClaimsFallback({
   uid,
@@ -440,97 +517,92 @@ async function applyUsageAndBurnClaimsFallback({
   const fp = String(fingerprint || "").trim() || null;
   if (!rid) throw billingError("billing_unavailable", "Billing request id required");
 
-  let lastErr = null;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const fresh = await admin().auth().getUser(uid);
-    const liveClaims = mergeLiveClaims(fresh.customClaims, claims);
-    const recent = Array.isArray(liveClaims.sc_recent_billing)
-      ? liveClaims.sc_recent_billing
-      : [];
-    const prior = recent.find((r) => r && r.i === rid);
-    if (prior) {
-      assertUsageIdempotencyMatch(
-        {
-          fingerprint: prior.f || null,
-          tokens_in: prior.tin,
-          tokens_out: prior.tout,
-          tokens_saved: prior.ts,
-        },
-        {
-          fingerprint: fp,
+  let already = false;
+  try {
+    const after = await patchUserClaims(
+      uid,
+      (live) => {
+        const liveClaims = mergeLiveClaims(live, claims);
+        const recent = Array.isArray(liveClaims.sc_recent_billing)
+          ? liveClaims.sc_recent_billing
+          : [];
+        const prior = recentBillingRow(recent, rid);
+        if (prior) {
+          assertUsageIdempotencyMatch(
+            {
+              fingerprint: prior.f || null,
+              tokens_in: prior.tin,
+              tokens_out: prior.tout,
+              tokens_saved: prior.ts,
+            },
+            { fingerprint: fp, tokensIn, tokensOut, tokensSaved }
+          );
+          already = true;
+          return liveClaims;
+        }
+
+        const prevRev = Number(liveClaims.sc_billing_rev || 0) || 0;
+        const ledger = normalizeLedger(null, liveClaims);
+        const planned = planUsageBurn(ledger, {
           tokensIn,
           tokensOut,
           tokensSaved,
-        }
-      );
-      return {
-        burned_micros: Number(prior.b || 0),
-        ledger: normalizeLedger(null, liveClaims),
-        already: true,
-        request_id: rid,
-        fingerprint: prior.f || fp || null,
-        response: null,
-        backend: "claims-fallback",
-      };
-    }
-
-    const prevRev = Number(liveClaims.sc_billing_rev || 0) || 0;
-    const ledger = normalizeLedger(null, liveClaims);
-    const planned = planUsageBurn(ledger, {
-      tokensIn,
-      tokensOut,
-      tokensSaved,
-      claims: liveClaims,
-    });
-    const nextRecent = [
+          claims: liveClaims,
+        });
+        already = false;
+        return {
+          ...liveClaims,
+          sc_billing_rev: prevRev + 1,
+          sc_usage: {
+            month: planned.ledger.month,
+            requests: planned.ledger.requests,
+            tokens_in: planned.ledger.tokens_in,
+            tokens_out: planned.ledger.tokens_out,
+            tokens_saved: planned.ledger.tokens_saved,
+            tokens_reported: planned.ledger.tokens_reported || 0,
+          },
+          sc_credit_balance_usd: roundUsd(microsToUsd(planned.ledger.credit_balance_micros)),
+          sc_recent_billing: [
+            {
+              i: rid.slice(0, 40),
+              f: fp ? String(fp).slice(0, 16) : null,
+              tin: Number(tokensIn) || 0,
+              tout: Number(tokensOut) || 0,
+              ts: Number(tokensSaved) || 0,
+              b: planned.burned_micros,
+              t: Date.now(),
+            },
+            ...recent,
+          ].slice(0, 8),
+        };
+      },
       {
-        i: rid.slice(0, 40),
-        f: fp ? String(fp).slice(0, 16) : null,
-        tin: Number(tokensIn) || 0,
-        tout: Number(tokensOut) || 0,
-        ts: Number(tokensSaved) || 0,
-        b: planned.burned_micros,
-        t: Date.now(),
-      },
-      ...recent,
-    ].slice(0, 8);
-
-    const nextClaims = {
-      ...liveClaims,
-      sc_billing_rev: prevRev + 1,
-      sc_usage: {
-        month: planned.ledger.month,
-        requests: planned.ledger.requests,
-        tokens_in: planned.ledger.tokens_in,
-        tokens_out: planned.ledger.tokens_out,
-        tokens_saved: planned.ledger.tokens_saved,
-        tokens_reported: planned.ledger.tokens_reported || 0,
-      },
-      sc_credit_balance_usd: roundUsd(microsToUsd(planned.ledger.credit_balance_micros)),
-      sc_recent_billing: nextRecent,
+        verify: (afterClaims) => Boolean(recentBillingRow(afterClaims.sc_recent_billing, rid)),
+      }
+    );
+    const liveAfter = mergeLiveClaims(after, claims);
+    const prior = recentBillingRow(liveAfter.sc_recent_billing, rid);
+    return {
+      burned_micros: Number(prior?.b || 0),
+      ledger: normalizeLedger(null, liveAfter),
+      already,
+      request_id: rid,
+      fingerprint: prior?.f || fp,
+      response: already ? null : sanitizeReplayResponse(response),
+      backend: "claims-fallback",
     };
-
-    await setBillingClaims(uid, nextClaims);
-
-    // Verify our write stuck (last-writer lost → retry from fresh state).
-    const after = await admin().auth().getUser(uid);
-    const afterClaims = after.customClaims || {};
-    const afterRev = Number(afterClaims.sc_billing_rev || 0) || 0;
-    const afterTin = Number(afterClaims.sc_usage?.tokens_in || 0);
-    if (afterRev === prevRev + 1 && afterTin === Number(planned.ledger.tokens_in)) {
-      return {
-        ...planned,
-        already: false,
-        request_id: rid,
-        fingerprint: fp,
-        response: sanitizeReplayResponse(response),
-        backend: "claims-fallback",
-      };
+  } catch (err) {
+    if (
+      err?.paywall ||
+      err?.code === "free_quota_exhausted" ||
+      err?.code === "credits_exhausted" ||
+      err?.code === "idempotency_conflict"
+    ) {
+      throw err;
     }
-    lastErr = new Error("claims_cas_conflict");
+    console.error("claims billing patch exhausted:", err?.message || err);
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
-  console.error("claims billing CAS exhausted:", lastErr?.message || lastErr);
-  throw billingError("billing_unavailable", "Billing ledger unavailable");
 }
 
 const IDEMPOTENCY_LEASE_MS = 90_000;
@@ -685,9 +757,7 @@ async function releaseIdempotencyLease(uid, requestId) {
 async function mirrorClaims(uid, ledger) {
   if (!uid || !initFirebaseAdmin()) return;
   try {
-    const fresh = await admin().auth().getUser(uid);
-    const prev = { ...(fresh.customClaims || {}) };
-    await admin().auth().setCustomUserClaims(uid, {
+    await patchUserClaims(uid, (prev) => ({
       ...prev,
       sc_usage: {
         month: ledger.month,
@@ -704,7 +774,7 @@ async function mirrorClaims(uid, ledger) {
       ...(ledger.auto_recharge != null ? { sc_auto_recharge: Boolean(ledger.auto_recharge) } : {}),
       sc_auto_recharge_cycle: Number(ledger.auto_recharge_cycle || 0) || 0,
       ...(ledger.customer_id ? { sc_customer_id: ledger.customer_id } : {}),
-    });
+    }));
   } catch (err) {
     console.warn("billing-ledger claim mirror failed:", err.message || err);
   }
@@ -976,9 +1046,17 @@ async function applyUsageAndBurn({
   return result;
 }
 
+function sessionAlreadyCredited(claims, ledger, key) {
+  const credited = Array.isArray(claims?.sc_credited_sessions) ? claims.sc_credited_sessions : [];
+  const keys = Array.isArray(ledger?.credited_keys) ? ledger.credited_keys : [];
+  return credited.includes(key) || keys.includes(key);
+}
+
 /**
  * When Cloud Firestore is disabled/unavailable, credit via Auth claims only.
- * Idempotent on sc_credited_sessions / credited_keys.
+ * Idempotent on sc_credited_sessions / credited_keys. Same patch/write_id
+ * retry as usage burns so two distinct Stripe sessions cannot both read $0
+ * and both write $10.
  */
 async function creditBalanceClaimsFallback({
   uid,
@@ -989,81 +1067,95 @@ async function creditBalanceClaimsFallback({
   firstPayBonusUsd = 0,
 }) {
   const key = String(creditKey);
-  const fresh = await admin().auth().getUser(uid);
-  const liveClaims = mergeLiveClaims(fresh.customClaims, claims);
-  const credited = Array.isArray(liveClaims.sc_credited_sessions)
-    ? liveClaims.sc_credited_sessions
-    : [];
-  const ledger = normalizeLedger(null, liveClaims);
-  const keys = Array.isArray(ledger.credited_keys) ? ledger.credited_keys : [];
+  let already = false;
+  let bonusUsd = 0;
+  const paymentUsd = Number(creditUsd) || 0;
 
-  if (credited.includes(key) || keys.includes(key)) {
+  try {
+    const after = await patchUserClaims(
+      uid,
+      (live) => {
+        const liveClaims = mergeLiveClaims(live, claims);
+        const ledger = normalizeLedger(null, liveClaims);
+        if (sessionAlreadyCredited(liveClaims, ledger, key)) {
+          already = true;
+          bonusUsd = 0;
+          return liveClaims;
+        }
+
+        const credited = Array.isArray(liveClaims.sc_credited_sessions)
+          ? liveClaims.sc_credited_sessions
+          : [];
+        const keys = Array.isArray(ledger.credited_keys) ? ledger.credited_keys : [];
+        const wantBonus = Math.max(0, Number(firstPayBonusUsd) || 0);
+        bonusUsd = wantBonus > 0 && !liveClaims.sc_first_pay_bonus_at ? wantBonus : 0;
+        const add = usdToMicros(paymentUsd + bonusUsd);
+        ledger.credit_balance_micros = Number(ledger.credit_balance_micros || 0) + add;
+        if (patch.credit_limit_usd != null) {
+          ledger.credit_limit_usd = normalizeCreditLimitUsd(patch.credit_limit_usd);
+        }
+        if (patch.auto_recharge != null) ledger.auto_recharge = Boolean(patch.auto_recharge);
+        if (patch.auto_recharge_cycle != null) {
+          ledger.auto_recharge_cycle = Math.max(0, Number(patch.auto_recharge_cycle) || 0);
+        }
+        if (patch.customer_id) ledger.customer_id = patch.customer_id;
+        ledger.credited_keys = [...keys.filter((k) => k !== key).slice(-39), key];
+        ledger.updated_at = new Date().toISOString();
+        already = false;
+        const prevRev = Number(liveClaims.sc_billing_rev || 0) || 0;
+        const bonusPatch =
+          bonusUsd > 0
+            ? {
+                sc_first_pay_bonus_at: new Date().toISOString(),
+                sc_first_pay_bonus_usd: bonusUsd,
+              }
+            : {};
+        return {
+          ...liveClaims,
+          sc_billing_rev: prevRev + 1,
+          sc_plan: liveClaims.sc_plan || "payg",
+          sc_metered: false,
+          sc_usage: {
+            month: ledger.month,
+            requests: ledger.requests,
+            tokens_in: ledger.tokens_in,
+            tokens_out: ledger.tokens_out,
+            tokens_saved: ledger.tokens_saved,
+            tokens_reported: ledger.tokens_reported || 0,
+          },
+          sc_credit_balance_usd: roundUsd(microsToUsd(ledger.credit_balance_micros)),
+          sc_credit_limit_usd: ledger.credit_limit_usd,
+          sc_auto_recharge: Boolean(ledger.auto_recharge),
+          sc_auto_recharge_cycle: Number(ledger.auto_recharge_cycle || 0) || 0,
+          sc_credited_sessions: [...credited.filter((k) => k !== key).slice(-39), key],
+          ...(ledger.customer_id ? { sc_customer_id: ledger.customer_id } : {}),
+          ...bonusPatch,
+        };
+      },
+      {
+        verify: (afterClaims) => {
+          const credited = Array.isArray(afterClaims.sc_credited_sessions)
+            ? afterClaims.sc_credited_sessions
+            : [];
+          return credited.includes(key);
+        },
+      }
+    );
+    const liveAfter = mergeLiveClaims(after, claims);
+    const ledger = normalizeLedger(null, liveAfter);
     return {
       applied: true,
-      already: true,
+      already,
       ledger,
       balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
-      credit_usd: 0,
-      bonus_usd: 0,
+      credit_usd: already ? 0 : paymentUsd,
+      bonus_usd: already ? 0 : bonusUsd,
       backend: "claims-fallback",
     };
+  } catch (err) {
+    console.error("claims credit patch exhausted:", err?.message || err);
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
-
-  const paymentUsd = Number(creditUsd) || 0;
-  const wantBonus = Math.max(0, Number(firstPayBonusUsd) || 0);
-  const bonusUsd = wantBonus > 0 && !liveClaims.sc_first_pay_bonus_at ? wantBonus : 0;
-  const add = usdToMicros(paymentUsd + bonusUsd);
-  ledger.credit_balance_micros = Number(ledger.credit_balance_micros || 0) + add;
-  if (patch.credit_limit_usd != null) {
-    ledger.credit_limit_usd = normalizeCreditLimitUsd(patch.credit_limit_usd);
-  }
-  if (patch.auto_recharge != null) ledger.auto_recharge = Boolean(patch.auto_recharge);
-  if (patch.auto_recharge_cycle != null) {
-    ledger.auto_recharge_cycle = Math.max(0, Number(patch.auto_recharge_cycle) || 0);
-  }
-  if (patch.customer_id) ledger.customer_id = patch.customer_id;
-  ledger.credited_keys = [...keys.filter((k) => k !== key).slice(-39), key];
-  ledger.updated_at = new Date().toISOString();
-
-  const nextCredited = [...credited.filter((k) => k !== key).slice(-39), key];
-  const bonusPatch =
-    bonusUsd > 0
-      ? {
-          sc_first_pay_bonus_at: new Date().toISOString(),
-          sc_first_pay_bonus_usd: bonusUsd,
-        }
-      : {};
-
-  await setBillingClaims(uid, {
-    ...liveClaims,
-    sc_plan: liveClaims.sc_plan || "payg",
-    sc_metered: false,
-    sc_usage: {
-      month: ledger.month,
-      requests: ledger.requests,
-      tokens_in: ledger.tokens_in,
-      tokens_out: ledger.tokens_out,
-      tokens_saved: ledger.tokens_saved,
-      tokens_reported: ledger.tokens_reported || 0,
-    },
-    sc_credit_balance_usd: roundUsd(microsToUsd(ledger.credit_balance_micros)),
-    sc_credit_limit_usd: ledger.credit_limit_usd,
-    sc_auto_recharge: Boolean(ledger.auto_recharge),
-    sc_auto_recharge_cycle: Number(ledger.auto_recharge_cycle || 0) || 0,
-    sc_credited_sessions: nextCredited,
-    ...(ledger.customer_id ? { sc_customer_id: ledger.customer_id } : {}),
-    ...bonusPatch,
-  });
-
-  return {
-    applied: true,
-    already: false,
-    ledger,
-    balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
-    credit_usd: paymentUsd,
-    bonus_usd: bonusUsd,
-    backend: "claims-fallback",
-  };
 }
 
 /**
@@ -1196,8 +1288,6 @@ async function creditBalance({
   // Patch payg flags only when this credit actually applied (not on replay).
   if (result.applied && !result.already) {
     try {
-      const fresh = await admin().auth().getUser(uid);
-      const prev = { ...(fresh.customClaims || {}) };
       const bonusPatch =
         result.bonus_usd > 0
           ? {
@@ -1205,7 +1295,7 @@ async function creditBalance({
               sc_first_pay_bonus_usd: result.bonus_usd,
             }
           : {};
-      await admin().auth().setCustomUserClaims(uid, {
+      await patchUserClaims(uid, (prev) => ({
         ...prev,
         sc_plan: prev.sc_plan || "payg",
         sc_metered: false,
@@ -1223,7 +1313,7 @@ async function creditBalance({
         sc_auto_recharge_cycle: Number(result.ledger.auto_recharge_cycle || 0) || 0,
         ...(result.ledger.customer_id ? { sc_customer_id: result.ledger.customer_id } : {}),
         ...bonusPatch,
-      });
+      }));
     } catch (err) {
       console.warn("credit claim mirror failed:", err.message || err);
       await mirrorClaims(uid, result.ledger);
@@ -1313,4 +1403,8 @@ module.exports = {
   IDEMPOTENCY_LEASE_MS,
   fitCustomClaims,
   setBillingClaims,
+  patchUserClaims,
+  stampOwnerClaim,
+  claimsWriteHeld,
+  claimsConflictToken,
 };

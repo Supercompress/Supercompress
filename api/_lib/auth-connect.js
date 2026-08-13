@@ -10,6 +10,22 @@ const { KEY_PREFIX, hashApiKey, verifyApiKey } = require("./keys");
 
 const KEY_UID_PREFIX = "sck_";
 const LINK_UID_PREFIX = "sc_lnk_";
+const DEFAULT_AUTH_KEY_CAP = 20;
+
+function keyLimitCap(maxKeys) {
+  const cap = Number(maxKeys);
+  return Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : DEFAULT_AUTH_KEY_CAP;
+}
+
+function keyLimitReached(activeCount, maxKeys) {
+  return Number(activeCount) >= keyLimitCap(maxKeys);
+}
+
+function nextOwnerKeyIds(existingIds, newId, maxKeys) {
+  const ids = Array.isArray(existingIds) ? existingIds.filter(Boolean) : [];
+  if (newId && !ids.includes(newId)) ids.push(newId);
+  return ids.slice(-keyLimitCap(maxKeys));
+}
 
 function auth() {
   if (!initFirebaseAdmin()) {
@@ -49,9 +65,18 @@ function generateAuthBackedKey() {
 /**
  * Mint a coding-agent / CLI key as an Auth stub user.
  * Survives gist/Firestore outages; authenticateKey already understands sck_* keys.
+ * Enforces plan maxKeys against the owner's Auth index (do not slice below the cap).
  */
-async function createAuthPluginKey(ownerUid, name = "Coding agent") {
+async function createAuthPluginKey(ownerUid, name = "Coding agent", opts = {}) {
+  const cap = keyLimitCap(opts.maxKeys);
   await auth().getUser(ownerUid); // ensure owner exists
+  const existing = await listAuthPluginKeys(ownerUid).catch(() => []);
+  if (keyLimitReached(existing.length, cap)) {
+    const err = new Error(`Plan limit reached: ${cap} API keys. Upgrade to increase this limit.`);
+    err.status = 429;
+    throw err;
+  }
+
   const gen = generateAuthBackedKey();
   const created = new Date().toISOString();
   const displayName = String(name || "Coding agent").trim().slice(0, 80) || "Coding agent";
@@ -71,23 +96,45 @@ async function createAuthPluginKey(ownerUid, name = "Coding agent") {
     sc_plugin: true,
   });
 
-  // Index on owner for dashboard listing when store is down
+  // Index on owner for dashboard listing when store is down.
+  // Merge from live claims so this write cannot revert a concurrent wallet update.
   try {
-    const owner = await auth().getUser(ownerUid);
-    const claims = { ...(owner.customClaims || {}) };
-    const ids = Array.isArray(claims.sc_key_ids) ? claims.sc_key_ids.slice() : [];
-    if (!ids.includes(gen.uid)) ids.push(gen.uid);
-    // Keep last 20 plugin/key ids
-    claims.sc_key_ids = ids.slice(-20);
-    claims.sc_agent_plugin = {
-      linked: true,
-      linked_at: claims.sc_agent_plugin?.linked_at || created,
-      updated_at: created,
-      source: "auth-connect",
-    };
-    await auth().setCustomUserClaims(ownerUid, claims);
+    const { patchUserClaims } = require("./billing-ledger");
+    await patchUserClaims(
+      ownerUid,
+      (live) => ({
+        ...live,
+        sc_key_ids: nextOwnerKeyIds(live.sc_key_ids, gen.uid, cap),
+        sc_agent_plugin: {
+          linked: true,
+          linked_at: live.sc_agent_plugin?.linked_at || created,
+          updated_at: created,
+          source: "auth-connect",
+        },
+      }),
+      {
+        verify: (after) => Array.isArray(after.sc_key_ids) && after.sc_key_ids.includes(gen.uid),
+      }
+    );
   } catch (err) {
-    console.warn("createAuthPluginKey: owner claim update skipped:", err.message);
+    console.warn("createAuthPluginKey: owner claim update failed:", err.message);
+    try {
+      await auth().deleteUser(gen.uid);
+    } catch (_) {}
+    if (err.status === 429) throw err;
+    const fail = new Error("Could not index API key. Retry.");
+    fail.status = 503;
+    throw fail;
+  }
+
+  const listed = await listAuthPluginKeys(ownerUid).catch(() => []);
+  if (listed.length > cap) {
+    try {
+      await revokeAuthPluginKey(ownerUid, gen.uid);
+    } catch (_) {}
+    const err = new Error(`Plan limit reached: ${cap} API keys. Upgrade to increase this limit.`);
+    err.status = 429;
+    throw err;
   }
 
   // Mirror into Firestore store immediately so listKeys/usage attribution work
@@ -146,12 +193,11 @@ async function revokeAuthPluginKey(ownerUid, keyUid) {
     await auth().deleteUser(keyUid);
   } catch (_) {}
   try {
-    const owner = await auth().getUser(ownerUid);
-    const claims = { ...(owner.customClaims || {}) };
-    if (Array.isArray(claims.sc_key_ids)) {
-      claims.sc_key_ids = claims.sc_key_ids.filter((x) => x !== keyUid);
-      await auth().setCustomUserClaims(ownerUid, claims);
-    }
+    const { patchUserClaims } = require("./billing-ledger");
+    await patchUserClaims(ownerUid, (live) => {
+      if (!Array.isArray(live.sc_key_ids)) return live;
+      return { ...live, sc_key_ids: live.sc_key_ids.filter((x) => x !== keyUid) };
+    });
   } catch (_) {}
   return { id: keyUid, revoked: true };
 }
@@ -330,4 +376,7 @@ module.exports = {
   clearDeviceLinkSecret,
   consumeDeviceLinkSecret,
   generateAuthBackedKey,
+  nextOwnerKeyIds,
+  keyLimitReached,
+  keyLimitCap,
 };

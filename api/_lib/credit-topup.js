@@ -68,29 +68,29 @@ async function markStripeCredited(session) {
 
 async function updateBillingClaims(userId, data) {
   if (!userId || !initFirebaseAdmin()) return;
-  const user = await admin.auth().getUser(userId);
-  const prev = user.customClaims || {};
-  const next = {
-    ...prev,
-    sc_plan: data.plan_id || prev.sc_plan || "free",
-    sc_subscription_status: data.status || "active",
-    sc_customer_id: data.stripe_customer_id || prev.sc_customer_id || null,
-  };
-  if (data.stripe_subscription_id !== undefined) {
-    next.sc_subscription_id = data.stripe_subscription_id;
-  }
-  if (data.sc_metered != null) next.sc_metered = data.sc_metered;
-  if (data.sc_credit_balance_usd != null) next.sc_credit_balance_usd = data.sc_credit_balance_usd;
-  if (data.sc_credit_limit_usd != null) next.sc_credit_limit_usd = data.sc_credit_limit_usd;
-  if (data.sc_auto_recharge != null) next.sc_auto_recharge = data.sc_auto_recharge;
-  if (data.sc_default_payment_method) {
-    next.sc_default_payment_method = data.sc_default_payment_method;
-  }
-  if (data.sc_credited_sessions) next.sc_credited_sessions = data.sc_credited_sessions;
-  if (data.sc_first_pay_bonus_at) next.sc_first_pay_bonus_at = data.sc_first_pay_bonus_at;
-  if (data.sc_first_pay_bonus_usd != null) next.sc_first_pay_bonus_usd = data.sc_first_pay_bonus_usd;
-  await admin.auth().setCustomUserClaims(userId, next);
-  return next;
+  const { patchUserClaims } = require("./billing-ledger");
+  return patchUserClaims(userId, (prev) => {
+    const next = {
+      ...prev,
+      sc_plan: data.plan_id || prev.sc_plan || "free",
+      sc_subscription_status: data.status || "active",
+      sc_customer_id: data.stripe_customer_id || prev.sc_customer_id || null,
+    };
+    if (data.stripe_subscription_id !== undefined) {
+      next.sc_subscription_id = data.stripe_subscription_id;
+    }
+    if (data.sc_metered != null) next.sc_metered = data.sc_metered;
+    if (data.sc_credit_balance_usd != null) next.sc_credit_balance_usd = data.sc_credit_balance_usd;
+    if (data.sc_credit_limit_usd != null) next.sc_credit_limit_usd = data.sc_credit_limit_usd;
+    if (data.sc_auto_recharge != null) next.sc_auto_recharge = data.sc_auto_recharge;
+    if (data.sc_default_payment_method) {
+      next.sc_default_payment_method = data.sc_default_payment_method;
+    }
+    if (data.sc_credited_sessions) next.sc_credited_sessions = data.sc_credited_sessions;
+    if (data.sc_first_pay_bonus_at) next.sc_first_pay_bonus_at = data.sc_first_pay_bonus_at;
+    if (data.sc_first_pay_bonus_usd != null) next.sc_first_pay_bonus_usd = data.sc_first_pay_bonus_usd;
+    return next;
+  });
 }
 
 async function persistSubscription(userId, data) {

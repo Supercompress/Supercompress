@@ -172,7 +172,7 @@ async function mintConnectKey(ownerUid, maxKeys) {
       }
     }
   }
-  return createAuthPluginKey(ownerUid, PLUGIN_KEY_NAME);
+  return createAuthPluginKey(ownerUid, PLUGIN_KEY_NAME, { maxKeys });
 }
 
 async function handleConnectDevice(req, res) {

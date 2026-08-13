@@ -487,10 +487,8 @@ async function weeklyTick(opts = {}) {
 
     if (result.ok) {
       try {
-        const admin = require("firebase-admin");
-        const { setBillingClaims } = require("./billing-ledger");
-        const fresh = await admin.auth().getUser(r.uid);
-        await setBillingClaims(r.uid, { ...(fresh.customClaims || {}), sc_wk: String(campaignId).slice(0, 24) });
+        const { stampOwnerClaim } = require("./billing-ledger");
+        await stampOwnerClaim(r.uid, "sc_wk", String(campaignId).slice(0, 24));
       } catch (stampErr) {
         errors.push({ email: r.email, error: `sent_but_stamp_failed: ${stampErr.message}` });
       }
@@ -578,13 +576,13 @@ async function unsubscribeEmail(email, token, { confirmOnly = false } = {}) {
     throw err;
   }
   try {
-    const admin = require("firebase-admin");
     const { initFirebaseAdmin } = require("./auth");
-    const { setBillingClaims } = require("./billing-ledger");
+    const { stampOwnerClaim } = require("./billing-ledger");
     if (initFirebaseAdmin()) {
+      const admin = require("firebase-admin");
       const user = await admin.auth().getUserByEmail(clean).catch(() => null);
       if (user) {
-        await setBillingClaims(user.uid, { ...(user.customClaims || {}), sc_unsub: "1" });
+        await stampOwnerClaim(user.uid, "sc_unsub", "1");
       }
     }
   } catch (err) {

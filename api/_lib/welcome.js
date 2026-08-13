@@ -156,9 +156,8 @@ async function handleSignupWelcome(req, body, user) {
   });
   if (result.ok) {
     try {
-      const { setBillingClaims } = require("./billing-ledger");
-      const fresh = await admin.auth().getUser(user.uid);
-      await setBillingClaims(user.uid, { ...(fresh.customClaims || liveClaims), sc_welcome: "sent" });
+      const { stampOwnerClaim } = require("./billing-ledger");
+      await stampOwnerClaim(user.uid, "sc_welcome", "sent");
     } catch (err) {
       console.warn("welcome: claim stamp skipped:", err.message);
     }
@@ -235,10 +234,8 @@ async function drainPendingWelcomes() {
         error: null,
       }).catch(() => {});
       try {
-        const admin = require("firebase-admin");
-        const { setBillingClaims } = require("./billing-ledger");
-        const fresh = await admin.auth().getUser(rec.uid);
-        await setBillingClaims(rec.uid, { ...(fresh.customClaims || {}), sc_welcome: "sent" });
+        const { stampOwnerClaim } = require("./billing-ledger");
+        await stampOwnerClaim(rec.uid, "sc_welcome", "sent");
       } catch (_) {}
       sent += 1;
     } else {
@@ -269,8 +266,8 @@ async function drainPendingWelcomes() {
           });
           if (result.ok) {
             try {
-              const { setBillingClaims } = require("./billing-ledger");
-              await setBillingClaims(user.uid, { ...(user.customClaims || {}), sc_welcome: "sent" });
+              const { stampOwnerClaim } = require("./billing-ledger");
+              await stampOwnerClaim(user.uid, "sc_welcome", "sent");
             } catch (_) {}
             authMailed += 1;
           }

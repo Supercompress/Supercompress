@@ -114,10 +114,8 @@ async function patchCreditClaims(userId, patch) {
     err.status = 503;
     throw err;
   }
-  const user = await admin.auth().getUser(userId);
-  const next = { ...(user.customClaims || {}), ...patch };
-  await admin.auth().setCustomUserClaims(userId, next);
-  return next;
+  const { patchUserClaims } = require("./_lib/billing-ledger");
+  return patchUserClaims(userId, (live) => ({ ...live, ...patch }));
 }
 
 /* ── GET: free allowance + credit / PAYG status ── */

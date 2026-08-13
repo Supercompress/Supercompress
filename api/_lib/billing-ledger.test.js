@@ -10,6 +10,8 @@ const {
   computeCompressFingerprint,
   assertUsageIdempotencyMatch,
   fitCustomClaims,
+  claimsWriteHeld,
+  claimsConflictToken,
 } = require("./billing-ledger");
 
 function ledger(partial = {}) {
@@ -210,6 +212,7 @@ assertUsageIdempotencyMatch(
 {
   const fitted = fitCustomClaims({
     sc_power_mail: "sent",
+    sc_write_id: "abc123def456",
     sc_plan: "free",
     sc_usage: { month: "2026-08", tokens_in: 1, requests: 1 },
     sc_recent_billing: Array.from({ length: 8 }, (_, i) => ({
@@ -223,6 +226,16 @@ assertUsageIdempotencyMatch(
     })),
   });
   assert.strictEqual(fitted.sc_power_mail, "sent");
+  assert.strictEqual(fitted.sc_write_id, "abc123def456");
 }
+
+assert.strictEqual(claimsWriteHeld({ sc_write_id: "aaa" }, "aaa"), true);
+assert.strictEqual(claimsWriteHeld({ sc_write_id: "bbb" }, "aaa"), false);
+assert.strictEqual(claimsWriteHeld({}, "aaa"), false);
+assert.strictEqual(claimsConflictToken({ sc_billing_rev: 10, sc_write_id: "x" }), "10:x");
+assert.notStrictEqual(
+  claimsConflictToken({ sc_billing_rev: 10, sc_write_id: "x" }),
+  claimsConflictToken({ sc_billing_rev: 11, sc_write_id: "x" })
+);
 
 console.log("billing-ledger.test.js: ok");
