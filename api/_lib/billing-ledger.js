@@ -168,6 +168,10 @@ function normalizeLedger(raw, claims = {}) {
           ? normalizeCreditLimitUsd(raw.credit_limit_usd)
           : base.credit_limit_usd,
       auto_recharge: raw.auto_recharge != null ? Boolean(raw.auto_recharge) : base.auto_recharge,
+      auto_recharge_cycle: Math.max(
+        Number(raw.auto_recharge_cycle || 0) || 0,
+        Number(claims.sc_auto_recharge_cycle || 0) || 0
+      ),
       customer_id: raw.customer_id || base.customer_id,
       credited_keys: Array.isArray(raw.credited_keys) ? raw.credited_keys.slice(-40) : base.credited_keys,
     };
