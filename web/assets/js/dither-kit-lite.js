@@ -621,23 +621,25 @@
 
   /** Horizontal Bayer usage meter (billing free-allowance bar). */
   function renderDitherMeter(el, options = {}) {
-    if (!el) return;
+    if (!el) return false;
+    el.querySelectorAll(".dash-billing-usage-fill").forEach((n) => n.remove());
     let canvas = el.querySelector("canvas.dk-meter");
     if (!canvas) {
-      el.querySelectorAll(".dash-billing-usage-fill").forEach((n) => n.remove());
       canvas = document.createElement("canvas");
       canvas.className = "dk-meter";
       canvas.setAttribute("aria-hidden", "true");
       el.appendChild(canvas);
     }
     const rect = el.getBoundingClientRect();
-    const cssW = Math.max(8, Math.round(rect.width || el.clientWidth || 240));
-    const cssH = Math.max(6, Math.round(rect.height || el.clientHeight || 8));
+    const cssW = Math.round(rect.width || el.clientWidth || 0);
+    const cssH = Math.round(rect.height || el.clientHeight || 0);
+    // Hidden panels are display:none → 0×0. Never fall back to a fake width.
+    if (cssW < 16 || cssH < 4) return false;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
-    canvas.style.width = cssW + "px";
-    canvas.style.height = cssH + "px";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cssW, cssH);
@@ -645,23 +647,26 @@
     const pct = clamp01((Number(options.progress) || 0) / (options.max || 1));
     const colorName = options.color || (pct >= 0.9 ? "red" : pct >= 0.7 ? "orange" : "brand");
     const seed = seedOf(colorName);
-    const { cols, rows } = backingSize(cssW, cssH);
+    const cell = 4;
+    const cols = Math.min(MAX_COLS, Math.max(8, Math.round(cssW / cell)));
+    const rows = Math.min(MAX_ROWS, Math.max(4, Math.round(cssH / cell)));
     const off = document.createElement("canvas");
     off.width = cols;
     off.height = rows;
     const octx = off.getContext("2d");
     const fillCols = Math.round(cols * pct);
-    octx.fillStyle = "rgba(15,23,42,0.06)";
+    octx.fillStyle = "rgba(15,23,42,0.08)";
     octx.fillRect(0, 0, cols, rows);
     for (let x = 0; x < fillCols; x++) {
       paintColumn(octx, x, 0, rows, seed, {
-        variant: "gradient",
-        intensity: 0.55,
+        variant: "dotted",
+        intensity: 0.92,
         dim: 1,
       });
     }
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(off, 0, 0, cssW, cssH);
+    return true;
   }
 
   function ensureWashCanvas(el) {

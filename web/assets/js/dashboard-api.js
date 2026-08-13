@@ -921,25 +921,38 @@ function renderActivationChecklist() {
   /* Activation checklist removed from dashboard UI. */
 }
 
+function billingMeterOpts(track) {
+  const pct = Number(track?.dataset?.usagePct);
+  return {
+    progress: (Number.isFinite(pct) ? pct : 0) / 100,
+    color: track?.dataset?.usageColor || "brand",
+  };
+}
+
+function watchBillingMeter(track) {
+  if (!track || track._dkMeterObs || typeof ResizeObserver !== "function") return;
+  const obs = new ResizeObserver(() => {
+    if (!track.isConnected) {
+      obs.disconnect();
+      return;
+    }
+    if (document.getElementById("panel-billing")?.classList.contains("hidden")) return;
+    window.DitherKitLite?.renderDitherMeter?.(track, billingMeterOpts(track));
+  });
+  obs.observe(track);
+  track._dkMeterObs = obs;
+}
+
 function paintBillingUsageMeter(track) {
   const kit = window.DitherKitLite;
   if (!track || !kit?.renderDitherMeter) return;
-  const pct = Number(track.dataset.usagePct);
-  const color = track.dataset.usageColor || "brand";
-  let tries = 20;
+  watchBillingMeter(track);
+  if (document.getElementById("panel-billing")?.classList.contains("hidden")) return;
   const paint = () => {
     if (!track.isConnected) return;
-    const w = track.getBoundingClientRect().width;
-    if (w < 8 && tries-- > 0) {
-      requestAnimationFrame(paint);
-      return;
-    }
-    kit.renderDitherMeter(track, {
-      progress: (Number.isFinite(pct) ? pct : 0) / 100,
-      color,
-    });
+    kit.renderDitherMeter(track, billingMeterOpts(track));
   };
-  requestAnimationFrame(paint);
+  requestAnimationFrame(() => requestAnimationFrame(paint));
 }
 
 function renderSubscription(sub) {
