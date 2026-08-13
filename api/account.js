@@ -582,24 +582,34 @@ module.exports = async (req, res) => {
   if (op === "welcome-drain" && (req.method === "POST" || req.method === "GET")) {
     const body = req.method === "POST" ? readBody(req) : {};
     if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    // Isolate each lane: gist/store 403 must not skip 1M power-user mail.
+    let welcome = { pending: 0, sent: 0, failed: 0 };
     try {
-      const result = await drainPendingWelcomes();
-      let power_user = null;
-      try {
-        power_user = await drainPendingPowerUsers();
-      } catch (powerErr) {
-        power_user = { ok: false, error: powerErr.message || "power_user_drain_failed" };
-      }
-      // Also nudge weekly queue so mid-week backlog clears on the daily cron.
-      let weekly = null;
-      try {
-        weekly = await weeklyTick();
-      } catch (weeklyErr) {
-        weekly = { ok: false, error: weeklyErr.message || "weekly_tick_failed" };
-      }
-      return json(res, 200, { ok: true, ...result, power_user, weekly });
+      welcome = await drainPendingWelcomes();
     } catch (err) {
-      return json(res, err.status || 500, { detail: err.message });
+      welcome = { pending: 0, sent: 0, failed: 0, error: err.message || "welcome_drain_failed" };
+    }
+    let power_user = null;
+    try {
+      power_user = await drainPendingPowerUsers();
+    } catch (powerErr) {
+      power_user = { ok: false, error: powerErr.message || "power_user_drain_failed" };
+    }
+    let weekly = null;
+    try {
+      weekly = await weeklyTick();
+    } catch (weeklyErr) {
+      weekly = { ok: false, error: weeklyErr.message || "weekly_tick_failed" };
+    }
+    return json(res, 200, { ok: true, ...welcome, power_user, weekly });
+  }
+  if (op === "power-user-drain" && (req.method === "POST" || req.method === "GET")) {
+    const body = req.method === "POST" ? readBody(req) : {};
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      return json(res, 200, { ok: true, ...(await drainPendingPowerUsers()) });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "power_user_drain_failed" });
     }
   }
 
@@ -793,6 +803,7 @@ module.exports = async (req, res) => {
       "connect-device",
       "welcome",
       "welcome-drain",
+      "power-user-drain",
       "weekly-tick",
       "weekly-drain",
       "weekly-unsubscribe",
