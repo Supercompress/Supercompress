@@ -596,19 +596,72 @@
     };
   }
 
-  /** Ease-out grow for charts. fn(progress 0→1) called each frame. */
+  /** Ease-out grow for charts. fn(progress 0→1) called each frame. Returns cancel(). */
   function animateChart(fn, duration = 900) {
-    if (typeof fn !== "function") return;
+    if (typeof fn !== "function") return () => {};
+    let raf = 0;
+    let stopped = false;
     const t0 = performance.now();
     const ease = (t) => 1 - Math.pow(1 - t, 3);
     const frame = (now) => {
+      if (stopped) return;
       let p = (now - t0) / Math.max(1, duration);
       if (!Number.isFinite(p) || p < 0) p = 1;
       p = Math.min(1, p);
       fn(ease(p));
-      if (p < 1) requestAnimationFrame(frame);
+      if (p < 1) raf = requestAnimationFrame(frame);
     };
-    requestAnimationFrame(frame);
+    raf = requestAnimationFrame(frame);
+    return () => {
+      stopped = true;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    };
+  }
+
+  /** Horizontal Bayer usage meter (billing free-allowance bar). */
+  function renderDitherMeter(el, options = {}) {
+    if (!el) return;
+    let canvas = el.querySelector("canvas.dk-meter");
+    if (!canvas) {
+      el.querySelectorAll(".dash-billing-usage-fill").forEach((n) => n.remove());
+      canvas = document.createElement("canvas");
+      canvas.className = "dk-meter";
+      canvas.setAttribute("aria-hidden", "true");
+      el.appendChild(canvas);
+    }
+    const rect = el.getBoundingClientRect();
+    const cssW = Math.max(8, Math.round(rect.width || el.clientWidth || 240));
+    const cssH = Math.max(6, Math.round(rect.height || el.clientHeight || 8));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.width = cssW + "px";
+    canvas.style.height = cssH + "px";
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const pct = clamp01((Number(options.progress) || 0) / (options.max || 1));
+    const colorName = options.color || (pct >= 0.9 ? "red" : pct >= 0.7 ? "orange" : "brand");
+    const seed = seedOf(colorName);
+    const { cols, rows } = backingSize(cssW, cssH);
+    const off = document.createElement("canvas");
+    off.width = cols;
+    off.height = rows;
+    const octx = off.getContext("2d");
+    const fillCols = Math.round(cols * pct);
+    octx.fillStyle = "rgba(15,23,42,0.06)";
+    octx.fillRect(0, 0, cols, rows);
+    for (let x = 0; x < fillCols; x++) {
+      paintColumn(octx, x, 0, rows, seed, {
+        variant: "gradient",
+        intensity: 0.55,
+        dim: 1,
+      });
+    }
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, 0, 0, cssW, cssH);
   }
 
   function ensureWashCanvas(el) {
@@ -759,6 +812,7 @@
     startChartDitherLoop,
     stopChartDitherLoop,
     animateChart,
+    renderDitherMeter,
     formatCompact,
     seedOf,
   };

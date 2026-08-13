@@ -67,6 +67,48 @@ let lastCreatedSecret = null;
 let defaultKeyProvisioning = false;
 let lastBillingSub = null;
 
+function keysCacheUid() {
+  if (currentUser?.uid) return String(currentUser.uid);
+  if (typeof idToken === "string" && idToken.startsWith("dev:")) {
+    const part = idToken.split(":")[1];
+    if (part) return `dev:${part}`;
+  }
+  if (currentUser?.email) return `email:${currentUser.email}`;
+  return null;
+}
+
+function rememberKeysPayload(data) {
+  window.SCDashboardKeysCache?.remember?.(data);
+}
+
+function clearKeysCache() {
+  window.SCDashboardKeysCache?.clear?.();
+}
+
+window.SCDashboardKeysCache = {
+  _payload: null,
+  _uid: null,
+  remember(data) {
+    const uid = keysCacheUid();
+    if (!uid || !data || typeof data !== "object") return;
+    this._uid = uid;
+    this._payload = data;
+  },
+  peek() {
+    const uid = keysCacheUid();
+    if (!uid || this._uid !== uid) return null;
+    return this._payload;
+  },
+  uid() {
+    return keysCacheUid();
+  },
+  clear() {
+    this._payload = null;
+    this._uid = null;
+    window.SCDashboardAnalytics?.reset?.();
+  },
+};
+
 const AUTH_NETWORK_MESSAGE =
   "Signed in, but Firebase could not issue a session token. Check your network/ad blocker/VPN and refresh, then try again.";
 
@@ -394,6 +436,7 @@ async function loadKeysFresh(retries = 6) {
       accountUsage = data.account_usage || null;
       codingAgentUsage = data.coding_agent_usage || {};
       agentPluginLink = data.agent_plugin || { linked: false };
+      rememberKeysPayload(data);
       renderKeys();
       renderUsage();
       renderCodingAgents();
@@ -510,6 +553,7 @@ async function loadKeys() {
     accountUsage = data.account_usage || null;
     codingAgentUsage = data.coding_agent_usage || {};
     agentPluginLink = data.agent_plugin || { linked: false };
+    rememberKeysPayload(data);
     renderKeys();
     renderUsage();
     renderCodingAgents();
@@ -743,6 +787,9 @@ async function triggerWelcomeEmail(user, { isNewUser = false } = {}) {
 
 async function enterDashboard(user, { isNewUser = false } = {}) {
   authResolved = true;
+  const prevUid = keysCacheUid();
+  const nextUid = user?.uid || null;
+  if (prevUid && nextUid && prevUid !== nextUid) clearKeysCache();
   idToken = await getUserToken(user);
   currentUser = user;
   saveSession({
@@ -874,6 +921,27 @@ function renderActivationChecklist() {
   /* Activation checklist removed from dashboard UI. */
 }
 
+function paintBillingUsageMeter(track) {
+  const kit = window.DitherKitLite;
+  if (!track || !kit?.renderDitherMeter) return;
+  const pct = Number(track.dataset.usagePct);
+  const color = track.dataset.usageColor || "brand";
+  let tries = 20;
+  const paint = () => {
+    if (!track.isConnected) return;
+    const w = track.getBoundingClientRect().width;
+    if (w < 8 && tries-- > 0) {
+      requestAnimationFrame(paint);
+      return;
+    }
+    kit.renderDitherMeter(track, {
+      progress: (Number.isFinite(pct) ? pct : 0) / 100,
+      color,
+    });
+  };
+  requestAnimationFrame(paint);
+}
+
 function renderSubscription(sub) {
   const statusCard = $("billing-status-card");
   if (!statusCard) return;
@@ -884,6 +952,7 @@ function renderSubscription(sub) {
   const freeUsed = Math.min(used, freeCap);
   const pct = Math.min(100, Math.round((freeUsed / freeCap) * 10000) / 100);
   const fillClass = pct >= 90 ? "dash-billing-usage-fill--full" : pct >= 70 ? "dash-billing-usage-fill--high" : "";
+  const meterColor = pct >= 90 ? "red" : pct >= 70 ? "orange" : "brand";
   const payg = !!(sub.payg_enabled || sub.unlimited || (sub.plan && sub.plan !== "free"));
   const creditWallet = !!(sub.credit_wallet || (payg && sub.credit_balance_usd != null));
   const creditBalance = Number(sub.credit_balance_usd);
@@ -944,7 +1013,7 @@ function renderSubscription(sub) {
         <span><strong>${formatNum(freeUsed)}</strong> / ${formatNum(freeCap)} free tokens used</span>
         <span>${pct}%</span>
       </div>
-      <div class="dash-billing-usage-track">
+      <div class="dash-billing-usage-track" data-usage-pct="${pct}" data-usage-color="${meterColor}">
         <div class="dash-billing-usage-fill ${fillClass}" style="width:${pct}%"></div>
       </div>
     </div>
@@ -961,6 +1030,7 @@ function renderSubscription(sub) {
   `;
 
   $("btn-paywall-unlock")?.addEventListener("click", () => handleEnablePayg());
+  paintBillingUsageMeter(statusCard.querySelector(".dash-billing-usage-track"));
   // Update plan cards
   document.querySelectorAll(".dash-plan-card").forEach((card) => {
     const plan = card.dataset.plan;
@@ -1714,7 +1784,11 @@ function openDashboardPanel(panel, { updateUrl = true } = {}) {
   const panelEl = $(`panel-${panel}`);
   if (panelEl) panelEl.classList.remove("hidden");
 
-  if (panel === "billing") loadSubscription();
+  if (panel === "billing") {
+    loadSubscription();
+    const track = document.querySelector("#panel-billing .dash-billing-usage-track");
+    if (track) paintBillingUsageMeter(track);
+  }
   if (panel === "keys") {
     requestAnimationFrame(() => renderKeysSummary());
   }
@@ -1830,6 +1904,7 @@ function initDevAuth(message) {
   $("dash-signout").addEventListener("click", () => {
     idToken = null;
     currentUser = null;
+    clearKeysCache();
     clearSession();
     showAuth();
   });
@@ -1972,6 +2047,7 @@ async function initFirebaseAuth() {
         console.error("Firebase token acquisition failed", err);
         idToken = null;
         currentUser = null;
+        clearKeysCache();
         clearSession();
         await signOut(auth).catch(() => {});
         showAuth();
@@ -1980,6 +2056,7 @@ async function initFirebaseAuth() {
     } else {
       idToken = null;
       currentUser = null;
+      clearKeysCache();
       clearSession();
       showAuth();
     }
@@ -1988,10 +2065,12 @@ async function initFirebaseAuth() {
   const signOutBtn = $("dash-signout");
   if (signOutBtn) {
     signOutBtn.addEventListener("click", async () => {
+      clearKeysCache();
       clearSession();
       if (auth) await signOut(auth);
       else {
         idToken = null;
+        currentUser = null;
         showAuth();
       }
     });
@@ -2038,6 +2117,12 @@ async function init() {
   initModals();
   initSnippetTabs();
   initBilling();
+  window.addEventListener("resize", () => {
+    const track = document.querySelector("#panel-billing .dash-billing-usage-track");
+    if (track && !document.getElementById("panel-billing")?.classList.contains("hidden")) {
+      paintBillingUsageMeter(track);
+    }
+  });
   show(viewAuth);
   setError("");
   hide(viewDash);

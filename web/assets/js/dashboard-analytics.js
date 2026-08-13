@@ -18,6 +18,9 @@
 
   let loadedOnce = false;
   let loading = false;
+  let paintGen = 0;
+  let paintedUid = null;
+  const cancelFns = [];
 
   function setPill(mode, text) {
     const pill = $("an-data-pill");
@@ -38,18 +41,38 @@
     if (message) el.textContent = message;
   }
 
-  function animateNumber(el, to, { suffix = "", compact = false } = {}) {
+  function cancelPaints() {
+    while (cancelFns.length) {
+      const fn = cancelFns.pop();
+      try {
+        fn();
+      } catch (_) {}
+    }
+  }
+
+  function animateNumber(el, to, { suffix = "", compact = false, duration = 900, gen = 0 } = {}) {
     const kit = DK();
     if (!el) return;
     const n = Number(to);
     const v = Number.isFinite(n) ? Math.max(0, n) : 0;
-    el.textContent = (compact && kit ? kit.formatCompact(v) : String(Math.round(v))) + suffix;
+    const fmt = (x) => (compact && kit ? kit.formatCompact(x) : String(Math.round(x))) + suffix;
+    if (!kit?.animateChart) {
+      el.textContent = fmt(v);
+      return;
+    }
+    const cancel = kit.animateChart((p) => {
+      if (gen !== paintGen) return;
+      el.textContent = fmt(v * p);
+    }, duration);
+    cancelFns.push(cancel);
   }
 
   function paint(series) {
     const kit = DK();
     const data = DATA();
     if (!kit || !data) return;
+    const gen = ++paintGen;
+    cancelPaints();
 
     setPill(series.live ? "live" : "err", series.live ? "Live · your account" : "Could not load live usage");
 
@@ -61,10 +84,10 @@
     }
     if ($("an-chip-delta")) $("an-chip-delta").textContent = series.deltaLabel;
 
-    animateNumber($("an-kpi-cut"), series.cut, { suffix: "%" });
-    animateNumber($("an-kpi-saved"), series.totalSaved, { compact: true });
-    animateNumber($("an-kpi-in"), series.totalIn, { compact: true });
-    animateNumber($("an-kpi-req"), series.totalReq, { compact: true });
+    animateNumber($("an-kpi-cut"), series.cut, { suffix: "%", gen });
+    animateNumber($("an-kpi-saved"), series.totalSaved, { compact: true, gen });
+    animateNumber($("an-kpi-in"), series.totalIn, { compact: true, gen });
+    animateNumber($("an-kpi-req"), series.totalReq, { compact: true, gen });
 
     for (const [id, opts] of washes) {
       const el = $(id);
@@ -89,29 +112,56 @@
       yMax: areaMax,
       empty: !series.areaData.some((d) => d.y > 0),
       emptyLabel: "No daily savings yet",
-      data: series.areaData,
-      interactive: true,
     };
-    kit.renderAreaChart(areaEl, areaOpts);
-    kit.startChartDitherLoop(areaEl, { kind: "area", ...areaOpts });
+    cancelFns.push(
+      kit.animateChart((p) => {
+        if (gen !== paintGen) return;
+        kit.renderAreaChart(areaEl, {
+          ...areaOpts,
+          data: series.areaData.map((d) => ({ x: d.x, y: d.y * p })),
+          interactive: false,
+        });
+        if (p > 0.98) {
+          kit.renderAreaChart(areaEl, {
+            ...areaOpts,
+            data: series.areaData,
+            interactive: true,
+          });
+          kit.startChartDitherLoop(areaEl, {
+            kind: "area",
+            ...areaOpts,
+            data: series.areaData,
+            interactive: true,
+          });
+        }
+      }, 1100)
+    );
 
-    const barOpts = {
-      data: series.reqs.map((r) => ({ label: r.label, value: r.value, full: r.full })),
-      orientation: "vertical",
-      color: "brand",
-      variant: "gradient",
-      bloom: "aura",
-      maxBars: 30,
-      progress: 1,
-      yMax: reqMax,
-      unit: "requests",
-      tooltipTitle: "Requests",
-      interactive: true,
-      empty: !series.reqs.some((r) => r.value > 0),
-      emptyLabel: "No requests yet",
-    };
-    kit.renderBarChart(barsEl, barOpts);
-    kit.startChartDitherLoop(barsEl, { kind: "bar", ...barOpts });
+    cancelFns.push(
+      kit.animateChart((p) => {
+        if (gen !== paintGen) return;
+        const done = p > 0.98;
+        const barOpts = {
+          data: series.reqs.map((r) => ({ label: r.label, value: r.value, full: r.full })),
+          orientation: "vertical",
+          color: "brand",
+          variant: "gradient",
+          bloom: "aura",
+          maxBars: 30,
+          progress: done ? 1 : p,
+          yMax: reqMax,
+          unit: "requests",
+          tooltipTitle: "Requests",
+          interactive: done,
+          empty: !series.reqs.some((r) => r.value > 0),
+          emptyLabel: "No requests yet",
+        };
+        kit.renderBarChart(barsEl, barOpts);
+        if (done) {
+          kit.startChartDitherLoop(barsEl, { kind: "bar", ...barOpts, progress: 1, interactive: true });
+        }
+      }, 1100)
+    );
 
     const esc = data.escapeHtml;
     const agentTotal = series.agents.reduce((s, a) => s + a.value, 0) || 1;
@@ -162,13 +212,20 @@
     loadedOnce = true;
   }
 
-  async function fetchKeys(idToken) {
-    const res = await fetch(`/api/keys?fresh=1&_=${Date.now()}`, {
+  async function fetchKeys(idToken, { fresh = false } = {}) {
+    const q = fresh ? `/api/keys?fresh=1&_=${Date.now()}` : `/api/keys?_=${Date.now()}`;
+    const res = await fetch(q, {
       headers: { Authorization: `Bearer ${idToken}` },
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`keys ${res.status}`);
     return res.json();
+  }
+
+  function reset() {
+    loadedOnce = false;
+    paintedUid = null;
+    cancelPaints();
   }
 
   async function show({ getIdToken, force = false } = {}) {
@@ -180,6 +237,19 @@
       return;
     }
     if (loading) return;
+
+    const uid = window.SCDashboardKeysCache?.uid?.() || "";
+    if (paintedUid && uid && paintedUid !== uid) {
+      reset();
+    }
+
+    const apply = (payload) => {
+      paint(data.bundleToSeries(data.aggregateUsage(payload)));
+      setLoading(false);
+      loadedOnce = true;
+      paintedUid = uid || paintedUid;
+    };
+
     if (loadedOnce && !force) {
       const areaH = $("an-area")?.querySelector("canvas")?.getBoundingClientRect().height || 0;
       if (areaH >= 80) {
@@ -189,15 +259,17 @@
         }
         return;
       }
-      // First paint happened while the panel was 0×0 — do a full redraw.
     }
 
+    const cached = !force ? window.SCDashboardKeysCache?.peek?.() : null;
     loading = true;
-    setLoading(true, "Loading your live usage…");
-    setPill("load", "Live · loading…");
+    if (!cached) {
+      setLoading(true, "Loading your live usage…");
+      setPill("load", "Live · loading…");
+    }
     try {
       await new Promise((resolve) => {
-        let n = 16;
+        let n = 8;
         const tick = () => {
           const w = $("an-area")?.getBoundingClientRect().width || 0;
           if (w > 40 || n-- <= 0) return resolve();
@@ -205,11 +277,15 @@
         };
         requestAnimationFrame(tick);
       });
+      if (cached) {
+        apply(cached);
+        return;
+      }
       const token = await getIdToken();
       if (!token) throw new Error("Not signed in");
-      const payload = await fetchKeys(token);
-      paint(data.bundleToSeries(data.aggregateUsage(payload)));
-      setLoading(false);
+      const payload = await fetchKeys(token, { fresh: !!force });
+      window.SCDashboardKeysCache?.remember?.(payload);
+      apply(payload);
     } catch (err) {
       console.error(err);
       setPill("err", "Load failed");
@@ -228,5 +304,5 @@
     }
   });
 
-  window.SCDashboardAnalytics = { show, paint };
+  window.SCDashboardAnalytics = { show, paint, reset };
 })();
