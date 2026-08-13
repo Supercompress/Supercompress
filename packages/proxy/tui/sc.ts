@@ -346,9 +346,14 @@ export function installPlugin() {
 export function beginConnect() {
   const code = crypto.randomBytes(16).toString("hex")
   const url = `https://www.supercompress.dev/dashboard?connect=${code}&source=tui`
-  const openCmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open"
   try {
-    execFileSync(openCmd, [url], { stdio: "ignore" })
+    if (process.platform === "win32") {
+      // `start` is a cmd.exe builtin — not a standalone executable for execFileSync.
+      execFileSync("cmd.exe", ["/c", "start", "", url], { stdio: "ignore" })
+    } else {
+      const openCmd = process.platform === "darwin" ? "open" : "xdg-open"
+      execFileSync(openCmd, [url], { stdio: "ignore" })
+    }
   } catch {
     /* user can open url manually */
   }

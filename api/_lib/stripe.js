@@ -307,16 +307,11 @@ async function createCreditTopUpCheckout({
  * On success, credits Auth claims immediately (webhook is idempotent via PI id).
  * Returns { ok, balanceAdd, paymentIntentId, balance } or { ok:false, error }.
  */
-/** Auto-recharge defaults ON for Stripe-linked / credit wallets; explicit false opts out. */
+/** Explicit true only. Legacy unset stays OFF until checkout consent. */
 function isAutoRechargeEnabled(claims = {}, ledger = {}) {
-  if (ledger.auto_recharge === false || claims.sc_auto_recharge === false) return false;
   if (ledger.auto_recharge === true || claims.sc_auto_recharge === true) return true;
-  return Boolean(
-    claims.sc_customer_id ||
-      ledger.customer_id ||
-      isCreditWallet(claims) ||
-      isPaygEnabled(claims.sc_plan)
-  );
+  if (ledger.auto_recharge === false || claims.sc_auto_recharge === false) return false;
+  return false;
 }
 
 async function attemptAutoRecharge(owner) {
@@ -341,9 +336,11 @@ async function attemptAutoRecharge(owner) {
   }
 
   const stripe = getStripe();
-  // Hour-bucketed key so concurrent compressions share one PI attempt.
-  const hourBucket = new Date().toISOString().slice(0, 13).replace(/[-:T]/g, "");
-  const idempotencyKey = `sc_ar_${owner.uid}_${Math.round(amount * 100)}_${hourBucket}`.slice(0, 255);
+  // Cycle id advances after each successful recharge so a user who burns
+  // through multiple packs in one hour can recharge again. Concurrent
+  // compressions with the same cycle still share one Stripe PI.
+  const cycle = Number(ledger.auto_recharge_cycle || claims.sc_auto_recharge_cycle || 0) || 0;
+  const idempotencyKey = `sc_ar_${owner.uid}_${Math.round(amount * 100)}_c${cycle}`.slice(0, 255);
 
   try {
     const customer = await stripe.customers.retrieve(customerId);
@@ -397,6 +394,7 @@ async function attemptAutoRecharge(owner) {
       patch: {
         credit_limit_usd: amount,
         auto_recharge: true,
+        auto_recharge_cycle: cycle + 1,
         customer_id: customerId,
       },
     });

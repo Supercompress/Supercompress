@@ -49,6 +49,7 @@ async function claimPowerUser(uid, extra = {}) {
       status: "pending",
       claimed_at: existing?.claimed_at || new Date().toISOString(),
       retried_at: existing ? new Date().toISOString() : null,
+      idempotency_key: existing?.idempotency_key || `power-user-${uid}`,
       ...extra,
     };
     store.power_user_emails[uid] = record;
@@ -67,12 +68,57 @@ async function markPowerUser(uid, patch) {
 
 function isDrainablePowerUser(rec) {
   if (!rec || !rec.uid) return false;
-  if (rec.status !== "pending" && rec.status !== "failed") return false;
+  if (rec.status !== "pending" && rec.status !== "failed" && rec.status !== "sending") {
+    return false;
+  }
   return String(rec.email || "").includes("@");
 }
 
+async function deliverPowerUser(rec) {
+  const uid = rec.uid;
+  const idempotencyKey = rec.idempotency_key || `power-user-${uid}`;
+  // Mark sending before Resend so a crash after delivery does not look "pending"
+  // for a fresh send — drain retries with the same Idempotency-Key.
+  await markPowerUser(uid, {
+    status: "sending",
+    send_attempt_at: new Date().toISOString(),
+    idempotency_key: idempotencyKey,
+  });
+
+  const firstName =
+    rec.first_name || firstNameFromUser({ email: rec.email, displayName: rec.display_name });
+  const result = await sendPowerUserEmail({
+    email: rec.email,
+    firstName,
+    idempotencyKey,
+    ...statsFromUsage({
+      tokensIn: rec.tokens_in,
+      tokensSaved: rec.tokens_saved,
+      requests: rec.requests,
+    }),
+  });
+
+  if (result.ok) {
+    await markPowerUser(uid, {
+      status: "sent",
+      sent_at: new Date().toISOString(),
+      provider: result.provider || "resend",
+      provider_id: result.id || null,
+      error: null,
+    });
+    return { ok: true };
+  }
+
+  await markPowerUser(uid, {
+    status: "pending",
+    error: result.error || "send_failed",
+    failed_at: new Date().toISOString(),
+  });
+  return { ok: false, error: result.error || "send_failed" };
+}
+
 /**
- * Retry pending/failed crossing emails. Never creates records — so people
+ * Retry pending/failed/sending crossing emails. Never creates records — so people
  * already over 1M with no row stay unmailed.
  */
 async function drainPendingPowerUsers() {
@@ -83,33 +129,9 @@ async function drainPendingPowerUsers() {
   let sent = 0;
   let failed = 0;
   for (const rec of pending) {
-    const firstName =
-      rec.first_name || firstNameFromUser({ email: rec.email, displayName: rec.display_name });
-    const result = await sendPowerUserEmail({
-      email: rec.email,
-      firstName,
-      ...statsFromUsage({
-        tokensIn: rec.tokens_in,
-        tokensSaved: rec.tokens_saved,
-        requests: rec.requests,
-      }),
-    });
-    if (result.ok) {
-      await markPowerUser(rec.uid, {
-        status: "sent",
-        sent_at: new Date().toISOString(),
-        provider: result.provider || "resend",
-        error: null,
-      });
-      sent += 1;
-    } else {
-      failed += 1;
-      await markPowerUser(rec.uid, {
-        status: "pending",
-        error: result.error || "send_failed",
-        failed_at: new Date().toISOString(),
-      });
-    }
+    const result = await deliverPowerUser(rec);
+    if (result.ok) sent += 1;
+    else failed += 1;
   }
   return { pending: pending.length, sent, failed };
 }
@@ -145,6 +167,8 @@ async function maybeNotifyPowerUser({
     source,
   });
   if (!claimed) {
+    // If a prior attempt died while "sending", drain will finish with same
+    // Idempotency-Key. Do not start a second claim here.
     return { ok: true, sent: false, reason: reason || "already_claimed", record };
   }
 
@@ -156,33 +180,16 @@ async function maybeNotifyPowerUser({
     return { ok: true, sent: false, reason: "no_email" };
   }
 
-  const result = await sendPowerUserEmail({
+  const result = await deliverPowerUser({
+    ...record,
     email: to,
-    firstName,
-    ...statsFromUsage({
-      tokensIn: nextTokens,
-      tokensSaved,
-      requests,
-    }),
+    first_name: firstName,
+    tokens_in: Number(nextTokens) || 0,
+    tokens_saved: Number(tokensSaved) || 0,
+    requests: Number(requests) || 0,
   });
 
-  if (result.ok) {
-    await markPowerUser(uid, {
-      status: "sent",
-      sent_at: new Date().toISOString(),
-      provider: result.provider || "resend",
-      error: null,
-    });
-    return { ok: true, sent: true };
-  }
-
-  // Stay pending so welcome-drain can retry. Do not mark failed — that would
-  // strand the crossing if this lambda dies before drain.
-  await markPowerUser(uid, {
-    status: "pending",
-    error: result.error || "send_failed",
-    failed_at: new Date().toISOString(),
-  });
+  if (result.ok) return { ok: true, sent: true };
   return { ok: false, sent: false, queued: true, reason: result.error || "send_failed" };
 }
 

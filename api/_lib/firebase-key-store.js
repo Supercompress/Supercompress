@@ -469,7 +469,7 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
         const led = await loadLedger(owner.uid, ownerClaims);
         autoOn = isAutoRechargeEnabled(ownerClaims, led);
       } catch (_) {
-        autoOn = ownerClaims.sc_auto_recharge !== false;
+        autoOn = ownerClaims.sc_auto_recharge === true;
       }
       if (autoOn) {
         const recharge = await attemptAutoRecharge(owner);

@@ -44,18 +44,83 @@ const PRIVATE_EMAIL_CONTENT_DIR = path.join(
 function parseJsonObject(raw) {
   try {
     const data = JSON.parse(raw);
-    if (!data || typeof data !== "object") return null;
+    if (!data || typeof data !== "object" || Array.isArray(data)) return null;
     return data;
   } catch {
     return null;
   }
 }
 
+/** Tip entries need subject + tipBody (or tip_body) before we render a campaign. */
+function isValidTipEntry(entry) {
+  if (!entry || typeof entry !== "object") return false;
+  const subject = String(entry.subject || "").trim();
+  const body = String(entry.tipBody || entry.tip_body || entry.body || "").trim();
+  return subject.length >= 3 && body.length >= 8;
+}
+
+function sanitizeTipsCatalog(data) {
+  if (!data || typeof data !== "object") return null;
+  const seed = Array.isArray(data.seed) ? data.seed.filter(isValidTipEntry) : [];
+  const byCampaign = {};
+  if (data.byCampaign && typeof data.byCampaign === "object") {
+    for (const [k, v] of Object.entries(data.byCampaign)) {
+      if (isValidTipEntry(v)) byCampaign[k] = v;
+    }
+  }
+  if (!seed.length && !Object.keys(byCampaign).length) return null;
+  return { ...data, seed, byCampaign };
+}
+
+function isValidShipEntry(entry) {
+  if (!entry || typeof entry !== "object") return false;
+  const subject = String(entry.subject || "").trim();
+  const bullets = entry.bullets || entry.items;
+  const hasBullets = Array.isArray(bullets) && bullets.some((b) => String(b || "").trim().length > 4);
+  const body = String(entry.body || entry.digest || "").trim();
+  return subject.length >= 3 && (hasBullets || body.length >= 8);
+}
+
+function sanitizeShipCatalog(data) {
+  if (!data || typeof data !== "object") return null;
+  // Accept either { campaigns: { id: entry } } or flat by-id maps used locally.
+  if (data.campaigns && typeof data.campaigns === "object") {
+    const campaigns = {};
+    for (const [k, v] of Object.entries(data.campaigns)) {
+      if (isValidShipEntry(v)) campaigns[k] = v;
+    }
+    if (!Object.keys(campaigns).length) return null;
+    return { ...data, campaigns };
+  }
+  // Pass through if it looks like a digest object with required fields.
+  if (isValidShipEntry(data)) return data;
+  // Or a map of week ids
+  const keys = Object.keys(data).filter((k) => k !== "seed" && k !== "byCampaign");
+  if (keys.length && keys.every((k) => typeof data[k] === "object")) {
+    const out = {};
+    for (const k of keys) {
+      if (isValidShipEntry(data[k])) out[k] = data[k];
+    }
+    if (!Object.keys(out).length) return null;
+    return out;
+  }
+  return null;
+}
+
 function loadCampaignJson(envName, fileName) {
   const fromEnv = (process.env[envName] || "").trim();
   if (fromEnv) {
     const parsed = parseJsonObject(fromEnv);
-    if (parsed) return parsed;
+    if (parsed) {
+      const sanitized =
+        envName === "WEEKLY_TIPS_JSON"
+          ? sanitizeTipsCatalog(parsed)
+          : envName === "WEEKLY_SHIP_JSON"
+            ? sanitizeShipCatalog(parsed)
+            : parsed;
+      if (sanitized) return sanitized;
+      console.warn(`${envName} failed schema validation — ignoring`);
+    }
   }
   const dirs = [];
   const contentDir = (process.env.SUPERCOMPRESS_EMAIL_CONTENT_DIR || "").trim();
@@ -65,7 +130,14 @@ function loadCampaignJson(envName, fileName) {
     try {
       const raw = fs.readFileSync(path.join(dir, fileName), "utf8");
       const parsed = parseJsonObject(raw);
-      if (parsed) return parsed;
+      if (!parsed) continue;
+      const sanitized =
+        envName === "WEEKLY_TIPS_JSON"
+          ? sanitizeTipsCatalog(parsed)
+          : envName === "WEEKLY_SHIP_JSON"
+            ? sanitizeShipCatalog(parsed)
+            : parsed;
+      if (sanitized) return sanitized;
     } catch {
       /* try next */
     }
@@ -413,6 +485,7 @@ async function sendViaResend({
   from = DEFAULT_FROM,
   unsubUrl,
   listUnsubscribeUrl,
+  idempotencyKey,
 }) {
   const apiKey = (process.env.RESEND_API_KEY || "").trim();
   if (!apiKey) {
@@ -427,12 +500,17 @@ async function sendViaResend({
     headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
   }
 
+  const reqHeaders = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+  if (idempotencyKey) {
+    reqHeaders["Idempotency-Key"] = String(idempotencyKey).slice(0, 256);
+  }
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+    headers: reqHeaders,
     body: JSON.stringify({
       from,
       to: [to],
@@ -585,7 +663,10 @@ async function sendPowerUserEmail(opts) {
     return { ok: false, error: "missing email" };
   }
   const copy = powerUserCopy(opts);
-  const result = await sendViaResend(copy);
+  const result = await sendViaResend({
+    ...copy,
+    idempotencyKey: opts.idempotencyKey || null,
+  });
   return { ...result, subject: copy.subject, text: copy.text, html: copy.html };
 }
 
