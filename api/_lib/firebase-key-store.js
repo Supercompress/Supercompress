@@ -434,6 +434,7 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
         tokensSaved: extra.tokensSaved != null ? extra.tokensSaved : tokensSaved,
         requests: extra.requests != null ? extra.requests : Number(ownerClaims.sc_usage?.requests || 0) + 1,
         source: extra.source || "compress",
+        claims: owner.customClaims || ownerClaims,
       });
     } catch (err) {
       console.warn("power-user email skipped:", err.message || err);

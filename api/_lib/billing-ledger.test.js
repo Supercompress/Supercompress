@@ -9,6 +9,7 @@ const {
   tokensToMicros,
   computeCompressFingerprint,
   assertUsageIdempotencyMatch,
+  fitCustomClaims,
 } = require("./billing-ledger");
 
 function ledger(partial = {}) {
@@ -205,5 +206,23 @@ assertUsageIdempotencyMatch(
   { tokens_in: 10, tokens_out: 5, tokens_saved: 5 },
   { fingerprint: "newfp", tokensIn: 10, tokensOut: 5, tokensSaved: 5 }
 );
+
+{
+  const fitted = fitCustomClaims({
+    sc_power_mail: "sent",
+    sc_plan: "free",
+    sc_usage: { month: "2026-08", tokens_in: 1, requests: 1 },
+    sc_recent_billing: Array.from({ length: 8 }, (_, i) => ({
+      i: `id${i}${"x".repeat(36)}`,
+      f: "f".repeat(16),
+      tin: 9999,
+      tout: 9999,
+      ts: 1,
+      b: 0,
+      t: 1786630000000,
+    })),
+  });
+  assert.strictEqual(fitted.sc_power_mail, "sent");
+}
 
 console.log("billing-ledger.test.js: ok");

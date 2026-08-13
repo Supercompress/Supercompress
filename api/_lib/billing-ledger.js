@@ -355,8 +355,9 @@ function claimsByteLength(claims) {
 }
 
 /** Firebase custom claims cap at 1000 bytes — drop bulky non-ledger fields to fit.
- * Never delete sc_recent_billing entirely (idempotency watermarks). Prefer trimming
- * agent/key metadata and compacting watermark entries. */
+ * Never delete sc_recent_billing entirely (idempotency watermarks). Never delete
+ * sc_power_mail (1M power-user email stamp). Prefer trimming agent/key metadata
+ * and compacting watermark entries. */
 function fitCustomClaims(claims) {
   const next = { ...(claims || {}) };
   const steps = [
@@ -1268,4 +1269,6 @@ module.exports = {
   FREE_TOKENS_PER_MONTH,
   REPLAY_TTL_MS,
   IDEMPOTENCY_LEASE_MS,
+  fitCustomClaims,
+  setBillingClaims,
 };

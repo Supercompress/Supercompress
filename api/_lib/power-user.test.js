@@ -7,6 +7,8 @@ const { powerUserCopy } = require("./mail");
 const {
   POWER_USER_TOKENS,
   crossedPowerUser,
+  powerMailAlreadySent,
+  shouldNotifyPowerUser,
   statsFromUsage,
   firstNameFromUser,
   isDrainablePowerUser,
@@ -20,6 +22,13 @@ assert.strictEqual(crossedPowerUser(1_000_000, 1_000_001), false);
 assert.strictEqual(crossedPowerUser(1_400_000, 1_500_000), false);
 assert.strictEqual(crossedPowerUser(800_000, 1_200_000), true);
 assert.strictEqual(crossedPowerUser("900000", "1000001"), true);
+
+assert.strictEqual(powerMailAlreadySent({ sc_power_mail: "sent" }), true);
+assert.strictEqual(powerMailAlreadySent({}), false);
+assert.strictEqual(shouldNotifyPowerUser(900_000, 1_100_000, {}), true);
+assert.strictEqual(shouldNotifyPowerUser(1_400_000, 1_400_000, {}), true);
+assert.strictEqual(shouldNotifyPowerUser(1_400_000, 1_400_000, { sc_power_mail: "sent" }), false);
+assert.strictEqual(shouldNotifyPowerUser(100, 200, {}), false);
 
 {
   const s = statsFromUsage({ tokensIn: 1_000_000, tokensSaved: 400_000, requests: 12 });

@@ -58,26 +58,35 @@ async function enforceUsageLimit(owner) {
     // Transition: treat as credit wallet with 0 balance until top-up
   }
 
-  const { loadLedger, microsToUsd } = require("../_lib/billing-ledger");
-  let ledger;
-  try {
-    ledger = await loadLedger(owner.uid, claims);
-  } catch (err) {
-    const e = new Error("Billing unavailable — try again shortly.");
-    e.status = 503;
-    e.code = "billing_unavailable";
-    throw e;
-  }
-  const tokensUsedThisPeriod = Number(ledger.tokens_in || 0);
-
-  if (tokensUsedThisPeriod < FREE_TOKENS_PER_MONTH) return;
-
+  const month = new Date().toISOString().slice(0, 7);
+  const claimUsage = claims.sc_usage?.month === month ? claims.sc_usage : {};
+  const claimUsed = Number(claimUsage.tokens_in || 0);
+  const freeUser = !isPaygEnabled(planId) && !isCreditWallet(claims);
   const upgradeUrl = "https://www.supercompress.dev/dashboard#billing";
-  const usedM = (tokensUsedThisPeriod / 1_000_000).toFixed(2);
-  const freeM = (FREE_TOKENS_PER_MONTH / 1_000_000).toFixed(0);
 
-  // Past free allowance
-  if (!isPaygEnabled(planId) && !isCreditWallet(claims)) {
+  const notifyIfPowerUser = (used) => {
+    try {
+      const { schedulePowerUserEmail } = require("../_lib/power-user");
+      schedulePowerUserEmail({
+        uid: owner.uid,
+        email: owner.email || "",
+        displayName: owner.displayName || "",
+        prevTokens: used,
+        nextTokens: used,
+        tokensSaved: Number(claimUsage.tokens_saved || 0),
+        requests: Number(claimUsage.requests || 0),
+        source: "paywall",
+        claims,
+      });
+    } catch (err) {
+      console.warn("power-user email skipped:", err.message || err);
+    }
+  };
+
+  const throwFreePaywall = (tokensUsedThisPeriod) => {
+    notifyIfPowerUser(tokensUsedThisPeriod);
+    const usedM = (tokensUsedThisPeriod / 1_000_000).toFixed(2);
+    const freeM = (FREE_TOKENS_PER_MONTH / 1_000_000).toFixed(0);
     const err = new Error(
       `PAYWALL: Free ${freeM}M tokens used (${usedM}M this month). Compression is paused. Add credits to unlock — $0.30 per 1M tokens after free (min $10 load). ${upgradeUrl}`
     );
@@ -98,6 +107,32 @@ async function enforceUsageLimit(owner) {
       action: "open_billing",
     };
     throw err;
+  };
+
+  // Claims-first: do not wait on Firestore to block free users already over 1M.
+  if (freeUser && claimUsed >= FREE_TOKENS_PER_MONTH) {
+    throwFreePaywall(claimUsed);
+  }
+
+  const { loadLedger, microsToUsd } = require("../_lib/billing-ledger");
+  let ledger;
+  try {
+    ledger = await loadLedger(owner.uid, claims);
+  } catch (err) {
+    if (freeUser && claimUsed >= FREE_TOKENS_PER_MONTH) throwFreePaywall(claimUsed);
+    if (freeUser) return;
+    const e = new Error("Billing unavailable — try again shortly.");
+    e.status = 503;
+    e.code = "billing_unavailable";
+    throw e;
+  }
+  const tokensUsedThisPeriod = Number(ledger.tokens_in || 0);
+
+  if (tokensUsedThisPeriod < FREE_TOKENS_PER_MONTH) return;
+
+  // Past free allowance
+  if (freeUser) {
+    throwFreePaywall(tokensUsedThisPeriod);
   }
 
   let balance = roundUsd(
