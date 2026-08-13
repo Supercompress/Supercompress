@@ -26,6 +26,7 @@ Public page: https://www.supercompress.dev/changelog
 - Soft-200 scanner/probe noise (`softProbe`) so Vercel Observability error rate stays ~0; real clients with credentials still get proper 4xx
 - Auto branded **power-user email** when someone hits 1M tokens (once ever). Delivery is Auth-claim + Resend idempotency, not Firestore; welcome-drain backfills anyone already over 1M. Free users at 1M are paywalled from Auth claims even if Firestore is down.
 - Welcome-drain no longer aborts on gist/store errors before sending 1M power-user mail; `op=power-user-drain` can run that lane alone.
+- **No Firestore on the hot path** (default). Billing, keys, welcome/weekly mail, and rate limits use Auth claims + Resend idempotency. Gist is optional/cold only. Set `SUPERCOMPRESS_USE_FIRESTORE=1` to opt back in after the API is enabled.
 - **Dashboard Analytics panel** (dither charts): live usage from `/api/keys` after sign-in — tokens saved, requests, coding agents, and key breakdown. `/analytics` stays inside `/dashboard?panel=analytics`.
 - Fix Analytics chart paint: Bayer wells + stacked dither canvases, wait for layout before draw, no demo/fake flash on production.
 - Align `/api/account?op=usage` + dashboard `account_usage` with the billing ledger (CLI no longer under-counts vs dashboard)

@@ -170,6 +170,10 @@ async function loadViaStore(ownerUid) {
 
 async function appendCompressLog(ownerUid, entry) {
   if (!ownerUid) return { ok: false, reason: "no_owner" };
+  const { skipFirestore } = require("./firebase-off");
+  if (skipFirestore()) {
+    return { ok: false, reason: "firestore_skipped" };
+  }
   try {
     await appendViaFirestore(ownerUid, entry);
     return { ok: true, storage: "firestore", entry: normalizeEntry(entry) };
@@ -200,6 +204,16 @@ async function appendCompressLog(ownerUid, entry) {
 
 async function listCompressLog(ownerUid, { limit = 40 } = {}) {
   if (!ownerUid) return { entries: [], updated_at: null };
+  const { skipFirestore } = require("./firebase-off");
+  if (skipFirestore()) {
+    return {
+      entries: [],
+      updated_at: null,
+      storage: "skipped",
+      caps: { max_entries: MAX_ENTRIES, preview_chars: PREVIEW_MAX },
+      note: "Previews only — full dumps are never stored.",
+    };
+  }
   const lim = Math.max(1, Math.min(MAX_ENTRIES, Number(limit) || MAX_ENTRIES));
   try {
     const fromFs = await loadViaFirestore(ownerUid);

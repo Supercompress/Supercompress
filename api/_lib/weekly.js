@@ -8,6 +8,15 @@ const { mutateStore, loadStore } = require("./store");
 const { sendWeeklyEmail, weeklyEmailCopy, campaignKind } = require("./mail");
 const { drainSecretOk } = require("./welcome");
 
+async function loadStoreSafe() {
+  try {
+    return await loadStore();
+  } catch (err) {
+    console.warn("weekly: store skipped:", err.message);
+    return { weekly_emails: {}, weekly_unsubscribes: {} };
+  }
+}
+
 const BATCH_SIZE = Math.max(
   5,
   Math.min(40, Number(process.env.WEEKLY_EMAIL_BATCH || 25) || 25)
@@ -157,23 +166,30 @@ async function listAuthRecipients() {
         uid: user.uid,
         email: String(user.email).trim().toLowerCase(),
         first_name: firstNameFromUser(user),
+        sc_wk: (user.customClaims || {}).sc_wk || "",
+        sc_unsub: (user.customClaims || {}).sc_unsub || "",
       });
     }
     pageToken = page.pageToken;
   } while (pageToken);
 
-  // Also include anyone who got a welcome email (covers edge cases)
-  const store = await loadStore();
-  for (const rec of Object.values(store.welcome_emails || {})) {
-    if (!rec?.email || !rec?.uid || isStubUid(rec.uid)) continue;
-    const email = String(rec.email).trim().toLowerCase();
-    if (!email.includes("@")) continue;
-    if (out.some((r) => r.uid === rec.uid || r.email === email)) continue;
-    out.push({
-      uid: rec.uid,
-      email,
-      first_name: rec.first_name || "",
-    });
+  try {
+    const store = await loadStore();
+    for (const rec of Object.values(store.welcome_emails || {})) {
+      if (!rec?.email || !rec?.uid || isStubUid(rec.uid)) continue;
+      const email = String(rec.email).trim().toLowerCase();
+      if (!email.includes("@")) continue;
+      if (out.some((r) => r.uid === rec.uid || r.email === email)) continue;
+      out.push({
+        uid: rec.uid,
+        email,
+        first_name: rec.first_name || "",
+        sc_wk: "",
+        sc_unsub: "",
+      });
+    }
+  } catch (err) {
+    console.warn("weekly: gist recipient merge skipped:", err.message);
   }
   return out;
 }
@@ -187,6 +203,7 @@ async function enqueueWeeklyCampaign(campaignId = isoWeekCampaignId()) {
   let queued = 0;
   let skipped = 0;
 
+  try {
   for (let i = 0; i < recipients.length; i += ENQUEUE_CHUNK) {
     const chunk = recipients.slice(i, i + ENQUEUE_CHUNK);
     const result = await mutateStore((store) => {
@@ -226,10 +243,15 @@ async function enqueueWeeklyCampaign(campaignId = isoWeekCampaignId()) {
     skipped += result?.chunkSkipped || 0;
   }
 
-  const store = await loadStore();
-  const pending = Object.values(store.weekly_emails || {}).filter(
-    (r) => r.campaign_id === campaignId && r.status === "pending"
-  ).length;
+  let pending = 0;
+  try {
+    const store = await loadStore();
+    pending = Object.values(store.weekly_emails || {}).filter(
+      (r) => r.campaign_id === campaignId && r.status === "pending"
+    ).length;
+  } catch (_) {
+    pending = recipients.filter((r) => r.sc_wk !== campaignId && !r.sc_unsub).length;
+  }
   return {
     campaign_id: campaignId,
     recipients: recipients.length,
@@ -237,6 +259,17 @@ async function enqueueWeeklyCampaign(campaignId = isoWeekCampaignId()) {
     skipped,
     pending,
   };
+  } catch (err) {
+    console.warn("enqueueWeeklyCampaign: store skipped:", err.message);
+    return {
+      campaign_id: campaignId,
+      recipients: recipients.length,
+      queued,
+      skipped,
+      pending: recipients.filter((r) => r.sc_wk !== campaignId && !r.sc_unsub).length,
+      store_error: err.message,
+    };
+  }
 }
 
 async function markWeekly(key, patch) {
@@ -249,7 +282,7 @@ async function markWeekly(key, patch) {
 }
 
 async function listPendingWeekly(campaignId, { includeHtml = true } = {}) {
-  const store = await loadStore();
+  const store = await loadStoreSafe();
   const cid = campaignId || null;
   return Object.values(store.weekly_emails || {})
     .filter((r) => r && r.status === "pending" && r.email && (!cid || r.campaign_id === cid))
@@ -288,7 +321,13 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
     };
   }
 
-  const store = await loadStore();
+  let store;
+  try {
+    store = await loadStore();
+  } catch (err) {
+    console.warn("drainPendingWeekly: store skipped:", err.message);
+    return { batch: 0, sent: 0, failed: 0, remaining: 0, errors: [], mode: "auth_tick" };
+  }
   const cid = campaignId || null;
   const pending = Object.values(store.weekly_emails || {})
     .filter(
@@ -332,7 +371,7 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
     }
   }
 
-  const remainingStore = await loadStore();
+  const remainingStore = await loadStoreSafe();
   const remaining = Object.values(remainingStore.weekly_emails || {}).filter(
     (r) => r.status === "pending" && r.email
   ).length;
@@ -412,7 +451,12 @@ async function weeklyTick(opts = {}) {
   }
 
   const recipients = await listAuthRecipients();
-  const store = await loadStore();
+  let store = { weekly_emails: {}, weekly_unsubscribes: {} };
+  try {
+    store = await loadStore();
+  } catch (err) {
+    console.warn("weeklyTick: store skipped:", err.message);
+  }
   const unsubs = store.weekly_unsubscribes || {};
   const records = store.weekly_emails || {};
 
@@ -424,11 +468,11 @@ async function weeklyTick(opts = {}) {
   for (const r of recipients) {
     if (sent + failed >= BATCH_SIZE) break;
     const key = `${campaignId}:${r.uid}`;
-    if (isUnsubscribed({ weekly_unsubscribes: unsubs }, r.email)) {
+    if (isUnsubscribed({ weekly_unsubscribes: unsubs }, r.email) || r.sc_unsub) {
       skipped += 1;
       continue;
     }
-    if (records[key]?.status === "sent") {
+    if (records[key]?.status === "sent" || r.sc_wk === campaignId) {
       skipped += 1;
       continue;
     }
@@ -442,6 +486,14 @@ async function weeklyTick(opts = {}) {
     });
 
     if (result.ok) {
+      try {
+        const admin = require("firebase-admin");
+        const { setBillingClaims } = require("./billing-ledger");
+        const fresh = await admin.auth().getUser(r.uid);
+        await setBillingClaims(r.uid, { ...(fresh.customClaims || {}), sc_wk: String(campaignId).slice(0, 24) });
+      } catch (stampErr) {
+        errors.push({ email: r.email, error: `sent_but_stamp_failed: ${stampErr.message}` });
+      }
       try {
         await markWeekly(key, {
           key,
@@ -484,7 +536,7 @@ async function weeklyTick(opts = {}) {
     }
   }
 
-  const remainingStore = await loadStore();
+  const remainingStore = await loadStoreSafe();
   const remaining = Object.values(remainingStore.weekly_emails || {}).filter(
     (r) => r.status === "pending" && r.email
   ).length;
@@ -525,21 +577,37 @@ async function unsubscribeEmail(email, token, { confirmOnly = false } = {}) {
     err.status = 401;
     throw err;
   }
-  await mutateStore((store) => {
-    if (!store.weekly_unsubscribes) store.weekly_unsubscribes = {};
-    store.weekly_unsubscribes[clean] = {
-      email: clean,
-      at: new Date().toISOString(),
-      via: confirmOnly && !token ? "confirm" : "token",
-    };
-    // Cancel pending for this email
-    for (const [key, rec] of Object.entries(store.weekly_emails || {})) {
-      if (rec && String(rec.email || "").trim().toLowerCase() === clean && rec.status === "pending") {
-        store.weekly_emails[key] = { ...rec, status: "unsubscribed" };
+  try {
+    const admin = require("firebase-admin");
+    const { initFirebaseAdmin } = require("./auth");
+    const { setBillingClaims } = require("./billing-ledger");
+    if (initFirebaseAdmin()) {
+      const user = await admin.auth().getUserByEmail(clean).catch(() => null);
+      if (user) {
+        await setBillingClaims(user.uid, { ...(user.customClaims || {}), sc_unsub: "1" });
       }
     }
-    return { ok: true };
-  });
+  } catch (err) {
+    console.warn("unsubscribe: auth stamp skipped:", err.message);
+  }
+  try {
+    await mutateStore((store) => {
+      if (!store.weekly_unsubscribes) store.weekly_unsubscribes = {};
+      store.weekly_unsubscribes[clean] = {
+        email: clean,
+        at: new Date().toISOString(),
+        via: confirmOnly && !token ? "confirm" : "token",
+      };
+      for (const [key, rec] of Object.entries(store.weekly_emails || {})) {
+        if (rec && String(rec.email || "").trim().toLowerCase() === clean && rec.status === "pending") {
+          store.weekly_emails[key] = { ...rec, status: "unsubscribed" };
+        }
+      }
+      return { ok: true };
+    });
+  } catch (err) {
+    console.warn("unsubscribe: store skipped:", err.message);
+  }
   return { ok: true, email: clean };
 }
 

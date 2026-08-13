@@ -102,8 +102,26 @@ async function handleSignupWelcome(req, body, user) {
   const createdAt = body.creation_time || null;
   const recent = forceNew || isRecentlyCreated(createdAt);
 
-  const existingStore = await loadStore();
-  const prior = existingStore.welcome_emails?.[user.uid];
+  const admin = require("firebase-admin");
+  const { initFirebaseAdmin } = require("./auth");
+  let liveClaims = {};
+  if (initFirebaseAdmin() && user.uid) {
+    try {
+      const fresh = await admin.auth().getUser(user.uid);
+      liveClaims = fresh.customClaims || {};
+    } catch (_) {}
+  }
+  if (String(liveClaims.sc_welcome || "") === "sent") {
+    return { ok: true, sent: false, reason: "already_sent" };
+  }
+
+  let prior = null;
+  try {
+    const existingStore = await loadStore();
+    prior = existingStore.welcome_emails?.[user.uid];
+  } catch (err) {
+    console.warn("welcome: store lookup skipped:", err.message);
+  }
   if (prior?.status === "sent") {
     return { ok: true, sent: false, reason: "already_sent" };
   }
@@ -123,19 +141,33 @@ async function handleSignupWelcome(req, body, user) {
     email,
     firstName,
     body.source || "dashboard_signup"
-  );
+  ).catch((err) => {
+    console.warn("welcome: store claim skipped:", err.message);
+    return { claimed: true, record: { uid: user.uid, email, first_name: firstName } };
+  });
   if (!claimed) {
     return { ok: true, sent: false, reason: "already_queued" };
   }
 
-  const result = await sendWelcomeEmail({ email, firstName });
+  const result = await sendWelcomeEmail({
+    email,
+    firstName,
+    idempotencyKey: `welcome-${user.uid}`,
+  });
   if (result.ok) {
+    try {
+      const { setBillingClaims } = require("./billing-ledger");
+      const fresh = await admin.auth().getUser(user.uid);
+      await setBillingClaims(user.uid, { ...(fresh.customClaims || liveClaims), sc_welcome: "sent" });
+    } catch (err) {
+      console.warn("welcome: claim stamp skipped:", err.message);
+    }
     await markWelcome(user.uid, {
       status: "sent",
       sent_at: new Date().toISOString(),
       provider: result.provider || "resend",
       error: null,
-    });
+    }).catch((err) => console.warn("welcome: store mark skipped:", err.message));
     return { ok: true, sent: true, provider: result.provider };
   }
 
@@ -143,7 +175,7 @@ async function handleSignupWelcome(req, body, user) {
     status: "pending",
     provider: null,
     error: result.error || "queued_for_drain",
-  });
+  }).catch((err) => console.warn("welcome: store queue skipped:", err.message));
   return {
     ok: true,
     sent: false,
@@ -154,28 +186,38 @@ async function handleSignupWelcome(req, body, user) {
 }
 
 async function listPendingWelcomes() {
-  const store = await loadStore();
-  return Object.values(store.welcome_emails || {})
-    .filter((r) => r && r.status === "pending" && r.email)
-    .map((r) => {
-      const copy = welcomeCopy({ firstName: r.first_name, email: r.email });
-      return {
-        uid: r.uid,
-        email: r.email,
-        first_name: r.first_name || "",
-        subject: copy.subject,
-        body: copy.text,
-        html: copy.html,
-        queued_at: r.queued_at || null,
-      };
-    });
+  try {
+    const store = await loadStore();
+    return Object.values(store.welcome_emails || {})
+      .filter((r) => r && r.status === "pending" && r.email)
+      .map((r) => {
+        const copy = welcomeCopy({ firstName: r.first_name, email: r.email });
+        return {
+          uid: r.uid,
+          email: r.email,
+          first_name: r.first_name || "",
+          subject: copy.subject,
+          body: copy.text,
+          html: copy.html,
+          queued_at: r.queued_at || null,
+        };
+      });
+  } catch (err) {
+    console.warn("welcome list: store skipped:", err.message);
+    return [];
+  }
 }
 
 async function drainPendingWelcomes() {
-  const store = await loadStore();
-  const pending = Object.values(store.welcome_emails || {}).filter(
-    (r) => r && r.status === "pending" && r.email
-  );
+  let pending = [];
+  try {
+    const store = await loadStore();
+    pending = Object.values(store.welcome_emails || {}).filter(
+      (r) => r && r.status === "pending" && r.email
+    );
+  } catch (err) {
+    console.warn("welcome drain: store skipped:", err.message);
+  }
 
   let sent = 0;
   let failed = 0;
@@ -183,6 +225,7 @@ async function drainPendingWelcomes() {
     const result = await sendWelcomeEmail({
       email: rec.email,
       firstName: rec.first_name || "",
+      idempotencyKey: `welcome-${rec.uid}`,
     });
     if (result.ok) {
       await markWelcome(rec.uid, {
@@ -190,13 +233,56 @@ async function drainPendingWelcomes() {
         sent_at: new Date().toISOString(),
         provider: result.provider || "resend",
         error: null,
-      });
+      }).catch(() => {});
+      try {
+        const admin = require("firebase-admin");
+        const { setBillingClaims } = require("./billing-ledger");
+        const fresh = await admin.auth().getUser(rec.uid);
+        await setBillingClaims(rec.uid, { ...(fresh.customClaims || {}), sc_welcome: "sent" });
+      } catch (_) {}
       sent += 1;
     } else {
       failed += 1;
     }
   }
-  return { pending: pending.length, sent, failed };
+
+  let authMailed = 0;
+  try {
+    const admin = require("firebase-admin");
+    const { initFirebaseAdmin } = require("./auth");
+    if (initFirebaseAdmin()) {
+      const NEW_MS = 24 * 60 * 60 * 1000;
+      let pageToken;
+      do {
+        const page = await admin.auth().listUsers(1000, pageToken);
+        for (const user of page.users) {
+          if (authMailed >= 20) break;
+          if (!user.email || user.disabled || /^(sck_|sc_at_|sc_ac_|sc_aff_)/.test(user.uid)) continue;
+          if (String((user.customClaims || {}).sc_welcome || "") === "sent") continue;
+          const created = Date.parse(user.metadata?.creationTime || 0);
+          if (!Number.isFinite(created) || Date.now() - created > NEW_MS) continue;
+          const firstName = firstNameFromUser(user);
+          const result = await sendWelcomeEmail({
+            email: user.email,
+            firstName,
+            idempotencyKey: `welcome-${user.uid}`,
+          });
+          if (result.ok) {
+            try {
+              const { setBillingClaims } = require("./billing-ledger");
+              await setBillingClaims(user.uid, { ...(user.customClaims || {}), sc_welcome: "sent" });
+            } catch (_) {}
+            authMailed += 1;
+          }
+        }
+        pageToken = authMailed >= 20 ? null : page.pageToken;
+      } while (pageToken);
+    }
+  } catch (err) {
+    console.warn("welcome drain: auth scan skipped:", err.message);
+  }
+
+  return { pending: pending.length, sent, failed, auth: { mailed: authMailed } };
 }
 
 module.exports = {

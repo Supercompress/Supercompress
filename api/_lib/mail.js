@@ -533,12 +533,15 @@ async function sendViaResend({
   return { ok: true, provider: "resend", id: body?.id || null };
 }
 
-async function sendWelcomeEmail({ email, firstName }) {
+async function sendWelcomeEmail({ email, firstName, idempotencyKey }) {
   if (!email || !String(email).includes("@")) {
     return { ok: false, error: "missing email" };
   }
   const copy = welcomeCopy({ firstName, email: String(email).trim() });
-  const result = await sendViaResend(copy);
+  const result = await sendViaResend({
+    ...copy,
+    idempotencyKey: idempotencyKey || null,
+  });
   return { ...result, subject: copy.subject, text: copy.text, html: copy.html };
 }
 

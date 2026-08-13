@@ -125,7 +125,12 @@ async function findAuthBackedKey(secret) {
 }
 
 async function listKeys(ownerUid) {
-  const store = await loadStore({ forceRemote: true });
+  let store = { keys: {}, usage: {} };
+  try {
+    store = await loadStore({ forceRemote: true });
+  } catch (err) {
+    console.warn("listKeys: store skipped:", err.message);
+  }
 
   // One-time pull of any remaining Auth-indexed keys for this owner.
   try {
@@ -135,14 +140,32 @@ async function listKeys(ownerUid) {
       if (store.keys[uid]) continue;
       const user = await auth().getUser(uid).catch(() => null);
       if (user?.customClaims?.sc_api_key) {
-        await migrateAuthKeyToStore(user, null);
+        try {
+          await migrateAuthKeyToStore(user, null);
+        } catch (migErr) {
+          store.keys[uid] = {
+            id: uid,
+            user_id: ownerUid,
+            name: user.customClaims.sc_name || "API key",
+            prefix: user.customClaims.sc_prefix || "",
+            created_at: user.customClaims.sc_created || user.metadata?.creationTime,
+            last_used_at: user.customClaims.sc_last || null,
+            revoked: Boolean(user.disabled),
+          };
+          console.warn("listKeys: Auth migrate skipped:", migErr.message);
+        }
       }
     }
   } catch (err) {
     console.warn("listKeys: Auth migration skipped:", err.message);
   }
 
-  const fresh = await loadStore({ forceRemote: true });
+  let fresh = store;
+  try {
+    fresh = await loadStore({ forceRemote: true });
+  } catch (_) {
+    fresh = store;
+  }
   const keys = listUserKeys(fresh, ownerUid).map(publicKey);
   let usage = userUsage(fresh, ownerUid);
 
@@ -240,34 +263,42 @@ async function listKeys(ownerUid) {
 }
 
 async function createKey(ownerUid, name, maxKeys) {
-  await ownerRecord(ownerUid); // ensure real account exists
+  await ownerRecord(ownerUid);
+  const { skipFirestore } = require("./firebase-off");
+  if (!skipFirestore()) {
+    try {
+      return await mutateStore((store) => {
+        const active = listUserKeys(store, ownerUid);
+        if (active.length >= maxKeys) {
+          const err = new Error(`Plan limit reached: ${maxKeys} API keys. Upgrade to increase this limit.`);
+          err.status = 429;
+          throw err;
+        }
 
-  return mutateStore((store) => {
-    const active = listUserKeys(store, ownerUid);
-    if (active.length >= maxKeys) {
-      const err = new Error(`Plan limit reached: ${maxKeys} API keys. Upgrade to increase this limit.`);
-      err.status = 429;
-      throw err;
+        const gen = generateApiKey();
+        const id = `key_${crypto.randomBytes(12).toString("hex")}`;
+        const created = new Date().toISOString();
+        const rec = {
+          id,
+          user_id: ownerUid,
+          name: String(name || "Production").trim().slice(0, 80) || "Production",
+          prefix: gen.prefix,
+          key_hash: gen.key_hash,
+          created_at: created,
+          last_used_at: null,
+          revoked: false,
+        };
+        store.keys[id] = rec;
+        store.hash_index[gen.key_hash] = id;
+        store.usage[id] = {};
+        return { key: publicKey(rec), secret: gen.full_key };
+      });
+    } catch (err) {
+      console.warn("createKey: store skipped, Auth stub:", err.message);
     }
-
-    const gen = generateApiKey();
-    const id = `key_${crypto.randomBytes(12).toString("hex")}`;
-    const created = new Date().toISOString();
-    const rec = {
-      id,
-      user_id: ownerUid,
-      name: String(name || "Production").trim().slice(0, 80) || "Production",
-      prefix: gen.prefix,
-      key_hash: gen.key_hash,
-      created_at: created,
-      last_used_at: null,
-      revoked: false,
-    };
-    store.keys[id] = rec;
-    store.hash_index[gen.key_hash] = id;
-    store.usage[id] = {};
-    return { key: publicKey(rec), secret: gen.full_key };
-  });
+  }
+  const { createAuthPluginKey } = require("./auth-connect");
+  return createAuthPluginKey(ownerUid, name || "Production");
 }
 
 async function getOwnedKey(ownerUid, keyUid) {
@@ -536,43 +567,46 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
       console.warn("recordUsage: durable key_usage skipped:", err.message);
     }
 
-    try {
-      await mutateStore((store) => {
-        if (!store.keys[keyId]) {
-          store.keys[keyId] = {
-            id: keyId,
-            user_id: ownerUid,
-            name: keyRec.name || "API key",
-            prefix: keyRec.prefix || "",
-            key_hash: keyRec.key_hash || null,
-            created_at: keyRec.created_at || now,
-            last_used_at: now,
-            revoked: false,
-          };
-          if (keyRec.key_hash) store.hash_index[keyRec.key_hash] = keyId;
-        } else {
-          store.keys[keyId].last_used_at = now;
-        }
-        if (durableOk) return store.keys[keyId];
-        if (!store.usage[keyId]) store.usage[keyId] = {};
-        if (!store.usage[keyId][day]) {
-          store.usage[keyId][day] = {
-            key_id: keyId,
-            requests: 0,
-            tokens_in: 0,
-            tokens_out: 0,
-            tokens_saved: 0,
-          };
-        }
-        const u = store.usage[keyId][day];
-        u.requests += 1;
-        u.tokens_in += compressed.original_tokens;
-        u.tokens_out += compressed.kept_tokens;
-        u.tokens_saved += tokensSaved;
-        return u;
-      });
-    } catch (err) {
-      console.warn("recordUsage: store update skipped:", err.message);
+    const { skipFirestore } = require("./firebase-off");
+    if (!skipFirestore()) {
+      try {
+        await mutateStore((store) => {
+          if (!store.keys[keyId]) {
+            store.keys[keyId] = {
+              id: keyId,
+              user_id: ownerUid,
+              name: keyRec.name || "API key",
+              prefix: keyRec.prefix || "",
+              key_hash: keyRec.key_hash || null,
+              created_at: keyRec.created_at || now,
+              last_used_at: now,
+              revoked: false,
+            };
+            if (keyRec.key_hash) store.hash_index[keyRec.key_hash] = keyId;
+          } else {
+            store.keys[keyId].last_used_at = now;
+          }
+          if (durableOk) return store.keys[keyId];
+          if (!store.usage[keyId]) store.usage[keyId] = {};
+          if (!store.usage[keyId][day]) {
+            store.usage[keyId][day] = {
+              key_id: keyId,
+              requests: 0,
+              tokens_in: 0,
+              tokens_out: 0,
+              tokens_saved: 0,
+            };
+          }
+          const u = store.usage[keyId][day];
+          u.requests += 1;
+          u.tokens_in += compressed.original_tokens;
+          u.tokens_out += compressed.kept_tokens;
+          u.tokens_saved += tokensSaved;
+          return u;
+        });
+      } catch (err) {
+        console.warn("recordUsage: store update skipped:", err.message);
+      }
     }
 
     if (String(keyId).startsWith(KEY_UID_PREFIX)) {

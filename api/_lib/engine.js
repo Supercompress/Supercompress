@@ -108,6 +108,8 @@ function ccrOwnerDocPath(ownerUid, hash) {
  */
 async function ccrStoreFirestore(hash, originalText, meta = {}) {
   try {
+    const { skipFirestore } = require("./firebase-off");
+    if (skipFirestore()) return false;
     const admin = require("firebase-admin");
     const { initFirebaseAdmin } = require("./auth");
     initFirebaseAdmin();

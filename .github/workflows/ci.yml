@@ -60,6 +60,8 @@ jobs:
         run: node api/_lib/coding-agent-usage.test.js
       - name: Soft-probe unit tests
         run: node api/_lib/http-soft-probe.test.js
+      - name: Firestore skip default
+        run: node api/_lib/firebase-off.test.js
       - name: Power-user milestone unit tests
         run: node api/_lib/power-user.test.js
       - name: Analytics aggregation unit tests

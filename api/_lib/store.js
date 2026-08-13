@@ -15,12 +15,13 @@
 const { initFirebaseAdmin } = require("./auth");
 const { gistConfigured, loadGistStore, saveGistStore } = require("./gist-store");
 const { agentUsageForMonth } = require("./coding-agent-usage");
+const { skipFirestore } = require("./firebase-off");
 
 let /** @type {import("firebase-admin").firestore.Firestore | null} */ _db = null;
 
 /** In-process write-through cache — same warm lambda sees updates immediately. */
 let writeCache = null;
-let firestoreUnavailable = false;
+let firestoreUnavailable = skipFirestore();
 let useGistStore = false;
 
 /** Gist is the real prod store while Firestore API is disabled on this project.
@@ -208,8 +209,9 @@ async function loadStoreFromAuth() {
 // ---------------------------------------------------------------------------
 
 async function loadStoreRemote() {
-  // Prefer Firestore whenever Admin credentials exist. Gist is emergency-only —
-  // using it for every write burns GitHub rate limits and breaks connect/setup.
+  if (skipFirestore()) firestoreUnavailable = true;
+  // Prefer Firestore whenever Admin credentials exist AND it is opted in.
+  // Gist is emergency-only — using it for every write burns GitHub rate limits.
   if (!firestoreUnavailable) {
     try {
       const snap = await db().doc("config/store").get();
@@ -475,6 +477,34 @@ function mergeKeySnaps(a = {}, b = {}) {
 }
 
 /**
+ * Durable per-key usage — Auth stub claims when Firestore is off (no gist).
+ * Compact `sc_ku` on the sck_* key user: { m, r, tin, tout, ts }.
+ */
+async function trackKeyUsageOnAuth(keyId, stats = {}) {
+  if (!String(keyId || "").startsWith("sck_")) return false;
+  if (!initFirebaseAdmin()) return false;
+  const month = new Date().toISOString().slice(0, 7);
+  const user = await require("firebase-admin").auth().getUser(keyId).catch(() => null);
+  if (!user || user.disabled) return false;
+  const prev = user.customClaims || {};
+  const ku =
+    prev.sc_ku && prev.sc_ku.m === month
+      ? { ...prev.sc_ku }
+      : { m: month, r: 0, tin: 0, tout: 0, ts: 0 };
+  ku.r = (Number(ku.r) || 0) + 1;
+  ku.tin = (Number(ku.tin) || 0) + Math.max(0, Number(stats.original_tokens) || 0);
+  ku.tout = (Number(ku.tout) || 0) + Math.max(0, Number(stats.kept_tokens) || 0);
+  ku.ts = (Number(ku.ts) || 0) + Math.max(0, Number(stats.tokens_saved) || 0);
+  const { setBillingClaims } = require("./billing-ledger");
+  await setBillingClaims(keyId, {
+    ...prev,
+    sc_ku: ku,
+    sc_last: stats.now || new Date().toISOString(),
+  });
+  return true;
+}
+
+/**
  * Durable per-key usage — dedicated Firestore doc (same pattern as coding_agent_usage).
  * The monolithic config/store was dropping key meters while Auth sc_usage (billing) kept growing.
  */
@@ -490,6 +520,21 @@ async function trackKeyUsage(ownerUid, keyRec, stats = {}) {
     Number(stats.tokens_saved) || Math.max(0, tokensIn - tokensOut)
   );
   const now = new Date().toISOString();
+
+  const { skipFirestore } = require("./firebase-off");
+  if (skipFirestore() || firestoreUnavailable) {
+    try {
+      return await trackKeyUsageOnAuth(keyId, {
+        original_tokens: tokensIn,
+        kept_tokens: tokensOut,
+        tokens_saved: tokensSaved,
+        now,
+      });
+    } catch (err) {
+      console.warn("store: auth key_usage skipped:", err.message);
+      return false;
+    }
+  }
 
   const bump = (prev = {}) => {
     const byDay = { ...(prev.by_day || {}) };
@@ -519,43 +564,6 @@ async function trackKeyUsage(ownerUid, keyRec, stats = {}) {
     };
   };
 
-  if (firestoreUnavailable) {
-    await mutateStore((store) => {
-      if (!store.keys[keyId]) {
-        store.keys[keyId] = {
-          id: keyId,
-          user_id: ownerUid,
-          name: keyRec.name || "API key",
-          prefix: keyRec.prefix || "",
-          key_hash: keyRec.key_hash || null,
-          created_at: keyRec.created_at || now,
-          last_used_at: now,
-          revoked: false,
-        };
-        if (keyRec.key_hash) store.hash_index[keyRec.key_hash] = keyId;
-      } else {
-        store.keys[keyId].last_used_at = now;
-      }
-      if (!store.usage[keyId]) store.usage[keyId] = {};
-      if (!store.usage[keyId][day]) {
-        store.usage[keyId][day] = {
-          key_id: keyId,
-          requests: 0,
-          tokens_in: 0,
-          tokens_out: 0,
-          tokens_saved: 0,
-        };
-      }
-      const u = store.usage[keyId][day];
-      u.requests += 1;
-      u.tokens_in += tokensIn;
-      u.tokens_out += tokensOut;
-      u.tokens_saved += tokensSaved;
-      return u;
-    });
-    return true;
-  }
-
   const docRef = db().collection("key_usage").doc(ownerUid);
   await db().runTransaction(async (tx) => {
     const snap = await tx.get(docRef);
@@ -570,6 +578,28 @@ async function trackKeyUsage(ownerUid, keyRec, stats = {}) {
 async function loadKeyUsage(ownerUid) {
   if (!ownerUid) return {};
   const out = {};
+  if (skipFirestore()) {
+    try {
+      const owner = await require("firebase-admin").auth().getUser(ownerUid);
+      const ids = Array.isArray(owner.customClaims?.sc_key_ids) ? owner.customClaims.sc_key_ids : [];
+      const month = new Date().toISOString().slice(0, 7);
+      for (const id of ids) {
+        const user = await require("firebase-admin").auth().getUser(id).catch(() => null);
+        const ku = user?.customClaims?.sc_ku;
+        if (!ku || ku.m !== month) continue;
+        out[id] = {
+          total_requests: Number(ku.r) || 0,
+          total_tokens_in: Number(ku.tin) || 0,
+          total_tokens_out: Number(ku.tout) || 0,
+          total_tokens_saved: Number(ku.ts) || 0,
+          by_day: {},
+        };
+      }
+    } catch (err) {
+      console.warn("store: auth key_usage read skipped:", err.message);
+    }
+    return out;
+  }
   if (!firestoreUnavailable) {
     try {
       const snap = await db().collection("key_usage").doc(ownerUid).get();

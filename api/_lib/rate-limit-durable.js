@@ -15,6 +15,9 @@
 const crypto = require("crypto");
 const admin = require("firebase-admin");
 const { initFirebaseAdmin } = require("./auth");
+const { skipFirestore } = require("./firebase-off");
+
+const memoryBuckets = new Map();
 
 function bucketId(key, windowMs) {
   const bucket = Math.floor(Date.now() / windowMs);
@@ -41,6 +44,27 @@ function sanitizeHitId(raw) {
   return s;
 }
 
+function memoryRateLimit(key, maxRequests, windowMs) {
+  const id = bucketId(key, windowMs);
+  const resetMs = Math.ceil(Date.now() / windowMs) * windowMs;
+  const prev = memoryBuckets.get(id) || { count: 0, resetMs };
+  const count = prev.resetMs === resetMs ? prev.count + 1 : 1;
+  memoryBuckets.set(id, { count, resetMs });
+  if (memoryBuckets.size > 4000) {
+    const now = Date.now();
+    for (const [k, v] of memoryBuckets) {
+      if (v.resetMs < now) memoryBuckets.delete(k);
+    }
+  }
+  return {
+    allowed: count <= maxRequests,
+    remaining: Math.max(0, maxRequests - count),
+    resetMs,
+    limit: maxRequests,
+    backend: "memory",
+  };
+}
+
 /**
  * @param {string} key
  * @param {number} maxRequests
@@ -50,16 +74,12 @@ function sanitizeHitId(raw) {
  */
 async function checkDurableRateLimit(key, maxRequests, windowMs = 60_000, opts = {}) {
   const resetMs = Math.ceil(Date.now() / windowMs) * windowMs;
+  if (skipFirestore()) {
+    return memoryRateLimit(key, maxRequests, windowMs);
+  }
   const firestore = db();
   if (!firestore) {
-    return {
-      allowed: false,
-      remaining: 0,
-      resetMs,
-      limit: maxRequests,
-      backend: "firestore-unavailable",
-      error: "firebase_unavailable",
-    };
+    return memoryRateLimit(key, maxRequests, windowMs);
   }
 
   const id = bucketId(key, windowMs);
@@ -124,14 +144,7 @@ async function checkDurableRateLimit(key, maxRequests, windowMs = 60_000, opts =
     };
   } catch (err) {
     console.warn("durable rate limit unavailable", err?.message || err);
-    return {
-      allowed: false,
-      remaining: 0,
-      resetMs,
-      limit: maxRequests,
-      backend: "firestore-unavailable",
-      error: err?.message || "firestore_unavailable",
-    };
+    return memoryRateLimit(key, maxRequests, windowMs);
   }
 }
 

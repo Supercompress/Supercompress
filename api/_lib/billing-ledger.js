@@ -326,7 +326,12 @@ async function withFirestoreTimeout(work, timeoutMs = 1200) {
 }
 
 async function loadLedger(uid, claims = {}) {
-  if (!uid || !initFirebaseAdmin()) {
+  if (!uid) {
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
+  }
+  const { skipFirestore } = require("./firebase-off");
+  if (skipFirestore()) return normalizeLedger(null, claims);
+  if (!initFirebaseAdmin()) {
     throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
   try {
@@ -356,8 +361,7 @@ function claimsByteLength(claims) {
 
 /** Firebase custom claims cap at 1000 bytes — drop bulky non-ledger fields to fit.
  * Never delete sc_recent_billing entirely (idempotency watermarks). Never delete
- * sc_power_mail (1M power-user email stamp). Prefer trimming agent/key metadata
- * and compacting watermark entries. */
+ * sc_power_mail, sc_welcome, sc_wk, sc_unsub, or sc_ku. */
 function fitCustomClaims(claims) {
   const next = { ...(claims || {}) };
   const steps = [
@@ -542,6 +546,42 @@ function usageDocExpiredReplay(data) {
   return Date.now() - created > REPLAY_TTL_MS;
 }
 
+async function claimsIdempotencyLease(uid, rid, fp) {
+  const fresh = await admin().auth().getUser(uid);
+  const live = mergeLiveClaims(fresh.customClaims, {});
+  const recent = Array.isArray(live.sc_recent_billing) ? live.sc_recent_billing : [];
+  const prior = recent.find((r) => r && r.i === rid);
+  if (prior) {
+    assertUsageIdempotencyMatch(
+      {
+        fingerprint: prior.f || null,
+        tokens_in: prior.tin,
+        tokens_out: prior.tout,
+        tokens_saved: prior.ts,
+      },
+      {
+        fingerprint: fp,
+        tokensIn: prior.tin,
+        tokensOut: prior.tout,
+        tokensSaved: prior.ts,
+      }
+    );
+    return {
+      status: "completed",
+      data: {
+        fingerprint: prior.f || fp,
+        tokens_in: prior.tin,
+        tokens_out: prior.tout,
+        tokens_saved: prior.ts,
+        burned_micros: prior.b,
+        response: null,
+      },
+      backend: "claims-fallback",
+    };
+  }
+  return { status: "acquired", backend: "claims-fallback" };
+}
+
 /**
  * Pre-compression single-flight lease for Idempotency-Key.
  * @returns {{ status: 'acquired'|'completed'|'pending', data?: object }}
@@ -551,6 +591,10 @@ async function reserveIdempotencyLease(uid, requestId, fingerprint) {
   const fp = String(fingerprint || "").trim() || null;
   if (!uid || !rid || !initFirebaseAdmin()) {
     throw billingError("billing_unavailable", "Billing ledger unavailable");
+  }
+  const { skipFirestore } = require("./firebase-off");
+  if (skipFirestore()) {
+    return claimsIdempotencyLease(uid, rid, fp);
   }
   try {
     return await withFirestoreTimeout(() => {
@@ -610,38 +654,7 @@ async function reserveIdempotencyLease(uid, requestId, fingerprint) {
     markFirestoreDown(err);
     console.warn("reserveIdempotencyLease unavailable — claims fallback:", err?.message || err);
     try {
-      const fresh = await admin().auth().getUser(uid);
-      const live = mergeLiveClaims(fresh.customClaims, {});
-      const recent = Array.isArray(live.sc_recent_billing) ? live.sc_recent_billing : [];
-      const prior = recent.find((r) => r && r.i === rid);
-      if (prior) {
-        assertUsageIdempotencyMatch(
-          {
-            fingerprint: prior.f || null,
-            tokens_in: prior.tin,
-            tokens_out: prior.tout,
-            tokens_saved: prior.ts,
-          },
-          {
-            fingerprint: fp,
-            tokensIn: prior.tin,
-            tokensOut: prior.tout,
-            tokensSaved: prior.ts,
-          }
-        );
-        return {
-          status: "completed",
-          data: {
-            fingerprint: prior.f || fp,
-            tokens_in: prior.tin,
-            tokens_out: prior.tout,
-            tokens_saved: prior.ts,
-            burned_micros: prior.b,
-            response: null,
-          },
-          backend: "claims-fallback",
-        };
-      }
+      return await claimsIdempotencyLease(uid, rid, fp);
     } catch (fallbackErr) {
       if (fallbackErr.code === "idempotency_conflict") throw fallbackErr;
     }
@@ -746,7 +759,10 @@ function sanitizeReplayResponse(response) {
  */
 async function lookupUsageReplay(uid, requestId) {
   const rid = sanitizeRequestId(requestId);
-  if (!uid || !rid || !initFirebaseAdmin()) return null;
+  if (!uid || !rid) return null;
+  const { skipFirestore } = require("./firebase-off");
+  if (skipFirestore()) return null;
+  if (!initFirebaseAdmin()) return null;
   try {
     const snap = await db().collection("billing_usage").doc(`${uid}:${rid}`).get();
     if (!snap.exists) return null;
@@ -793,6 +809,20 @@ async function applyUsageAndBurn({
   const replay = sanitizeReplayResponse(response);
   if (!initFirebaseAdmin()) {
     throw billingError("billing_unavailable", "Billing ledger unavailable");
+  }
+
+  const { skipFirestore } = require("./firebase-off");
+  if (skipFirestore()) {
+    return applyUsageAndBurnClaimsFallback({
+      uid,
+      tokensIn,
+      tokensOut,
+      tokensSaved,
+      claims,
+      requestId: rid,
+      fingerprint: fp,
+      response,
+    });
   }
 
   let result;
@@ -1054,6 +1084,18 @@ async function creditBalance({
 }) {
   if (!uid || !creditKey) return { applied: false, reason: "missing_args" };
   if (!initFirebaseAdmin()) return { applied: false, reason: "firebase_unavailable" };
+
+  const { skipFirestore } = require("./firebase-off");
+  if (skipFirestore()) {
+    return creditBalanceClaimsFallback({
+      uid,
+      creditUsd,
+      creditKey,
+      claims,
+      patch,
+      firstPayBonusUsd,
+    });
+  }
 
   const wantBonus = Math.max(0, Number(firstPayBonusUsd) || 0);
 
