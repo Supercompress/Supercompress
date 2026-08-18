@@ -53,6 +53,11 @@ jobs:
           node --check packages/proxy/src/compressor.js
           node --check packages/proxy/src/forwarder.js
           node --check packages/proxy/src/server.js
+      - name: Proxy relay + uninstall tests
+        run: |
+          node packages/proxy/test/sse-stream.js
+          node packages/proxy/test/protocol-safety.js
+          node packages/proxy/test/uninstall-clean.js
       - name: Billing ledger unit tests
         run: node api/_lib/billing-ledger.test.js
       - name: Credit amount helpers

@@ -53,50 +53,63 @@ function setSSEHeaders(res) {
 }
 
 /**
- * Pipe an SSE body to res, buffering across TCP chunks.
- * Optional onEvent(parsed, rawLine) can rewrite a data payload.
+ * Read a fetch body as decoded text, whichever stream flavour it is.
+ *
+ * Both flavours must carry an incomplete multi-byte sequence across chunk
+ * boundaries and flush what is left when the stream ends: decoding each chunk
+ * on its own turns a character split by a TCP boundary into U+FFFD.
  */
-function pipeBufferedSSE(apiResponse, res, { onDataLine } = {}) {
-  if (!apiResponse.body) throw new Error("Provider returned no response body stream");
-  let buffer = "";
-  const reader = apiResponse.body;
-  // Node fetch body is a ReadableStream in undici, or Node Readable if polyfilled.
-  if (typeof reader.getReader === "function") {
-    // Web streams (shouldn't happen with node native for node-fetch style, but safe)
-    const webReader = reader.getReader();
+function readDecodedStream(body, { onText, onEnd, onError }) {
+  // Node fetch body is a ReadableStream in undici, or a Node Readable if polyfilled.
+  if (typeof body.getReader === "function") {
+    const webReader = body.getReader();
     const decoder = new TextDecoder();
     (async () => {
       try {
         for (;;) {
           const { done, value } = await webReader.read();
           if (done) break;
-          buffer = flushSSEBuffer(buffer + decoder.decode(value, { stream: true }), res, onDataLine);
+          onText(decoder.decode(value, { stream: true }));
         }
-        const tail = buffer + decoder.decode();
-        if (tail.trim()) flushSSEBuffer(tail + "\n", res, onDataLine);
-        res.end();
+        const tail = decoder.decode();
+        if (tail) onText(tail);
+        onEnd();
       } catch (err) {
-        console.error("[supercompress] Stream error:", err.message);
-        if (!res.writableEnded) res.end();
+        onError(err);
       }
     })();
     return;
   }
 
-  // Decode across chunk boundaries: chunk.toString() turns a multi-byte
-  // character split by a TCP boundary into U+FFFD.
   const decoder = new StringDecoder("utf8");
-  reader.on("data", (chunk) => {
-    buffer = flushSSEBuffer(buffer + decoder.write(chunk), res, onDataLine);
+  body.on("data", (chunk) => onText(decoder.write(chunk)));
+  body.on("end", () => {
+    const tail = decoder.end();
+    if (tail) onText(tail);
+    onEnd();
   });
-  reader.on("end", () => {
-    const tail = buffer + decoder.end();
-    if (tail.trim()) flushSSEBuffer(tail + "\n", res, onDataLine);
-    res.end();
-  });
-  reader.on("error", (err) => {
-    console.error("[supercompress] Stream error:", err.message);
-    if (!res.writableEnded) res.end();
+  body.on("error", onError);
+}
+
+/**
+ * Pipe an SSE body to res, buffering across TCP chunks.
+ * Optional onEvent(parsed, rawLine) can rewrite a data payload.
+ */
+function pipeBufferedSSE(apiResponse, res, { onDataLine } = {}) {
+  if (!apiResponse.body) throw new Error("Provider returned no response body stream");
+  let buffer = "";
+  readDecodedStream(apiResponse.body, {
+    onText: (text) => {
+      buffer = flushSSEBuffer(buffer + text, res, onDataLine);
+    },
+    onEnd: () => {
+      if (buffer.trim()) flushSSEBuffer(buffer + "\n", res, onDataLine);
+      res.end();
+    },
+    onError: (err) => {
+      console.error("[supercompress] Stream error:", err.message);
+      if (!res.writableEnded) res.end();
+    },
   });
 }
 
@@ -579,37 +592,13 @@ async function forwardResponsesViaChatFixed(
     res.end();
   };
 
-  if (typeof reader.getReader === "function") {
-    const webReader = reader.getReader();
-    const decoder = new TextDecoder();
-    (async () => {
-      try {
-        for (;;) {
-          const { done, value } = await webReader.read();
-          if (done) break;
-          onChunk(decoder.decode(value, { stream: true }));
-        }
-        const tail = decoder.decode();
-        if (tail) onChunk(tail);
-        onEnd();
-      } catch (err) {
-        console.error("[supercompress] Responses compatibility stream error:", err.message);
-        if (!res.writableEnded) res.end();
-      }
-    })();
-    return;
-  }
-
-  const streamDecoder = new StringDecoder("utf8");
-  reader.on("data", (chunk) => onChunk(streamDecoder.write(chunk)));
-  reader.on("end", () => {
-    const tail = streamDecoder.end();
-    if (tail) onChunk(tail);
-    onEnd();
-  });
-  reader.on("error", (err) => {
-    console.error("[supercompress] Responses compatibility stream error:", err.message);
-    if (!res.writableEnded) res.end();
+  readDecodedStream(reader, {
+    onText: onChunk,
+    onEnd,
+    onError: (err) => {
+      console.error("[supercompress] Responses compatibility stream error:", err.message);
+      if (!res.writableEnded) res.end();
+    },
   });
 }
 
@@ -678,6 +667,7 @@ async function forwardResponses(model, compressed, extraParams, res, authHeader,
 }
 
 module.exports = {
+  readDecodedStream,
   pipeBufferedSSE,
   forwardChat,
   forwardAnthropic,
