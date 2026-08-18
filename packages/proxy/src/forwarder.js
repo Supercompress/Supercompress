@@ -7,8 +7,11 @@
  *   - OpenAI Responses (POST /v1/responses)
  *
  * Uses Node's native fetch (Node >=18). Streaming preserves tool_calls and
- * other delta fields; SSE lines are buffered across TCP chunks.
+ * other delta fields; SSE lines are buffered across TCP chunks, and multi-byte
+ * characters are decoded across them.
  */
+
+const { StringDecoder } = require("string_decoder");
 
 const OPENAI_BASE = process.env.SUPERCOMPRESS_OPENAI_BASE || "https://api.openai.com/v1";
 const ANTHROPIC_BASE = process.env.SUPERCOMPRESS_ANTHROPIC_BASE || "https://api.anthropic.com";
@@ -69,7 +72,8 @@ function pipeBufferedSSE(apiResponse, res, { onDataLine } = {}) {
           if (done) break;
           buffer = flushSSEBuffer(buffer + decoder.decode(value, { stream: true }), res, onDataLine);
         }
-        if (buffer.trim()) flushSSEBuffer(buffer + "\n", res, onDataLine);
+        const tail = buffer + decoder.decode();
+        if (tail.trim()) flushSSEBuffer(tail + "\n", res, onDataLine);
         res.end();
       } catch (err) {
         console.error("[supercompress] Stream error:", err.message);
@@ -79,11 +83,15 @@ function pipeBufferedSSE(apiResponse, res, { onDataLine } = {}) {
     return;
   }
 
+  // Decode across chunk boundaries: chunk.toString() turns a multi-byte
+  // character split by a TCP boundary into U+FFFD.
+  const decoder = new StringDecoder("utf8");
   reader.on("data", (chunk) => {
-    buffer = flushSSEBuffer(buffer + chunk.toString(), res, onDataLine);
+    buffer = flushSSEBuffer(buffer + decoder.write(chunk), res, onDataLine);
   });
   reader.on("end", () => {
-    if (buffer.trim()) flushSSEBuffer(buffer + "\n", res, onDataLine);
+    const tail = buffer + decoder.end();
+    if (tail.trim()) flushSSEBuffer(tail + "\n", res, onDataLine);
     res.end();
   });
   reader.on("error", (err) => {
@@ -581,6 +589,8 @@ async function forwardResponsesViaChatFixed(
           if (done) break;
           onChunk(decoder.decode(value, { stream: true }));
         }
+        const tail = decoder.decode();
+        if (tail) onChunk(tail);
         onEnd();
       } catch (err) {
         console.error("[supercompress] Responses compatibility stream error:", err.message);
@@ -590,8 +600,13 @@ async function forwardResponsesViaChatFixed(
     return;
   }
 
-  reader.on("data", (chunk) => onChunk(chunk.toString()));
-  reader.on("end", onEnd);
+  const streamDecoder = new StringDecoder("utf8");
+  reader.on("data", (chunk) => onChunk(streamDecoder.write(chunk)));
+  reader.on("end", () => {
+    const tail = streamDecoder.end();
+    if (tail) onChunk(tail);
+    onEnd();
+  });
   reader.on("error", (err) => {
     console.error("[supercompress] Responses compatibility stream error:", err.message);
     if (!res.writableEnded) res.end();
@@ -663,6 +678,7 @@ async function forwardResponses(model, compressed, extraParams, res, authHeader,
 }
 
 module.exports = {
+  pipeBufferedSSE,
   forwardChat,
   forwardAnthropic,
   forwardResponses,

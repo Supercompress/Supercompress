@@ -9,6 +9,7 @@ const ROOT = path.join(__dirname, "..");
 const suites = [
   ["smoke", "test/smoke.js"],
   ["protocol-safety", "test/protocol-safety.js"],
+  ["sse-stream", "test/sse-stream.js"],
   ["agent-plugins", "test/agent-plugins.js"],
   ["uninstall-clean", "test/uninstall-clean.js"],
   ["dual-launch", "test/dual-launch.js"],

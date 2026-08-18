@@ -41,6 +41,7 @@
   "scripts": {
     "test": "node test/run-all.js",
     "test:smoke": "node test/smoke.js",
+    "test:sse": "node test/sse-stream.js",
     "test:review": "node test/review.js",
     "test:dual": "node test/dual-launch.js",
     "test:compress": "node test/compress-deep.js",

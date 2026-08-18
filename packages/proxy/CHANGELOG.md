@@ -4,6 +4,7 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+- **Fix multi-byte corruption in the SSE relay**: streamed responses containing non-ASCII text — accented characters, CJK, emoji — were corrupted whenever a TCP chunk boundary fell inside a character. SSE *lines* were already buffered across chunks, but the Node stream paths decoded each chunk with `chunk.toString()`, so both halves of a split character became U+FFFD. Both relays now decode with `StringDecoder`, and the web-stream paths flush the decoder at end of stream.
 - **postinstall is guidance-only** — never mutates MCP/agent configs; run `supercompress setup` or `plugin`
 - `prepack` / `npm run sync:assets` copies compress-engine + model from canonical `web/assets/`
 
