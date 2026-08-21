@@ -3,7 +3,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const repoRoot = path.resolve(__dirname, '..');
+const repoRoot = process.env.SUPERCOMPRESS_REPO_ROOT || path.resolve(__dirname, '..');
+const failures = [];
+
+function reportFailure(message, details = []) {
+  console.error(`❌ ${message}`);
+  failures.push({ message, details });
+}
 
 function readJson(relPath) {
   const fullPath = path.join(repoRoot, relPath);
@@ -13,7 +19,7 @@ function readJson(relPath) {
   try {
     return JSON.parse(fs.readFileSync(fullPath, 'utf8'));
   } catch (err) {
-    console.error(`❌ Failed to parse JSON at ${relPath}: ${err.message}`);
+    reportFailure(`Failed to parse JSON at ${relPath}: ${err.message}`, [relPath]);
     return null;
   }
 }
@@ -25,7 +31,7 @@ let hasErrors = false;
 // 1. Read packages/proxy/package.json
 const proxyPkg = readJson('packages/proxy/package.json');
 if (!proxyPkg || !proxyPkg.version) {
-  console.error('❌ Missing or unparseable packages/proxy/package.json');
+  reportFailure('Missing or unparseable packages/proxy/package.json', ['packages/proxy/package.json', 'version']);
   process.exit(1);
 }
 
@@ -35,10 +41,10 @@ console.log(`📦 packages/proxy/package.json version: ${proxyVersion}`);
 // 2. Check packages/proxy/package-lock.json (Fail closed if missing)
 const proxyLock = readJson('packages/proxy/package-lock.json');
 if (!proxyLock) {
-  console.error('❌ Missing or unparseable packages/proxy/package-lock.json');
+  reportFailure('Missing or unparseable packages/proxy/package-lock.json', ['packages/proxy/package-lock.json', 'version']);
   hasErrors = true;
 } else if (proxyLock.version !== proxyVersion) {
-  console.error(`❌ Mismatch: packages/proxy/package-lock.json version (${proxyLock.version}) does not match package.json (${proxyVersion})`);
+  reportFailure(`Mismatch: packages/proxy/package-lock.json version (${proxyLock.version}) does not match package.json (${proxyVersion})`, ['packages/proxy/package-lock.json', 'version']);
   hasErrors = true;
 } else {
   console.log(`✅ packages/proxy/package-lock.json version matches (${proxyLock.version})`);
@@ -47,7 +53,7 @@ if (!proxyLock) {
 // 3. Check root package.json dependency on supercompress-proxy (Fail closed if missing)
 const rootPkg = readJson('package.json');
 if (!rootPkg || !rootPkg.dependencies || !rootPkg.dependencies['supercompress-proxy']) {
-  console.error('❌ Missing root package.json or missing supercompress-proxy dependency in root package.json');
+  reportFailure('Missing root package.json or missing supercompress-proxy dependency in root package.json', ['package.json', 'dependencies.supercompress-proxy']);
   hasErrors = true;
 } else {
   const rootDepRange = rootPkg.dependencies['supercompress-proxy'];
@@ -57,12 +63,12 @@ if (!rootPkg || !rootPkg.dependencies || !rootPkg.dependencies['supercompress-pr
   const match = rootDepRange.match(/(\d+\.\d+)/);
   
   if (!match) {
-    console.error(`❌ Root package.json supercompress-proxy dependency range '${rootDepRange}' is not parseable`);
+    reportFailure(`Root package.json supercompress-proxy dependency range '${rootDepRange}' is not parseable`, ['package.json', 'dependencies.supercompress-proxy']);
     hasErrors = true;
   } else {
     const rootDepMajorMinor = match[1];
     if (rootDepMajorMinor !== proxyMajorMinor) {
-      console.error(`❌ Mismatch: Root package.json pins supercompress-proxy to '${rootDepRange}' (major.minor ${rootDepMajorMinor}) but packages/proxy is at '${proxyVersion}' (major.minor ${proxyMajorMinor})`);
+      reportFailure(`Mismatch: Root package.json pins supercompress-proxy to '${rootDepRange}' (major.minor ${rootDepMajorMinor}) but packages/proxy is at '${proxyVersion}' (major.minor ${proxyMajorMinor})`, ['package.json', 'dependencies.supercompress-proxy']);
       hasErrors = true;
     } else {
       console.log(`✅ Root package.json dependency range matches proxy major.minor (${proxyMajorMinor})`);
@@ -73,15 +79,15 @@ if (!rootPkg || !rootPkg.dependencies || !rootPkg.dependencies['supercompress-pr
 // 4. Check root package-lock.json (Fail closed if missing or mismatched resolved URL)
 const rootLock = readJson('package-lock.json');
 if (!rootLock) {
-  console.error('❌ Missing or unparseable root package-lock.json');
+  reportFailure('Missing or unparseable root package-lock.json', ['package-lock.json', 'packages.node_modules/supercompress-proxy']);
   hasErrors = true;
 } else if (!rootLock.packages || !rootLock.packages['node_modules/supercompress-proxy']) {
-  console.error('❌ Missing node_modules/supercompress-proxy entry in root package-lock.json');
+  reportFailure('Missing node_modules/supercompress-proxy entry in root package-lock.json', ['package-lock.json', 'packages.node_modules/supercompress-proxy']);
   hasErrors = true;
 } else {
   const lockedDep = rootLock.packages['node_modules/supercompress-proxy'];
   if (!lockedDep.version || lockedDep.version !== proxyVersion) {
-    console.error(`❌ Mismatch: Root package-lock.json has supercompress-proxy locked to version ${lockedDep.version || 'unknown'}, expected ${proxyVersion}`);
+    reportFailure(`Mismatch: Root package-lock.json has supercompress-proxy locked to version ${lockedDep.version || 'unknown'}, expected ${proxyVersion}`, ['package-lock.json', 'packages.node_modules/supercompress-proxy.version']);
     hasErrors = true;
   } else {
     console.log(`✅ Root package-lock.json has supercompress-proxy locked to version ${proxyVersion}`);
@@ -89,17 +95,17 @@ if (!rootLock) {
 
   // Verify resolved tarball URL matches current version
   if (!lockedDep.resolved) {
-    console.error('❌ Missing resolved artifact URL for supercompress-proxy in root package-lock.json');
+    reportFailure('Missing resolved artifact URL for supercompress-proxy in root package-lock.json', ['package-lock.json', 'packages.node_modules/supercompress-proxy.resolved']);
     hasErrors = true;
   } else if (!lockedDep.resolved.includes(`-${proxyVersion}.tgz`)) {
-    console.error(`❌ Mismatch: Root package-lock.json supercompress-proxy resolved URL (${lockedDep.resolved}) does not match current version ${proxyVersion}`);
+    reportFailure(`Mismatch: Root package-lock.json supercompress-proxy resolved URL (${lockedDep.resolved}) does not match current version ${proxyVersion}`, ['package-lock.json', 'packages.node_modules/supercompress-proxy.resolved']);
     hasErrors = true;
   } else {
     console.log(`✅ Root package-lock.json supercompress-proxy resolved artifact matches ${proxyVersion}`);
   }
 
   if (!lockedDep.integrity) {
-    console.error('❌ Missing integrity digest for supercompress-proxy in root package-lock.json');
+    reportFailure('Missing integrity digest for supercompress-proxy in root package-lock.json', ['package-lock.json', 'packages.node_modules/supercompress-proxy.integrity']);
     hasErrors = true;
   } else {
     console.log('✅ Root package-lock.json supercompress-proxy integrity present');
@@ -118,13 +124,13 @@ const publicPins = [
 for (const { file, needle } of publicPins) {
   const fullPath = path.join(repoRoot, file);
   if (!fs.existsSync(fullPath)) {
-    console.error(`❌ Missing public pin file: ${file}`);
+    reportFailure(`Missing public pin file: ${file}`, [file]);
     hasErrors = true;
     continue;
   }
   const text = fs.readFileSync(fullPath, 'utf8');
   if (!text.includes(needle)) {
-    console.error(`❌ Mismatch: ${file} missing pin '${needle}' (expected proxy ${proxyVersion})`);
+    reportFailure(`Mismatch: ${file} missing pin '${needle}' (expected proxy ${proxyVersion})`, [file, 'public version pin']);
     hasErrors = true;
   } else {
     console.log(`✅ ${file} pin matches '${needle}'`);
@@ -133,6 +139,11 @@ for (const { file, needle } of publicPins) {
 
 if (hasErrors) {
   console.error('\n❌ Version consistency check failed!');
+  console.error('Fix hint: run `npm install` after updating the proxy version, then commit the synchronized package and lock files.');
+  console.error('Affected files and fields:');
+  for (const failure of failures) {
+    console.error(`  - ${failure.details.join(', ')}`);
+  }
   process.exit(1);
 } else {
   console.log('\n🎉 All version consistency checks passed successfully!');
