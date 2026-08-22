@@ -12,7 +12,8 @@
     "release:check": "bash scripts/release-check.sh",
     "sync:assets": "node scripts/sync-compress-assets.js",
     "mcp": "node mcp/server.js",
-    "check:version": "node scripts/check-versions.js"
+    "check:version": "node scripts/check-versions.js",
+    "test:neural-keep": "node --test api/_lib/neural-keep.test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

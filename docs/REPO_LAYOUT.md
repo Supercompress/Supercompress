@@ -4,6 +4,7 @@ Keep the public tree **product-only**. Marketing ops, outreach dumps, training w
 
 ```
 api/                 Hosted compress API + account/billing (Vercel)
+services/neural-keep/ Fly-hosted v4-large cross-encoder (too large for Vercel)
 packages/proxy/      Coding-agent plugin (npm: supercompress-proxy)
 supercompress/       Python library (PyPI)
 web/                 Marketing site + docs HTML (static)

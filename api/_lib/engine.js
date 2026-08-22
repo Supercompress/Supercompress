@@ -65,7 +65,54 @@ function compress(context, query, budgetRatio = 0.35) {
   return E.compressContext(context, query, budgetRatio, "SuperCompress", getModel());
 }
 
+function wrapNeuralKeepResult(context, query, remote) {
+  const E = getEngine();
+  const original = String(context || "");
+  const compressed = String(remote.compressed_text || "");
+  const original_tokens = Number(remote.original_tokens) || Math.max(1, Math.round(original.length / 4));
+  const kept_tokens = Number(remote.kept_tokens) || Math.max(1, Math.round(compressed.length / 4));
+  const tokens_removed = Math.max(0, original_tokens - kept_tokens);
+  let answer_quality = 1;
+  let important_kept_pct = 1;
+  try {
+    answer_quality = E.answerQualityScore(original, compressed, query);
+    important_kept_pct = answer_quality;
+  } catch {
+    /* keep defaults */
+  }
+  return {
+    original_text: original,
+    compressed_text: compressed,
+    original_tokens,
+    kept_tokens,
+    tokens_removed,
+    tokens_saved: tokens_removed,
+    tokens_saved_pct: Number(remote.tokens_saved_pct) || (1 - kept_tokens / Math.max(original_tokens, 1)) * 100,
+    policy_name: remote.policy_name || "SuperCompress Neural Keep",
+    mode: remote.mode || "neural-keep",
+    answer_quality,
+    important_kept_pct,
+    compression_risk: important_kept_pct >= 0.98 ? "low" : important_kept_pct >= 0.9 ? "medium" : "high",
+    line_annotations: [],
+    preprocessor: "none",
+    neural_keep_latency_ms: remote.neural_keep_latency_ms,
+    neural_keep_lines_in: remote.lines_in,
+    neural_keep_lines_kept: remote.lines_kept,
+    neural_keep_threshold: remote.threshold,
+  };
+}
+
 async function compressAdaptive(context, query) {
+  try {
+    const neuralKeep = require("./neural-keep");
+    if (neuralKeep.neuralKeepEnabled()) {
+      const remote = await neuralKeep.compressViaNeuralKeep(context, query);
+      if (remote) return wrapNeuralKeepResult(context, query, remote);
+    }
+  } catch (err) {
+    console.warn("[supercompress] neural-keep path failed:", err.message);
+  }
+
   const E = getEngine();
   const neuralBoost = await loadNeuralBoost(context, query);
   // Hosted API never returns line_annotations — skip building them (big win on large dumps).
@@ -76,6 +123,16 @@ async function compressAdaptive(context, query) {
 }
 
 async function compressCCR(context, query) {
+  try {
+    const neuralKeep = require("./neural-keep");
+    if (neuralKeep.neuralKeepEnabled()) {
+      const remote = await neuralKeep.compressViaNeuralKeep(context, query);
+      if (remote) return wrapNeuralKeepResult(context, query, remote);
+    }
+  } catch (err) {
+    console.warn("[supercompress] neural-keep CCR path failed:", err.message);
+  }
+
   const E = getEngine();
   const neuralBoost = await loadNeuralBoost(context, query);
   return E.compressCCR(context, query, getModel(), {

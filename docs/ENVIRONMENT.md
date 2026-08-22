@@ -105,3 +105,30 @@ SC_NEURAL=1 node scripts/warmup_neural.js
 ```
 
 See also [ARCHITECTURE.md](../ARCHITECTURE.md) for deployment modes.
+
+## Neural Keep (v4-large cross-encoder — launch bench winner)
+
+Line-level query-conditioned keep model (~1.5GB ModernBERT). Runs on **Fly.io**, not Vercel. The API calls it when `SC_NEURAL_KEEP_URL` is set.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SC_NEURAL_KEEP_URL` | — | Base URL e.g. `https://sc-neural-keep.fly.dev` |
+| `SC_NEURAL_KEEP_SECRET` | — | Optional shared bearer for service auth |
+| `SC_NEURAL_KEEP` | auto-on when URL set | `0` to force compiler path |
+| `SC_NEURAL_KEEP_TIMEOUT_MS` | `120000` | Upstream timeout |
+
+Deploy service:
+
+```bash
+bash scripts/deploy-neural-keep.sh
+bash scripts/sync-neural-weights-fly.sh
+```
+
+Local dev:
+
+```bash
+bash scripts/run-neural-keep-local.sh
+bash scripts/neural-keep-smoke.sh http://127.0.0.1:8789
+```
+
+Weights live at `checkpoints/sc-keep-crossencoder-v4-large/` (gitignored). Inference threshold `0.12` in `sc_meta.json`.
