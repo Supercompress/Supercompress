@@ -375,15 +375,25 @@ function claimsByteLength(claims) {
   return Buffer.byteLength(JSON.stringify(claims || {}));
 }
 
+function compactRecentBillingRow(r) {
+  return {
+    i: claimsRequestId(r?.i),
+    f: r?.f ? String(r.f).slice(0, 16) : null,
+    tin: Number(r?.tin) || 0,
+    tout: Number(r?.tout) || 0,
+    ts: Number(r?.ts) || 0,
+    b: Number(r?.b) || 0,
+    t: Number(r?.t) || 0,
+  };
+}
+
 /** Firebase custom claims cap at 1000 bytes — drop bulky non-ledger fields to fit.
  * Never delete sc_recent_billing entirely (idempotency watermarks). Never delete
- * sc_power_mail, sc_welcome, sc_wk, sc_unsub, sc_ku, sc_write_id, sc_onboard_*,
- * sc_heard, or sc_power_celebrate.
+ * sc_power_mail, sc_welcome, sc_wk, sc_unsub, sc_ku, or sc_write_id.
  *
  * Never delete sc_key_ids. Dropping the index orphans live sck_* Auth users
  * (still valid via direct lookup) while list/count under-reports → plan-cap bypass.
- * Prefer trimming usage/recent_billing first; if still over budget, setBillingClaims
- * must fail closed rather than erase the key index. */
+ * Prefer trimming usage/recent_billing first; emergencyFitCustomClaims runs if still over. */
 function fitCustomClaims(claims) {
   const next = { ...(claims || {}) };
   const steps = [
@@ -405,25 +415,34 @@ function fitCustomClaims(claims) {
     },
     () => {
       if (Array.isArray(next.sc_credited_sessions)) {
-        next.sc_credited_sessions = next.sc_credited_sessions.slice(-6);
+        next.sc_credited_sessions = next.sc_credited_sessions.slice(-4);
       }
     },
     () => {
       if (Array.isArray(next.sc_recent_billing)) {
-        next.sc_recent_billing = next.sc_recent_billing.slice(0, 8).map((r) => ({
-          i: String(r?.i || "").slice(0, CLAIMS_REQUEST_ID_MAX),
-          // Claims budget is tight (~1KB). Keep a stable prefix; matchers accept prefix==full.
-          f: r?.f ? String(r.f).slice(0, 16) : null,
-          tin: Number(r?.tin) || 0,
-          tout: Number(r?.tout) || 0,
-          ts: Number(r?.ts) || 0,
-          b: Number(r?.b) || 0,
-          t: Number(r?.t) || 0,
-        }));
+        next.sc_recent_billing = next.sc_recent_billing.slice(0, 4).map(compactRecentBillingRow);
       }
     },
     () => {
-      if (Array.isArray(next.sc_recent_billing)) next.sc_recent_billing = next.sc_recent_billing.slice(0, 4);
+      if (next.sc_usage && typeof next.sc_usage === "object") {
+        delete next.sc_usage.life_in;
+        delete next.sc_usage.life_saved;
+      }
+    },
+    () => {
+      if (next.sc_usage?.d) {
+        const { d: _drop, ...rest } = next.sc_usage;
+        next.sc_usage = rest;
+      }
+    },
+    () => {
+      delete next.sc_heard;
+      delete next.sc_onboard_done;
+      delete next.sc_onboard_step;
+      delete next.sc_power_celebrate;
+    },
+    () => {
+      delete next.sc_credited_sessions;
     },
     () => {
       if (Array.isArray(next.sc_recent_billing)) next.sc_recent_billing = next.sc_recent_billing.slice(0, 2);
@@ -432,8 +451,6 @@ function fitCustomClaims(claims) {
       if (Array.isArray(next.sc_recent_billing)) next.sc_recent_billing = next.sc_recent_billing.slice(0, 1);
     },
     () => {
-      // Last resort before failing the write: keep the key index but cap length.
-      // Still never delete the field — empty/missing index is how orphans form.
       if (Array.isArray(next.sc_key_ids) && next.sc_key_ids.length > 8) {
         next.sc_key_ids = next.sc_key_ids.slice(-8);
       }
@@ -456,8 +473,36 @@ function fitCustomClaims(claims) {
   return next;
 }
 
+/** Last-resort trim when fitCustomClaims still exceeds Firebase's 1KB cap. */
+function emergencyFitCustomClaims(claims) {
+  const next = fitCustomClaims(claims);
+  if (next.sc_usage && typeof next.sc_usage === "object") {
+    delete next.sc_usage.life_in;
+    delete next.sc_usage.life_saved;
+    delete next.sc_usage.d;
+  }
+  delete next.sc_heard;
+  delete next.sc_onboard_done;
+  delete next.sc_onboard_step;
+  delete next.sc_power_celebrate;
+  delete next.sc_credited_sessions;
+  if (Array.isArray(next.sc_recent_billing)) {
+    next.sc_recent_billing = next.sc_recent_billing.slice(0, 1).map(compactRecentBillingRow);
+  }
+  if (Array.isArray(next.sc_key_ids) && next.sc_key_ids.length > 2) {
+    next.sc_key_ids = next.sc_key_ids.slice(-2);
+  }
+  return next;
+}
+
 async function setBillingClaims(uid, claims) {
-  const fitted = fitCustomClaims(claims);
+  let fitted = fitCustomClaims(claims);
+  if (claimsByteLength(fitted) > AUTH_CLAIMS_MAX_BYTES) {
+    fitted = emergencyFitCustomClaims(claims);
+    if (claimsByteLength(fitted) <= AUTH_CLAIMS_MAX_BYTES) {
+      console.warn("billing-ledger: emergency claims trim applied", { uid, bytes: claimsByteLength(fitted) });
+    }
+  }
   if (claimsByteLength(fitted) > AUTH_CLAIMS_MAX_BYTES) {
     throw billingError("billing_unavailable", "Billing claims payload too large");
   }
@@ -625,23 +670,12 @@ async function applyUsageAndBurnClaimsFallback({
             tokens_saved: planned.ledger.tokens_saved,
             tokens_reported: planned.ledger.tokens_reported || 0,
             d: packed.d,
-            ...(() => {
-              const prev = liveClaims.sc_usage || {};
-              const lifeIn = Number(prev.life_in || 0) || 0;
-              const lifeSaved = Number(prev.life_saved || 0) || 0;
-              const seededIn = lifeIn > 0 ? lifeIn : Number(prev.tokens_in || 0) || 0;
-              const seededSaved = lifeSaved > 0 ? lifeSaved : Number(prev.tokens_saved || 0) || 0;
-              return {
-                life_in: seededIn + Math.max(0, Number(tokensIn) || 0),
-                life_saved: seededSaved + Math.max(0, Number(tokensSaved) || 0),
-              };
-            })(),
           },
           sc_credit_balance_usd: roundUsd(microsToUsd(planned.ledger.credit_balance_micros)),
           sc_recent_billing: [
             {
               i: claimsRequestId(rid),
-              f: fp || null,
+              f: fp ? fp.slice(0, 16) : null,
               tin: Number(tokensIn) || 0,
               tout: Number(tokensOut) || 0,
               ts: Number(tokensSaved) || 0,
@@ -649,7 +683,7 @@ async function applyUsageAndBurnClaimsFallback({
               t: Date.now(),
             },
             ...recent,
-          ].slice(0, 8),
+          ].slice(0, 4),
         };
       },
       {
@@ -1572,6 +1606,9 @@ module.exports = {
   REPLAY_TTL_MS,
   IDEMPOTENCY_LEASE_MS,
   fitCustomClaims,
+  emergencyFitCustomClaims,
+  claimsByteLength,
+  AUTH_CLAIMS_MAX_BYTES,
   setBillingClaims,
   patchUserClaims,
   stampOwnerClaim,
