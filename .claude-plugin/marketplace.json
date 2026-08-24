@@ -1,0 +1,33 @@
+{
+  "name": "supercompress",
+  "owner": {
+    "name": "SuperCompress",
+    "email": "team@supercompress.dev",
+    "url": "https://www.supercompress.dev"
+  },
+  "metadata": {
+    "description": "SuperCompress — query-aware context compression for coding agents.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "supercompress",
+      "source": "./integrations/plugins/supercompress",
+      "description": "Compress tool dumps, logs, diffs, and pasted files before they burn tokens. 64% mean context reduction, 24/24 evidence-retention passes on the B5 coding-agent benchmark. Links to your SuperCompress account (free tier: 1M tokens/month).",
+      "version": "0.5.28",
+      "author": {
+        "name": "SuperCompress"
+      },
+      "homepage": "https://www.supercompress.dev",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": [
+        "context-compression",
+        "prompt-compression",
+        "token-compression",
+        "llm-cost",
+        "mcp"
+      ]
+    }
+  ]
+}
