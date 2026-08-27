@@ -42,7 +42,7 @@ const testSuites = [
   { name: 'check-api-host-routes (guard)', file: 'scripts/check-api-host-routes.js' },
 ];
 
-console.log('\n🧪 Running SuperCompress Unit Tests & Repository Guards...\n');
+console.log('\n Running SuperCompress Unit Tests & Repository Guards...\n');
 
 let passed = 0;
 let failed = 0;
@@ -60,11 +60,11 @@ for (const suite of testSuites) {
 
   if (res.status === 0) {
     passed++;
-    console.log(`  ✅ PASS  ${suite.name}`);
+    console.log(`   PASS  ${suite.name}`);
   } else {
     failed++;
     failedSuites.push(suite.name);
-    console.error(`  ❌ FAIL  ${suite.name} (exit ${res.status})`);
+    console.error(`   FAIL  ${suite.name} (exit ${res.status})`);
     if (res.stdout) console.log(res.stdout.trim());
     if (res.stderr) console.error(res.stderr.trim());
   }
@@ -75,9 +75,9 @@ console.log(`Total: ${testSuites.length} | Passed: ${passed} | Failed: ${failed}
 console.log('─'.repeat(50));
 
 if (failed > 0) {
-  console.error(`\n❌ Failed suites: ${failedSuites.join(', ')}`);
+  console.error(`\n Failed suites: ${failedSuites.join(', ')}`);
   process.exit(1);
 } else {
-  console.log('\n✨ All unit tests and guards passed!\n');
+  console.log('\n All unit tests and guards passed!\n');
   process.exit(0);
 }
