@@ -65,7 +65,8 @@ result = module.ensure_css_links(html)
 assert 'href="/assets/css/supercompress.css?v=105"' in result
 assert 'href="assets/css/supercompress.css' not in result
 `;
-  execFileSync("python3", ["-c", normalizerCheck], {
+  const pythonBin = process.env.PYTHON || (process.platform === "win32" ? "python" : "python3");
+  execFileSync(pythonBin, ["-c", normalizerCheck], {
     cwd: ROOT,
     stdio: "inherit",
   });

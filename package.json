@@ -3,6 +3,9 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
+    "test": "node scripts/test-unit.js",
+    "test:unit": "node scripts/test-unit.js",
+    "test:proxy": "npm --prefix packages/proxy test",
     "deploy:prod": "bash scripts/deploy-prod.sh",
     "launch:check": "bash scripts/hard-launch-check.sh",
     "prod:smoke": "bash scripts/prod-smoke.sh",

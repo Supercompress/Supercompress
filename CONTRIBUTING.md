@@ -28,6 +28,16 @@ cd web && python -m http.server 8080
 python scripts/local_web_server.py
 ```
 
+### Running tests
+
+```bash
+# Run unit tests and repository guards
+npm test
+
+# Run proxy package test matrix
+npm run test:proxy
+```
+
 ### Proxy package
 
 ```bash
