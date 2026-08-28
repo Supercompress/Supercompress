@@ -74,6 +74,14 @@
           <p style="margin-top:10px;margin-bottom:0">npm install alone does not rewrite agent configs. <code>setup</code> links your account and auto-adds MCP + hooks on every detected host. Re-run anytime with <code>supercompress plugin</code>. In a terminal, <code>supercompress</code> (no args) opens the paper-branded TUI (needs <a href="https://bun.sh">Bun</a>).</p>
         </div>
 
+        <h2 id="first-five-minutes">First 5 minutes</h2>
+        <ol>
+          <li>Install and connect SuperCompress: <code>npm i -g supercompress-proxy &amp;&amp; npx supercompress setup</code>.</li>
+          <li>Restart your coding agent and confirm that the <code>compress_context</code> MCP tool is available.</li>
+          <li>Run one smoke compression on a sample tool dump to confirm the integration works.</li>
+          <li>Use the <a href="https://www.supercompress.dev/playground">playground</a> to try compression manually, then check usage in the <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>.</li>
+        </ol>
+
         <div class="ca-stat-row df-reveal" style="--reveal-delay:120ms" aria-label="Highlights">
           <div class="ca-stat"><strong>~65%</strong><span>fewer tokens</span></div>
           <div class="ca-stat"><strong id="ca-npm-downloads">1k+</strong><span>npm downloads / week</span></div>
@@ -98,6 +106,7 @@
           <h3>In this guide</h3>
           <ol>
             <li><a href="#how-it-works">How it works</a></li>
+            <li><a href="#first-five-minutes">First 5 minutes</a></li>
             <li><a href="#install">Install</a></li>
             <li><a href="#plugin">Detect + plugin</a></li>
             <li><a href="#agents">Supported agents</a></li>

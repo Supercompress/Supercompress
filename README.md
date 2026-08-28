@@ -74,6 +74,8 @@ The **query is never compressed** — only the surrounding context.
 
 Docs: [coding agents](https://docs.supercompress.dev/coding-agents) · [API quickstart](https://docs.supercompress.dev/quickstart)
 
+New to the coding-agent plugin? Start with the [first 5 minutes checklist](https://docs.supercompress.dev/coding-agents#first-five-minutes).
+
 ### Repo map
 
 | Path | What |
