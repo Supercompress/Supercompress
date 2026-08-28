@@ -132,6 +132,10 @@ for (const { file, needle } of publicPins) {
 }
 
 if (hasErrors) {
+  console.error('\nRemediation:');
+  console.error('  1. Align packages/proxy/package.json with packages/proxy/package-lock.json.');
+  console.error('  2. Update package.json and package-lock.json to the same supercompress-proxy version.');
+  console.error('  3. Update the public version pins reported above, then rerun: npm run check:version');
   console.error('\n❌ Version consistency check failed!');
   process.exit(1);
 } else {
