@@ -283,7 +283,7 @@ async function handleGet(req, res, user) {
     payg_enabled: payg,
     has_active_subscription: payg && activeSub,
     cancel_at_period_end: sub?.cancel_at_period_end || false,
-    price_display: plan.price_display || (payg ? "$0.30 / 1M tokens" : "Free"),
+    price_display: plan.price_display || (payg ? "$1 / 1M tokens" : "Free"),
     credit_wallet: Boolean(creditWallet || (payg && !legacyMetered && !isComped(claims))),
     credit_limit_usd: creditLimit,
     credit_balance_usd: creditBalance,
@@ -299,9 +299,9 @@ async function handleGet(req, res, user) {
       !payg && !isComped(claims) && !legacyMetered && freeRemaining === 0
         ? {
             title: "Compression paused — free allowance used",
-            detail: "You've hit your free 1M tokens this month. Add a payment method to unlock.",
+            detail: "You've hit your free 5M tokens this month. Add a payment method to unlock.",
             cta: "Unlock compression",
-            price: "$0.30 / 1M tokens after free",
+            price: "$1 / 1M tokens after free",
           }
         : null,
     plans: [
@@ -320,7 +320,7 @@ async function handleGet(req, res, user) {
         tokens_per_month: -1,
         max_keys: getPlan("payg").max_keys,
         price: 0,
-        price_display: "$0.30 / 1M tokens",
+        price_display: "$1 / 1M tokens",
         unlimited: false,
         credit_wallet: true,
         default_credit_limit_usd: DEFAULT_CREDIT_LIMIT_USD,

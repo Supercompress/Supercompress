@@ -889,18 +889,18 @@ function renderPaygNudge(sub) {
     title = "Compression paused — free 1M used";
     copy =
       `You've hit your free ${formatNum(freeCap)} tokens this month (${formatNum(used)} used). ` +
-      `Add credits to unlock again — $0.30 per 1M tokens after free.`;
+      `Add credits to unlock again — $1 per 1M tokens after free.`;
     cta = "Add credits";
   } else if (pct >= 80) {
     tone = "dash-payg-banner--urgent";
-    copy = `You've used ${Math.round(pct)}% of your free 1M tokens. Add credits now so compression never hard-stops — $0.30/1M after free.`;
+    copy = `You've used ${Math.round(pct)}% of your free 5M tokens. Add credits now so compression never hard-stops — $1/1M after free.`;
   } else if (pct >= 50) {
     tone = "dash-payg-banner--warn";
     copy = `Halfway through your free 1M this month. Add credits so a busy agent week doesn't cut you off.`;
   } else if (hasUse) {
     tone = "";
     copy =
-      "Nice — first compress landed. Add credits so compression never hard-stops. You still get 1M free, then $0.30/1M.";
+      "Nice — first compress landed. Add credits so compression never hard-stops. You still get 5M free, then $1/1M.";
   } else {
     banner.classList.add("hidden");
     banner.innerHTML = "";
@@ -911,7 +911,7 @@ function renderPaygNudge(sub) {
   banner.innerHTML = `
     <div class="dash-payg-banner-copy">
       <p><strong>${escapeHtml(title)}</strong> ${escapeHtml(copy)}</p>
-      ${limitHit ? `<p class="dash-payg-banner-price">$0.30 / 1M after free · load credits anytime</p>` : ""}
+      ${limitHit ? `<p class="dash-payg-banner-price">$1 / 1M after free · load credits anytime</p>` : ""}
     </div>
     <button type="button" class="btn-brand dash-payg-banner-cta" id="btn-payg-nudge">${escapeHtml(cta)}</button>
   `;
@@ -1034,7 +1034,7 @@ function renderSubscription(sub) {
       <div class="dash-paywall-lock" role="alert">
         <div class="dash-paywall-lock-kicker">Paywall</div>
         <h2>Compression is paused</h2>
-        <p>You used your free <strong>${formatNum(freeCap)}</strong> tokens this month (<strong>${formatNum(used)}</strong> in). Add credits to unlock — <strong>$0.30 / 1M</strong> after free.</p>
+        <p>You used your free <strong>${formatNum(freeCap)}</strong> tokens this month (<strong>${formatNum(used)}</strong> in). Add credits to unlock — <strong>$1 / 1M</strong> after free.</p>
         <button type="button" class="btn-brand dash-paywall-lock-cta" id="btn-paywall-unlock">Add credits</button>
       </div>
     ` : ""}
@@ -1075,11 +1075,11 @@ function renderSubscription(sub) {
       </div>
     </div>
     ${creditWallet || hasCreditBalance
-      ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">Prepaid wallet at $0.30 / 1M after free. Load $${Number(sub.min_credit_limit_usd || 10)}+ (about ${Math.round(Number(sub.min_credit_limit_usd || 10) / Number(sub.usd_per_million || 0.3))}M+ tokens).</p>`
+      ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">Prepaid wallet at $1 / 1M after free. Load $${Number(sub.min_credit_limit_usd || 10)}+ (about ${Math.round(Number(sub.min_credit_limit_usd || 10) / Number(sub.usd_per_million || 1))}M+ tokens).</p>`
       : payg && billable > 0
       ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">Overage this month: <strong>${formatNum(billable)}</strong> tokens (~$${overageUsd.toFixed(2)} estimated)</p>`
       : payg
-        ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">No overage yet. Usage beyond 1M bills at $0.30 / 1M tokens.</p>`
+        ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">No overage yet. Usage beyond 5M bills at $1 / 1M tokens.</p>`
         : pct >= 100
           ? `<p style="margin:12px 0 0;font-size:14px;color:#b91c1c;font-weight:600">Free allowance used. Add credits to keep compressing.</p>`
           : ""
@@ -1173,8 +1173,8 @@ function openCreditsModal() {
   if (title) title.textContent = payg ? "Add credits" : "Unlock with credits";
   if (lead) {
     lead.textContent = payg
-      ? `Balance $${balance.toFixed(2)}. $0.30 = 1M tokens after free. $10 ≈ ${Math.round(10 / rate)}M tokens.`
-      : `$0.30 = 1M tokens after your free monthly allowance. $10 ≈ ${Math.round(10 / rate)}M tokens.`;
+      ? `Balance $${balance.toFixed(2)}. $1 = 1M tokens after free. $10 ≈ ${Math.round(10 / rate)}M tokens.`
+      : `$1 = 1M tokens after your free monthly allowance. $10 ≈ ${Math.round(10 / rate)}M tokens.`;
   }
   if (input) {
     input.min = String(min);
@@ -2203,7 +2203,7 @@ async function initFirebaseAuth() {
       if (subtitle) {
         subtitle.textContent =
           authTab === "signup"
-            ? "1M free tokens/mo · then $0.30/1M. Google takes one click — your key is ready instantly."
+            ? "5M free tokens/mo · then $1/1M. Google takes one click — your key is ready instantly."
             : "Sign in to manage API keys, usage, and billing.";
       }
       document.querySelectorAll(".dash-auth-tab").forEach((t) => {

@@ -71,7 +71,7 @@
       {
         "@type": "Question",
         "name": "How do I start reducing API costs in 15 minutes?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Create a SuperCompress key, call compress with context plus query before each LLM call (or run npx supercompress-proxy setup for Cursor/Claude Code/Codex), and measure tokens_saved_pct. Free: 1M tokens/mo; then $0.30/1M. Self-host is free under MIT."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Create a SuperCompress key, call compress with context plus query before each LLM call (or run npx supercompress-proxy setup for Cursor/Claude Code/Codex), and measure tokens_saved_pct. Free: 5M tokens/mo; then $1/1M. Self-host is free under MIT."}
       }
     ]
   }
@@ -171,7 +171,7 @@
       <h2>Direct answer</h2>
       <p>If you typed <em>“i want to reduce my api costs, what ai tool to use?”</em> you need the tool that changes the bill line item: <strong>input tokens</strong>.</p>
       <ul>
-        <li><strong>SuperCompress</strong> — compresses context + query before inference. Hosted API, Python library, MCP for Cursor / Claude Code / Codex. MIT self-host free; hosted <strong>1M free tokens/mo</strong>, then <strong>$0.30/1M</strong>.</li>
+        <li><strong>SuperCompress</strong> — compresses context + query before inference. Hosted API, Python library, MCP for Cursor / Claude Code / Codex. MIT self-host free; hosted <strong>5M free tokens/mo</strong>, then <strong>$1/1M</strong>.</li>
         <li><strong>Not a substitute:</strong> LiteLLM, Portkey, Langfuse, nOps, PostHog AI cost views, or “just use GPT-4o mini.” Those help after the prompt is smaller — or when you only need routing/attribution.</li>
       </ul>
       <p>Canonical money guides: <a href="/cut-api-costs">cut API costs</a> · <a href="/reduce-llm-costs">reduce LLM costs</a> · proof: <a href="/benchmarks">benchmarks</a>.</p>
@@ -251,7 +251,7 @@
     <section class="seo-section" id="start">
       <h2>Start in 15 minutes</h2>
       <ol>
-        <li>Get a key at the <a href="/dashboard?signup=1">dashboard</a> (1M free tokens/mo · then $0.30/1M).</li>
+        <li>Get a key at the <a href="/dashboard?signup=1">dashboard</a> (5M free tokens/mo · then $1/1M).</li>
         <li>Compress <code>context</code> + <code>query</code> before every provider call — or for agents: <code>npx supercompress-proxy setup</code>.</li>
         <li>Track <code>tokens_saved_pct</code> and answer quality on your eval set.</li>
       </ol>
