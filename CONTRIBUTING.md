@@ -31,11 +31,14 @@ python scripts/local_web_server.py
 ### Running tests
 
 ```bash
-# Run unit tests and repository guards
+# Run all unit tests and repository guards (asset sync, PII, versions, stylesheet paths, API routes)
 npm test
 
 # Run proxy package test matrix
 npm run test:proxy
+
+# Sync canonical compression assets (web -> packages/proxy & api/_lib)
+npm run sync:assets
 ```
 
 ### Proxy package

@@ -12,6 +12,7 @@
     "prod:domains": "bash scripts/ensure-prod-domains.sh",
     "check:api-host": "node scripts/check-api-host-routes.js",
     "check:stylesheet-paths": "node scripts/check-stylesheet-paths.test.js && node scripts/check-stylesheet-paths.js",
+    "check:assets": "node scripts/sync-compress-assets.js --check",
     "release:check": "bash scripts/release-check.sh",
     "sync:assets": "node scripts/sync-compress-assets.js",
     "mcp": "node mcp/server.js",

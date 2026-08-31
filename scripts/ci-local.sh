@@ -71,5 +71,6 @@ node scripts/check-versions.js
 npm run check:stylesheet-paths
 node scripts/check-api-host-routes.test.js
 node scripts/check-api-host-routes.js
+node scripts/sync-compress-assets.js --check
 
 echo "CI local: all checks passed"

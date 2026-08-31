@@ -13,6 +13,12 @@ const path = require("path");
 const ROOT = path.join(__dirname, "..");
 const WEB = path.join(ROOT, "web");
 
+/**
+ * Recursively retrieves all HTML file paths in a directory.
+ *
+ * @param {string} dir - Directory path to traverse.
+ * @returns {string[]} Array of absolute file paths to HTML files.
+ */
 function htmlFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const entryPath = path.join(dir, entry.name);
@@ -21,6 +27,12 @@ function htmlFiles(dir) {
   });
 }
 
+/**
+ * Extracts stylesheet href attributes from HTML content.
+ *
+ * @param {string} html - HTML string to parse for stylesheet link tags.
+ * @returns {string[]} Array of stylesheet href attribute values.
+ */
 function stylesheetHrefs(html) {
   return [...html.matchAll(/<link\b[^>]*>/gi)].flatMap(([tag]) => {
     const attribute = (name) => {
@@ -37,6 +49,12 @@ function stylesheetHrefs(html) {
 
 module.exports = { stylesheetHrefs };
 
+/**
+ * Validates that all stylesheet paths in static HTML pages are root-relative or external,
+ * and verifies that the Python article normalizer produces conforming stylesheet paths.
+ *
+ * @returns {void}
+ */
 function main() {
   const invalidPaths = htmlFiles(WEB).flatMap((file) =>
     stylesheetHrefs(fs.readFileSync(file, "utf8"))

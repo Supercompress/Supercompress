@@ -2,82 +2,180 @@
 /**
  * Fast local test runner for SuperCompress unit tests and repository guards.
  * Run via: npm test  or  node scripts/test-unit.js
+ *
+ * Auto-discovers *.test.js files across api/, scripts/, and web/assets/js/
+ * to ensure newly added test suites are never silently skipped.
  */
-'use strict';
+"use strict";
 
-const { spawnSync } = require('child_process');
-const path = require('path');
+const { spawnSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, "..");
 
-const testSuites = [
-  // Core API & Ledger tests
-  { name: 'billing-ledger', file: 'api/_lib/billing-ledger.test.js' },
-  { name: 'credit-amount', file: 'api/_lib/credit-amount.test.js' },
-  { name: 'coding-agent-usage', file: 'api/_lib/coding-agent-usage.test.js' },
-  { name: 'compress-quality', file: 'api/_lib/compress-quality.test.js' },
-  { name: 'http-soft-probe', file: 'api/_lib/http-soft-probe.test.js' },
-  { name: 'firebase-off', file: 'api/_lib/firebase-off.test.js' },
-  { name: 'power-user', file: 'api/_lib/power-user.test.js' },
-  { name: 'retention', file: 'api/_lib/retention.test.js' },
-  { name: 'payment-thank-you', file: 'api/_lib/payment-thank-you.test.js' },
-  { name: 'auth-connect', file: 'api/_lib/auth-connect.test.js' },
-  { name: 'founder-usage', file: 'api/_lib/founder-usage.test.js' },
-  { name: 'usage-days', file: 'api/_lib/usage-days.test.js' },
-  { name: 'stats', file: 'api/stats.test.js' },
+/**
+ * Directories scanned for unit test files (*.test.js).
+ */
+const TEST_SEARCH_DIRS = ["api", "scripts", "web/assets/js"];
 
-  // Node built-in test runner suites
-  { name: 'onboarding', file: 'api/_lib/onboarding.test.js', args: ['--test'] },
-  { name: 'password-reset', file: 'api/_lib/password-reset.test.js', args: ['--test'] },
-
-  // Web & Analytics tests
-  { name: 'analytics-data', file: 'web/assets/js/analytics-data.test.js' },
-
-  // Repository integrity & guards
-  { name: 'check-no-pii', file: 'scripts/check-no-pii.js' },
-  { name: 'check-versions', file: 'scripts/check-versions.js' },
-  { name: 'check-stylesheet-paths (test)', file: 'scripts/check-stylesheet-paths.test.js' },
-  { name: 'check-stylesheet-paths (guard)', file: 'scripts/check-stylesheet-paths.js' },
-  { name: 'check-api-host-routes (test)', file: 'scripts/check-api-host-routes.test.js' },
-  { name: 'check-api-host-routes (guard)', file: 'scripts/check-api-host-routes.js' },
+/**
+ * Repository integrity guards executed after unit tests.
+ */
+const REPO_GUARDS = [
+  { name: "guard: check-no-pii", file: "scripts/check-no-pii.js" },
+  { name: "guard: check-versions", file: "scripts/check-versions.js" },
+  { name: "guard: check-stylesheet-paths", file: "scripts/check-stylesheet-paths.js" },
+  { name: "guard: check-api-host-routes", file: "scripts/check-api-host-routes.js" },
+  { name: "guard: sync-compress-assets", file: "scripts/sync-compress-assets.js", args: ["--check"] },
 ];
 
-console.log('\n Running SuperCompress Unit Tests & Repository Guards...\n');
+/**
+ * Recursively scans directories to discover all unit test files.
+ *
+ * @param {string[]} searchDirs - Array of directory paths relative to repoRoot.
+ * @param {string} [repoRoot=ROOT] - Root directory of the repository.
+ * @returns {Array<{ name: string, file: string, args?: string[] }>} List of discovered test suite definitions.
+ */
+function findTestFiles(searchDirs = TEST_SEARCH_DIRS, repoRoot = ROOT) {
+  const discovered = [];
 
-let passed = 0;
-let failed = 0;
-const failedSuites = [];
+  /**
+   * Helper to walk directories recursively.
+   *
+   * @param {string} currentDir - Current directory path.
+   * @returns {void}
+   */
+  function walk(currentDir) {
+    if (!fs.existsSync(currentDir)) return;
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
 
-for (const suite of testSuites) {
-  const fullPath = path.join(ROOT, suite.file);
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== "node_modules" && entry.name !== ".git") {
+          walk(fullPath);
+        }
+      } else if (entry.isFile() && entry.name.endsWith(".test.js")) {
+        const relFile = path.relative(repoRoot, fullPath).replace(/\\/g, "/");
+        const name = relFile.replace(/\.test\.js$/, "");
+        const content = fs.readFileSync(fullPath, "utf8");
+        const usesNodeTestRunner = /require\(["']node:test["']\)|from\s+["']node:test["']/.test(content);
+
+        discovered.push({
+          name: `unit: ${name}`,
+          file: relFile,
+          ...(usesNodeTestRunner ? { args: ["--test"] } : {}),
+        });
+      }
+    }
+  }
+
+  for (const dir of searchDirs) {
+    walk(path.join(repoRoot, dir));
+  }
+
+  return discovered.sort((a, b) => a.file.localeCompare(b.file));
+}
+
+/**
+ * Builds the complete list of test suites, combining auto-discovered unit tests and repository guards.
+ *
+ * @param {string} [repoRoot=ROOT] - Root directory of the repository.
+ * @returns {Array<{ name: string, file: string, args?: string[] }>} Combined list of test suites.
+ */
+function buildTestSuiteList(repoRoot = ROOT) {
+  const unitTests = findTestFiles(TEST_SEARCH_DIRS, repoRoot);
+  return [...unitTests, ...REPO_GUARDS];
+}
+
+/**
+ * Executes a single test suite process synchronously.
+ *
+ * @param {{ name: string, file: string, args?: string[] }} suite - Suite configuration.
+ * @param {string} [repoRoot=ROOT] - Root directory of the repository.
+ * @returns {{ ok: boolean, status: number | null, stdout: string, stderr: string }} Execution result.
+ */
+function runSuite(suite, repoRoot = ROOT) {
+  const fullPath = path.join(repoRoot, suite.file);
   const args = [...(suite.args || []), fullPath];
 
   const res = spawnSync(process.execPath, args, {
-    cwd: ROOT,
-    encoding: 'utf8',
+    cwd: repoRoot,
+    encoding: "utf8",
     env: { ...process.env },
   });
 
-  if (res.status === 0) {
-    passed++;
-    console.log(`   PASS  ${suite.name}`);
-  } else {
-    failed++;
-    failedSuites.push(suite.name);
-    console.error(`   FAIL  ${suite.name} (exit ${res.status})`);
-    if (res.stdout) console.log(res.stdout.trim());
-    if (res.stderr) console.error(res.stderr.trim());
-  }
+  return {
+    ok: res.status === 0,
+    status: res.status,
+    stdout: res.stdout || "",
+    stderr: res.stderr || "",
+  };
 }
 
-console.log('\n' + '─'.repeat(50));
-console.log(`Total: ${testSuites.length} | Passed: ${passed} | Failed: ${failed}`);
-console.log('─'.repeat(50));
+/**
+ * Executes all test suites and repository guards, printing formatted results.
+ *
+ * @param {Array<{ name: string, file: string, args?: string[] }>} [suites] - Optional list of suites to run.
+ * @param {string} [repoRoot=ROOT] - Root directory of the repository.
+ * @returns {boolean} True if all suites passed, false otherwise.
+ */
+function runAllSuites(suites = buildTestSuiteList(ROOT), repoRoot = ROOT) {
+  console.log(`\n Running SuperCompress Unit Tests & Repository Guards (${suites.length} suites)...\n`);
 
-if (failed > 0) {
-  console.error(`\n Failed suites: ${failedSuites.join(', ')}`);
-  process.exit(1);
-} else {
-  console.log('\n All unit tests and guards passed!\n');
-  process.exit(0);
+  let passed = 0;
+  let failed = 0;
+  const failedSuites = [];
+
+  for (const suite of suites) {
+    const res = runSuite(suite, repoRoot);
+
+    if (res.ok) {
+      passed++;
+      console.log(`   PASS  ${suite.name}`);
+    } else {
+      failed++;
+      failedSuites.push(suite.name);
+      console.error(`   FAIL  ${suite.name} (exit ${res.status})`);
+      if (res.stdout.trim()) console.log(res.stdout.trim());
+      if (res.stderr.trim()) console.error(res.stderr.trim());
+    }
+  }
+
+  console.log("\n" + "─".repeat(60));
+  console.log(`Total: ${suites.length} | Passed: ${passed} | Failed: ${failed}`);
+  console.log("─".repeat(60));
+
+  if (failed > 0) {
+    console.error(`\n \u274C Failed suites: ${failedSuites.join(", ")}`);
+    return false;
+  }
+
+  console.log("\n \u2705 All unit tests and repository guards passed!\n");
+  return true;
+}
+
+/**
+ * CLI entry point for the test runner.
+ *
+ * @returns {void}
+ */
+function main() {
+  const success = runAllSuites();
+  process.exit(success ? 0 : 1);
+}
+
+module.exports = {
+  TEST_SEARCH_DIRS,
+  REPO_GUARDS,
+  findTestFiles,
+  buildTestSuiteList,
+  runSuite,
+  runAllSuites,
+  main,
+};
+
+if (require.main === module) {
+  main();
 }
