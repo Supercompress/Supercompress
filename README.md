@@ -72,7 +72,7 @@ The **query is never compressed** — only the surrounding context.
 | **What you get** | MCP `compress_context` on big dumps | Compress before every model call |
 | **Login** | Keep your normal agent login | API key from the [dashboard](https://www.supercompress.dev/dashboard) |
 
-Docs: [coding agents](https://docs.supercompress.dev/coding-agents) · [API quickstart](https://docs.supercompress.dev/quickstart)
+Docs: [coding agents (first 5 minutes checklist)](https://docs.supercompress.dev/coding-agents#quickstart) · [API quickstart](https://docs.supercompress.dev/quickstart)
 
 ### Repo map
 

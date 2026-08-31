@@ -97,6 +97,7 @@
         <div class="doc-toc">
           <h3>In this guide</h3>
           <ol>
+            <li><a href="#quickstart">First 5 minutes checklist</a></li>
             <li><a href="#how-it-works">How it works</a></li>
             <li><a href="#install">Install</a></li>
             <li><a href="#plugin">Detect + plugin</a></li>
@@ -106,6 +107,44 @@
             <li><a href="#proxy">Optional API proxy</a></li>
             <li><a href="#uninstall">Uninstall</a></li>
           </ol>
+        </div>
+
+        <h2 id="quickstart">First 5 minutes checklist</h2>
+        <p>Get SuperCompress running with your coding agents in 4 quick copy-paste steps:</p>
+
+        <div class="doc-steps">
+          <div class="doc-step">
+            <span class="doc-step-n">1</span>
+            <div>
+              <strong>Install &amp; link account</strong>
+              <p>Install the CLI globally and run one-time setup to connect your account and auto-configure detected agents:</p>
+              <pre><code><span class="kw">npm install</span> -g supercompress-proxy
+<span class="kw">supercompress</span> setup</code></pre>
+            </div>
+          </div>
+          <div class="doc-step">
+            <span class="doc-step-n">2</span>
+            <div>
+              <strong>Verify agent detection</strong>
+              <p>Confirm which coding agents on your machine were detected and hooked:</p>
+              <pre><code><span class="kw">supercompress</span> agents</code></pre>
+            </div>
+          </div>
+          <div class="doc-step">
+            <span class="doc-step-n">3</span>
+            <div>
+              <strong>Test MCP connectivity</strong>
+              <p>Verify that the SuperCompress MCP server is responsive locally:</p>
+              <pre><code><span class="kw">supercompress</span> mcp-check</code></pre>
+            </div>
+          </div>
+          <div class="doc-step">
+            <span class="doc-step-n">4</span>
+            <div>
+              <strong>Restart agent &amp; compress</strong>
+              <p>Restart Cursor, Claude Code, Codex, Roo Code, or Cline so the MCP server initializes. Your agent will now automatically call <code>compress_context</code> on bulky context dumps!</p>
+            </div>
+          </div>
         </div>
 
         <h2 id="how-it-works">How it works</h2>
