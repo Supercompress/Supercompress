@@ -3,8 +3,8 @@
  * Requires STRIPE_SECRET_KEY env var.
  *
  * Pricing model:
- *   Free:  1M tokens / month
- *   PAYG:  prepaid credit wallet — $0.30 per 1M tokens after free allowance
+ *   Free:  5M tokens / month
+ *   PAYG:  prepaid credit wallet — $1 per 1M tokens after free allowance
  *          (legacy metered subscriptions still supported via sc_metered)
  */
 
@@ -34,10 +34,10 @@ function envTrim(name, fallback) {
   return v != null && String(v).trim() ? String(v).trim() : fallback;
 }
 
-/** Free monthly allowance: 1M tokens. Paid usage is $0.30 / 1M after that. */
-const FREE_TOKENS_PER_MONTH = 1_000_000;
-const USD_PER_MILLION = 0.3;
-const TOKENS_PER_BILLING_UNIT = 1_000_000; // 1M tokens @ $0.30
+/** Free monthly allowance: 5M tokens. Paid usage is $1 / 1M after that. */
+const FREE_TOKENS_PER_MONTH = 5_000_000;
+const USD_PER_MILLION = 1;
+const TOKENS_PER_BILLING_UNIT = 1_000_000; // 1M tokens @ $1
 const DEFAULT_CREDIT_LIMIT_USD = 10;
 const MIN_CREDIT_LIMIT_USD = 10;
 const MAX_CREDIT_LIMIT_USD = 1000;
@@ -75,7 +75,7 @@ const PLANS = {
     price_id: envTrim("STRIPE_PRICE_PAYG", ""),
     price: 0,
     metered: false, // new enables use prepaid credits; legacy meters use sc_metered claim
-    price_display: "$0.30 / 1M tokens",
+    price_display: "$1 / 1M tokens",
     sort_order: 1,
   },
   starter: {
@@ -155,7 +155,7 @@ function roundUsd(n) {
   return Math.round(Number(n || 0) * 10000) / 10000;
 }
 
-/** USD cost for a token delta at $0.30 / 1M (display/aggregate helper). */
+/** USD cost for a token delta at $1 / 1M (display/aggregate helper). */
 function tokensToUsd(tokenCount) {
   // Keep sub-cent precision in micros, then round for display.
   const micros = Math.ceil(Number(tokenCount || 0) * USD_PER_MILLION);
@@ -281,7 +281,7 @@ async function createCreditTopUpCheckout({
           unit_amount: unitAmount,
           product_data: {
             name: "SuperCompress credit",
-            description: `$${amount.toFixed(2)} prepaid usage credit ($0.30 / 1M tokens after 1M free/mo)`,
+            description: `$${amount.toFixed(2)} prepaid usage credit ($1 / 1M tokens after 5M free/mo)`,
           },
         },
       },

@@ -88,7 +88,7 @@ async function enforceUsageLimit(owner) {
     const usedM = (tokensUsedThisPeriod / 1_000_000).toFixed(2);
     const freeM = (FREE_TOKENS_PER_MONTH / 1_000_000).toFixed(0);
     const err = new Error(
-      `PAYWALL: Free ${freeM}M tokens used (${usedM}M this month). Compression is paused. Add credits to unlock — $0.30 per 1M tokens after free (min $10 load). ${upgradeUrl}`
+      `PAYWALL: Free ${freeM}M tokens used (${usedM}M this month). Compression is paused. Add credits to unlock — $1 per 1M tokens after free (min $10 load). ${upgradeUrl}`
     );
     err.status = 402;
     err.code = "free_quota_exhausted";
@@ -101,7 +101,7 @@ async function enforceUsageLimit(owner) {
       detail: `You've used your free ${freeM}M tokens this month (${usedM}M so far). Compression is paused until you add credits.`,
       tokens_used: tokensUsedThisPeriod,
       free_tokens: FREE_TOKENS_PER_MONTH,
-      price: "$0.30 / 1M tokens after free",
+      price: "$1 / 1M tokens after free",
       cta: "Add payment method",
       upgrade_url: upgradeUrl,
       action: "open_billing",
@@ -166,7 +166,7 @@ async function enforceUsageLimit(owner) {
     title: "Credits empty — top up to resume",
     detail: "Your prepaid SuperCompress balance is $0. Add credits or turn on auto-recharge to keep compressing.",
     credit_balance_usd: 0,
-    price: "$0.30 / 1M tokens",
+    price: "$1 / 1M tokens",
     cta: "Top up credits",
     upgrade_url: upgradeUrl,
     action: "open_billing",

@@ -57,7 +57,7 @@ function microsToUsd(micros) {
   return Math.round(Number(micros || 0)) / MICROS_PER_USD;
 }
 
-/** Integer micro-USD for a token count at $0.30 / 1M (no per-request $0 rounding). */
+/** Integer micro-USD for a token count at $1 / 1M (no per-request $0 rounding). */
 function tokensToMicros(tokenCount) {
   return Math.ceil(Number(tokenCount || 0) * USD_PER_MILLION);
 }

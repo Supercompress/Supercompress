@@ -119,13 +119,13 @@ function planUsage(owner, fallbackUsed = 0) {
     limit_reached: !payg && !creditWallet && freeRemaining === 0,
     upgrade_url: "https://www.supercompress.dev/dashboard#billing",
     upgrade_hint:
-      "Free token allowance used this month. Compression is paused — add a payment method ($0.30/1M after free) to unlock.",
+      "Free token allowance used this month. Compression is paused — add a payment method ($1/1M after free) to unlock.",
     paywall: !payg && !creditWallet && freeRemaining === 0
       ? {
           title: "Free allowance used — unlock to keep compressing",
           detail: "You've hit your free token allowance this month. Add a payment method to resume.",
           cta: "Add payment method",
-          price: "$0.30 / 1M tokens after free",
+          price: "$1 / 1M tokens after free",
         }
       : null,
   };
