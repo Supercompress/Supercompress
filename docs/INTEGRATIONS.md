@@ -2,6 +2,18 @@
 
 SuperCompress is a **library** — wire it anywhere you build LLM prompts from long context.
 
+## Agent marketplaces (one-command install)
+
+The SuperCompress plugin (MCP tools + skill, with browser account linking) is published for all three major coding agents from this repo:
+
+| Agent | Install |
+|-------|---------|
+| **Claude Code** | `/plugin marketplace add Supercompress/Supercompress` then `/plugin install supercompress@supercompress` |
+| **Codex** | `codex plugin marketplace add Supercompress/Supercompress` then `codex plugin add supercompress@supercompress` |
+| **Cursor** | [Cursor Marketplace](https://cursor.com/marketplace) → search "SuperCompress" |
+
+The plugin exposes `compress_context`, `connect_account` (browser sign-in that links your SuperCompress account — free tier 1M tokens/month), and `usage_summary`. Source: [`integrations/plugins/supercompress/`](../integrations/plugins/supercompress/).
+
 ## Quick patterns
 
 | Integration | When to use |

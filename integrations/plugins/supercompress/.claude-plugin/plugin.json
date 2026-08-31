@@ -1,0 +1,20 @@
+{
+  "name": "supercompress",
+  "description": "Query-aware context compression for coding agents. Compress tool dumps, logs, diffs, and pasted files before they burn tokens — 64% mean context reduction with 24/24 evidence-retention passes on the B5 coding-agent benchmark. Links to your SuperCompress account for hosted Engine v2 neural compression.",
+  "version": "0.5.28",
+  "author": {
+    "name": "SuperCompress",
+    "email": "team@supercompress.dev",
+    "url": "https://www.supercompress.dev"
+  },
+  "homepage": "https://www.supercompress.dev",
+  "repository": "https://github.com/Supercompress/Supercompress",
+  "license": "MIT",
+  "keywords": [
+    "context-compression",
+    "prompt-compression",
+    "token-compression",
+    "llm-cost",
+    "mcp"
+  ]
+}

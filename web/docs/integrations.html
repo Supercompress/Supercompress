@@ -68,6 +68,7 @@
         <div class="doc-toc">
           <h3>Integrations</h3>
           <ol>
+            <li><a href="#marketplaces">Agent marketplaces (Claude Code, Codex, Cursor)</a></li>
             <li><a href="#python">Python (direct import)</a></li>
             <li><a href="#openai">OpenAI SDK wrapper</a></li>
             <li><a href="#langchain">LangChain hook</a></li>
@@ -78,6 +79,18 @@
             <li><a href="#curl">curl / any HTTP client</a></li>
           </ol>
         </div>
+
+        <h2 id="marketplaces">Agent marketplaces (Claude Code, Codex, Cursor)</h2>
+        <p>The fastest path for coding agents — install the SuperCompress plugin straight from your agent's marketplace. It ships the MCP tools (<code>compress_context</code>, <code>connect_account</code>, <code>usage_summary</code>) plus a skill that teaches the agent when to compress. Account linking is a one-time browser sign-in; the free tier includes 1M tokens/month.</p>
+        <pre><code><span class="cm"># Claude Code</span>
+/plugin marketplace add Supercompress/Supercompress
+/plugin install supercompress@supercompress
+
+<span class="cm"># Codex</span>
+codex plugin marketplace add Supercompress/Supercompress
+codex plugin add supercompress@supercompress
+
+<span class="cm"># Cursor — Marketplace → search "SuperCompress"</span></code></pre>
 
         <h2 id="python">Python (direct import)</h2>
         <p>The simplest integration — call compression before sending to any LLM:</p>
