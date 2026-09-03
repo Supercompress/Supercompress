@@ -789,7 +789,23 @@ var sodium_default = {
 };
 
 // .sodium/project.json
-var project_default = null;
+var project_default = {
+  schemaVersion: 1,
+  projectId: "prj_4v768u7t1a6h",
+  publishableKey: "sod_pk_qc6rvwt5aidat7ikoehjxzc7pymm05kl",
+  endpoint: "https://sodium.result.dev",
+  deployment: {
+    id: "dep_dhq3hyue8xkd7821",
+    version: 1,
+    configHash: "ecfa55e805534425fc58d7c004f406abd7dbe312a742c9dbe488c2dd058e2a48",
+    receipt: {
+      algorithm: "Ed25519",
+      keyId: "sodium-production-2026-09-02",
+      payload: "eyJjb25maWdIYXNoIjoiZWNmYTU1ZTgwNTUzNDQyNWZjNThkN2MwMDRmNDA2YWJkN2RiZTMxMmE3NDJjOWRiZTQ4OGMyZGQwNThlMmE0OCIsImRlcGxveW1lbnRJZCI6ImRlcF9kaHEzaHl1ZTh4a2Q3ODIxIiwib3JpZ2lucyI6WyJodHRwczovL3d3dy5zdXBlcmNvbXByZXNzLmRldiIsImh0dHBzOi8vc3VwZXJjb21wcmVzcy5kZXYiLCJodHRwOi8vbG9jYWxob3N0OjMwMDAiLCJodHRwOi8vMTI3LjAuMC4xOjMwMDAiXSwicHJvamVjdElkIjoicHJqXzR2NzY4dTd0MWE2aCIsInJlY2VpcHRWZXJzaW9uIjoxLCJ2ZXJzaW9uIjoxfQ",
+      signature: "0TvqRaFK61AO-APMPAE7MiwlIuaZ1nHTQ9dQXJp7ImfUKxs1D4bfUBfvpTllcTtkHl0_sKmy-Y8xvKvc36XOCg"
+    }
+  }
+};
 
 // web/assets/js/sodium-bootstrap.mjs
 var handle = null;
