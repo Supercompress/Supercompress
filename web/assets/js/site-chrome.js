@@ -29,4 +29,14 @@
       if (e.key === "Escape") close();
     });
   }
+
+  // sodium-bootstrap: mount WebMCP tools (bundled from sodium-bootstrap.mjs)
+  const sodiumSrc = "/assets/js/sodium.js";
+  if (!document.querySelector(`script[src="${sodiumSrc}"]`)) {
+    const s = document.createElement("script");
+    s.type = "module";
+    s.src = sodiumSrc;
+    s.defer = true;
+    document.head.appendChild(s);
+  }
 })();

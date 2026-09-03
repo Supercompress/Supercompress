@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "strategy": "installSodium",
+  "entry": "web/assets/js/sodium-bootstrap.mjs",
+  "mount": "web/assets/js/site-chrome.js"
+}
