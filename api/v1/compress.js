@@ -394,13 +394,18 @@ module.exports = async (req, res) => {
             );
             if (stored) {
               storedOk = true;
+              // `hash` is null when the whole-context key collided with a
+              // different original, so the engine refused to claim it. Only
+              // advertise a retrieve_url for a key we actually own.
               ccrInfo = {
-                hash: result.ccr.hash,
+                hash: result.ccr.hash || null,
                 marker_hashes: result.ccr.marker_hashes || [],
                 markers_count: result.ccr.markers_count || 0,
                 stored_hashes,
                 full_stored,
-                retrieve_url: `/retrieve?hash=${result.ccr.hash}`,
+                ...(result.ccr.hash
+                  ? { retrieve_url: `/retrieve?hash=${result.ccr.hash}` }
+                  : {}),
               };
             }
           } else {
@@ -439,7 +444,7 @@ module.exports = async (req, res) => {
 
     // CacheAligner: optionally wrap compressed text for provider prompt/prefix
     // caching. SuperCompress does not operate inside model KV cache.
-    const rawText = ccrInfo && ccrInfo.markers_count === 0
+    const rawText = ccrInfo && ccrInfo.markers_count === 0 && ccrInfo.hash
       ? compressedText + `\n[SC-Retrieve: ${ccrInfo.hash}]\n`
       : compressedText;
     const finalText = cache_prefix
