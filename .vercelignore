@@ -54,3 +54,23 @@ scripts/drain_weekly_emails.py
 scripts/dev.supercompress.welcome-drain.plist
 scripts/outreach_suppression.py
 .env.*
+
+# Local / non-prod blobs (SEO deploy hygiene)
+kaggle
+kaggle/**
+launch
+launch/**
+graphify-out
+graphify-out/**
+checkpoints/**
+.local
+.local/**
+LAUNCH_TODAY.md
+docs/goals
+docs/goals/**
+brand
+brand/**
+brand-pack
+brand-pack/**
+games
+games/**
