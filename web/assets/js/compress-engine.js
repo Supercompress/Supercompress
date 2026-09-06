@@ -3871,9 +3871,18 @@
   const CCR_MAX_ENTRIES = 500;
   const CCR_TTL_MS = 48 * 60 * 60 * 1000;
 
+  // Returns the storage key, or null when the key is already taken by DIFFERENT
+  // content. simpleHash is a 32-bit rolling hash passed through Math.abs, so
+  // roughly 31 bits of key space: two different texts of the same length do
+  // collide, and a collision used to hand back a key whose stored content was
+  // somebody else's block. Refusing the key is the honest outcome — the caller
+  // then omits the marker, so retrieval can miss but never returns the wrong
+  // original.
   function ccrStore(original) {
     const hash = simpleHash(original);
     const now = Date.now();
+    const existing = contentCache.get(hash);
+    if (existing && existing.original !== original) return null;
     if (!contentCache.has(hash)) {
       if (contentCache.size >= CCR_MAX_ENTRIES) {
         // Proper LRU: evict least recently accessed (and any expired)
@@ -3991,7 +4000,9 @@
         if (blockStart !== -1 && blockTokens > 10) {
           const blockText = lines.slice(blockStart, i).join("\n");
           const blockHash = ccrStore(blockText);
-          markerLines.push({ lineIndex: i, hash: blockHash, tokens: blockTokens });
+          // null = the key collided with different content. Emitting a marker
+          // anyway would point the reader at somebody else's block.
+          if (blockHash) markerLines.push({ lineIndex: i, hash: blockHash, tokens: blockTokens });
         }
         blockStart = -1;
         blockTokens = 0;
@@ -4001,11 +4012,13 @@
     if (blockStart !== -1 && blockTokens > 10) {
       const blockText = lines.slice(blockStart).join("\n");
       const blockHash = ccrStore(blockText);
-      markerLines.push({
-        lineIndex: lines.length,
-        hash: blockHash,
-        tokens: blockTokens,
-      });
+      if (blockHash) {
+        markerLines.push({
+          lineIndex: lines.length,
+          hash: blockHash,
+          tokens: blockTokens,
+        });
+      }
     }
 
     // Build compressed text with markers interspersed at correct positions
