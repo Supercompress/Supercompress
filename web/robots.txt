@@ -18,6 +18,12 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 
+User-agent: Amazonbot
+Allow: /
+
+User-agent: CopilotBot
+Allow: /
+
 User-agent: ClaudeBot
 Allow: /
 
