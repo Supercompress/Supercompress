@@ -433,7 +433,7 @@
     },
     {
       "source": "/anthropic-claude-compression",
-      "destination": "/blog",
+      "destination": "/reduce-claude-costs",
       "permanent": true
     },
     {
@@ -448,7 +448,7 @@
     },
     {
       "source": "/claude-haiku-compression",
-      "destination": "/blog",
+      "destination": "/reduce-claude-costs",
       "permanent": true
     },
     {
@@ -593,7 +593,7 @@
     },
     {
       "source": "/gemini-flash-compression",
-      "destination": "/blog",
+      "destination": "/reduce-gemini-costs",
       "permanent": true
     },
     {
@@ -603,7 +603,7 @@
     },
     {
       "source": "/gpt-4-turbo-compression",
-      "destination": "/blog",
+      "destination": "/reduce-chatgpt-costs",
       "permanent": true
     },
     {
@@ -693,7 +693,7 @@
     },
     {
       "source": "/openai-prompt-compression",
-      "destination": "/blog",
+      "destination": "/reduce-openai-costs",
       "permanent": true
     },
     {
@@ -798,7 +798,7 @@
     },
     {
       "source": "/save-llm-tokens",
-      "destination": "/blog",
+      "destination": "/cut-api-costs",
       "permanent": true
     },
     {
@@ -1170,6 +1170,76 @@
         }
       ],
       "destination": "/docs/usage",
+      "permanent": true
+    },
+    {
+      "source": "/aeo",
+      "destination": "/aeo-geo",
+      "permanent": true
+    },
+    {
+      "source": "/geo",
+      "destination": "/aeo-geo",
+      "permanent": true
+    },
+    {
+      "source": "/chatgpt-traffic",
+      "destination": "/aeo-geo",
+      "permanent": true
+    },
+    {
+      "source": "/aeo-geo",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/aeo-geo",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-chatgpt-costs",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/reduce-chatgpt-costs",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-claude-costs",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/reduce-claude-costs",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-gemini-costs",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/reduce-gemini-costs",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-openai-costs",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/reduce-openai-costs",
       "permanent": true
     }
   ],
@@ -1629,6 +1699,22 @@
     {
       "source": "/api/:path*",
       "destination": "/api/soft-probe"
+    },
+    {
+      "source": "/aeo-geo",
+      "destination": "/aeo-geo.html"
+    },
+    {
+      "source": "/reduce-chatgpt-costs",
+      "destination": "/reduce-chatgpt-costs.html"
+    },
+    {
+      "source": "/reduce-claude-costs",
+      "destination": "/reduce-claude-costs.html"
+    },
+    {
+      "source": "/reduce-gemini-costs",
+      "destination": "/reduce-gemini-costs.html"
     }
   ],
   "functions": {
