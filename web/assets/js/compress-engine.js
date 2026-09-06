@@ -237,6 +237,8 @@
     void question;
     const result = [];
     const seenFingerprints = new Map();
+    // fingerprint -> index in `result` of the line that carries its marker.
+    const repeatMarkers = new Map();
     const traceAccum = [];
 
     function flushTrace() {
@@ -272,9 +274,15 @@
         continue;
       }
 
+      // Severity decides how aggressively two lines may be treated as the same.
+      // Digit-blind fingerprinting is what makes INFO/DEBUG noise collapse, but
+      // on WARN/ERROR/FATAL the digits ARE the evidence: order ids, amounts,
+      // ports and status codes differ only in their digits, so folding them
+      // together deletes the answer the query is asking for.
+      const severe = /\b(WARN|WARNING|ERROR|FATAL|SEVERE|CRIT|CRITICAL)\b/i.test(trimmed);
       const fingerprint = trimmed
         .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/g, "T")
-        .replace(/\d+/g, "#")
+        .replace(severe ? /(?!)/g : /\d+/g, "#")
         .replace(/\s+/g, " ")
         .trim();
 
@@ -284,9 +292,13 @@
         if (count <= 2) {
           result.push(line);
         } else if (count === 3) {
-          result.push(line + `  [repeated ${count - 1}x]`);
+          // Placeholder: the real suppressed count is only known once the whole
+          // input has been walked, so it is back-filled after the loop.
+          repeatMarkers.set(fingerprint, result.length);
+          result.push(line);
         }
-        // Further identical lines are collapsed (structural), not keyword-dropped.
+        // Further lines with this fingerprint are collapsed (structural), not
+        // keyword-dropped. They are counted so the marker can report how many.
       } else {
         seenFingerprints.set(fingerprint, 1);
         result.push(line);
@@ -294,6 +306,17 @@
     }
 
     flushTrace();
+
+    // Back-fill each marker with the number of lines actually suppressed, so
+    // the count is the real one rather than a fixed "2x". A group of exactly
+    // three occurrences suppresses none and keeps its line unmarked.
+    for (const [fingerprint, idx] of repeatMarkers) {
+      const suppressed = (seenFingerprints.get(fingerprint) || 0) - 3;
+      if (suppressed > 0 && result[idx] !== undefined) {
+        result[idx] = `${result[idx]}  [+${suppressed} more suppressed]`;
+      }
+    }
+
     const collapsed = [];
     let blankRun = 0;
     for (const line of result) {
