@@ -166,7 +166,7 @@ function escapeHtml(s) {
 
 /**
  * Branded email chrome — table layout for Gmail/Outlook.
- * Every product email (welcome, Sunday tip, Wednesday ship) goes through this.
+ * Every product email (welcome, Sunday tip, Friday ship) goes through this.
  *
  * @param {{ preheader?: string, title?: string, bodyHtml: string, footerHtml?: string, unsubUrl?: string, kind?: string }} opts
  */
@@ -340,7 +340,7 @@ Get started:
 • Playground: ${SITE}/playground
 
 One command for agents:
-npm install -g supercompress-proxy && npx supercompress setup
+npm install -g supercompress-proxy && supercompress setup
 
 Free: 5M tokens/month. Then $1 / 1M PAYG so you never hard-stop — usually cheaper than the LLM tokens you save.
 
@@ -385,11 +385,11 @@ const WEEKLY_TIPS_FALLBACK = [
     subject: "Your coding agent is burning tokens you can reclaim",
     tipTitle: "Stop paying for every log dump in Cursor / Claude Code",
     tipBody:
-      "Agents re-send huge context every turn. SuperCompress installs as MCP, keeps your login, and compresses dumps before they hit the model — typically ~65% fewer input tokens with ≥98% answer keep on our held-out suites.",
+      "Agents re-send huge context every turn. SuperCompress installs as MCP, keeps your login, and compresses dumps before they hit the model — typically 64% less context on our coding-agent benchmark with 24/24 benchmark evidence-retention passes on our held-out suites.",
     proof: "Install once. Works with Cursor, Claude Code, Codex, and more.",
     ctaLabel: "Install coding agent plugin →",
     ctaUrl: `${SITE}/docs/coding-agents`,
-    command: "npm install -g supercompress-proxy && npx supercompress setup",
+    command: "npm install -g supercompress-proxy && supercompress setup",
     secondaryLabel: "See held-out benchmarks",
     secondaryUrl: `${SITE}/benchmarks`,
   },
@@ -410,7 +410,7 @@ function getWeeklyTipsCatalog() {
   return { seed, byCampaign };
 }
 
-/** Prefer campaign-specific tip (new each week); else rotate seed. */
+/** Prefer campaign-specific tip (new each week). Seed is preview/dev only — never mass-send a recycled seed for a dated -tip campaign. */
 function weeklyTipForCampaign(campaignId) {
   const { seed, byCampaign } = getWeeklyTipsCatalog();
   const cid = String(campaignId || "").trim();
@@ -421,6 +421,10 @@ function weeklyTipForCampaign(campaignId) {
   if (base && byCampaign[base] && byCampaign[base].subject) {
     return { ...byCampaign[base], campaign_id: cid || base };
   }
+  // Dated tip campaigns must be authored uniquely each week (email-campaigns byCampaign).
+  if (/-tip$/i.test(cid)) {
+    return null;
+  }
   const n = (cid || base).split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
   return seed[n % seed.length];
 }
@@ -429,10 +433,22 @@ function weeklyTipForCampaign(campaignId) {
 const WEEKLY_TIPS = getWeeklyTipsCatalog().seed;
 
 function weeklyCopy({ firstName, email, campaignId, unsubUrl }) {
-  const hi = firstName ? `Hi ${firstName}` : "Hi";
   const tip = weeklyTipForCampaign(campaignId);
-  const subject = tip.subject;
   const unsub = unsubUrl || `${SITE}/unsubscribe`;
+  if (!tip || !tip.subject) {
+    return {
+      subject: null,
+      text: null,
+      html: null,
+      to: email,
+      tip_id: null,
+      kind: "tip",
+      unsubUrl: unsub,
+      error: `missing_unique_tip:${campaignId || ""}`,
+    };
+  }
+  const hi = firstName ? `Hi ${firstName}` : "Hi";
+  const subject = tip.subject;
 
   const cmdBlock = tip.command ? `\n${tip.command}\n` : "";
   const text = `${hi},
@@ -776,6 +792,79 @@ async function sendPowerUserEmail(opts) {
 }
 
 /**
+ * Quota-exhausted email — sent once per month when a free-tier user hits the
+ * 1M cap and compression 402s. Distinct from the once-ever power-user congrats:
+ * this one tells them they're paused and how to unlock.
+ * @param {{ email: string, firstName?: string, tokensUsed?: number, freeTokens?: number, month?: string }} opts
+ */
+function quotaExhaustedCopy({ email, firstName, tokensUsed, freeTokens, month }) {
+  const hi = firstName ? `Hey ${firstName}` : "Hey";
+  const billingUrl = `${SITE}/dashboard?panel=billing`;
+  const free = Number(freeTokens || 1_000_000);
+  const used = Math.max(Number(tokensUsed || 0), free);
+  const freeM = (free / 1e6).toFixed(free % 1e6 === 0 ? 0 : 1);
+  const usedM = (used / 1e6).toFixed(2);
+  const subject = `You've used your free ${freeM}M tokens — compression is paused`;
+
+  // First day of next month, e.g. "September 1"
+  let resetLine = "Your free allowance resets on the 1st of next month.";
+  const m = /^(\d{4})-(\d{2})$/.exec(String(month || ""));
+  if (m) {
+    const next = new Date(Date.UTC(Number(m[1]), Number(m[2]), 1));
+    const label = next.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+    resetLine = `Your free allowance resets on ${label}.`;
+  }
+
+  const text = `${hi},
+
+You've burned through your free ${freeM}M tokens this month (${usedM}M so far) — nice. Compression is paused until you add credits.
+
+Pay-as-you-go is $1 per million tokens after the free tier (minimum $10 load, credits never expire). Load credits and you're back instantly:
+${billingUrl}
+
+${resetLine} If you'd rather wait, everything picks up again then — your account, keys, and integrations stay exactly as they are.
+
+— Arjun
+Founder, SuperCompress
+`;
+
+  const bodyHtml = `
+    ${eyebrow("Free tier used")}
+    ${displayHeadline(`${hi} — you've used your free ${freeM}M tokens`)}
+    <p style="margin:0 0 14px;">You've compressed <strong>${escapeHtml(usedM)}M tokens</strong> this month — that puts you in the top slice of SuperCompress users. Compression is paused until you add credits.</p>
+    <p style="margin:0 0 12px;">Pay-as-you-go is <strong>$1 per million tokens</strong> after the free tier (minimum $10 load, credits never expire). Load credits and you're back instantly.</p>
+    ${ctaButton("Add credits", billingUrl)}
+    <p style="margin:16px 0 0;font-size:14px;line-height:1.55;color:${MUTED};">${escapeHtml(resetLine)} If you'd rather wait, everything picks up again then — your account, keys, and integrations stay exactly as they are.</p>
+    ${signatureBlock()}
+  `;
+
+  const html = brandedEmailHtml({
+    preheader: `Free ${freeM}M tokens used — add credits to keep compressing ($1/1M).`,
+    title: subject,
+    bodyHtml,
+    kind: "welcome",
+  });
+
+  return { subject, text, html, to: email };
+}
+
+async function sendQuotaExhaustedEmail(opts) {
+  if (!opts?.email || !String(opts.email).includes("@")) {
+    return { ok: false, error: "missing email" };
+  }
+  const copy = quotaExhaustedCopy(opts);
+  const result = await sendViaResend({
+    ...copy,
+    idempotencyKey: opts.idempotencyKey || null,
+  });
+  return { ...result, subject: copy.subject, text: copy.text, html: copy.html };
+}
+
+/**
  * Branded password reset (Resend) — replaces Firebase's unbranded auth email.
  */
 function passwordResetCopy({ email, resetUrl, firstName, intent = "reset" }) {
@@ -1058,6 +1147,15 @@ async function sendWeeklyEmail({ email, firstName, campaignId, unsubUrl, listUns
     campaignId,
     unsubUrl,
   });
+  if (copy.error || !copy.subject || !copy.html) {
+    return {
+      ok: false,
+      error: copy.error || "missing_email_copy",
+      subject: copy.subject,
+      tip_id: copy.tip_id,
+      kind: copy.kind || campaignKind(campaignId),
+    };
+  }
   const result = await sendViaResend({
     ...copy,
     unsubUrl: copy.unsubUrl || unsubUrl,
@@ -1076,6 +1174,7 @@ async function sendWeeklyEmail({ email, firstName, campaignId, unsubUrl, listUns
 module.exports = {
   welcomeCopy,
   powerUserCopy,
+  quotaExhaustedCopy,
   paymentThankYouCopy,
   passwordResetCopy,
   weeklyCopy,
@@ -1090,6 +1189,7 @@ module.exports = {
   sendViaResend,
   sendWelcomeEmail,
   sendPowerUserEmail,
+  sendQuotaExhaustedEmail,
   sendPaymentThankYouEmail,
   sendPasswordResetEmail,
   sendWeeklyEmail,

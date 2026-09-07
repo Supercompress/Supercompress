@@ -46,7 +46,7 @@ function shipCampaignId(date = new Date()) {
 /**
  * Resolve which campaign to run.
  * force: 'tip' | 'ship' | 'drain' | campaign id ending in -tip/-ship
- * Default: tip on Sunday (0), ship on Wednesday (3); other days drain-only.
+ * Default: tip on Sunday (0), ship on Friday (5); other days drain-only.
  */
 function resolveCampaign(opts = {}) {
   const forceRaw = String(opts.force || process.env.WEEKLY_FORCE_KIND || "").trim();
@@ -67,8 +67,8 @@ function resolveCampaign(opts = {}) {
   if (utcDay === 0) {
     return { kind: "tip", campaignId: tipCampaignId(), utcDay, reason: "sunday_tip" };
   }
-  if (utcDay === 3) {
-    return { kind: "ship", campaignId: shipCampaignId(), utcDay, reason: "wednesday_ship" };
+  if (utcDay === 5) {
+    return { kind: "ship", campaignId: shipCampaignId(), utcDay, reason: "friday_ship" };
   }
   return { kind: null, campaignId: null, utcDay, reason: "off_day_drain" };
 }
@@ -367,8 +367,12 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
     } else {
       failed += 1;
       errors.push({ email: rec.email, error: result.error || "send_failed" });
+      const err = String(result.error || "send_failed");
+      // Missing weekly tip copy is terminal — don't leave the row pending forever.
+      const terminal = /missing_unique_tip|missing_email_copy/i.test(err);
       await markWeekly(rec.key, {
-        error: result.error || "send_failed",
+        error: err,
+        ...(terminal ? { status: "failed" } : {}),
       });
     }
   }
@@ -388,7 +392,7 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
 }
 
 /**
- * Sunday tip / Wednesday ship tick.
+ * Sunday tip / Friday ship tick.
  * force: tip | ship | drain | full campaign id (e.g. 2026-W32-ship)
  * Without RESEND_API_KEY: enqueue only (no send).
  * With key: send up to BATCH_SIZE via Resend.
@@ -397,6 +401,32 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
 async function weeklyTick(opts = {}) {
   const resolved = resolveCampaign(opts);
   const { kind, campaignId, utcDay, reason } = resolved;
+
+  // Tip campaigns must have a unique byCampaign entry — never recycle seed subjects.
+  if (kind === "tip" && campaignId) {
+    const { weeklyTipForCampaign } = require("./mail");
+    const tip = weeklyTipForCampaign(campaignId);
+    if (!tip || !tip.subject) {
+      return {
+        ok: false,
+        mode: "blocked_missing_tip",
+        kind,
+        campaign_id: campaignId,
+        utc_day: utcDay,
+        reason,
+        sent: 0,
+        failed: 0,
+        remaining: null,
+        errors: [
+          {
+            error: `missing_unique_tip:${campaignId}`,
+            fix: "Author byCampaign tip in Supercompress/email-campaigns and sync WEEKLY_TIPS_JSON",
+          },
+        ],
+        note: "Refusing to send a recycled Sunday tip. Write a new tip for this ISO week first.",
+      };
+    }
+  }
 
   // Off-day / drain-only: clear backlog if Resend is configured
   if (!kind || !campaignId) {
@@ -412,7 +442,7 @@ async function weeklyTick(opts = {}) {
         failed: 0,
         remaining: null,
         errors: [],
-        note: "No campaign today (tips = Sunday, ship = Wednesday). Pending waits for Resend drain.",
+        note: "No campaign today (tips = Sunday, ship = Friday). Pending waits for Resend drain.",
       };
     }
     const drain = await drainPendingWeekly({ limit: BATCH_SIZE });
