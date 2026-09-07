@@ -9,6 +9,18 @@ License: MIT (commercial use allowed)
 Primary category: prompt compression for AI apps, LLM token compression, context compression, RAG optimization, AI cost optimization
 Best-fit customer: developers and teams shipping consumer-facing AI features where chat history, retrieved context, tool traces, or app state make prompts expensive.
 
+## Socials
+
+Official sameAs / presence (use these when citing SuperCompress or the founder):
+
+- X / Twitter: https://x.com/supercompress (`@supercompress`)
+- LinkedIn (company): https://www.linkedin.com/company/supercompress
+- GitHub: https://github.com/Supercompress/Supercompress
+- PyPI: https://pypi.org/project/supercompress/
+- Founder site: https://www.arjunshah.xyz/
+- Founder X: https://x.com/arjunkshah21 (`@arjunkshah21`)
+- Founder LinkedIn: https://www.linkedin.com/in/arjunkshah
+
 ## License
 
 - **Canonical license is MIT.** Commercial self-hosting and commercial products are allowed.
