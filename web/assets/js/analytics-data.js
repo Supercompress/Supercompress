@@ -303,7 +303,15 @@
   function chartDayList(bundle) {
     const extra = Object.keys(bundle.byDay || {}).filter(isChartDay);
     const month = (bundle.account && bundle.account.month) || utcYmd().slice(0, 7);
-    return monthKeys(month, utcYmd(), extra);
+    const keys = monthKeys(month, utcYmd(), extra);
+    // Early in a billing month (day 1–3) a single point becomes a solid blue slab.
+    // Fall back to a rolling 14-day window so the chart stays readable at 1M+.
+    if (keys.length < 7) {
+      const roll = dayKeys(14);
+      const merged = [...new Set([...roll, ...keys, ...extra])].filter(isChartDay).sort();
+      return merged.slice(-14);
+    }
+    return keys;
   }
 
   function meterFromBundle(bundle) {
@@ -345,15 +353,37 @@
       Number(agentT.requests || 0)
     );
 
-    // Month meter ahead of daily rows: spread the gap across the whole month
-    // (weighted toward days that already have activity). Never dump it on today.
+    // Month meter ahead of daily rows: fold the gap into the chart without
+    // painting a flat full-height slab (equal weight on every day did that at 1M+).
+    // Prefer real activity days; if none exist, ramp toward month-end.
     const gapSaved = saved - daySaved;
     const gapIn = tin - dayIn;
     const gapReq = req - dayReq;
     if (gapSaved > 500 || gapIn > 500 || gapReq > 0) {
-      const weights = keys.map((iso) => {
+      const hasActivity = keys.some((iso) => {
         const d = bundle.byDay[iso];
-        return 1 + (d && (d.requests || d.tokens_in) ? Math.max(d.requests || 0, 2) : 0);
+        return d && (d.requests || d.tokens_in || d.tokens_saved);
+      });
+      const weights = keys.map((iso, i) => {
+        const d = bundle.byDay[iso];
+        const active = d && (d.requests || d.tokens_in || d.tokens_saved);
+        if (active) {
+          return (
+            8 +
+            Math.max(
+              Number(d.requests) || 0,
+              Math.round((Number(d.tokens_saved) || 0) / 5000),
+              2
+            )
+          );
+        }
+        if (!hasActivity) {
+          // No daily rows — rising month shape, not a flat blue wall.
+          const t = keys.length <= 1 ? 1 : (i + 1) / keys.length;
+          return t * t;
+        }
+        // Tiny residual so the gap isn't a single needle, but peaks stay readable.
+        return 0.12;
       });
       const wSum = weights.reduce((s, w) => s + w, 0) || keys.length || 1;
       let usedS = 0;
