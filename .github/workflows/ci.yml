@@ -92,6 +92,8 @@ jobs:
         run: node api/stats.test.js
       - name: Analytics aggregation unit tests
         run: node web/assets/js/analytics-data.test.js
+      - name: Compress engine log-dedup unit tests
+        run: node web/assets/js/compress-engine.test.js
       - name: Proxy package tests
         run: |
           cd packages/proxy
