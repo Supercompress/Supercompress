@@ -1,0 +1,6 @@
+{
+  "name": "supercompress",
+  "version": "0.5.28",
+  "description": "Query-aware context compression for coding agents. Compress tool dumps, logs, diffs, and pasted files before they burn tokens — 64% mean context reduction with 24/24 evidence-retention passes on the B5 coding-agent benchmark. Links to your SuperCompress account for hosted Engine v2 neural compression.",
+  "skills": "./skills/"
+}

@@ -1,0 +1,23 @@
+{
+  "name": "supercompress",
+  "interface": {
+    "displayName": "SuperCompress"
+  },
+  "plugins": [
+    {
+      "name": "supercompress",
+      "source": {
+        "source": "local",
+        "path": "./integrations/plugins/supercompress"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity",
+      "interface": {
+        "displayName": "SuperCompress"
+      }
+    }
+  ]
+}
