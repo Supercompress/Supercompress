@@ -143,7 +143,12 @@ mustThrow(
     state = r.ledger;
   }
   assert.strictEqual(totalBurned, tokensToMicros(10));
-  assert.ok(totalBurned < 10, "must be cheaper than 10× ceil(1-token)");
+  // Cumulative ceil must never exceed naive per-request ceil(1-token)×N
+  // (equality is OK when USD_PER_MILLION is an integer, e.g. $1/1M).
+  assert.ok(
+    totalBurned <= 10 * tokensToMicros(1),
+    "cumulative burn never worse than per-request ceil"
+  );
 }
 
 // Comped skips gates
