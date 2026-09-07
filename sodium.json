@@ -1,0 +1,238 @@
+{
+  "$schema": "https://sodium.result.dev/schema/v1.json",
+  "schemaVersion": 1,
+  "app": {
+    "name": "supercompress",
+    "origins": [
+      "https://www.supercompress.dev",
+      "https://supercompress.dev",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000"
+    ]
+  },
+  "telemetry": {
+    "enabled": true
+  },
+  "tools": [
+    {
+      "id": "tl_47020285",
+      "name": "open_home",
+      "title": "Open homepage",
+      "description": "Open the SuperCompress marketing homepage.",
+      "on": [
+        "/**"
+      ],
+      "run": {
+        "navigate": "/"
+      },
+      "risk": "read_only"
+    },
+    {
+      "id": "tl_475fdb84",
+      "name": "open_playground",
+      "title": "Open playground",
+      "description": "Open the interactive SuperCompress playground to try prompt compression in the browser.",
+      "on": [
+        "/**"
+      ],
+      "run": {
+        "navigate": "/playground"
+      },
+      "risk": "read_only"
+    },
+    {
+      "id": "tl_5342ae5e",
+      "name": "open_docs",
+      "title": "Open docs",
+      "description": "Open SuperCompress documentation (quickstart, API, coding agents).",
+      "on": [
+        "/**"
+      ],
+      "run": {
+        "navigate": "/docs/"
+      },
+      "risk": "read_only"
+    },
+    {
+      "id": "tl_3d616509",
+      "name": "open_quickstart",
+      "title": "Open quickstart",
+      "description": "Open the SuperCompress quickstart guide.",
+      "on": [
+        "/**"
+      ],
+      "run": {
+        "navigate": "/docs/quickstart"
+      },
+      "risk": "read_only"
+    },
+    {
+      "id": "tl_4738a3ac",
+      "name": "open_get_api_key",
+      "title": "Get API key",
+      "description": "Open the dashboard signup flow to create a free SuperCompress API key.",
+      "on": [
+        "/**"
+      ],
+      "run": {
+        "navigate": "/dashboard?signup=1"
+      },
+      "risk": "read_only"
+    },
+    {
+      "id": "tl_d8d10ec4",
+      "name": "open_pricing",
+      "title": "Open pricing",
+      "description": "Open SuperCompress pricing and free-tier details on the homepage.",
+      "on": [
+        "/**"
+      ],
+      "run": {
+        "navigate": "/#pricing"
+      },
+      "risk": "read_only"
+    },
+    {
+      "id": "tl_efa62eb4",
+      "name": "open_vs_headroom",
+      "title": "Compare vs Headroom",
+      "description": "Open the SuperCompress vs Headroom comparison page.",
+      "on": [
+        "/**"
+      ],
+      "run": {
+        "navigate": "/supercompress-vs-headroom"
+      },
+      "risk": "read_only"
+    },
+    {
+      "id": "tl_1dcc0f92",
+      "name": "open_llms_txt",
+      "title": "Open llms.txt",
+      "description": "Open the machine-readable SuperCompress llms.txt index for answer engines.",
+      "on": [
+        "/**"
+      ],
+      "run": {
+        "navigate": "/llms.txt"
+      },
+      "risk": "read_only"
+    },
+    {
+      "id": "tl_74a41d95",
+      "name": "compress_in_playground",
+      "title": "Compress in playground",
+      "description": "On the playground page, fill context and query, run SuperCompress, and return the compressed text plus stats.",
+      "input": {
+        "context": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200000
+        },
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "default": "Summarize this context."
+        }
+      },
+      "on": [
+        "/playground",
+        "/playground.html"
+      ],
+      "run": {
+        "interaction": {
+          "steps": [
+            {
+              "kind": "set",
+              "selector": "#context",
+              "input": "context"
+            },
+            {
+              "kind": "set",
+              "selector": "#query",
+              "input": "query"
+            },
+            {
+              "kind": "click",
+              "selector": "#compress"
+            },
+            {
+              "kind": "wait_for",
+              "selector": "#stats:not([hidden])",
+              "state": "present",
+              "timeoutMs": 10000
+            },
+            {
+              "kind": "read",
+              "selector": "#output",
+              "output": "compressed_text"
+            },
+            {
+              "kind": "read",
+              "selector": "#stat-saved",
+              "output": "saved_pct"
+            },
+            {
+              "kind": "read",
+              "selector": "#stat-in",
+              "output": "tokens_in"
+            },
+            {
+              "kind": "read",
+              "selector": "#stat-out",
+              "output": "tokens_out"
+            }
+          ]
+        }
+      },
+      "risk": "reversible",
+      "confirmation": "none"
+    },
+    {
+      "id": "tl_b52b09fd",
+      "name": "read_playground_stats",
+      "title": "Read playground stats",
+      "description": "Read the latest compression stats shown on the playground page after a run.",
+      "on": [
+        "/playground",
+        "/playground.html"
+      ],
+      "run": {
+        "extract": {
+          "fields": [
+            {
+              "name": "tokens_removed",
+              "selector": "#stat-removed"
+            },
+            {
+              "name": "tokens_in",
+              "selector": "#stat-in"
+            },
+            {
+              "name": "tokens_out",
+              "selector": "#stat-out"
+            },
+            {
+              "name": "saved_pct",
+              "selector": "#stat-saved"
+            },
+            {
+              "name": "policy",
+              "selector": "#stat-policy"
+            },
+            {
+              "name": "mode",
+              "selector": "#stat-mode"
+            },
+            {
+              "name": "status",
+              "selector": "#status"
+            }
+          ]
+        }
+      },
+      "risk": "read_only"
+    }
+  ]
+}

@@ -12,11 +12,14 @@
     "release:check": "bash scripts/release-check.sh",
     "sync:assets": "node scripts/sync-compress-assets.js",
     "mcp": "node mcp/server.js",
-    "check:version": "node scripts/check-versions.js"
+    "check:version": "node scripts/check-versions.js",
+    "sodium:bundle": "esbuild web/assets/js/sodium-bootstrap.mjs --bundle --format=esm --platform=browser --outfile=web/assets/js/sodium.js --legal-comments=none",
+    "sodium:validate": "npx --yes sodiumtools@0.3.0 validate"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "firebase-admin": "^13.10.0",
+    "sodium-webmcp-sdk": "^0.2.0",
     "stripe": "^22.3.0",
     "supercompress-proxy": "^0.5.23"
   },
