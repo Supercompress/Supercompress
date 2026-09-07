@@ -58,6 +58,8 @@ jobs:
           node packages/proxy/test/sse-stream.js
           node packages/proxy/test/protocol-safety.js
           node packages/proxy/test/uninstall-clean.js
+      - name: CCR storage-key collision tests
+        run: node web/assets/js/compress-engine-ccr.test.js
       - name: Billing ledger unit tests
         run: node api/_lib/billing-ledger.test.js
       - name: Credit amount helpers

@@ -134,7 +134,23 @@ async function ccrStoreFirestore(hash, originalText, meta = {}) {
       token_count: originalText.split(/\s+/).length,
     };
     // Owner-scoped path (canonical). Never write a shared flat ccr/{hash} — that leaked across tenants.
-    await admin.firestore().doc(ccrOwnerDocPath(ownerUid, hash)).set(payload);
+    //
+    // simpleHash is a 32-bit rolling hash through Math.abs (~31 bits of key
+    // space), so two different originals of the same length can land on one
+    // key. A blind .set() then replaces a live block with unrelated content and
+    // retrieve hands the caller a well-formed block that is not the one its
+    // marker pointed at. Refuse the write instead: a miss is recoverable, a
+    // silent substitution is not.
+    const ref = admin.firestore().doc(ccrOwnerDocPath(ownerUid, hash));
+    const existing = await ref.get();
+    if (existing.exists) {
+      const prior = existing.data() || {};
+      if (typeof prior.original === "string" && prior.original !== originalText) {
+        console.warn("CCR store refused: key collision on", hash);
+        return false;
+      }
+    }
+    await ref.set(payload);
     return true;
   } catch (err) {
     console.warn("CCR store failed:", err.message);
