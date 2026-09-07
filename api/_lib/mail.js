@@ -340,9 +340,9 @@ Get started:
 • Playground: ${SITE}/playground
 
 One command for agents:
-npm install -g supercompress-proxy && npx supercompress setup
+npm install -g supercompress-proxy && supercompress setup
 
-Free: 1M tokens/month. Then $0.30 / 1M PAYG so you never hard-stop — usually cheaper than the LLM tokens you save.
+Free: 5M tokens/month. Then $1 / 1M PAYG so you never hard-stop — usually cheaper than the LLM tokens you save.
 
 Thanks again,
 Arjun
@@ -365,7 +365,7 @@ npx supercompress setup</pre>
   · <a href="${SITE}/playground" style="color:${BRAND};text-decoration:none;font-weight:600;">Playground</a>
   · <a href="${SITE}/reduce-llm-costs" style="color:${BRAND};text-decoration:none;font-weight:600;">Cut API costs</a>
 </p>
-${proofCallout("Free: 1M tokens/month · then $0.30 / 1M PAYG so you never hard-stop.")}
+${proofCallout("Free: 5M tokens/month · then $1 / 1M PAYG so you never hard-stop.")}
 ${signatureBlock()}`;
 
   const html = brandedEmailHtml({
@@ -725,7 +725,7 @@ Or post now: https://twitter.com/intent/tweet?text=${encodeURIComponent(
     `Just hit power user on SuperCompress — 1M+ tokens compressed.\n\nCut agent context, keep the answer → ${SITE}`
   )}
 
-Pay-as-you-go is only $0.30 per million tokens. Load credits anytime: ${billingUrl}
+Pay-as-you-go is only $1 per million tokens. Load credits anytime: ${billingUrl}
 
 — Arjun
 Founder, SuperCompress
@@ -764,7 +764,7 @@ Founder, SuperCompress
     }
     <p style="margin:0 0 12px;">Tell the timeline — post about it on X.</p>
     ${ctaButton("Post on X", xShareUrl)}
-    <p style="margin:16px 0 12px;">Pay-as-you-go is only <strong>$0.30 per million tokens</strong> — load credits anytime.</p>
+    <p style="margin:16px 0 12px;">Pay-as-you-go is only <strong>$1 per million tokens</strong> — load credits anytime.</p>
     ${ctaButton("Load credits", billingUrl)}
     ${signatureBlock()}
   `;
@@ -823,7 +823,7 @@ function quotaExhaustedCopy({ email, firstName, tokensUsed, freeTokens, month })
 
 You've burned through your free ${freeM}M tokens this month (${usedM}M so far) — nice. Compression is paused until you add credits.
 
-Pay-as-you-go is $0.30 per million tokens after the free tier (minimum $10 load, credits never expire). Load credits and you're back instantly:
+Pay-as-you-go is $1 per million tokens after the free tier (minimum $10 load, credits never expire). Load credits and you're back instantly:
 ${billingUrl}
 
 ${resetLine} If you'd rather wait, everything picks up again then — your account, keys, and integrations stay exactly as they are.
@@ -836,14 +836,14 @@ Founder, SuperCompress
     ${eyebrow("Free tier used")}
     ${displayHeadline(`${hi} — you've used your free ${freeM}M tokens`)}
     <p style="margin:0 0 14px;">You've compressed <strong>${escapeHtml(usedM)}M tokens</strong> this month — that puts you in the top slice of SuperCompress users. Compression is paused until you add credits.</p>
-    <p style="margin:0 0 12px;">Pay-as-you-go is <strong>$0.30 per million tokens</strong> after the free tier (minimum $10 load, credits never expire). Load credits and you're back instantly.</p>
+    <p style="margin:0 0 12px;">Pay-as-you-go is <strong>$1 per million tokens</strong> after the free tier (minimum $10 load, credits never expire). Load credits and you're back instantly.</p>
     ${ctaButton("Add credits", billingUrl)}
     <p style="margin:16px 0 0;font-size:14px;line-height:1.55;color:${MUTED};">${escapeHtml(resetLine)} If you'd rather wait, everything picks up again then — your account, keys, and integrations stay exactly as they are.</p>
     ${signatureBlock()}
   `;
 
   const html = brandedEmailHtml({
-    preheader: `Free ${freeM}M tokens used — add credits to keep compressing ($0.30/1M).`,
+    preheader: `Free ${freeM}M tokens used — add credits to keep compressing ($1/1M).`,
     title: subject,
     bodyHtml,
     kind: "welcome",
