@@ -72,7 +72,7 @@ assert.strictEqual(isDrainablePowerUser(null), false);
   assert.match(copy.text, /million tokens/i);
   assert.doesNotMatch(copy.text, /leaderboard/i);
   assert.doesNotMatch(copy.html, /leaderboard/i);
-  assert.match(copy.html, /\$0\.30 per million/i);
+  assert.match(copy.html, /\$1 per million/i);
 }
 
 {

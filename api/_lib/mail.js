@@ -709,7 +709,7 @@ Or post now: https://twitter.com/intent/tweet?text=${encodeURIComponent(
     `Just hit power user on SuperCompress — 1M+ tokens compressed.\n\nCut agent context, keep the answer → ${SITE}`
   )}
 
-Pay-as-you-go is only $0.30 per million tokens. Load credits anytime: ${billingUrl}
+Pay-as-you-go is only $1 per million tokens. Load credits anytime: ${billingUrl}
 
 — Arjun
 Founder, SuperCompress
@@ -748,7 +748,7 @@ Founder, SuperCompress
     }
     <p style="margin:0 0 12px;">Tell the timeline — post about it on X.</p>
     ${ctaButton("Post on X", xShareUrl)}
-    <p style="margin:16px 0 12px;">Pay-as-you-go is only <strong>$0.30 per million tokens</strong> — load credits anytime.</p>
+    <p style="margin:16px 0 12px;">Pay-as-you-go is only <strong>$1 per million tokens</strong> — load credits anytime.</p>
     ${ctaButton("Load credits", billingUrl)}
     ${signatureBlock()}
   `;
