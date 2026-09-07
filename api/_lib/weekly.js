@@ -367,8 +367,12 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
     } else {
       failed += 1;
       errors.push({ email: rec.email, error: result.error || "send_failed" });
+      const err = String(result.error || "send_failed");
+      // Missing weekly tip copy is terminal — don't leave the row pending forever.
+      const terminal = /missing_unique_tip|missing_email_copy/i.test(err);
       await markWeekly(rec.key, {
-        error: result.error || "send_failed",
+        error: err,
+        ...(terminal ? { status: "failed" } : {}),
       });
     }
   }
