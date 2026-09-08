@@ -575,6 +575,7 @@ Response Format:
       const compressedTokens = estimateTokens(kept.join('\\n'));
       const savings = Math.round((1 - compressedTokens / originalTokens) * 100);
       
+      const t0 = performance.now();
       // Visualize: mark kept vs removed lines
       let visualHtml = '';
       for (const line of lines) {
@@ -593,7 +594,7 @@ Response Format:
         savings,
         keptText: kept.join('\\n'),
         visualHtml,
-        latency: (Math.random() * 40 + 40).toFixed(0)
+        latency: Math.max(1, Math.round(performance.now() - t0))
       };
     }
 
@@ -614,14 +615,12 @@ Response Format:
       btn.disabled = true;
       btn.innerHTML = '<span class="loading-spinner"></span> Compressing...';
       
-      // Simulate API call delay
-      setTimeout(() => {
-        const result = simulateCompression(context, question);
+      const result = simulateCompression(context, question);
         
         document.getElementById('origTokens').textContent = result.originalTokens.toLocaleString();
         document.getElementById('compTokens').textContent = result.compressedTokens.toLocaleString();
         document.getElementById('savingsPct').textContent = result.savings + '%';
-        document.getElementById('latency').textContent = '~' + result.latency + 'ms';
+        document.getElementById('latency').textContent = result.latency + 'ms';
         
         document.getElementById('originalText').textContent = context;
         document.getElementById('compressedText').innerHTML = result.visualHtml;
@@ -637,12 +636,11 @@ Response Format:
         
         btn.disabled = false;
         btn.innerHTML = 'Compress';
-      }, 800);
     }
 
     function shareTwitter() {
       const url = encodeURIComponent('https://supercompress.dev/compare');
-      const text = encodeURIComponent('SuperCompress - See how intelligent prompt compression works. 65% fewer tokens, 100% oracle recall. Try it live:');
+      const text = encodeURIComponent('SuperCompress - See how intelligent prompt compression works. 64% fewer tokens, 100% oracle recall. Try it live:');
       window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
     }
 

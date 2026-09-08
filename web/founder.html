@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Founder — SuperCompress</title>
   <meta name="description" content="SuperCompress founder dashboard — affiliate program management and analytics." />
   <meta name="robots" content="noindex, nofollow" />
@@ -720,7 +720,7 @@
       .int-auth { padding-top: 36px; }
     }
   </style>
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
   <link rel="stylesheet" href="/assets/css/dashboard-analytics.css?v=4" />
 </head>
 <body>
@@ -802,10 +802,10 @@
         </a>
       </div>
       <div class="int-resource-grid">
-        <a class="int-resource-card" href="/launch-kit">
-          <strong>Launch kit</strong>
-          <span>Tweets, DMs, emails, and launch copy tied to the SuperCompress positioning.</span>
-          <em>Open launch assets</em>
+        <a class="int-resource-card" href="/affiliate-creator-kit">
+          <strong>Creator kit</strong>
+          <span>Tweets, DMs, emails, and copy for affiliates sharing SuperCompress.</span>
+          <em>Open creator kit</em>
         </a>
         <a class="int-resource-card" href="https://docs.supercompress.dev/coding-agents">
           <strong>Setup instructions</strong>
@@ -1153,8 +1153,8 @@
 
   </div>
 
-  <script src="/assets/js/dither-kit-lite.js?v=15"></script>
-  <script src="/assets/js/analytics-data.js?v=4"></script>
+  <script src="/assets/js/dither-kit-lite.js?v=17"></script>
+  <script src="/assets/js/analytics-data.js?v=5"></script>
   <script src="/assets/js/founder-analytics.js?v=1"></script>
   <!-- Firebase + internal dashboard logic -->
   <script type="importmap">
@@ -1176,7 +1176,6 @@
     let idToken = null;
 
     const API_BASE = window.location.origin || "https://www.supercompress.dev";
-    const FOUNDER_EMAILS = new Set(["arjunkshah21@gmail.com", "arjunkshah12345@gmail.com"]);
     const ROLE_STORAGE_KEY = "supercompress_internal_role";
     const FOUNDER_HOSTS = new Set(["internal.supercompress.dev", "arjun.supercompress.dev"]);
     const IS_FOUNDER_HOST = FOUNDER_HOSTS.has(window.location.hostname);
@@ -1364,17 +1363,7 @@
       if (selectedRole === "affiliate") {
         await loadAffiliateDashboard();
       } else if (selectedRole === "founder") {
-        // Verify founder email
-        const email = (user.email || "").toLowerCase().trim();
-        if (!FOUNDER_EMAILS.has(email)) {
-          setError("int-auth-error", "Access denied. This account is not authorized for founder access.");
-          show($("int-auth"));
-          $("int-auth-title").textContent = "Access Denied";
-          $("int-auth-desc").textContent = "Only authorized founder accounts can access the admin panel.";
-          hide($("int-btn-google").parentNode);
-          $("int-auth-back").textContent = "← Go back";
-          return;
-        }
+        // Authorization is enforced server-side on founder APIs.
         await loadFounderDashboard();
       } else {
         hide($("int-dash-affiliate"));

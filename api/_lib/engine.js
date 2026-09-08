@@ -1,7 +1,6 @@
 /**
  * Server-side compression — loads web compress-engine.js + model.json via vm.
- * Neural/BGE boost is opt-in (SC_NEURAL=1) and excluded from Vercel lambdas
- * (onnx/transformers exceed Hobby size limits). Default path is the local policy.
+ * Optional neural boost is env-gated for operators; default path is the local policy.
  */
 
 const fs = require("fs");
@@ -40,8 +39,7 @@ function getModel() {
 }
 
 async function loadNeuralBoost(context, query) {
-  // Hosted Vercel functions exclude onnx/transformers (too large). Opt in only
-  // when SC_NEURAL=1 and the optional deps are present.
+  // Optional neural boost — opt in only when SC_NEURAL=1 and deps are present.
   const on = process.env.SC_NEURAL === "1" || process.env.SC_NEURAL === "true";
   if (!on) return null;
   try {
