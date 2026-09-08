@@ -13,105 +13,15 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
-### Auth
-- Password reset emails go through **Resend** (branded SuperCompress template from `hello@supercompress.dev`) instead of Firebase’s unbranded auth mail
+### Fixed
+- Firebase auth uses trusted project config only (never unverified token `aud`)
+- `SC_AUTH_DEV` fails closed in production
+- Compare demo latency is measured, not random
 
-### Ops / safety net
-- Re-enabled GitHub Actions **CI** and **Production smoke** (were `disabled_manually`)
-- Production smoke: daily cron + path-filtered `main` pushes (not `*/15`)
+### Changed
+- Public roadmap / contributor notes keep released-product scope only
+- Hosted pricing copy remains $0.30 / 1M after 5M free
 
-### Billing / claims hardening
-- `fitCustomClaims` **never deletes `sc_key_ids`** (orphan live keys / plan-cap bypass under 1KB pressure); trims usage/recent_billing first
-- Claims-fallback idempotency: same-isolate pending lease so duplicate Idempotency-Keys do not both run compress on one instance (cross-instance still needs Firestore/Redis)
-
-### Site / marketing
-- Landing semantic / compiler claims: query-aware keep/drop copy, honest API snippets, refreshed benchmark table vs truncation / summarization / Headroom public claim
-
-
-### Dashboard onboarding
-- Skippable post-signup flow: where you heard us + earn **10,000** free tokens each (star repo, follow on X, install coding-agent plugin)
-- Bonus free tokens raise the monthly free allowance (up to +30,000)
-- Power users get a dashboard congrats modal with **Post on X**; power-user email includes the same CTA
-
-### Trust / privacy
-- **postinstall is guidance-only** — no longer rewrites agent MCP configs on `npm install` (use `setup` / `plugin`)
-- Compress activity **preview logging is off by default** (`SC_COMPRESS_LOG_PREVIEWS=1` to enable)
-- **CCR originals expire after 48 hours** (Firestore `expire_at` + retrieve enforcement + in-memory TTL); privacy policy documents CCR retention
-- Firebase Admin **refuses projectId-only init** unless `SC_FIREBASE_ALLOW_PROJECT_ONLY=1` (requires service-account creds in prod)
-- Shared `api/_lib/retention.js` for replay + CCR TTL (same 48h window)
-
-### Repo hygiene
-- Canonical compress assets live under `web/assets/`; `npm run sync:assets` copies into proxy + `api/_lib`
-- Slimmer `.gitignore`; drop unused duplicate halftone PNGs
-
-
-### Site / docs
-- Landing live counter: tokens processed across SuperCompress (from `/api/stats`), above the bottom CTA, polling every 15s
-- GitHub Sponsors on the Supercompress repo (`FUNDING.yml` + Sponsor badge) → [@arjunkshah12345-hash](https://github.com/sponsors/arjunkshah12345-hash)
-- Product mail campaign copy lives in private GitHub `Supercompress/email-campaigns` (not OSS); loaders read Vercel env / local mirror
-- Product mail (welcome + Sunday tip + Wednesday ship) sends from Resend on `hello@supercompress.dev`; Ideatrusa/gog drains paused offline
-- Remove weekly tip/ship campaign JSON from the OSS tree (private content dir + `WEEKLY_*_JSON` env)
-- Sync public npm pins to `supercompress-proxy@0.5.18`; extend `check-versions.js` to gate those pins
-- Remove leftover Analytics spark DOM + unused series helpers from dashboard
-- Keep user emails / outreach dumps / welcome-drain ops **out of OSS** (gitignore + CI PII gate); drain scripts live under `~/agent-bridge/private/supercompress-email/`
-
-### Model
-- AMCP scale-training stack (`scripts/amcp`) — JS-compatible wider keep-policy, coding-agent + QA oracles, Kaggle GPU entry (`kaggle/amcp-scale`)
-
-### API / dashboard
-- Billing usage bar uses the same animated dither + bloom as Analytics (grow-in + shimmer), not a static dotted strip
-- Analytics charts the full billing month per signed-in account; missing daily rows spread across the month instead of dumping onto today
-- Founder admin on `internal.supercompress.dev` shows all-account usage (processed / in / out / saved / cut %, leaderboard) with the same dither charts as dashboard Analytics
-
-- Soft-200 scanner/probe noise (`softProbe`) so Vercel Observability error rate stays ~0; real clients with credentials still get proper 4xx
-- Auto branded **power-user email** when someone hits 1M tokens (once ever). Delivery is Auth-claim + Resend idempotency, not Firestore; welcome-drain backfills anyone already over 1M. Free users at 1M are paywalled from Auth claims even if Firestore is down.
-- Welcome-drain no longer aborts on gist/store errors before sending 1M power-user mail; `op=power-user-drain` can run that lane alone.
-- **No Firestore on the hot path** (default). Billing, keys, welcome/weekly mail, and rate limits use Auth claims + Resend idempotency. Gist is optional/cold only. Set `SUPERCOMPRESS_USE_FIRESTORE=1` to opt back in after the API is enabled.
-- Auth-only wallet writers merge from live claims and stamp `sc_write_id` so overlapping key/mail/credit/usage writes retry instead of clobbering; plan `max_keys` is enforced on Auth key mint (Free 10 / PAYG 25) and the owner index is no longer sliced to 20.
-- **Dashboard Analytics panel** (dither charts): live usage from `/api/keys` after sign-in — tokens saved, requests, coding agents, and key breakdown. `/analytics` stays inside `/dashboard?panel=analytics`.
-- Fix Analytics chart paint: Bayer wells + stacked dither canvases, wait for layout before draw, no demo/fake flash on production.
-- Align `/api/account?op=usage` + dashboard `account_usage` with the billing ledger (CLI no longer under-counts vs dashboard)
-- Idempotent compress: replay stored response for same Idempotency-Key + fingerprint (no free recompute)
-- Durable IP rate limit counts each client key (not payload fingerprint alone)
-- Billing idempotency ignores `X-Request-Id` (tracing ≠ Idempotency-Key)
-- Durable per-key usage metering + dashboard KPI preference for billing meter
-- Remove dead store Auth-stub helpers; CCR uses Firestore (docs match)
-- Fix demo CO₂ grams over-count (`×1000` bug)
-- Transactional Firestore billing ledger for usage + wallet burns; Stripe auto-recharge lock + idempotency; no pre-Checkout `sc_metered` mutation; micro-USD burns so tiny requests are not free
-- Fix `/api/v1/compress` 504s: kill O(n²) token-entropy scans in the engine, skip unused line annotations on the hosted path, soft-timeout Firestore side-effects, raise route `maxDuration` to 60s
-- Harden billing: fail-closed `recordUsage`, atomic free-quota/wallet rejection (no clamp-to-zero), permanent `billing_credits/{id}` idempotency, ledger-only claim mirroring
-- Compress POST-only (no query API keys/context); durable rate-limit fail-closed; CCR strips retrieve markers if persistence fails; dashboard reads billing ledger
-- **Request-level billing idempotency** (`billing_usage/{uid}:{requestId}` + `Idempotency-Key`) so billing timeouts cannot double-charge on retry
-- Bill before per-key analytics; skip analytics on idempotent replay
-- Auto-recharge once when balance is positive but insufficient, then retry the same request id
-- First-pay bonus create-once via `billing_bonus/{uid}:first_pay`; honest Checkout replay (`already: true`, `creditUsd: 0`)
-- Cumulative micro-USD rounding (`ceil(totalAfter) − ceil(totalBefore)`); idempotent durable rate-limit hits
-- **Bind Idempotency-Key to a server SHA-256 payload fingerprint** — reused key with a different compress body returns `409 idempotency_conflict` (not free recompress)
-- Durable hourly rate-limit hits use the **payload fingerprint**, not the client-chosen request id (stops limit evasion)
-
-### Coding agent plugin
-- Register/unregister the proxy service via `execFileSync` argv (no shell-interpolated `launchctl` / `systemctl` paths)
-- **`supercompress` TUI** (`0.5.19`): paper-branded interactive UI (usage / account / connect / setup / plugin / agents / proxy). Default in a TTY; needs Bun. Classic commands unchanged.
-- **OpenClaw auto-compress parity with Hermes**: `supercompress setup` / `plugin` wires MCP (absolute node+mcp), `AGENTS.md`, managed skill, internal hooks (`agent:bootstrap` + `session:compact:before`), and an extension plugin that compresses large tool dumps into the inbox
-- **Session-scoped OpenClaw inbox** (`inbox/<sessionId>/latest.md`) so sessions/projects cannot cross-contaminate digests; honor `SUPERCOMPRESS_CONFIG_DIR`
-- OpenClaw plugin path install/uninstall uses **exact absolute path** equality (no substring deletes of `extensions/supercompress-*`)
-- Real `compactSessionMemory()` for OpenClaw `compact:before` (no empty-context no-op)
-- Chunk tool dumps into ≤120k API blocks; hooks send stable `Idempotency-Key` = hash(session + content + mode)
-- Protocol/runtime safety: native `fetch` (drop `node-fetch`), owned-PID-only stop, buffered SSE that preserves `tool_calls`, skip compression for structured tool/Responses items, inject digests as user (not system), fail-open on compress timeout/5xx, block browser `Origin` on local proxy, zstd size caps, spawn via `process.execPath`
-- Non-destructive setup: only clear SuperCompress-owned base URLs; backup before plugin writers; fix instruction-block idempotency; don’t markSeen on compress timeout/error; don’t split long asks without paragraph breaks; secure inbox/session modes; fail connect instead of rotating production API keys; atomic device-link consume via Firestore
-- **Preserve tool-call / tool-result order** when splitting compressible history (no reverse via `unshift`)
-- Rank structured-history compression against the **latest user ask in the full thread**, not an older compressible-prefix turn
-- Send `Idempotency-Key` on compress API calls for safer retries
-- See **[0.5.17](#0517--2026-08-10)** / **[0.5.16](#0516--2026-08-09)** below
-
-### Repository hygiene
-- Remove Fly/Docker/Render deploy debris (Vercel-only production)
-- Delete unused frontend CSS/JS; drop duplicate tracked `launch.mp4`
-- Remove unused `openfork` dependency; strengthen GitHub CI smoke tests
-- Host redirects for `internal` / `arjun` → `/dashboard`
-- Homepage: stop preloading hero MP4; `preload="metadata"` on video
-
----
 
 ## [0.5.23] — 2026-08-15
 

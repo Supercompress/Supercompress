@@ -97,3 +97,10 @@ scripts/dev.supercompress.*.plist
 # Colab / local train artifacts
 scripts/scneural/colab_scneural_bundle.zip
 **/sc-keep-crossencoder*/
+
+# Private / local-only
+docs/goals/
+RECORDING_*.md
+private/
+launch/
+brand/explorations/

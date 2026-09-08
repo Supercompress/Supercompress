@@ -1,7 +1,7 @@
 /**
  * SuperCompress browser engine — mirrors Python compress.py (no API keys, no server).
  *
- * v2.2 — Preprocessors are structural only (no keyword eviction). Language detection expanded.
+ * compress-engine — Preprocessors are structural only (no keyword eviction). Language detection expanded.
  *         Keep/drop is ML/compiler/neural-driven. See web/docs/compress-engine.html.
  */
 (function (global) {

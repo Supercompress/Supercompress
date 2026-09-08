@@ -44,7 +44,7 @@ print(impact.assumptions.to_dict())
 | `STRIPE_SECRET_KEY` | Yes (for billing) | — | Stripe secret key (sk_live_…) |
 | `STRIPE_PUBLISHABLE_KEY` | Yes (for billing) | — | Stripe publishable key (pk_live_…) |
 | `STRIPE_WEBHOOK_SECRET` | Yes (for billing) | — | Webhook signing secret (whsec_…) |
-| `STRIPE_PRICE_PAYG` | Yes (for billing) | — | Metered Stripe price: $1 per 1M tokens overage |
+| `STRIPE_PRICE_PAYG` | Yes (for billing) | — | Metered Stripe price for PAYG overage |
 | `STRIPE_METER_EVENT_NAME` | Optional | `supercompress_tokens_millions` | Billing meter event name for usage reports |
 | `STRIPE_PRICE_STARTER` | Legacy only | — | Old fixed Starter price (existing subs) |
 | `STRIPE_PRICE_PRO` | Legacy only | — | Old fixed Pro price (existing subs) |
@@ -63,8 +63,8 @@ print(impact.assumptions.to_dict())
 
 | Tier | Price | Allowance | Behavior |
 |------|-------|-----------|----------|
-| Free | $0 | 5M tokens/mo ($5 worth) | Hard stop until PAYG |
-| Pay as you go | $1 / 1M tokens after free | Unlimited | Card on file; Stripe meters overage |
+| Free | $0 | 5M tokens/mo | Hard stop until PAYG |
+| Pay as you go | $0.30 / 1M tokens after free | Unlimited | Prepaid credits; Stripe meters overage |
 
 ## Why CPU eviction matters
 
@@ -86,22 +86,6 @@ Use the website **Projection calculator** (`#impact`) to adjust volume.
 2. Compare **quality + savings** together (truncation can save tokens but drop answers).
 3. SuperCompress targets **edge-CPU policy + measurable prompt-token reduction before inference** — not in-KV compression or datacenter-wide carbon accounting.
 
-## Neural reranker (hosted input quality)
+## Hosted quality scoring
 
-Company-grade compression uses a BGE cross-encoder on Fly/local (not Vercel cold starts). Offline plugin stays heuristic-only unless it calls the hosted API.
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SC_NEURAL` | auto | `1` force on, `0` force off; auto-on when model is cached |
-| `SC_RERANKER_MODEL` | `onnx-community/bge-reranker-v2-m3-ONNX` | Hugging Face model id |
-| `SC_RERANKER_DTYPE` | `q8` | ONNX dtype (`q8` / `int8` / `q4` / `fp32`) |
-| `SC_RERANKER_MAX_BLOCKS` | `128` | Max blocks scored per request |
-| `SC_MODEL_DIR` | `<repo>/models` | Transformers.js cache root |
-
-Warmup / download:
-
-```bash
-SC_NEURAL=1 node scripts/warmup_neural.js
-```
-
-See also [ARCHITECTURE.md](../ARCHITECTURE.md) for deployment modes.
+Hosted SuperCompress may use query-aware relevance scoring to keep answer-critical evidence. Configuration for operators is private; the public API surface stays the same (`/compress`, MCP, proxy).
