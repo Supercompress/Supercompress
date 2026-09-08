@@ -293,8 +293,21 @@ function chunkText(text, maxChars = API_MAX_CHARS) {
   const raw = String(text || "");
   if (raw.length <= maxChars) return [raw];
   const chunks = [];
-  for (let i = 0; i < raw.length; i += maxChars) {
-    chunks.push(raw.slice(i, i + maxChars));
+  let i = 0;
+  while (i < raw.length) {
+    let end = Math.min(i + maxChars, raw.length);
+    if (end < raw.length) {
+      const code = raw.charCodeAt(end - 1);
+      // If the boundary lands on a high surrogate (0xD800–0xDBFF), step back 1
+      // code unit so the full surrogate pair remains together in the next chunk.
+      if (code >= 0xd800 && code <= 0xdbff) {
+        if (end - 1 > i) {
+          end--;
+        }
+      }
+    }
+    chunks.push(raw.slice(i, end));
+    i = end;
   }
   return chunks;
 }
