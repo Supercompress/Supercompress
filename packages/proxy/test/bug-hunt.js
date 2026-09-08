@@ -161,6 +161,50 @@ async function main() {
     fail("plugin refresh keeps MCP-first mode", e.message);
   }
 
+  // 7) chunkText preserves surrogate pairs across chunk boundaries (Fixes #146)
+  try {
+    const { chunkText } = require(path.join(ROOT, "src/cursor-hooks/compress-prompt-lib.js"));
+
+    // Case A: Emoji landing across boundary with maxChars = 100
+    const str1 = "a".repeat(99) + "🚀" + "b".repeat(10);
+    const chunks1 = chunkText(str1, 100);
+    assert.equal(chunks1.join(""), str1, "joined chunks must equal original string");
+    assert.equal(chunks1[0], "a".repeat(99), "chunk 0 should not split surrogate pair");
+    assert.ok(chunks1[1].startsWith("🚀"), "chunk 1 should begin with intact emoji");
+    assert.ok(!JSON.stringify(chunks1[0]).includes("\\ufffd"), "chunk 0 must not contain replacement char");
+    assert.ok(!JSON.stringify(chunks1[1]).includes("\\ufffd"), "chunk 1 must not contain replacement char");
+
+    // Case B: Non-BMP mathematical symbol (𝒳 = \uD835\uDCB3) and CJK extension (𠮷 = \uD842\uDFB7)
+    const str2 = "x".repeat(49) + "𝒳" + "y".repeat(47) + "𠮷" + "z";
+    const chunks2 = chunkText(str2, 50);
+    assert.equal(chunks2.join(""), str2, "joined chunks must equal original string");
+    assert.ok(chunks2[1].startsWith("𝒳"), "surrogate pair 𝒳 kept intact");
+    assert.ok(chunks2[2].startsWith("𠮷"), "surrogate pair 𠮷 kept intact");
+    for (const c of chunks2) {
+      assert.ok(!JSON.stringify(c).includes("\\ufffd"), "no replacement characters in chunks");
+    }
+
+    // Case C: Full scale test matching issue reproduction (120,000 maxChars)
+    const context = "a".repeat(119999) + "🚀" + "b".repeat(10);
+    const chunksLarge = chunkText(context, 120000);
+    assert.equal(chunksLarge.join(""), context);
+    assert.equal(chunksLarge[0].charCodeAt(chunksLarge[0].length - 1), 0x61, "chunk 0 ends with 'a'");
+    assert.ok(chunksLarge[1].startsWith("🚀"), "chunk 1 starts with full emoji");
+    assert.ok(!JSON.stringify(chunksLarge[0]).includes("\\ufffd"));
+    assert.ok(!JSON.stringify(chunksLarge[1]).includes("\\ufffd"));
+
+    // Case D: Surrogate pair ending exactly at boundary should not step back
+    const str3 = "a".repeat(98) + "🚀" + "b".repeat(10);
+    const chunks3 = chunkText(str3, 100);
+    assert.equal(chunks3.join(""), str3);
+    assert.equal(chunks3[0], "a".repeat(98) + "🚀", "chunk 0 contains full surrogate pair when aligned at boundary");
+    assert.equal(chunks3[1], "b".repeat(10));
+
+    pass("chunkText preserves surrogate pairs across chunk boundaries (Fixes #146)");
+  } catch (e) {
+    fail("chunkText preserves surrogate pairs across chunk boundaries (Fixes #146)", e.message);
+  }
+
   const failed = results.filter((r) => !r.ok);
   console.log(`\n=== Bug-hunt summary: passed=${results.length - failed.length} failed=${failed.length} total=${results.length} ===`);
   if (failed.length) {
