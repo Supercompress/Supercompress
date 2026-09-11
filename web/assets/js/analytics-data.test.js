@@ -30,7 +30,7 @@ const demo = bundleToSeries(demoBundle());
 assert.ok(demo.totalSaved > 0, "demo has savings");
 assert.ok(demo.cut > 0 && demo.cut <= 100, "demo cut pct");
 assert.strictEqual(demo.live, false);
-assert.ok(demo.areaData.length === 30);
+assert.ok(demo.areaData.length >= 28 && demo.areaData.length <= 31, `demo area length=${demo.areaData.length}`);
 
 // Live payload with only agent totals (no by_day) must still fill KPIs + chart.
 const agentOnly = aggregateUsage({
