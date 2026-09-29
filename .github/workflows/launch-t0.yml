@@ -1,0 +1,113 @@
+# Cloud T-0 — Tue Sep 29, 2026 9:00 AM America/Los_Angeles
+# Promotes the pre-built launch deployment to production, then sends the launch email.
+# Laptop can be closed. Idempotent (launch-t0 marker + promote is safe to retry).
+name: launch-t0
+
+on:
+  schedule:
+    # 9:00 / 9:05 / 9:15 AM PT on Sep 29, 2026 (PDT = UTC-7)
+    - cron: "0 16 29 9 *"
+    - cron: "5 16 29 9 *"
+    - cron: "15 16 29 9 *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force email even outside window (promote always attempted)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: launch-t0
+  cancel-in-progress: false
+
+jobs:
+  go-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Preflight secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          WELCOME_DRAIN_SECRET: ${{ secrets.WELCOME_DRAIN_SECRET }}
+          LAUNCH_DEPLOYMENT_ID: ${{ secrets.LAUNCH_DEPLOYMENT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "${VERCEL_TOKEN:-}" || { echo "missing VERCEL_TOKEN"; exit 1; }
+          test -n "${WELCOME_DRAIN_SECRET:-}" || { echo "missing WELCOME_DRAIN_SECRET"; exit 1; }
+          test -n "${LAUNCH_DEPLOYMENT_ID:-}" || { echo "missing LAUNCH_DEPLOYMENT_ID"; exit 1; }
+          echo "deployment=$LAUNCH_DEPLOYMENT_ID"
+
+      - name: Promote launch deployment to production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          LAUNCH_DEPLOYMENT_ID: ${{ secrets.LAUNCH_DEPLOYMENT_ID }}
+          VERCEL_PROJECT_ID: prj_gT637AGPpWuK9ax4FDaoUNZXsjkk
+          VERCEL_TEAM_ID: team_VtSSpmSZ8bXOEZeRAnL8YM4l
+        run: |
+          set -euo pipefail
+          echo "Promoting $LAUNCH_DEPLOYMENT_ID …"
+          code=$(curl -sS -o /tmp/promote.json -w "%{http_code}" -X POST \
+            "https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/promote/${LAUNCH_DEPLOYMENT_ID}?teamId=${VERCEL_TEAM_ID}" \
+            -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+            -H "Content-Type: application/json")
+          echo "promote_http=$code"
+          head -c 2000 /tmp/promote.json; echo
+          # 200/201/202 OK; 409 often means already production — continue
+          if [[ "$code" != "200" && "$code" != "201" && "$code" != "202" && "$code" != "409" ]]; then
+            # Fallback: assign production aliases via deploy rollback/promote CLI shape
+            echo "Primary promote failed — trying assign alias to www + api"
+            for host in www.supercompress.dev api.supercompress.dev supercompress.dev docs.supercompress.dev; do
+              curl -sS -X POST "https://api.vercel.com/v2/deployments/${LAUNCH_DEPLOYMENT_ID}/aliases?teamId=${VERCEL_TEAM_ID}" \
+                -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+                -H "Content-Type: application/json" \
+                -d "{\"alias\":\"$host\"}" | head -c 400; echo
+            done
+          fi
+
+      - name: Wait for production aliases
+        run: sleep 40
+
+      - name: Verify launch page is live
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do
+            body=$(curl -fsS --max-time 30 https://www.supercompress.dev/engine-v2-launch || true)
+            if echo "$body" | grep -q '2026-09-29T09:00:00-07:00'; then
+              echo "PASS engine-v2-launch published_time=09:00"
+              exit 0
+            fi
+            echo "wait $i — published_time not 09:00 yet"
+            sleep 15
+          done
+          echo "WARN: published_time check did not pass — continuing to email anyway"
+          curl -sSI https://www.supercompress.dev/engine-v2-launch | head -1 || true
+
+      - name: Send launch email blast (launch-t0)
+        env:
+          WELCOME_DRAIN_SECRET: ${{ secrets.WELCOME_DRAIN_SECRET }}
+          FORCE: ${{ inputs.force && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          qs=""
+          if [[ "${FORCE}" == "1" || "${FORCE}" == "true" ]]; then qs="&force=1"; fi
+          # Retry a few times in case promote is still propagating functions
+          for i in 1 2 3 4 5 6 7 8; do
+            code=$(curl -sS -o /tmp/launch-t0.json -w "%{http_code}" --max-time 280 \
+              "https://api.supercompress.dev/api/account?op=launch-t0${qs}" \
+              -H "Authorization: Bearer ${WELCOME_DRAIN_SECRET}" \
+              -H "X-Welcome-Secret: ${WELCOME_DRAIN_SECRET}")
+            echo "launch_t0_http=$code attempt=$i"
+            head -c 2500 /tmp/launch-t0.json; echo
+            if [[ "$code" == "200" ]]; then
+              if grep -q '"skipped":true' /tmp/launch-t0.json && ! grep -q '"already":true' /tmp/launch-t0.json; then
+                echo "still outside window or skipped — retry"
+                sleep 20
+                continue
+              fi
+              echo "launch-t0 OK"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "FAIL launch-t0"
+          exit 1
