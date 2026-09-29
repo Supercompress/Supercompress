@@ -97,3 +97,7 @@ scripts/dev.supercompress.*.plist
 # Colab / local train artifacts
 scripts/scneural/colab_scneural_bundle.zip
 **/sc-keep-crossencoder*/
+# Codex / ChatGPT plugin marketplace (must be public)
+.agents/*
+!.agents/plugins/
+!.agents/plugins/**

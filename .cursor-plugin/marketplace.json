@@ -1,0 +1,22 @@
+{
+  "name": "supercompress",
+  "owner": {
+    "name": "SuperCompress",
+    "email": "team@supercompress.dev"
+  },
+  "metadata": {
+    "description": "SuperCompress \u2014 query-aware context compression for coding agents."
+  },
+  "plugins": [
+    {
+      "name": "supercompress",
+      "source": "integrations/plugins/supercompress",
+      "description": "Query-aware context compression for Grok Bot, Cursor, Claude Code, and Codex. Hosted MCP at https://www.supercompress.dev/api/mcp. 64% mean context cut, 24/24 B5 keep-floor.",
+      "version": "0.5.29",
+      "keywords": [
+        "grok-bot",
+        "mcp"
+      ]
+    }
+  ]
+}

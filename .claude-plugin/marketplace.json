@@ -1,0 +1,34 @@
+{
+  "name": "supercompress",
+  "owner": {
+    "name": "SuperCompress",
+    "email": "team@supercompress.dev",
+    "url": "https://www.supercompress.dev"
+  },
+  "metadata": {
+    "description": "SuperCompress \u2014 query-aware context compression for coding agents.",
+    "version": "1.0.1"
+  },
+  "plugins": [
+    {
+      "name": "supercompress",
+      "source": "./integrations/plugins/supercompress",
+      "description": "Query-aware context compression for coding agents and Grok Bot. Hosted MCP + skill. 64% mean context cut, 24/24 B5 keep-floor.",
+      "version": "0.5.29",
+      "author": {
+        "name": "SuperCompress"
+      },
+      "homepage": "https://www.supercompress.dev",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": [
+        "context-compression",
+        "prompt-compression",
+        "token-compression",
+        "llm-cost",
+        "mcp",
+        "grok-bot"
+      ]
+    }
+  ]
+}
