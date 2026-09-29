@@ -1,6 +1,10 @@
 # SuperCompress API Plugin Integrations
 
-Ready-to-use integration plugins for popular AI frameworks. These let you drop prompt compression into your existing LLM pipeline in minutes — reducing token costs by ~65% with zero code changes to your application logic.
+Ready-to-use integration plugins for popular AI frameworks. These let you drop prompt compression into your existing LLM pipeline in minutes — reducing token costs by 64% with zero code changes to your application logic.
+
+## Coding-agent marketplaces
+
+The [`plugins/supercompress/`](./plugins/supercompress/) directory is a single plugin tree published to the **Claude Code**, **Codex**, and **Cursor** marketplaces (MCP tools + skill, with browser account linking via `connect_account`). See its [README](./plugins/supercompress/README.md) for install commands.
 
 ## Available Integrations
 
@@ -41,13 +45,13 @@ All integrations follow the same pattern:
 3. **Forward** the compressed context to the LLM
 4. **Return** the LLM response as normal
 
-No changes to your downstream logic — just wrap your client and save ~65% on token costs.
+No changes to your downstream logic — just wrap your client and save 64% on token costs.
 
 ## Architecture
 
 ```
 Your App → SuperCompress Plugin → Compressed Context → LLM (OpenAI, Claude, etc.)
                                     ↓
-                          65% fewer tokens
-                          100% oracle recall
+                          64% less context
+                          24/24 benchmark evidence-retention passes (B5)
 ```
