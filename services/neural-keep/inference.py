@@ -112,7 +112,20 @@ class NeuralKeepModel:
         import torch
 
         thr = float(threshold if threshold is not None else self.threshold)
-        lines = [ln for ln in str(context or "").splitlines() if ln.strip()]
+        # Hard caps keep shared-CPU latency bounded (line-at-a-time was wedging Fly).
+        max_lines = int(__import__("os").environ.get("SC_NEURAL_MAX_LINES", "128"))
+        batch_size = max(1, int(__import__("os").environ.get("SC_NEURAL_BATCH", "32")))
+        max_length = max(64, int(__import__("os").environ.get("SC_NEURAL_MAX_LENGTH", "128")))
+        raw_lines = [ln for ln in str(context or "").splitlines() if ln.strip()]
+        truncated = False
+        if len(raw_lines) > max_lines:
+            # Keep head + tail so incidents near either end survive.
+            head_n = max_lines * 2 // 3
+            tail_n = max_lines - head_n
+            lines = raw_lines[:head_n] + raw_lines[-tail_n:]
+            truncated = True
+        else:
+            lines = raw_lines
         if not lines:
             return {
                 "compressed_text": str(context or ""),
@@ -122,27 +135,41 @@ class NeuralKeepModel:
                 "lines_in": 0,
                 "lines_kept": 0,
                 "threshold": thr,
+                "policy_name": "SuperCompress Neural Keep",
+                "mode": "neural-keep",
+                "truncated": False,
             }
 
         kept = [False] * len(lines)
-        probs: list[float] = []
+        probs: list[float] = [0.0] * len(lines)
+        q = str(query or "")
         self.model.eval()
         with torch.no_grad():
-            for idx, ln in enumerate(lines):
-                enc = self.tokenizer(query, ln, truncation=True, max_length=192, return_tensors="pt")
+            for start in range(0, len(lines), batch_size):
+                chunk = lines[start : start + batch_size]
+                enc = self.tokenizer(
+                    [q] * len(chunk),
+                    chunk,
+                    truncation=True,
+                    max_length=max_length,
+                    padding=True,
+                    return_tensors="pt",
+                )
                 enc = {k: v.to(self.device) for k, v in enc.items()}
                 out = self.model(**enc)
                 if self._mode == "classifier" and hasattr(out, "logits"):
-                    logits = out.logits[0]
-                    prob = torch.softmax(logits, dim=-1)[1].item()
+                    logits = out.logits
+                    batch_probs = torch.softmax(logits, dim=-1)[:, 1].tolist()
                 else:
                     cls = out.last_hidden_state[:, 0, :].float()
                     w, b = self.model._sc_linear
-                    prob = torch.sigmoid(cls @ w.to(self.device) + b.to(self.device)).item()
-                probs.append(prob)
-                boost = _query_token_boost(query, ln)
-                penalty = _query_drop_penalty(query, ln)
-                kept[idx] = prob + boost - penalty >= thr
+                    batch_probs = torch.sigmoid(cls @ w.to(self.device) + b.to(self.device)).view(-1).tolist()
+                for i, (ln, prob) in enumerate(zip(chunk, batch_probs)):
+                    idx = start + i
+                    probs[idx] = float(prob)
+                    boost = _query_token_boost(q, ln)
+                    penalty = _query_drop_penalty(q, ln)
+                    kept[idx] = float(prob) + boost - penalty >= thr
 
         _expand_incident_tails(lines, kept, probs)
         out_lines = [ln for ln, k in zip(lines, kept) if k]
@@ -158,9 +185,10 @@ class NeuralKeepModel:
             "original_tokens": tin,
             "kept_tokens": tout,
             "tokens_saved_pct": round(saved, 2),
-            "lines_in": len(lines),
+            "lines_in": len(raw_lines),
             "lines_kept": len(out_lines),
             "threshold": thr,
             "policy_name": "SuperCompress Neural Keep",
             "mode": "neural-keep",
+            "truncated": truncated,
         }

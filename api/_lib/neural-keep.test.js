@@ -68,16 +68,56 @@ describe("neural-keep client", () => {
     assert.equal(out.mode, "neural-keep");
   });
 
-  it("returns null on HTTP error", async () => {
-    global.fetch = async () => ({
-      ok: false,
-      status: 503,
-      statusText: "Unavailable",
-      json: async () => ({ detail: "model not loaded" }),
-    });
+  it("retries once on 503 busy then succeeds", async () => {
+    let n = 0;
+    global.fetch = async () => {
+      n += 1;
+      if (n === 1) {
+        return {
+          ok: false,
+          status: 503,
+          statusText: "Unavailable",
+          headers: { get: () => "0" },
+          json: async () => ({ detail: "busy" }),
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        json: async () => ({
+          compressed_text: "kept",
+          original_tokens: 10,
+          kept_tokens: 2,
+          tokens_saved_pct: 80,
+          mode: "neural-keep",
+          latency_ms: 5,
+        }),
+      };
+    };
+    const mod = require("./neural-keep");
+    const out = await mod.compressViaNeuralKeep("ctx", "q");
+    assert.equal(n, 2);
+    assert.ok(out);
+    assert.equal(out.compressed_text, "kept");
+  });
+
+  it("returns null after exhausted 503 retries", async () => {
+    let n = 0;
+    global.fetch = async () => {
+      n += 1;
+      return {
+        ok: false,
+        status: 503,
+        statusText: "Unavailable",
+        headers: { get: () => "0" },
+        json: async () => ({ detail: "busy" }),
+      };
+    };
     const mod = require("./neural-keep");
     const out = await mod.compressViaNeuralKeep("ctx", "q");
     assert.equal(out, null);
+    assert.ok(n >= 3);
   });
 });
 
