@@ -10,7 +10,8 @@ __pycache__/
 *.log
 server.log
 test-results/
-.agents/
+.agents/*
+!.agents/plugins/
 .claude/
 skills-lock.json
 
@@ -19,6 +20,8 @@ skills-lock.json
 .env.*
 !.env.example
 .env*.local
+.local/
+launch/graphics/.render-deps/
 .vercel
 .vercel.*.bak/
 
@@ -36,6 +39,7 @@ checkpoints/usecase_report*.json
 /video/
 *.onnx
 *.safetensors
+*.zip
 screenshots/
 launch-video/
 launchvideoforwebsite/
@@ -48,6 +52,7 @@ graphify-out/
 docs/enterprise/
 web/local-enterprise*
 web/local-only/
+web/_local-only/
 exports/
 **/email-previews/**
 **/*prospects*
@@ -58,24 +63,36 @@ exports/
 outreach/
 .github-org-profile/
 
-# Marketing / GTM / SEO planning (private; not product OSS)
+# Marketing / planning (private; not product OSS)
 PLAN_*.md
 SEO_*.md
 GTM_*.md
+LAUNCH_*.md
+RECORDING_*.md
+docs/goals/
 BACKLINK_*
 SECURITY_AUDIT_*.md
 ARCHITECTURE.md
 
-# Product email campaign JSON lives in private Supercompress/email-campaigns
+# Product email campaign JSON lives in private email-campaigns
 api/_lib/weekly-ship.json
 api/_lib/weekly-tips.json
 
 # Generated / experimental scratch (keep OSS tree lean)
 kaggle/
-scripts/scneural/
-scripts/amcp/
+private/
+local/
+launch/
+checkpoints/
+*.safetensors
+*.onnx
 scripts/bench_fresh*_once.js
 scripts/send_*.py
+scripts/send_*_blast.js
+scripts/schedule_*_blast.js
+scripts/resume_*_blast.js
+scripts/run_*_blast*.sh
+scripts/run_feedback_*.sh
 scripts/drain_*.py
 scripts/drain_*.js
 scripts/affiliate_*.py
@@ -93,7 +110,16 @@ scripts/issues_*.py
 scripts/audit_*.py
 scripts/backlink_*.py
 scripts/dev.supercompress.*.plist
+scripts/outreach*.py
+scripts/scneural/
+scripts/amcp/
+scripts/gtm_bench/
 
-# Colab / local train artifacts
-scripts/scneural/colab_scneural_bundle.zip
-**/sc-keep-crossencoder*/
+# Local brand / game explorations — not product OSS
+brand/explorations/
+brand/dither-identity/
+brand/gauntlet-*/
+games/
+
+# npm pack artifacts
+*.tgz

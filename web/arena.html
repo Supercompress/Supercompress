@@ -3,21 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Compression Arena — SuperCompress vs Headroom</title>
-  <meta name="description" content="Paste your context and question. Run SuperCompress against Headroom on the same inputs — same token math, same answer-retention check. Share the result or break us on the board." />
-  <meta name="keywords" content="prompt compression benchmark, SuperCompress vs Headroom, context compression arena, LLM token savings" />
+  <title>Compression Arena — SuperCompress</title>
+  <meta name="description" content="Paste your context and question. Run SuperCompress on your own dump — see token reduction, evidence retention, and optional comparisons. Challenge our benchmarks." />
+  <meta name="keywords" content="prompt compression benchmark, context compression arena, SuperCompress, LLM token savings" />
   <link rel="canonical" href="https://www.supercompress.dev/arena" />
   <meta property="og:title" content="SuperCompress Compression Arena" />
-  <meta property="og:description" content="Don't trust our benchmark. Paste your dump, run both sides, share the receipt — or break SuperCompress on the board." />
+  <meta property="og:description" content="Paste context. Compress with SuperCompress. Inspect the receipt — optional comparison to other methods on identical inputs." />
   <meta property="og:url" content="https://www.supercompress.dev/arena" />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="SuperCompress Compression Arena" />
-  <meta name="twitter:description" content="Same prompt. SuperCompress vs Headroom. Cost per successful task — not vanity cut %." />
+  <meta name="twitter:description" content="Your context: X → Y tokens with SuperCompress. Paste, compress, inspect the receipt." />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=16" />
-  <link rel="stylesheet" href="/assets/css/arena.css?v=2" />
+  <link rel="stylesheet" href="/assets/css/dither-kit.css?v=1" />
+  <link rel="stylesheet" href="/assets/css/arena.css?v=4" />
 </head>
 <body class="arena-page">
   <div data-sc-chrome="header"></div>
@@ -28,38 +29,48 @@
     </p>
 
     <header class="arena-hero">
-      <p class="arena-kicker">Public proof · Neural v4</p>
+      <div class="arena-hero-dither" id="arena-hero-wash" aria-hidden="true"></div>
+      <p class="arena-kicker">Public proof</p>
       <h1 class="arena-brand-lockup">Super<em>Compress</em></h1>
       <p class="arena-hero-line">Compression Arena</p>
       <p class="arena-hero-sub">
-        Paste context + a question. We run <strong>SuperCompress</strong> and <strong>Headroom</strong> on the
-        <em>same</em> inputs — identical token estimator and answer-retention scorer.
-        Killer metric: <strong>cost per successful task</strong> (failed retention = no finite cost).
+        Paste context + a question. <strong>SuperCompress</strong> compresses against your query —
+        keeping original evidence, dropping what doesn't matter. Optionally compare to other methods on the
+        <em>same</em> inputs. Inspect the JSON receipt and share your result.
       </p>
 
-      <div class="arena-proof-grid" aria-label="Held-out launch bench (disjoint cases)">
-        <article class="arena-proof-card">
-          <p class="arena-proof-val">30/30</p>
-          <p class="arena-proof-label">Keep floor vs Headroom 28/30</p>
+      <div class="arena-proof-grid" aria-label="Coding-agent benchmark (B5, evidence containment)">
+        <article class="arena-proof-card arena-proof-card--cut">
+          <div class="arena-kpi-wash" id="arena-wash-cut" aria-hidden="true"></div>
+          <div class="arena-proof-body">
+            <p class="arena-proof-val">64%</p>
+            <p class="arena-proof-label">Mean context reduction (our B5 suite)</p>
+          </div>
         </article>
         <article class="arena-proof-card">
-          <p class="arena-proof-val">74%</p>
-          <p class="arena-proof-label">Mean cut vs Headroom ~2%</p>
+          <div class="arena-kpi-wash" id="arena-wash-pass" aria-hidden="true"></div>
+          <div class="arena-proof-body">
+            <p class="arena-proof-val">24/24</p>
+            <p class="arena-proof-label">Benchmark evidence passes</p>
+          </div>
         </article>
         <article class="arena-proof-card">
-          <p class="arena-proof-val">12.4</p>
-          <p class="arena-proof-label">Usecase score vs 9.9</p>
+          <div class="arena-kpi-wash" id="arena-wash-max" aria-hidden="true"></div>
+          <div class="arena-proof-body">
+            <p class="arena-proof-val">96.6%</p>
+            <p class="arena-proof-label">Max reduction @ ≥99% retention</p>
+          </div>
         </article>
       </div>
 
       <div class="arena-challenge" role="note">
-        Challenge: find a prompt where Headroom wins on cost <em>and</em> answer retention. We publish losses.
+        Use the API or the agent plugin on your own context. This page is a side-by-side check.
       </div>
 
       <div class="arena-hero-ctas">
-        <a class="arena-btn arena-btn-primary" href="#arena-run">Run your dump</a>
+        <a class="arena-btn arena-btn-primary" href="/dashboard?signup=1">Get API key</a>
         <a class="arena-btn arena-btn-ghost" href="/playground">Playground</a>
-        <a class="arena-btn arena-btn-ghost" href="/dashboard">Get API key</a>
+        <a class="arena-btn arena-btn-ghost" href="#arena-run">Compare a dump</a>
       </div>
     </header>
 
@@ -78,11 +89,19 @@
       <div>
         <label class="arena-label" for="arena-query">Question</label>
         <input id="arena-query" class="arena-input" type="text" placeholder="What must the model still be able to answer?" />
+        <label class="arena-label" style="margin-top:16px">Compare against</label>
+        <div class="arena-presets arena-comparators" role="group" aria-label="Comparators">
+          <button type="button" data-comparator="headroom" class="is-active">Headroom</button>
+          <button type="button" data-comparator="rtk" class="is-active">RTK</button>
+          <button type="button" data-comparator="truncation" class="is-active">Truncation</button>
+          <button type="button" data-comparator="llmlingua">LLMLingua-2</button>
+          <button type="button" data-comparator="supercompress-v1">SuperCompress v1</button>
+        </div>
         <div class="arena-actions">
           <button type="button" class="arena-btn arena-btn-primary" id="arena-run">Run arena</button>
           <button type="button" class="arena-btn arena-btn-ghost" id="arena-share-btn" disabled>Share on X</button>
           <button type="button" class="arena-btn arena-btn-ghost" id="arena-copy-btn" disabled>Copy JSON</button>
-          <button type="button" class="arena-btn arena-btn-danger" id="arena-break-btn" disabled>I broke SuperCompress</button>
+          <button type="button" class="arena-btn arena-btn-ghost" id="arena-break-btn" disabled>Share comparison</button>
           <span class="arena-status" id="arena-status" aria-live="polite"></span>
         </div>
       </div>
@@ -90,6 +109,8 @@
 
     <section class="arena-results" id="arena-results" aria-live="polite">
       <div class="arena-engine-badge" id="arena-engine-badge" hidden></div>
+      <div class="arena-run-kpis" id="arena-run-kpis" hidden></div>
+      <div class="arena-chart-well" id="arena-chart-well" hidden aria-hidden="true"></div>
       <div class="arena-scoreboard" id="arena-scoreboard"></div>
       <div class="arena-winner" id="arena-winner"></div>
       <div class="arena-insights" id="arena-insights" hidden></div>
@@ -104,16 +125,7 @@
           <a class="arena-btn arena-btn-ghost" href="/switch-from-headroom">Switch from Headroom</a>
         </div>
       </div>
-      <div class="arena-previews">
-        <div class="arena-preview">
-          <h3>SuperCompress output</h3>
-          <pre id="arena-preview-sc"></pre>
-        </div>
-        <div class="arena-preview">
-          <h3>Headroom output</h3>
-          <pre id="arena-preview-hr"></pre>
-        </div>
-      </div>
+      <div class="arena-previews" id="arena-previews"></div>
       <div class="arena-share-row">
         <button type="button" class="arena-btn arena-btn-ghost" id="arena-download-card">Download share card</button>
       </div>
@@ -122,11 +134,10 @@
       </div>
     </section>
 
-    <section class="arena-board" aria-label="Adversarial leaderboard">
-      <h2>Break board</h2>
+    <section class="arena-board" aria-label="Community comparisons">
+      <h2>Community comparisons</h2>
       <p>
-        Cases where Headroom wins (or came close). Seeds included on purpose — hiding losses would make the wins look fake.
-        Neural v4 cleared our held-out launch bench; your adversarial prompt is the real test.
+        Side-by-side runs where Headroom came out ahead. We publish these openly — marketing benchmarks only matter if the comparison is real.
       </p>
       <ul class="arena-board-list" id="arena-board-list"></ul>
     </section>
@@ -143,14 +154,15 @@
       </p>
       <p style="margin-top:10px;margin-bottom:0">
         Reproduce: <code>POST /api/arena/compare</code> with <code>{"context":"…","query":"…"}</code>.
-        This page is the viral object: paste → compare → share / break.
+        This page is the proof surface: paste → compare → share.
       </p>
     </section>
   </main>
 
   <div data-sc-chrome="footer"></div>
   <script src="/assets/js/site-chrome.js" defer></script>
+  <script src="/assets/js/dither-kit-lite.js?v=16" defer></script>
   <script src="/assets/js/compress-engine.js" defer></script>
-  <script src="/assets/js/arena.js?v=2" defer></script>
+  <script src="/assets/js/arena.js?v=5" defer></script>
 </body>
 </html>

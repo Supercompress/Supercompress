@@ -11,6 +11,7 @@ const { authenticateKey, recordUsage } = require("../_lib/firebase-key-store");
 const { compress, compressAdaptive, compressCCR, storeCcrBlocks, wrapCompressedForCache } = require("../_lib/engine");
 const {
   FREE_TOKENS_PER_MONTH,
+  freeAllowance,
   isPaygEnabled,
   isComped,
   isLegacyMetered,
@@ -45,9 +46,10 @@ function resolveClientIdempotencyKey(req, body) {
 }
 
 /**
- * Free accounts hard-stop at the monthly free allowance (1M).
+ * Free accounts hard-stop at the monthly free allowance (5M + onboard bonus).
  * Legacy metered / comped PAYG may exceed freely.
  * Credit-wallet PAYG may exceed free only while prepaid balance > 0 (or auto-recharge succeeds).
+ * Never fail-open for free users — billing down ⇒ 503, not free compress.
  */
 async function enforceUsageLimit(owner) {
   const claims = owner.customClaims || {};
@@ -61,6 +63,7 @@ async function enforceUsageLimit(owner) {
   const month = new Date().toISOString().slice(0, 7);
   const claimUsage = claims.sc_usage?.month === month ? claims.sc_usage : {};
   const claimUsed = Number(claimUsage.tokens_in || 0);
+  const freeCap = freeAllowance(claims);
   const freeUser = !isPaygEnabled(planId) && !isCreditWallet(claims);
   const upgradeUrl = "https://www.supercompress.dev/dashboard#billing";
 
@@ -85,10 +88,26 @@ async function enforceUsageLimit(owner) {
 
   const throwFreePaywall = (tokensUsedThisPeriod) => {
     notifyIfPowerUser(tokensUsedThisPeriod);
+    try {
+      // Once-per-month "you're paused, add credits" email — the power-user
+      // congrats above only ever fires once, so capped users in later months
+      // would otherwise get 402s with no notification.
+      const { scheduleQuotaExhaustedEmail } = require("../_lib/quota-mail");
+      scheduleQuotaExhaustedEmail({
+        uid: owner.uid,
+        email: owner.email || "",
+        displayName: owner.displayName || "",
+        tokensUsed: tokensUsedThisPeriod,
+        freeTokens: freeCap,
+        claims,
+      });
+    } catch (err) {
+      console.warn("quota-exhausted email skipped:", err.message || err);
+    }
     const usedM = (tokensUsedThisPeriod / 1_000_000).toFixed(2);
-    const freeM = (FREE_TOKENS_PER_MONTH / 1_000_000).toFixed(0);
+    const freeM = (freeCap / 1_000_000).toFixed(freeCap % 1_000_000 === 0 ? 0 : 1);
     const err = new Error(
-      `PAYWALL: Free ${freeM}M tokens used (${usedM}M this month). Compression is paused. Add credits to unlock — $0.30 per 1M tokens after free (min $10 load). ${upgradeUrl}`
+      `PAYWALL: Free ${freeM}M tokens used (${usedM}M this month). Compression is paused. Add credits to unlock — $0.10 per 1M tokens after free (min $10 load). ${upgradeUrl}`
     );
     err.status = 402;
     err.code = "free_quota_exhausted";
@@ -100,17 +119,17 @@ async function enforceUsageLimit(owner) {
       title: "Free allowance used — unlock to keep compressing",
       detail: `You've used your free ${freeM}M tokens this month (${usedM}M so far). Compression is paused until you add credits.`,
       tokens_used: tokensUsedThisPeriod,
-      free_tokens: FREE_TOKENS_PER_MONTH,
-      price: "$0.30 / 1M tokens after free",
-      cta: "Add payment method",
+      free_tokens: freeCap,
+      price: "$0.10 / 1M tokens after free",
+      cta: "Add credits now",
       upgrade_url: upgradeUrl,
       action: "open_billing",
     };
     throw err;
   };
 
-  // Claims-first: do not wait on Firestore to block free users already over 1M.
-  if (freeUser && claimUsed >= FREE_TOKENS_PER_MONTH) {
+  // Claims-first: block free users at/over the free cap without waiting on Firestore.
+  if (freeUser && claimUsed >= freeCap) {
     throwFreePaywall(claimUsed);
   }
 
@@ -119,8 +138,8 @@ async function enforceUsageLimit(owner) {
   try {
     ledger = await loadLedger(owner.uid, claims);
   } catch (err) {
-    if (freeUser && claimUsed >= FREE_TOKENS_PER_MONTH) throwFreePaywall(claimUsed);
-    if (freeUser) return;
+    if (freeUser && claimUsed >= freeCap) throwFreePaywall(claimUsed);
+    // Never fail-open: free compress while billing is down is how people blow past 5M.
     const e = new Error("Billing unavailable — try again shortly.");
     e.status = 503;
     e.code = "billing_unavailable";
@@ -128,7 +147,7 @@ async function enforceUsageLimit(owner) {
   }
   const tokensUsedThisPeriod = Number(ledger.tokens_in || 0);
 
-  if (tokensUsedThisPeriod < FREE_TOKENS_PER_MONTH) return;
+  if (tokensUsedThisPeriod < freeCap) return;
 
   // Past free allowance
   if (freeUser) {
@@ -151,6 +170,32 @@ async function enforceUsageLimit(owner) {
       };
       if (roundUsd(owner.customClaims.sc_credit_balance_usd || 0) > 0) return;
     }
+    if (recharge.checkoutUrl) {
+      const india = recharge.error === "india_requires_checkout";
+      const err = new Error(
+        `PAYWALL: Auto-recharge needs a one-tap Checkout confirm. ${recharge.checkoutUrl}`
+      );
+      err.status = 402;
+      err.code = "credits_exhausted";
+      err.paywall = true;
+      err.payload = {
+        ok: false,
+        paywall: true,
+        code: india ? "india_requires_checkout" : "recharge_requires_checkout",
+        title: "Confirm recharge to resume",
+        detail: india
+          ? "Your card requires an on-session confirm for prepaid top-ups (India RBI rules). Open Checkout to add credits — takes ~10 seconds."
+          : "Auto-recharge could not finish silently (bank confirm / card issue). Open Checkout to add credits and keep compressing.",
+        credit_balance_usd: 0,
+        price: "$0.10 / 1M tokens",
+        cta: "Confirm recharge",
+        upgrade_url: recharge.checkoutUrl,
+        checkout_url: recharge.checkoutUrl,
+        action: "open_checkout",
+        recharge_error: recharge.error || null,
+      };
+      throw err;
+    }
   }
 
   const err = new Error(
@@ -166,7 +211,7 @@ async function enforceUsageLimit(owner) {
     title: "Credits empty — top up to resume",
     detail: "Your prepaid SuperCompress balance is $0. Add credits or turn on auto-recharge to keep compressing.",
     credit_balance_usd: 0,
-    price: "$0.30 / 1M tokens",
+    price: "$0.10 / 1M tokens",
     cta: "Top up credits",
     upgrade_url: upgradeUrl,
     action: "open_billing",
@@ -209,8 +254,9 @@ module.exports = async (req, res) => {
   }
 
   const requestStarted = Date.now();
-  // Leave headroom under function maxDuration (60s for this route) for response flush.
-  const HARD_BUDGET_MS = 55_000;
+  // Leave headroom under function maxDuration (180s for this route) for response flush.
+  // Neural Keep on CPU can take ~45–90s; keep budget above SC_NEURAL_KEEP_TIMEOUT_MS.
+  const HARD_BUDGET_MS = 150_000;
   let requestId = null;
   let leaseHeld = false;
   let leaseOwnerUid = null;
@@ -288,7 +334,7 @@ module.exports = async (req, res) => {
 
     const context = body.context || "";
     const query = body.query || "Summarize this context.";
-    const mode = body.mode || "compiler";
+    const mode = body.mode || "neural";
     const budgetRatio = mode === "fixed" ? (body.budget_ratio ?? 0.35) : 0.35;
     const ccr = body.ccr === true || body.ccr === "true";
     const cache_prefix = body.cache_prefix === true || body.cache_prefix === "true";
@@ -357,9 +403,14 @@ module.exports = async (req, res) => {
     }
 
     const compressStarted = Date.now();
-    const result = mode === "fixed"
-      ? compress(context, query, budgetRatio)
-      : await (ccr ? compressCCR(context, query) : compressAdaptive(context, query));
+    if (mode === "fixed") {
+      const err = new Error("fixed budget mode is deprecated; use neural or default compression");
+      err.status = 410;
+      err.code = "mode_deprecated";
+      throw err;
+    }
+
+    const result = await (ccr ? compressCCR(context, query) : compressAdaptive(context, query));
     const latencyMs = Math.max(0, Date.now() - compressStarted);
 
     const remainingMs = () => HARD_BUDGET_MS - (Date.now() - requestStarted);

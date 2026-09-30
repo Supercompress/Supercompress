@@ -120,3 +120,111 @@ def compress(
         raise HTTPException(status_code=503, detail=str(e)) from e
     ms = (time.time() - t0) * 1000.0
     return CompressResponse(latency_ms=round(ms, 2), **out)
+
+
+# ── Compression Arena comparators ───────────────────────────────────────────
+# Each endpoint runs the REAL tool inside this container. Nothing simulated.
+
+
+class ArenaRequest(BaseModel):
+    context: str = Field(..., min_length=1, max_length=200_000)
+    query: str = Field(default="")
+
+
+class ArenaResponse(BaseModel):
+    text: str
+    ms: float
+    source: str
+
+
+@app.post("/arena/headroom", response_model=ArenaResponse)
+def arena_headroom(
+    body: ArenaRequest,
+    authorization: str | None = Header(default=None),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+) -> ArenaResponse:
+    _check_auth(authorization, x_api_key)
+    t0 = time.time()
+    text = ""
+    try:
+        from headroom.transforms.kompress_compressor import KompressCompressor
+
+        k = KompressCompressor()
+        if not k.is_ready():
+            k.preload()
+        r = k.compress(body.context, question=body.query)
+        text = str(getattr(r, "compressed", "") or "")
+        source = "headroom KompressCompressor"
+    except Exception:
+        try:
+            from headroom import compress as hr_compress
+
+            messages = [
+                {"role": "system", "content": "Use the provided context to answer."},
+                {"role": "user", "content": f"CONTEXT:\n{body.context}\n\nREQUEST: {body.query}"},
+            ]
+            result = hr_compress(messages, model="gpt-4o-mini", model_limit=128000, optimize=True)
+            for m in getattr(result, "messages", None) or []:
+                role = m.get("role") if isinstance(m, dict) else getattr(m, "role", None)
+                content = m.get("content") if isinstance(m, dict) else getattr(m, "content", None)
+                if role == "user" and content:
+                    text = str(content)
+                    break
+            source = "headroom compress()"
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"headroom failed: {e}") from e
+    if not text.strip():
+        raise HTTPException(status_code=503, detail="headroom returned empty output")
+    return ArenaResponse(text=text, ms=round((time.time() - t0) * 1000.0, 2), source=source)
+
+
+@app.post("/arena/rtk", response_model=ArenaResponse)
+def arena_rtk(
+    body: ArenaRequest,
+    authorization: str | None = Header(default=None),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+) -> ArenaResponse:
+    _check_auth(authorization, x_api_key)
+    import subprocess
+    import tempfile
+
+    t0 = time.time()
+    # RTK filters files/command output, not raw stdin — write the dump to a
+    # temp file and run its log filter (its own dedupe/noise logic, unmodified).
+    with tempfile.NamedTemporaryFile("w", suffix=".log", delete=False) as f:
+        f.write(body.context)
+        path = f.name
+    try:
+        proc = subprocess.run(
+            ["rtk", "log", path],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env={**os.environ, "NO_COLOR": "1", "RTK_NO_TELEMETRY": "1"},
+        )
+        if proc.returncode != 0 or not proc.stdout.strip():
+            proc = subprocess.run(
+                ["rtk", "read", path],
+                capture_output=True,
+                text=True,
+                timeout=30,
+                env={**os.environ, "NO_COLOR": "1", "RTK_NO_TELEMETRY": "1"},
+            )
+        if proc.returncode != 0:
+            raise HTTPException(
+                status_code=503,
+                detail=f"rtk failed: {(proc.stderr or proc.stdout or '')[:300]}",
+            )
+        text = proc.stdout
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"rtk failed: {e}") from e
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+    if not text.strip():
+        raise HTTPException(status_code=503, detail="rtk returned empty output")
+    return ArenaResponse(text=text, ms=round((time.time() - t0) * 1000.0, 2), source="rtk log filter")

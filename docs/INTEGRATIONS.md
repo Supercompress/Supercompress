@@ -2,6 +2,21 @@
 
 SuperCompress is a **library** — wire it anywhere you build LLM prompts from long context.
 
+## Agent marketplaces (one-command install)
+
+The SuperCompress plugin (MCP tools + skill, with browser account linking) is published for all three major coding agents from this repo:
+
+| Agent | Install |
+|-------|---------|
+| **Grok Bot** | Plugins → search SuperCompress → Configure with `sc_…` API key. Or chat: `Add this MCP server: https://www.supercompress.dev/api/mcp` |
+| **Claude Code** | `/plugin marketplace add Supercompress/Supercompress` then `/plugin install supercompress@supercompress` |
+| **Codex** | `codex plugin marketplace add Supercompress/Supercompress` then `codex plugin add supercompress@supercompress` |
+| **Cursor** | [Cursor Marketplace](https://cursor.com/marketplace) → search "SuperCompress" |
+
+Grok Bot needs the **hosted** MCP (`https://www.supercompress.dev/api/mcp`) — local `npx` stdio is not reachable from the Bot's cloud computer. The Cursor/marketplace plugin pack points at that URL.
+
+The plugin exposes `compress_context`, `connect_account` (dashboard link / API key), and `usage_summary`. Source: [`integrations/plugins/supercompress/`](../integrations/plugins/supercompress/).
+
 ## Quick patterns
 
 | Integration | When to use |
@@ -81,7 +96,7 @@ print(f"Risk: {result.compression_risk}")
 
 Precision mode uses a dual-model architecture (AMCP policy + verifier) that tries progressively aggressive budgets (0.40→0.20) and returns the most compressed output where verifier confidence ≥ 0.85.
 
-See the [full guide](/precision-mode-compression) for details.
+See the [API reference](https://docs.supercompress.dev/api-reference) for details.
 
 ---
 
@@ -105,7 +120,7 @@ original = response.json()["original"]
 
 CCR caches original content in Firestore (server-side) and an LRU Map (browser-side). Retrieval uses the same API key as compression.
 
-See the [full guide](/reversible-compression-ccr) for details.
+See the [API reference](https://docs.supercompress.dev/api-reference) for details.
 
 ---
 

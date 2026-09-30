@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 96" role="img" aria-label="Product Hunt">
+  <rect x="1" y="1" width="298" height="94" rx="18" fill="#fff7ed" stroke="#f59e0b" stroke-width="2"/>
+  <circle cx="36" cy="48" r="22" fill="#ea580c"/>
+  <path d="M29 35h11.5c6.4 0 11.5 5.1 11.5 11.5S46.9 58 40.5 58H35v10h-6V35Zm6 6v11h5.2c3 0 5.4-2.5 5.4-5.5S43 41 40.2 41H35Z" fill="#fff"/>
+  <text x="72" y="56" font-family="Geist, Arial, sans-serif" font-size="28" font-weight="600" fill="#9a3412">Product Hunt</text>
+</svg>

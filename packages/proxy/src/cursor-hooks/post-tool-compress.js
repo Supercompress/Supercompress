@@ -14,6 +14,10 @@ const {
   resolveSessionId,
   shouldPublishCompressedResult,
 } = require("./compress-prompt-lib");
+const {
+  isGrokAgent,
+  buildGrokHookResponse,
+} = require("./grok-post-tool");
 
 const MIN_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
 /** Soft total cap — shared lib chunks to API 120k (do not pre-clip to 180k). */
@@ -77,6 +81,10 @@ function resolveAgentHint(input = {}) {
   return "Cursor";
 }
 
+function emitGrokReplacement(opts) {
+  process.stdout.write(JSON.stringify(buildGrokHookResponse(opts)));
+}
+
 process.stdin.setEncoding("utf8");
 let raw = "";
 process.stdin.on("data", (c) => {
@@ -91,15 +99,18 @@ process.stdin.on("end", async () => {
         input.toolName ||
         input.tool ||
         (input.tool_input && input.tool_input.name) ||
+        (input.toolInput && input.toolInput.name) ||
         ""
     );
     if (/compress_context|connect_account|usage_summary|headroom_/i.test(toolName)) {
       return empty();
     }
 
-    // Cursor: tool_output · Claude Code PostToolUse: tool_response · others
+    // Cursor: tool_output · Claude: tool_response · Grok: toolResult (camelCase)
     let text = extractText(input.tool_output);
     if (!text) text = extractText(input.tool_response);
+    if (!text) text = extractText(input.toolResult);
+    if (!text) text = extractText(input.tool_result);
     if (!text) text = extractText(input.result);
     if (!text) text = extractText(input.output);
     if (!text) text = extractText(input.response);
@@ -133,6 +144,20 @@ process.stdin.on("end", async () => {
       tool: toolName,
       compacted: Boolean(result.compacted),
     });
+
+    // Grok: UserPromptSubmit discards additionalContext. PostToolUse can
+    // replace the model's tool result (updatedToolOutput) — that is the path
+    // that actually makes digests visible mid-turn.
+    if (isGrokAgent(agentHint)) {
+      emitGrokReplacement({
+        toolResult: input.toolResult != null ? input.toolResult : input.tool_response,
+        toolResultTruncated: Boolean(input.toolResultTruncated || input.tool_result_truncated),
+        toolName,
+        meta,
+        compressed: result.compressed,
+      });
+      return;
+    }
 
     const additional_context = [
       `[SuperCompress auto] Compressed new ${toolName || "tool"} output (~${meta}).`,

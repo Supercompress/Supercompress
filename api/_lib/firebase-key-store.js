@@ -544,6 +544,29 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
             fingerprint,
             response: opts.response || null,
           });
+        } else if (recharge.checkoutUrl) {
+          const india = recharge.error === "india_requires_checkout";
+          const paywallErr = new Error(
+            `PAYWALL: Auto-recharge needs a one-tap Checkout confirm. ${recharge.checkoutUrl}`
+          );
+          paywallErr.status = 402;
+          paywallErr.code = "credits_exhausted";
+          paywallErr.paywall = true;
+          paywallErr.payload = {
+            ok: false,
+            paywall: true,
+            code: india ? "india_requires_checkout" : "recharge_requires_checkout",
+            title: "Confirm recharge to resume",
+            detail: india
+              ? "Your card requires an on-session confirm for prepaid top-ups (India RBI rules)."
+              : "Auto-recharge could not finish silently. Open Checkout to add credits.",
+            cta: "Confirm recharge",
+            upgrade_url: recharge.checkoutUrl,
+            checkout_url: recharge.checkoutUrl,
+            action: "open_checkout",
+            recharge_error: recharge.error || null,
+          };
+          throw paywallErr;
         } else {
           throw err;
         }

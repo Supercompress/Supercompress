@@ -24,6 +24,19 @@ const BATCH_SIZE = Math.max(
 
 const ENQUEUE_CHUNK = 20;
 
+/** Never enqueue product/launch mail to these people (email local-part or display name). */
+const HARD_BLOCK_NAME_RE = /\b(saurabh|parashar)\b/i;
+
+function isHardBlockedRecipient({ email, first_name } = {}) {
+  const mail = String(email || "").trim().toLowerCase();
+  const local = mail.split("@")[0] || "";
+  const name = String(first_name || "").trim();
+  if (HARD_BLOCK_NAME_RE.test(local) || HARD_BLOCK_NAME_RE.test(name) || HARD_BLOCK_NAME_RE.test(mail)) {
+    return true;
+  }
+  return false;
+}
+
 function isoWeekCampaignId(date = new Date()) {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   // Thursday in current week decides the year
@@ -46,7 +59,7 @@ function shipCampaignId(date = new Date()) {
 /**
  * Resolve which campaign to run.
  * force: 'tip' | 'ship' | 'drain' | campaign id ending in -tip/-ship
- * Default: tip on Sunday (0), ship on Wednesday (3); other days drain-only.
+ * Default: tip on Sunday (0), ship on Friday (5); other days drain-only.
  */
 function resolveCampaign(opts = {}) {
   const forceRaw = String(opts.force || process.env.WEEKLY_FORCE_KIND || "").trim();
@@ -67,8 +80,8 @@ function resolveCampaign(opts = {}) {
   if (utcDay === 0) {
     return { kind: "tip", campaignId: tipCampaignId(), utcDay, reason: "sunday_tip" };
   }
-  if (utcDay === 3) {
-    return { kind: "ship", campaignId: shipCampaignId(), utcDay, reason: "wednesday_ship" };
+  if (utcDay === 5) {
+    return { kind: "ship", campaignId: shipCampaignId(), utcDay, reason: "friday_ship" };
   }
   return { kind: null, campaignId: null, utcDay, reason: "off_day_drain" };
 }
@@ -216,7 +229,7 @@ async function enqueueWeeklyCampaign(campaignId = isoWeekCampaignId()) {
       let chunkSkipped = 0;
       for (const r of chunk) {
         const key = `${campaignId}:${r.uid}`;
-        if (isUnsubscribed(store, r.email)) {
+        if (isHardBlockedRecipient(r) || isUnsubscribed(store, r.email)) {
           chunkSkipped += 1;
           continue;
         }
@@ -338,6 +351,7 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
         r.status === "pending" &&
         r.email &&
         (!cid || r.campaign_id === cid) &&
+        !isHardBlockedRecipient(r) &&
         !isUnsubscribed(store, r.email)
     )
     .sort((a, b) => String(a.queued_at || "").localeCompare(String(b.queued_at || "")))
@@ -375,7 +389,11 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
 
   const remainingStore = await loadStoreSafe();
   const remaining = Object.values(remainingStore.weekly_emails || {}).filter(
-    (r) => r.status === "pending" && r.email
+    (r) =>
+      r.status === "pending" &&
+      r.email &&
+      (!cid || r.campaign_id === cid) &&
+      !isHardBlockedRecipient(r)
   ).length;
 
   return {
@@ -388,7 +406,7 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
 }
 
 /**
- * Sunday tip / Wednesday ship tick.
+ * Sunday tip / Friday ship tick.
  * force: tip | ship | drain | full campaign id (e.g. 2026-W32-ship)
  * Without RESEND_API_KEY: enqueue only (no send).
  * With key: send up to BATCH_SIZE via Resend.
@@ -397,6 +415,32 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
 async function weeklyTick(opts = {}) {
   const resolved = resolveCampaign(opts);
   const { kind, campaignId, utcDay, reason } = resolved;
+
+  // Tip campaigns must have a unique byCampaign entry — never recycle seed subjects.
+  if (kind === "tip" && campaignId) {
+    const { weeklyTipForCampaign } = require("./mail");
+    const tip = weeklyTipForCampaign(campaignId);
+    if (!tip || !tip.subject) {
+      return {
+        ok: false,
+        mode: "blocked_missing_tip",
+        kind,
+        campaign_id: campaignId,
+        utc_day: utcDay,
+        reason,
+        sent: 0,
+        failed: 0,
+        remaining: null,
+        errors: [
+          {
+            error: `missing_unique_tip:${campaignId}`,
+            fix: "Author byCampaign tip in Supercompress/email-campaigns and sync WEEKLY_TIPS_JSON",
+          },
+        ],
+        note: "Refusing to send a recycled Sunday tip. Write a new tip for this ISO week first.",
+      };
+    }
+  }
 
   // Off-day / drain-only: clear backlog if Resend is configured
   if (!kind || !campaignId) {
@@ -412,7 +456,7 @@ async function weeklyTick(opts = {}) {
         failed: 0,
         remaining: null,
         errors: [],
-        note: "No campaign today (tips = Sunday, ship = Wednesday). Pending waits for Resend drain.",
+        note: "No campaign today (tips = Sunday, ship = Friday). Pending waits for Resend drain.",
       };
     }
     const drain = await drainPendingWeekly({ limit: BATCH_SIZE });
@@ -678,6 +722,135 @@ If you didn't request this, you can ignore this message.
   };
 }
 
+const LAUNCH_V2_CAMPAIGN_ID = "launch-v2-2026-09-29";
+const LAUNCH_T0_MARKER = "launch_t0_2026_09_29";
+
+/** America/Los_Angeles wall-clock parts for launch window gating. */
+function laWallClock(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const get = (type) => parts.find((p) => p.type === type)?.value || "";
+  const hourRaw = Number(get("hour"));
+  // Some engines emit "24" for midnight
+  const hour = hourRaw === 24 ? 0 : hourRaw;
+  return {
+    ymd: `${get("year")}-${get("month")}-${get("day")}`,
+    hour,
+  };
+}
+
+/**
+ * Cloud T-0 for Engine v2 launch (Vercel Cron).
+ * Date-gated to 2026-09-29 PT morning; idempotent via store marker.
+ */
+async function runLaunchT0({ force = false } = {}) {
+  const campaignId = LAUNCH_V2_CAMPAIGN_ID;
+  const { ymd, hour } = laWallClock();
+  const inWindow = ymd === "2026-09-29" && hour >= 8 && hour <= 12;
+  if (!force && !inWindow) {
+    return {
+      ok: true,
+      skipped: true,
+      reason: "outside_launch_window",
+      ymd,
+      hour,
+      campaign_id: campaignId,
+    };
+  }
+
+  let prior = null;
+  try {
+    const store = await loadStoreSafe();
+    prior = store.launch_markers?.[LAUNCH_T0_MARKER] || null;
+  } catch (_) {
+    prior = null;
+  }
+  if (prior?.status === "completed" && !force) {
+    return {
+      ok: true,
+      already: true,
+      campaign_id: campaignId,
+      completed_at: prior.completed_at || null,
+      summary: prior.summary || null,
+    };
+  }
+
+  const enqueue = await enqueueWeeklyCampaign(campaignId);
+  let sent = 0;
+  let failed = 0;
+  let remaining = null;
+  const drains = [];
+  for (let i = 0; i < 20; i++) {
+    const batch = await drainPendingWeekly({ limit: BATCH_SIZE, campaignId });
+    drains.push({
+      i: i + 1,
+      sent: batch.sent || 0,
+      failed: batch.failed || 0,
+      remaining: batch.remaining,
+    });
+    sent += Number(batch.sent || 0);
+    failed += Number(batch.failed || 0);
+    remaining = batch.remaining;
+    if (!remaining || remaining <= 0) break;
+    if ((batch.sent || 0) === 0 && (batch.failed || 0) === 0) break;
+  }
+
+  const summary = {
+    enqueue,
+    sent,
+    failed,
+    remaining,
+    drains: drains.length,
+  };
+
+  // Mark complete only when the queue is empty (or force finished with zero remaining).
+  if (remaining === 0 || remaining === null) {
+    try {
+      await mutateStore((store) => {
+        if (!store.launch_markers) store.launch_markers = {};
+        store.launch_markers[LAUNCH_T0_MARKER] = {
+          status: "completed",
+          completed_at: new Date().toISOString(),
+          campaign_id: campaignId,
+          summary,
+        };
+        return store.launch_markers[LAUNCH_T0_MARKER];
+      });
+    } catch (err) {
+      console.warn("runLaunchT0: marker write skipped:", err.message);
+    }
+  } else {
+    try {
+      await mutateStore((store) => {
+        if (!store.launch_markers) store.launch_markers = {};
+        store.launch_markers[LAUNCH_T0_MARKER] = {
+          status: "in_progress",
+          updated_at: new Date().toISOString(),
+          campaign_id: campaignId,
+          summary,
+        };
+        return store.launch_markers[LAUNCH_T0_MARKER];
+      });
+    } catch (err) {
+      console.warn("runLaunchT0: progress marker skipped:", err.message);
+    }
+  }
+
+  return {
+    ok: true,
+    campaign_id: campaignId,
+    ymd,
+    hour,
+    ...summary,
+  };
+}
+
 module.exports = {
   drainSecretOk,
   isoWeekCampaignId,
@@ -689,9 +862,12 @@ module.exports = {
   unsubApiUrlFor,
   verifyUnsubToken,
   isUnsubscribed,
+  listAuthRecipients,
   enqueueWeeklyCampaign,
   listPendingWeekly,
   drainPendingWeekly,
+  runLaunchT0,
+  LAUNCH_V2_CAMPAIGN_ID,
   weeklyTick,
   unsubscribeEmail,
   sendUnsubscribeLink,

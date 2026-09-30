@@ -211,7 +211,13 @@ app.post("/v1/chat/completions", async (req, res) => {
           message: err.message || "SuperCompress proxy error",
           type: paywall ? "paywall" : "proxy_error",
           ...(paywall
-            ? { upgrade_url: "https://www.supercompress.dev/dashboard#billing" }
+            ? {
+                upgrade_url:
+                  err.checkout_url ||
+                  err.upgrade_url ||
+                  "https://www.supercompress.dev/dashboard#billing",
+                ...(err.checkout_url ? { checkout_url: err.checkout_url } : {}),
+              }
             : {}),
         },
       });
@@ -263,7 +269,13 @@ app.post("/v1/responses", async (req, res) => {
           message: err.message || "SuperCompress proxy error",
           type: paywall ? "paywall" : "proxy_error",
           ...(paywall
-            ? { upgrade_url: "https://www.supercompress.dev/dashboard#billing" }
+            ? {
+                upgrade_url:
+                  err.checkout_url ||
+                  err.upgrade_url ||
+                  "https://www.supercompress.dev/dashboard#billing",
+                ...(err.checkout_url ? { checkout_url: err.checkout_url } : {}),
+              }
             : {}),
         },
       });
@@ -309,7 +321,13 @@ app.post("/v1/messages", async (req, res) => {
           message: err.message || "SuperCompress proxy error",
           type: paywall ? "paywall" : "proxy_error",
           ...(paywall
-            ? { upgrade_url: "https://www.supercompress.dev/dashboard#billing" }
+            ? {
+                upgrade_url:
+                  err.checkout_url ||
+                  err.upgrade_url ||
+                  "https://www.supercompress.dev/dashboard#billing",
+                ...(err.checkout_url ? { checkout_url: err.checkout_url } : {}),
+              }
             : {}),
         },
       });

@@ -60,9 +60,9 @@ function printHelp() {
   console.log("Usage: supercompress [command]");
   console.log("");
   console.log("  Commands:");
-  console.log("  (none) / tui   Interactive TUI (follows terminal dark/light; needs Bun)");
-  console.log("  setup          Recommended — link account, auto-detect agents, install MCP + hooks");
-  console.log("  plugin         Re-run detect + install MCP/hooks/instructions for every agent");
+  console.log("  setup          Link account + install MCP/hooks (60+ harnesses, 25+ auto)");
+  console.log("  plugin         Refresh MCP/hooks/instructions (no account prompt)");
+  console.log("  doctor         Clean health matrix — account, MCP, per-harness hooks");
   console.log("  connect        Link this install to your SuperCompress account");
   console.log("  account        Show the connected SuperCompress account");
   console.log("  usage          Plan, quota, and token savings by coding agent");
@@ -70,21 +70,21 @@ function printHelp() {
   console.log("  stop           Stop the proxy server");
   console.log("  status         Check if the proxy is running");
   console.log("  agents         Show supported agents and detected integrations");
+  console.log("  agents connect Easy MCP / Agent Plugins path for any agent (fx, custom, …)");
   console.log("  agents add     Register a custom MCP-capable agent (pluggable)");
   console.log("  agents rm      Remove a custom agent plugin");
   console.log("  mcp-check      Verify the SuperCompress MCP server responds");
   console.log("  restart        Restart the proxy server");
   console.log("  uninstall      Remove SuperCompress configs and revert agent integrations");
-  console.log("  help           This message (also: --help, --plain)");
+  console.log("  tui            Optional interactive UI (needs Bun; SUPERCOMPRESS_TUI=1)");
+  console.log("  help           This message");
   console.log("");
   console.log("Examples:");
-  console.log("  supercompress");
   console.log("  supercompress setup");
+  console.log("  supercompress setup --yes");
   console.log("  supercompress plugin");
-  console.log("  supercompress account");
+  console.log("  supercompress doctor");
   console.log("  supercompress usage");
-  console.log("  supercompress usage --json");
-  console.log("  supercompress status");
 }
 
 function findBun() {
@@ -99,10 +99,14 @@ function findBun() {
   }
 }
 
+/** OpenTUI is opt-in only — classic CLI is the default (stable). */
 function wantsTui(cmd) {
   if (process.env.SUPERCOMPRESS_TUI === "0" || process.env.SUPERCOMPRESS_TUI === "false") return false;
-  if (!cmd) return Boolean(process.stdout.isTTY);
-  return cmd === "tui" || cmd === "ui" || cmd === "--tui";
+  if (cmd === "tui" || cmd === "ui" || cmd === "--tui") return true;
+  if (process.env.SUPERCOMPRESS_TUI === "1" || process.env.SUPERCOMPRESS_TUI === "true") {
+    return !cmd || cmd === "help";
+  }
+  return false;
 }
 
 function launchTui() {
@@ -114,8 +118,8 @@ function launchTui() {
   const bun = findBun();
   if (!bun) {
     console.log("  → Interactive UI needs Bun: https://bun.sh");
-    console.log("    then re-run `supercompress` (or `supercompress tui`).");
-    console.log("  → Classic commands still work: setup · usage · account · plugin …");
+    console.log("    then re-run `supercompress tui`.");
+    console.log("  → Classic commands: setup · connect · usage · account · plugin …");
     console.log("");
     return false;
   }
@@ -132,13 +136,41 @@ function launchTui() {
   return true;
 }
 
+function isValidLinkedKey(key) {
+  return Boolean(key && String(key).trim().startsWith("sc_"));
+}
+
+async function accountLooksLinked(apiKey) {
+  try {
+    const data = await fetchJson(ME_URL, apiKey);
+    return Boolean(data && (data.email || data.uid || data.owner_uid || data.ok !== false));
+  } catch {
+    return false;
+  }
+}
+
 async function connectAccount() {
+  const force = process.argv.includes("--force") || process.argv.includes("--reconnect");
+  const existing = loadConfig();
+  if (!force && isValidLinkedKey(existing?.api_key)) {
+    if (await accountLooksLinked(existing.api_key)) {
+      console.log("  ✓ Already connected to your SuperCompress account.");
+      try {
+        await printAccountSummary(existing.api_key);
+      } catch (_) {
+        /* still linked locally */
+      }
+      console.log("  → Re-link this machine: `supercompress connect --force`");
+      return;
+    }
+    console.log("  → Saved link looks stale — reconnecting…");
+  }
+
   // 128-bit pairing code (was 32-bit) — hardens device-link against enumeration
   const code = crypto.randomBytes(16).toString("hex");
   const connectUrl = `https://www.supercompress.dev/dashboard?connect=${code}&source=cli`;
   try {
     if (process.platform === "win32") {
-      // Use execSync with a quoted URL so cmd.exe does not split the URL at &
       require("child_process").execSync(`start "" "${connectUrl}"`, { stdio: "ignore" });
     } else {
       const openCommand = process.platform === "darwin" ? "open" : "xdg-open";
@@ -146,7 +178,7 @@ async function connectAccount() {
     }
   } catch {}
   console.log(`  → Finish sign-in in the browser to link this install.`);
-  console.log(`  → If the dashboard is already open, refresh that tab.`);
+  console.log(`  → If you are already logged in, the dashboard links automatically.`);
   console.log(`  → Connection code: ${code}`);
   console.log(`  → Link: ${connectUrl}`);
   const apiKey = await waitForDeviceConnect(code);
@@ -159,6 +191,11 @@ async function main() {
   const cmd = process.argv[2];
   if (cmd === "--version" || cmd === "-v" || cmd === "version") {
     console.log(VERSION);
+    return;
+  }
+  if (cmd === "--help" || cmd === "-h" || cmd === "--plain") {
+    printLogo();
+    printHelp();
     return;
   }
   if (wantsTui(cmd)) {
@@ -188,38 +225,8 @@ async function main() {
       break;
     case "plugin": {
       const detector = require("../src/detector");
+      const { printInstallSummary } = require("../src/doctor");
       const result = detector.installAutoPlugin();
-      console.log(`  Detected ${result.found.length} coding agent(s):`);
-      for (const agent of result.found) {
-        console.log(`    ✓ ${agent.name}`);
-      }
-      if (result.mcpConfigured.length) {
-        console.log(`  ✓ MCP plugin installed for: ${result.mcpConfigured.join(", ")}`);
-      } else {
-        console.log("  ○ No MCP-capable agent configs found to update.");
-      }
-      console.log(`  ✓ Cursor rule written: ${result.rulePath}`);
-      console.log(`  ✓ Cursor hooks written: ${result.hooks.hooksPath}`);
-      console.log("    → beforeSubmitPrompt compresses every submit with context (ask stays the query)");
-      console.log("    → postToolUse auto-compresses large tool dumps (main savings path)");
-      if (result.agentHooks.installed.length) {
-        console.log(`  ✓ Prompt/tool hooks: ${result.agentHooks.installed.join(", ")}`);
-      }
-      if (result.instructions.length) {
-        console.log(`  ✓ Always-on instructions: ${result.instructions.join(", ")}`);
-      }
-      if (result.hermes?.installed?.length) {
-        console.log(`  ✓ Hermes auto-compress: ${result.hermes.installed.join(", ")}`);
-        console.log("    → pre_llm_call + post_tool_call hooks + transform plugin + native compact");
-      }
-      if (result.openclaw?.installed?.length) {
-        console.log(`  ✓ OpenClaw auto-compress: ${result.openclaw.installed.join(", ")}`);
-        console.log("    → MCP + skill + managed hooks + extension plugin (tool dump → inbox)");
-      }
-      if (result.cleared.length) {
-        console.log(`  ✓ Cleared provider API-key proxy overrides: ${result.cleared.join(", ")}`);
-      }
-      // Persist so `account` / `status` reflect what we just installed
       const cfg = loadConfig() || {};
       if (cfg.api_key || result.mcpConfigured.length) {
         saveConfig({
@@ -229,7 +236,14 @@ async function main() {
           mode: cfg.mode || "mcp",
         });
       }
-      console.log("  → Restart agents so MCP/hooks reload.");
+      printInstallSummary(result, { version: VERSION });
+      break;
+    }
+
+    case "doctor": {
+      const { runDoctor } = require("../src/doctor");
+      const report = await runDoctor({ CONFIG_DIR, loadConfig, version: VERSION });
+      if (!report.linked || !report.mcpOk) process.exit(1);
       break;
     }
     case "wrap": {
@@ -309,6 +323,55 @@ async function main() {
 
     case "agents": {
       const sub = process.argv[3];
+      if (sub === "connect" || sub === "any" || sub === "easy") {
+        const packArgIdx = process.argv.indexOf("--pack");
+        const packDest =
+          packArgIdx >= 0 && process.argv[packArgIdx + 1]
+            ? path.resolve(process.argv[packArgIdx + 1])
+            : path.join(CONFIG_DIR, "agent-plugin");
+        const srcPack = path.join(__dirname, "..", "agent-plugin");
+        const copyTree = (from, to) => {
+          fs.mkdirSync(to, { recursive: true });
+          for (const ent of fs.readdirSync(from, { withFileTypes: true })) {
+            const a = path.join(from, ent.name);
+            const b = path.join(to, ent.name);
+            if (ent.isDirectory()) copyTree(a, b);
+            else fs.copyFileSync(a, b);
+          }
+        };
+        copyTree(srcPack, packDest);
+        const mcpAbs = path.join(__dirname, "..", "src", "mcp.js");
+        const launch = JSON.stringify([process.execPath, mcpAbs], null, 2);
+        console.log("  ◆ Any agent — SuperCompress in 30 seconds");
+        console.log("");
+        console.log("  1) Link account once:");
+        console.log("       supercompress setup");
+        console.log("");
+        console.log("  2) MCP (stdio) — paste into your agent's MCP config:");
+        console.log(`       command: ${process.execPath}`);
+        console.log(`       args:    [${JSON.stringify(mcpAbs)}]`);
+        console.log("       env:     SUPERCOMPRESS_CONFIG_DIR=~/.supercompress");
+        console.log("");
+        console.log("     Or after global install:");
+        console.log("       command: supercompress-mcp");
+        console.log("");
+        console.log("  3) Agent Plugins 1.0 pack written to:");
+        console.log(`       ${packDest}`);
+        console.log("     (plugin.json + mcp.json + skills/supercompress)");
+        console.log("");
+        console.log("  4) Custom / closed-source agent registry:");
+        console.log("       supercompress agents add --name MyAgent --format mcp-json --config ~/.myagent/mcp.json");
+        console.log("       supercompress plugin");
+        console.log("");
+        console.log("  Known hosts (fx, OpenCode, Cursor, Claude, Codex, Grok, …):");
+        console.log("       supercompress plugin   # auto-detect + wire");
+        console.log("");
+        console.log("  Docs: https://docs.supercompress.dev/coding-agents");
+        if (process.argv.includes("--json")) {
+          console.log(JSON.stringify({ pack: packDest, mcp: { command: process.execPath, args: [mcpAbs] }, launch }, null, 2));
+        }
+        break;
+      }
       if (sub === "add") {
         const args = process.argv.slice(4);
         const opts = {};
@@ -364,12 +427,21 @@ async function main() {
         }
         break;
       }
-      const { AGENT_CATALOG, detectAll, agentPlugins } = require("../src/detector");
+      const { AGENT_CATALOG, detectAll, agentPlugins, catalogStats, AUTO_MCP_AGENTS } = require("../src/detector");
       const detected = new Map(detectAll().map((agent) => [agent.name, agent]));
-      console.log(`  Supported coding agents (${AGENT_CATALOG.length} catalogued):`);
-      for (const agent of AGENT_CATALOG) {
+      const stats = catalogStats();
+      console.log(`  ${stats.catalogued} harnesses catalogued · ${stats.autoMcp} auto-plugin · ${stats.recipe} recipe/connect`);
+      console.log("");
+      console.log("  Auto MCP plugin (setup/plugin wires these):");
+      for (const agent of AGENT_CATALOG.filter((a) => a.autoMcp || AUTO_MCP_AGENTS.has(a.name))) {
         const state = detected.get(agent.name);
-        console.log(`    ${state ? "✓" : "·"} ${agent.name}${state ? ` — ${state.autoConfigurable ? "detected and configurable" : "detected; manual setup"}` : " — not detected"}`);
+        console.log(`    ${state ? "✓" : "·"} ${agent.name}${state ? " — on this machine" : ""}`);
+      }
+      console.log("");
+      console.log("  Also catalogued (agents connect / base URL):");
+      for (const agent of AGENT_CATALOG.filter((a) => !(a.autoMcp || AUTO_MCP_AGENTS.has(a.name)))) {
+        const state = detected.get(agent.name);
+        console.log(`    ${state ? "✓" : "·"} ${agent.name}${state ? " — detected" : ""}`);
       }
       const customs = agentPlugins.loadCustomPlugins();
       if (customs.length) {
@@ -378,11 +450,10 @@ async function main() {
           console.log(`    • ${p.name} (${p.id}) — ${p.format} → ${p.configPath}`);
         }
       }
-      console.log("    ✓ Any new MCP-compatible client — use `supercompress-mcp`");
-      console.log("\n  New or unlisted agent:");
+      console.log("\n  Any new MCP client:");
+      console.log("    supercompress agents connect");
       console.log("    supercompress agents add --name MyAgent --format mcp-json --config ~/.myagent/mcp.json");
-      console.log("    Or point its OpenAI-compatible base URL to http://localhost:8080/v1");
-      console.log("\n  Limits and upgrade status: run `supercompress usage`.");
+      console.log("\n  Limits: `supercompress usage` · health: `supercompress doctor`");
       break;
     }
 

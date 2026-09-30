@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.supercompress.dev/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-09-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -56,7 +56,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/benchmarks</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-09-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -73,6 +73,12 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://www.supercompress.dev/engine-v2-launch</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://www.supercompress.dev/blog</loc>
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -80,7 +86,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/changelog</loc>
-    <lastmod>2026-07-31</lastmod>
+    <lastmod>2026-09-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -103,7 +109,6 @@
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.supercompress.dev/arena</loc>
     <lastmod>2026-08-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
@@ -128,18 +133,12 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/ai-search</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-09-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.supercompress.dev/aiscore</loc>
-    <lastmod>2026-07-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/cache-aligner-prefix-stabilization</loc>
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -151,7 +150,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.supercompress.dev/compare</loc>
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -164,12 +162,6 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/dashboard</loc>
-    <lastmod>2026-07-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/domain-preprocessors</loc>
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -188,12 +180,6 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/how-prompt-compression-works</loc>
-    <lastmod>2026-07-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/launch-kit</loc>
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -223,12 +209,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.supercompress.dev/precision-mode-compression</loc>
-    <lastmod>2026-07-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://www.supercompress.dev/prompt-compression</loc>
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -242,12 +222,6 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/research</loc>
-    <lastmod>2026-07-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/reversible-compression-ccr</loc>
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -359,5 +333,29 @@
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/aeo-geo</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-chatgpt-costs</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-claude-costs</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-gemini-costs</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
   </url>
 </urlset>

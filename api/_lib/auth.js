@@ -1,4 +1,4 @@
-/** Dashboard auth — Firebase ID tokens + optional dev mode. */
+/** Dashboard auth — Firebase ID tokens + optional local-only dev mode. */
 
 const admin = require("firebase-admin");
 
@@ -38,19 +38,27 @@ function parseServiceAccountJson(raw) {
   return null;
 }
 
-function projectIdFromToken(token) {
-  try {
-    const part = token.split(".")[1];
-    if (!part) return null;
-    const json = Buffer.from(part.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
-    const payload = JSON.parse(json);
-    return payload.aud || payload.iss?.replace("https://securetoken.google.com/", "") || null;
-  } catch {
-    return null;
-  }
+function isTruthyEnv(name) {
+  const v = String(process.env[name] || "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
 }
 
-function initFirebaseAdmin(projectIdHint) {
+function isProductionRuntime() {
+  const vercelEnv = String(process.env.VERCEL_ENV || "").trim().toLowerCase();
+  if (vercelEnv === "production") return true;
+  return String(process.env.NODE_ENV || "").trim().toLowerCase() === "production";
+}
+
+/** Trusted project id only — never from an unverified JWT. */
+function expectedFirebaseProjectId() {
+  const fromEnv = String(process.env.FIREBASE_PROJECT_ID || "").trim();
+  if (fromEnv) return fromEnv;
+  const cred = parseServiceAccountJson(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+  if (cred?.project_id) return String(cred.project_id).trim();
+  return "";
+}
+
+function initFirebaseAdmin() {
   if (firebaseReady) return true;
   if (admin.apps.length) {
     firebaseReady = true;
@@ -58,7 +66,7 @@ function initFirebaseAdmin(projectIdHint) {
   }
 
   try {
-    const projectId = String(process.env.FIREBASE_PROJECT_ID || projectIdHint || "").trim();
+    const projectId = expectedFirebaseProjectId();
     const cred = parseServiceAccountJson(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
     if (cred?.project_id && cred?.client_email && cred?.private_key) {
       admin.initializeApp({
@@ -89,10 +97,7 @@ function initFirebaseAdmin(projectIdHint) {
 
     // projectId-only init is insecure in multi-tenant hosts (wrong ADC / ambient creds).
     // Allow only with an explicit opt-in for local tooling that has trusted ADC.
-    const allowProjectOnly =
-      process.env.SC_FIREBASE_ALLOW_PROJECT_ONLY === "1" ||
-      process.env.SC_FIREBASE_ALLOW_PROJECT_ONLY === "true";
-    if (projectId && allowProjectOnly) {
+    if (projectId && isTruthyEnv("SC_FIREBASE_ALLOW_PROJECT_ONLY")) {
       admin.initializeApp({ projectId });
       firebaseReady = true;
       return true;
@@ -104,7 +109,29 @@ function initFirebaseAdmin(projectIdHint) {
   return false;
 }
 
+function assertTokenProject(decoded) {
+  const expected = expectedFirebaseProjectId();
+  if (!expected) return;
+  if (String(decoded.aud || "") !== expected) {
+    const err = new Error("Invalid or expired Firebase token");
+    err.status = 401;
+    throw err;
+  }
+  const expectedIss = `https://securetoken.google.com/${expected}`;
+  if (String(decoded.iss || "") !== expectedIss) {
+    const err = new Error("Invalid or expired Firebase token");
+    err.status = 401;
+    throw err;
+  }
+}
+
 async function verifyUser(req) {
+  if (isProductionRuntime() && isTruthyEnv("SC_AUTH_DEV")) {
+    const err = new Error("Auth misconfigured");
+    err.status = 500;
+    throw err;
+  }
+
   const token = bearerToken(req.headers.authorization);
   if (!token) {
     const err = new Error("Missing Authorization header");
@@ -113,26 +140,28 @@ async function verifyUser(req) {
   }
 
   if (token.startsWith("dev:")) {
-    const devFlag = (process.env.SC_AUTH_DEV || "").trim();
-    const devMode = devFlag === "1" || devFlag === "true";
-    if (devMode) {
+    if (isTruthyEnv("SC_AUTH_DEV") && !isProductionRuntime()) {
       const parts = token.split(":");
       return {
         uid: parts[1] || "dev-user",
         email: parts[2] || "dev@local",
       };
     }
+    const err = new Error("Invalid or expired Firebase token");
+    err.status = 401;
+    throw err;
   }
 
-  const projectHint = projectIdFromToken(token);
-  if (initFirebaseAdmin(projectHint)) {
+  if (initFirebaseAdmin()) {
     try {
       const decoded = await admin.auth().verifyIdToken(token);
+      assertTokenProject(decoded);
       return {
         uid: decoded.uid,
         email: decoded.email || null,
       };
     } catch (err) {
+      if (err && err.status === 401) throw err;
       const e = new Error("Invalid or expired Firebase token");
       e.status = 401;
       throw e;
@@ -146,4 +175,11 @@ async function verifyUser(req) {
   throw err;
 }
 
-module.exports = { bearerToken, verifyUser, initFirebaseAdmin };
+module.exports = {
+  bearerToken,
+  verifyUser,
+  initFirebaseAdmin,
+  expectedFirebaseProjectId,
+  assertTokenProject,
+  isProductionRuntime,
+};

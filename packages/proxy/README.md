@@ -1,8 +1,8 @@
 # SuperCompress
 
-**Cut ~65% of LLM input tokens for coding agents — without losing the answer.**
+**SuperCompress v2 — cut ~64% of LLM input tokens for coding agents, without losing the answer.**
 
-Compress bulky context (files, logs, tool dumps, pastes) against the current question. Your ask stays intact.
+~400M Neural Keep scores bulky context (files, logs, tool dumps, pastes) against the current question and drops the rest. Your ask stays intact.
 
 [Website](https://www.supercompress.dev) · [Benchmarks](https://www.supercompress.dev/benchmarks) · [Playground](https://www.supercompress.dev/playground) · [Docs](https://docs.supercompress.dev/coding-agents)
 
@@ -20,10 +20,11 @@ Requires Node.js 18+.
 
 ## Quick start (recommended)
 
-One command links your account and **auto-adds MCP + hooks** for every coding agent it detects (Cursor, Claude Code, Codex, OpenCode, Gemini, and more):
+One command links your account and **auto-adds MCP + hooks** across **60+ harnesses** (25+ get a native auto MCP plugin — Cursor, Claude Code, Codex, Goose, Zed, OpenCode, fx, Hermes, OpenClaw, Grok, Gemini, Windsurf, Continue, and more):
 
 ```bash
 supercompress setup
+supercompress doctor
 ```
 
 Then restart your agent so integrations reload. That’s it.
@@ -33,8 +34,16 @@ Re-detect later (new agent installed, etc.):
 ```bash
 supercompress plugin
 supercompress agents
+supercompress doctor
 ```
 
+**Any other agent** (custom harness, closed-source, DIY):
+
+```bash
+supercompress agents connect
+```
+
+That prints a stdio MCP snippet and writes an Agent Plugins 1.0 pack you can drop into any compatible client.
 ---
 
 ## Benchmarks
@@ -80,7 +89,8 @@ Your agent ──→ SuperCompress (hooks / MCP) ──→ smaller context ─�
 | `supercompress` / `tui` | Interactive paper-branded UI (default in a TTY; [Bun](https://bun.sh)) |
 | `supercompress setup` | **Recommended** — link account, detect agents, install MCP + hooks |
 | `supercompress plugin` | Refresh agent integrations anytime |
-| `supercompress agents` | List supported / detected agents |
+| `supercompress doctor` | Per-harness health matrix (account / MCP / hooks) |
+| `supercompress agents` | 60+ catalog — auto-plugin vs recipe/connect |
 | `supercompress start` / `stop` / `status` | Optional local proxy (`setup --proxy`) |
 | `supercompress usage` | Plan, quota, savings (`--json` ok) |
 | `supercompress uninstall` | Remove configs under `~/.supercompress` |
@@ -126,8 +136,7 @@ Manual registration:
 
 ## Account & pricing
 
-Free tier + paid credits from the [dashboard](https://www.supercompress.dev/dashboard).  
-Public PAYG: **$0.30 / 1M tokens** (see site for current plans).
+Launch promo: **5M tokens/month free**, then **$0.10 / 1M** from the [dashboard](https://www.supercompress.dev/dashboard).
 
 ---
 

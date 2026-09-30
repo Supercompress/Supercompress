@@ -10,6 +10,9 @@ const {
   computeCompressFingerprint,
   assertUsageIdempotencyMatch,
   fitCustomClaims,
+  emergencyFitCustomClaims,
+  claimsByteLength,
+  AUTH_CLAIMS_MAX_BYTES,
   claimsWriteHeld,
   claimsConflictToken,
 } = require("./billing-ledger");
@@ -140,7 +143,12 @@ mustThrow(
     state = r.ledger;
   }
   assert.strictEqual(totalBurned, tokensToMicros(10));
-  assert.ok(totalBurned < 10, "must be cheaper than 10× ceil(1-token)");
+  // Cumulative ceil must never exceed naive per-request ceil(1-token)×N
+  // (equality is OK when USD_PER_MILLION is an integer, e.g. $1/1M).
+  assert.ok(
+    totalBurned <= 10 * tokensToMicros(1),
+    "cumulative burn never worse than per-request ceil"
+  );
 }
 
 // Comped skips gates
@@ -295,8 +303,52 @@ assertUsageIdempotencyMatch(
   });
   assert.ok(Array.isArray(fitted.sc_key_ids), "sc_key_ids must survive fitCustomClaims");
   assert.ok(fitted.sc_key_ids.length >= 1, "sc_key_ids must not be emptied");
-  assert.ok(fitted.sc_key_ids.length <= 8, "sc_key_ids may trim but not erase");
+  assert.ok(
+    claimsByteLength(fitted) <= AUTH_CLAIMS_MAX_BYTES,
+    `extreme claims must fit budget, got ${claimsByteLength(fitted)}`
+  );
   assert.ok(!("sc_agent_plugin" in fitted) || fitted.sc_agent_plugin == null);
+}
+
+{
+  const heavy = {
+    sc_write_id: "abc123def456",
+    sc_plan: "payg",
+    sc_billing_rev: 9999,
+    sc_key_ids: Array.from({ length: 8 }, (_, i) => `sck_${String(i).padStart(22, "0")}`),
+    sc_usage: {
+      month: "2026-08",
+      tokens_in: 5_000_000,
+      requests: 50_000,
+      life_in: 999_999_999,
+      life_saved: 888_888_888,
+      d: Object.fromEntries(
+        Array.from({ length: 14 }, (_, i) => [
+          `2026-08-${String(i + 1).padStart(2, "0")}`,
+          { tin: 99999, tout: 9999, ts: 1, r: 9 },
+        ])
+      ),
+    },
+    sc_recent_billing: Array.from({ length: 8 }, (_, i) => ({
+      i: `idem_${i}_${"a".repeat(30)}`,
+      f: "f".repeat(64),
+      tin: 50000,
+      tout: 5000,
+      ts: 45000,
+      b: 1000,
+      t: 1786630000000,
+    })),
+    sc_credited_sessions: Array.from({ length: 6 }, (_, i) => `cs_${i}_${"b".repeat(20)}`),
+    sc_heard: "twitter",
+    sc_onboard_done: true,
+  };
+  const fitted = emergencyFitCustomClaims(heavy);
+  assert.ok(
+    claimsByteLength(fitted) <= AUTH_CLAIMS_MAX_BYTES,
+    `heavy user must fit claims budget, got ${claimsByteLength(fitted)}`
+  );
+  assert.ok(Array.isArray(fitted.sc_key_ids) && fitted.sc_key_ids.length >= 1);
+  assert.ok(Array.isArray(fitted.sc_recent_billing) && fitted.sc_recent_billing.length >= 1);
 }
 
 assert.strictEqual(claimsWriteHeld({ sc_write_id: "aaa" }, "aaa"), true);

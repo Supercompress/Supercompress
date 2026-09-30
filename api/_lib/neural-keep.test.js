@@ -81,36 +81,44 @@ describe("neural-keep client", () => {
   });
 });
 
-describe("engine neural-keep integration", () => {
+describe("engine prefers neural-keep when SC_NEURAL_KEEP_URL is set", () => {
   const origEnv = { ...process.env };
 
   afterEach(() => {
     process.env = { ...origEnv };
     delete require.cache[require.resolve("./engine")];
     delete require.cache[require.resolve("./neural-keep")];
+    if (global.fetch && global.fetch.mockRestore) global.fetch.mockRestore();
+    delete global.fetch;
   });
 
-  it("compressAdaptive uses neural-keep when configured", async () => {
+  it("compressAdaptive uses neural-keep remote when enabled", async () => {
     process.env.SC_NEURAL_KEEP_URL = "https://neural.example.test";
     process.env.SC_NEURAL_KEEP = "1";
-
-    global.fetch = async () => ({
-      ok: true,
-      json: async () => ({
-        compressed_text: "INCIDENT: warehouse W-ORBIT",
-        original_tokens: 50,
-        kept_tokens: 10,
-        tokens_saved_pct: 80,
-        policy_name: "SuperCompress Neural Keep",
-        mode: "neural-keep",
-        latency_ms: 5,
-      }),
-    });
+    let fetched = false;
+    global.fetch = async () => {
+      fetched = true;
+      return {
+        ok: true,
+        json: async () => ({
+          compressed_text: "ERROR db timeout — kept",
+          original_tokens: 40,
+          kept_tokens: 8,
+          tokens_saved_pct: 80,
+          policy_name: "SuperCompress Neural Keep",
+          mode: "neural-keep",
+          latency_ms: 12,
+        }),
+      };
+    };
 
     const engine = require("./engine");
-    const result = await engine.compressAdaptive("INCIDENT: warehouse\nnoise\nnoise", "W-ORBIT?");
+    const result = await engine.compressAdaptive(
+      "INCIDENT: warehouse W-ORBIT crashed\nnoise filler line\nanother noise line",
+      "What warehouse crashed?"
+    );
+    assert.equal(fetched, true);
     assert.equal(result.mode, "neural-keep");
-    assert.match(result.compressed_text, /W-ORBIT/);
-    assert.equal(result.policy_name, "SuperCompress Neural Keep");
+    assert.match(result.compressed_text, /ERROR db timeout/);
   });
 });

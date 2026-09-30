@@ -127,7 +127,7 @@
     <ol>
       <li><strong>Mechanism</strong> — SuperCompress: query-aware block/line keep (extractive). LLMLingua: iterative budget-controlled token prune with a small LM. LLMLingua-2: single-pass token classification (e.g. XLM-RoBERTa-class SLM) for faster research pruning.</li>
       <li><strong>Latency &amp; hardware</strong> — SuperCompress: tiny CPU policy (~60ms), no GPU required. LLMLingua-1: often heavier / GPU-friendly. LLMLingua-2: faster than v1 but still a local SLM dependency.</li>
-      <li><strong>Answer containment</strong> — SuperCompress publishes held-out gold-answer keep (≥98% on primary suites) with ~65% token-weighted cut. For LLMLingua papers, cite their reported metrics on their datasets; re-run both on <em>your</em> RAG/agent dumps before claiming a winner.</li>
+      <li><strong>Answer containment</strong> — SuperCompress publishes held-out gold-answer keep (≥98% on primary suites) with ~64% token-weighted cut. For LLMLingua papers, cite their reported metrics on their datasets; re-run both on <em>your</em> RAG/agent dumps before claiming a winner.</li>
       <li><strong>Product path</strong> — SuperCompress: <code>pip install</code>, hosted <code>/api/v1/compress</code>, MCP for Cursor/Claude Code/Codex. LLMLingua: research library / DIY integration; no equivalent MCP agent product.</li>
     </ol>
 
@@ -209,7 +209,7 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
               <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
-              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/playground">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
           </div>

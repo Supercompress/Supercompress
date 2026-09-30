@@ -35,6 +35,10 @@
 
   const SERIES_COLORS = ["brand", "sky", "orange", "purple", "pink", "red"];
 
+  // Match SuperCompress web brand (fonts.css / Platypi + Geist)
+  const FONT_SANS = 'Geist, ui-sans-serif, system-ui, sans-serif';
+  const FONT_MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+
   function clamp01(t) {
     return t < 0 ? 0 : t > 1 ? 1 : t;
   }
@@ -186,9 +190,6 @@
     const variant = options.variant || "gradient";
     const bloomLevel = options.bloom || "aura";
     const showAxes = options.axes !== false;
-    const pad = options.pad || (showAxes ? { t: 18, r: 10, b: 24, l: 40 } : { t: 4, r: 2, b: 4, l: 2 });
-    const plotW = Math.max(8, cssW - pad.l - pad.r);
-    const plotH = Math.max(8, cssH - pad.t - pad.b);
 
     let rows = options.data || [];
     if (rows.length && typeof rows[0] === "number") {
@@ -199,10 +200,25 @@
       options.empty = true;
     }
 
+    const valuesPreview = rows.map((r) => Number(r.y) || 0);
+    const dataMaxPreview = Math.max(
+      1,
+      options.yMax != null ? Number(options.yMax) : 0,
+      ...valuesPreview
+    );
+    const axisLabel = formatCompact(niceScaleMax(dataMaxPreview));
+    // Wide left gutter so "1.1M" / "12M" sit beside the plot — never on the fill.
+    const autoLeft = Math.max(44, 10 + axisLabel.length * 7.2);
+    const pad = options.pad || (showAxes
+      ? { t: 14, r: 12, b: 26, l: autoLeft }
+      : { t: 4, r: 2, b: 4, l: 2 });
+    const plotW = Math.max(8, cssW - pad.l - pad.r);
+    const plotH = Math.max(8, cssH - pad.t - pad.b);
+
     if (options.empty) {
       if (showAxes) {
         ctx.fillStyle = ink(host, "faint");
-        ctx.font = "13px system-ui, sans-serif";
+        ctx.font = `13px ${FONT_SANS}`;
         ctx.textAlign = "center";
         ctx.fillText(options.emptyLabel || "No daily data yet", cssW / 2, cssH / 2);
       }
@@ -210,8 +226,9 @@
       return;
     }
 
-    const values = rows.map((r) => Number(r.y) || 0);
-    const max = Math.max(1, options.yMax != null ? Number(options.yMax) : 0, ...values);
+    const values = valuesPreview;
+    const dataMax = Math.max(1, options.yMax != null ? Number(options.yMax) : 0, ...values);
+    const max = options.yMaxNice === false ? dataMax : niceScaleMax(dataMax);
     const { cols, rows: bRows } = backingSize(plotW, plotH);
     const off = document.createElement("canvas");
     off.width = cols;
@@ -224,13 +241,29 @@
     });
 
     const phase = Number(options.phase) || 0;
+    // Single-point series: paint a centered lobe instead of a full-width slab.
+    const single = values.length === 1;
     for (let c = 0; c < cols; c++) {
-      const t = cols === 1 ? 0 : c / (cols - 1);
-      const idx = t * (tops.length - 1);
-      const i0 = Math.floor(idx);
-      const i1 = Math.min(tops.length - 1, i0 + 1);
-      const f = idx - i0;
-      const top = tops[i0] * (1 - f) + tops[i1] * f;
+      let top;
+      if (single) {
+        const cx = (cols - 1) / 2;
+        const half = Math.max(4, cols * 0.08);
+        const dist = Math.abs(c - cx) / half;
+        if (dist >= 1) {
+          top = bRows; // empty
+        } else {
+          const lobe = 1 - dist * dist;
+          top = bRows - 1 - Math.round(lobe * (bRows - 1) * (values[0] / max));
+        }
+      } else {
+        const t = cols === 1 ? 0 : c / (cols - 1);
+        const idx = t * (tops.length - 1);
+        const i0 = Math.floor(idx);
+        const i1 = Math.min(tops.length - 1, i0 + 1);
+        const f = idx - i0;
+        top = tops[i0] * (1 - f) + tops[i1] * f;
+      }
+      if (top >= bRows - 0.5) continue;
       paintColumn(octx, c, top, bRows, seed, {
         variant,
         dim: 1,
@@ -240,7 +273,20 @@
     }
     host._dkLastPaint = { kind: "area", options: { ...options } };
 
-    // subtle baseline
+    // Faint gridlines at 25/50/75% of the axis ceiling
+    if (showAxes) {
+      ctx.strokeStyle = ink(host, "faint");
+      ctx.lineWidth = 1;
+      for (const frac of [0.25, 0.5, 0.75]) {
+        const gy = pad.t + (1 - frac) * plotH + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(pad.l, gy);
+        ctx.lineTo(pad.l + plotW, gy);
+        ctx.stroke();
+      }
+    }
+
+    // baseline
     ctx.strokeStyle = ink(host, "faint");
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -263,17 +309,38 @@
     ctx.lineWidth = 1.75;
     ctx.stroke();
 
-    // axes labels — kept inside the plot box so they never collide with card titles
+    if (single) {
+      const x = pad.l + plotW / 2;
+      const y = pad.t + (1 - values[0] / max) * plotH;
+      ctx.fillStyle = rgb(seed.line, 1, 1);
+      ctx.beginPath();
+      ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Y labels in the left gutter (outside the fill); X labels on the baseline
     if (showAxes) {
       ctx.fillStyle = ink(host, "muted");
-      ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.font = `11px ${FONT_MONO}`;
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText(formatCompact(max), pad.l - 6, pad.t + 1);
+      ctx.fillText(formatCompact(max / 2), pad.l - 6, pad.t + plotH * 0.5);
+      ctx.fillText("0", pad.l - 6, pad.t + plotH - 1);
+      ctx.textBaseline = "alphabetic";
       ctx.textAlign = "left";
-      ctx.fillText(formatCompact(max), pad.l + 4, pad.t + 12);
-      ctx.fillText("0", pad.l + 4, pad.t + plotH - 4);
       if (rows.length >= 2) {
-        ctx.fillText(String(rows[0].x || ""), pad.l + 4, cssH - 8);
+        const x0 = String(rows[0].x || "");
+        const x1 = String(rows[rows.length - 1].x || "");
+        // Prefer short date when full weekday string is long
+        const short0 = x0.includes(",") ? x0.split(",").slice(-1)[0].trim() : x0;
+        const short1 = x1.includes(",") ? x1.split(",").slice(-1)[0].trim() : x1;
+        ctx.fillText(short0 || x0, pad.l, cssH - 8);
         ctx.textAlign = "right";
-        ctx.fillText(String(rows[rows.length - 1].x || ""), pad.l + plotW - 4, cssH - 8);
+        ctx.fillText(short1 || x1, pad.l + plotW, cssH - 8);
+      } else if (rows.length === 1) {
+        ctx.textAlign = "center";
+        ctx.fillText(String(rows[0].x || ""), pad.l + plotW / 2, cssH - 8);
       }
     }
 
@@ -327,12 +394,13 @@
     const plotW = Math.max(8, cssW - pad.l - pad.r);
     const plotH = Math.max(8, cssH - pad.t - pad.b);
     const progress = options.progress == null ? 1 : clamp01(Number(options.progress));
-    const max = Math.max(1, options.yMax != null ? Number(options.yMax) : 0, ...data.map((d) => Number(d.value) || 0));
+    const dataMax = Math.max(1, options.yMax != null ? Number(options.yMax) : 0, ...data.map((d) => Number(d.value) || 0));
+    const max = options.yMaxNice === false ? dataMax : niceScaleMax(dataMax);
     const empty = !!options.empty || !data.some((d) => (Number(d.value) || 0) > 0);
 
     if (!data.length || empty) {
       ctx.fillStyle = ink(host, "faint");
-      ctx.font = "13px system-ui, sans-serif";
+      ctx.font = `13px ${FONT_SANS}`;
       ctx.textAlign = "center";
       ctx.fillText(options.emptyLabel || "No data yet", cssW / 2, cssH / 2);
       applyBloom(bloom, crisp, "off", host);
@@ -370,12 +438,12 @@
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(off, pad.l, y, w, barThick);
         ctx.fillStyle = ink(host, "strong");
-        ctx.font = "12px system-ui, sans-serif";
+        ctx.font = `12px ${FONT_SANS}`;
         ctx.textAlign = "right";
         ctx.fillText(truncate(d.label || "", 14), pad.l - 8, y + barThick / 2 + 4);
         ctx.textAlign = "left";
         ctx.fillStyle = ink(host, "muted");
-        ctx.font = "11px ui-monospace, Menlo, monospace";
+        ctx.font = `11px ${FONT_MONO}`;
         ctx.fillText(empty ? "—" : formatCompact(v), pad.l + w + 6, y + barThick / 2 + 4);
       } else {
         const x = pad.l + i * slot + (slot - barThick) / 2;
@@ -403,7 +471,7 @@
 
     if (!horizontal && data.length) {
       ctx.fillStyle = ink(host, "muted");
-      ctx.font = "10px system-ui, sans-serif";
+      ctx.font = `10px ${FONT_SANS}`;
       ctx.textAlign = "left";
       ctx.fillText(String(data[0].label || ""), pad.l + 2, cssH - 8);
       ctx.textAlign = "right";
@@ -447,7 +515,7 @@
 
     if (!data.length || options.empty) {
       ctx.fillStyle = ink(host, "faint");
-      ctx.font = "13px system-ui, sans-serif";
+      ctx.font = `13px ${FONT_SANS}`;
       ctx.textAlign = "center";
       ctx.fillText(options.emptyLabel || "No agents yet", cssW / 2, cssH / 2);
       applyBloom(bloom, crisp, "off", host);
@@ -485,16 +553,16 @@
 
     // hole label
     ctx.fillStyle = ink(host, "strong");
-    ctx.font = "600 16px system-ui, sans-serif";
+    ctx.font = `600 16px ${FONT_SANS}`;
     ctx.textAlign = "center";
     ctx.fillText(formatCompact(total), cx, cy - 2);
     ctx.fillStyle = ink(host, "muted");
-    ctx.font = "11px system-ui, sans-serif";
+    ctx.font = `11px ${FONT_SANS}`;
     ctx.fillText("saved", cx, cy + 14);
 
     // legend
     ctx.textAlign = "left";
-    ctx.font = "12px system-ui, sans-serif";
+    ctx.font = `12px ${FONT_SANS}`;
     data.slice(0, 6).forEach((d, i) => {
       const seed = seedOf(d.color || SERIES_COLORS[i % SERIES_COLORS.length]);
       const y = 22 + i * 24;
@@ -759,6 +827,7 @@
 
     const seed = seedOf(options.color || "brand");
     const intensity = clamp01(options.intensity == null ? 0.5 : options.intensity);
+    const density = options.density == null ? 1 : Math.min(1.5, Math.max(0.6, Number(options.density) || 1));
     const phase = Number(options.phase) || 0;
     const { cols, rows } = backingSize(cssW, cssH);
     const off = document.createElement("canvas");
@@ -771,12 +840,12 @@
         const nx = x / Math.max(1, cols - 1);
         const ny = y / Math.max(1, rows - 1);
         // soft corner bloom + slow phase drift
-        const radial = 1 - Math.min(1, Math.hypot(nx - 0.15, ny - 0.2) * 1.15);
+        const radial = 1 - Math.min(1, Math.hypot(nx - 0.15, ny - 0.2) * (1.15 / density));
         const wave = 0.55 + 0.45 * Math.sin((nx + ny) * 4.2 + phase);
-        const dens = clamp01(radial * wave * (0.35 + intensity * 0.75));
+        const dens = clamp01(radial * wave * (0.28 + intensity * (0.72 + density * 0.12)));
         const thresh = BAYER[y & 3][x & 3];
-        if (dens <= thresh * 0.92) continue;
-        const alpha = clamp01((dens - thresh * 0.5) * 0.55 * intensity);
+        if (dens <= thresh * (0.92 / density)) continue;
+        const alpha = clamp01((dens - thresh * 0.42) * 0.62 * intensity * Math.min(1.25, density));
         octx.fillStyle = rgb(seed.fill, 1, alpha);
         octx.fillRect(x, y, 1, 1);
       }
@@ -858,6 +927,16 @@
     return String(Math.round(v));
   }
 
+  /** Round up to a readable axis ceiling with ~12% headroom so peaks aren't glued to the top. */
+  function niceScaleMax(n) {
+    const v = Math.max(1, Number(n) || 1);
+    const padded = v * 1.14;
+    const exp = Math.pow(10, Math.floor(Math.log10(padded)));
+    const f = padded / exp;
+    const nice = f <= 1 ? 1 : f <= 1.5 ? 1.5 : f <= 2 ? 2 : f <= 3 ? 3 : f <= 5 ? 5 : 10;
+    return nice * exp;
+  }
+
   function truncate(s, n) {
     const t = String(s || "");
     return t.length > n ? t.slice(0, n - 1) + "…" : t;
@@ -880,6 +959,7 @@
     startMeterDitherLoop,
     stopMeterDitherLoop,
     formatCompact,
+    niceScaleMax,
     seedOf,
   };
 

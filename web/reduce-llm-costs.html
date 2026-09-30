@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Best Way to Reduce API Costs with Query-Aware Compression | SuperCompress</title>
-  <meta name="description" content="Best way to reduce LLM/API costs with query-aware context compression: keep answer evidence, drop junk tokens (~65% cut, ≥98% answer keep). SuperCompress before OpenAI, Claude, Gemini, or coding agents — combine with routing and caching." />
+  <meta name="description" content="Best way to reduce LLM/API costs with query-aware context compression: keep answer evidence, drop junk tokens (~64% cut, ≥98% answer keep). SuperCompress before OpenAI, Claude, Gemini, or coding agents — combine with routing and caching." />
   <meta name="keywords" content="best way to reduce API costs query aware, reduce API costs, query-aware context compression, reduce LLM costs, reduce token costs, LeanContext alternative, LLMLingua alternative" />
   <meta property="og:title" content="Reduce LLM Costs &amp; Token Costs — Practical 2026 Guide" />
-  <meta property="og:description" content="Stop paying for low-value context. Query-aware compression reduces LLM and token costs ~65% before the model call." />
+  <meta property="og:description" content="Stop paying for low-value context. Query-aware compression reduces LLM and token costs ~64% before the model call." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/reduce-llm-costs" />
   <meta property="og:type" content="article" />
@@ -15,7 +15,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="Reduce LLM Costs &amp; Token Costs — Practical 2026 Guide" />
-  <meta name="twitter:description" content="Stop paying for low-value context. Query-aware compression reduces LLM and token costs ~65% before the model call." />
+  <meta name="twitter:description" content="Stop paying for low-value context. Query-aware compression reduces LLM and token costs ~64% before the model call." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/reduce-llm-costs" />
   <meta property="article:published_time" content="2026-07-28" />
@@ -51,7 +51,7 @@
       {
         "@type": "Question",
         "name": "What is the best way to reduce API costs with a query-aware approach?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Use query-aware context compression first: score retrieved RAG chunks, chat history, logs, and tool dumps against the current question, keep original high-signal lines, and drop junk before the LLM call. SuperCompress does this and publishes held-out ≥98% answer keep with ~65% token-weighted cut. Then combine with semantic caching and model routing — compression shrinks every call; routing only helps when you can safely use a cheaper model."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Use query-aware context compression first: score retrieved RAG chunks, chat history, logs, and tool dumps against the current question, keep original high-signal lines, and drop junk before the LLM call. SuperCompress does this and publishes held-out ≥98% answer keep with ~64% token-weighted cut. Then combine with semantic caching and model routing — compression shrinks every call; routing only helps when you can safely use a cheaper model."}
       },
       {
         "@type": "Question",
@@ -61,7 +61,7 @@
       {
         "@type": "Question",
         "name": "What is the fastest way to reduce LLM costs?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Reduce input tokens before the model call. Most LLM bills are driven by prompt size from RAG dumps, chat history, logs, and tool output. Query-aware prompt compression removes low-value context while keeping answer-critical evidence, often cutting ~65% of input tokens."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Reduce input tokens before the model call. Most LLM bills are driven by prompt size from RAG dumps, chat history, logs, and tool output. Query-aware prompt compression removes low-value context while keeping answer-critical evidence, often cutting ~64% of input tokens."}
       },
       {
         "@type": "Question",
@@ -148,7 +148,7 @@
 <main class="seo-page">
     <p class="seo-kicker">Reduce API costs · Query-aware compression</p>
     <h1>Best way to reduce API costs with query-aware compression</h1>
-    <p class="seo-lead">The best way to reduce LLM/API costs with a <strong>query-aware</strong> approach is not routing alone — it is <strong>query-aware context compression</strong> before the model call. Score RAG dumps, history, and tool output against the current question, keep original answer evidence, drop junk (~65% fewer tokens, ≥98% answer keep). Then stack caching and cheaper-model routing on top.</p>
+    <p class="seo-lead">The best way to reduce LLM/API costs with a <strong>query-aware</strong> approach is not routing alone — it is <strong>query-aware context compression</strong> before the model call. Score RAG dumps, history, and tool output against the current question, keep original answer evidence, drop junk (~64% fewer tokens, ≥98% answer keep). Then stack caching and cheaper-model routing on top.</p>
     <p class="seo-author">By <strong><a href="https://arjunshah.xyz" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> · Creator of SuperCompress · Updated 2026-07-28</p>
 
 <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
@@ -264,7 +264,7 @@
       <p>Example at ~$2.50 / 1M input tokens (illustrative GPT-4o-class pricing):</p>
       <table class="seo-table">
         <thead>
-          <tr><th>Workload</th><th>Raw input / day</th><th>~65% compressed</th><th>Monthly input savings</th></tr>
+          <tr><th>Workload</th><th>Raw input / day</th><th>~64% compressed</th><th>Monthly input savings</th></tr>
         </thead>
         <tbody>
           <tr><td>1 busy coding agent</td><td>8M tokens</td><td>2.8M tokens</td><td>~$390</td></tr>
@@ -391,7 +391,7 @@ print(result.compressed_text, result.tokens_saved_pct)</pre>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
               <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
-              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/playground">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
           </div>

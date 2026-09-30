@@ -6,7 +6,7 @@
 
 const POWER_USER_TOKENS = 1_000_000;
 const POWER_MAIL_CLAIM = "sc_power_mail";
-const DRAIN_AUTH_CAP = 40;
+const DRAIN_AUTH_CAP = 200;
 
 function firstNameFromUser(user = {}) {
   const raw = user.displayName || user.name || "";
@@ -119,7 +119,33 @@ function isDrainablePowerUser(rec) {
 async function deliverPowerUser(rec) {
   const { sendPowerUserEmail } = require("./mail");
   const uid = rec.uid;
-  const idempotencyKey = rec.idempotency_key || powerUserIdempotencyKey(uid);
+
+  // Claim already stamped ⇒ treat store row as sent (avoid Resend body-mismatch loops).
+  try {
+    const { initFirebaseAdmin } = require("./auth");
+    const admin = require("firebase-admin");
+    if (initFirebaseAdmin()) {
+      const user = await admin.auth().getUser(uid);
+      if (powerMailAlreadySent(user.customClaims || {})) {
+        await markPowerUser(uid, {
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          error: null,
+          note: "claim_already_sent",
+        });
+        return { ok: true, already: true };
+      }
+    }
+  } catch (_) {
+    /* continue to send */
+  }
+
+  let idempotencyKey = rec.idempotency_key || powerUserIdempotencyKey(uid);
+  // Resend rejects reused keys when the body changes (copy updates). Rotate once.
+  if (/idempotency key has been used/i.test(String(rec.error || ""))) {
+    idempotencyKey = `${powerUserIdempotencyKey(uid)}-v2`;
+  }
+
   await markPowerUser(uid, {
     status: "sending",
     send_attempt_at: new Date().toISOString(),
@@ -159,6 +185,7 @@ async function deliverPowerUser(rec) {
     status: "pending",
     error: result.error || "send_failed",
     failed_at: new Date().toISOString(),
+    idempotency_key: idempotencyKey,
   });
   return { ok: false, error: result.error || "send_failed" };
 }
@@ -255,7 +282,12 @@ async function drainAuthPowerUsers({ cap = DRAIN_AUTH_CAP } = {}) {
         skipped += 1;
         continue;
       }
-      const tin = Number(claims.sc_usage?.tokens_in || 0);
+      const usage = claims.sc_usage || {};
+      // Monthly tokens OR retained life_in (when claims budget still keeps it).
+      const tin = Math.max(
+        Number(usage.tokens_in || 0) || 0,
+        Number(usage.life_in || 0) || 0,
+      );
       if (tin < POWER_USER_TOKENS) continue;
       scanned += 1;
       const result = await maybeNotifyPowerUser({
@@ -264,8 +296,11 @@ async function drainAuthPowerUsers({ cap = DRAIN_AUTH_CAP } = {}) {
         displayName: user.displayName || "",
         prevTokens: tin,
         nextTokens: tin,
-        tokensSaved: claims.sc_usage?.tokens_saved,
-        requests: claims.sc_usage?.requests,
+        tokensSaved: Math.max(
+          Number(usage.tokens_saved || 0) || 0,
+          Number(usage.life_saved || 0) || 0,
+        ),
+        requests: usage.requests,
         source: "drain",
         claims,
       });

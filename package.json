@@ -5,6 +5,18 @@
   "scripts": {
     "deploy:prod": "bash scripts/deploy-prod.sh",
     "launch:check": "bash scripts/hard-launch-check.sh",
+    "launch:readiness": "bash scripts/launch-readiness.sh",
+    "launch:bench": "bash scripts/gtm_bench/run_launch_hour.sh",
+    "launch:bench-fast": "bash scripts/gtm_bench/run_fast_finish.sh",
+    "launch:bench-watch": "bash scripts/gtm_bench/watch_bench.sh",
+    "launch:bench-sla": "bash scripts/launch/benchmark-sla.sh",
+    "launch:t0": "bash scripts/launch/t0.sh",
+    "launch:morning-t0": "bash scripts/launch/morning-t0.sh",
+    "launch:post-deploy": "bash scripts/launch/post-deploy-smoke.sh",
+    "launch:neural-fly": "bash scripts/launch/neural-fly-go-live.sh --full",
+    "launch:graphics": "bash scripts/launch/render-graphics.sh",
+    "launch:pricing-30c": "bash scripts/launch/apply-pricing-30c.sh",
+    "launch:recording": "bash scripts/launch/open-recording-tabs.sh",
     "prod:smoke": "bash scripts/prod-smoke.sh",
     "prod:domains": "bash scripts/ensure-prod-domains.sh",
     "check:api-host": "node scripts/check-api-host-routes.js",
@@ -19,6 +31,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "firebase-admin": "^13.10.0",
+    "playwright": "^1.62.1",
     "stripe": "^22.3.0",
     "supercompress-proxy": "^0.5.23"
   },

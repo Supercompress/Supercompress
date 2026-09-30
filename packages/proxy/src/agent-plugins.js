@@ -48,9 +48,16 @@ function commandExists(cmd) {
   }
 }
 
-function resolveMcpLaunch() {
-  // GUI agent hosts often lack npm global bins — use PATH `node` + this package mcp.js.
-  // Avoid Cellar-pinned process.execPath so brew Node upgrades don't force reconnect.
+function resolveMcpLaunch(opts = {}) {
+  // Prefer global shim when available (clean one-arg MCP entry). Fall back to
+  // PATH `node` + this package's mcp.js for GUI hosts without npm global bins.
+  if (opts.preferShim !== false && commandExists("supercompress-mcp")) {
+    try {
+      const bin = execFileSync("which", ["supercompress-mcp"], { encoding: "utf8" }).trim();
+      if (bin) return { command: bin, args: [] };
+    } catch {}
+    return { command: "supercompress-mcp", args: [] };
+  }
   const nodeBin = commandExists("node") ? "node" : process.execPath;
   return { command: nodeBin, args: [MCP_SERVER_PATH] };
 }

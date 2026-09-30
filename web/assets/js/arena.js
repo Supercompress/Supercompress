@@ -10,6 +10,87 @@
   const MONTHLY_TURNS = 10000;
 
   const $ = (id) => document.getElementById(id);
+  const DK = () => window.DitherKitLite;
+
+  const PROOF_WASHES = [
+    ["arena-wash-cut", { color: "brand", intensity: 0.88 }],
+    ["arena-wash-pass", { color: "brand", intensity: 0.62 }],
+    ["arena-wash-max", { color: "sky", intensity: 0.58 }],
+  ];
+
+  function paintWash(el, opts) {
+    const kit = DK();
+    if (!el || !kit?.renderDitherWash) return;
+    kit.renderDitherWash(el, opts);
+    if (typeof kit.startDitherWashLoop === "function") {
+      kit.startDitherWashLoop(el, opts);
+    }
+  }
+
+  function paintProofWashes() {
+    for (const [id, opts] of PROOF_WASHES) {
+      paintWash($(id), opts);
+    }
+    paintWash($("arena-hero-wash"), { color: "brand", intensity: 0.45 });
+  }
+
+  function paintRunKpis(sc) {
+    const host = $("arena-run-kpis");
+    if (!host || !sc) return;
+    const cut = sc.removed_pct != null ? `${sc.removed_pct}%` : "—";
+    const retained = sc.answer_retained ? "Pass" : "Fail";
+    const quality = `${Math.round((sc.answer_quality || 0) * 100)}%`;
+    const latency = sc.latency_ms != null ? `${sc.latency_ms}ms` : "—";
+    host.innerHTML = `
+      <article class="arena-run-kpi arena-run-kpi--cut">
+        <div class="arena-kpi-wash" data-arena-wash="cut" aria-hidden="true"></div>
+        <div class="arena-kpi-body">
+          <span class="arena-run-kpi-l">Cut</span>
+          <strong class="arena-run-kpi-n">${escapeHtml(cut)}</strong>
+          <span class="arena-run-kpi-s">${Number(sc.tokens_in || 0).toLocaleString()} → ${Number(sc.tokens_out || 0).toLocaleString()} tokens</span>
+        </div>
+      </article>
+      <article class="arena-run-kpi">
+        <div class="arena-kpi-wash" data-arena-wash="ret" aria-hidden="true"></div>
+        <div class="arena-kpi-body">
+          <span class="arena-run-kpi-l">Retention</span>
+          <strong class="arena-run-kpi-n">${escapeHtml(retained)}</strong>
+          <span class="arena-run-kpi-s">answer quality ${escapeHtml(quality)}</span>
+        </div>
+      </article>
+      <article class="arena-run-kpi">
+        <div class="arena-kpi-wash" data-arena-wash="lat" aria-hidden="true"></div>
+        <div class="arena-kpi-body">
+          <span class="arena-run-kpi-l">Latency</span>
+          <strong class="arena-run-kpi-n">${escapeHtml(latency)}</strong>
+          <span class="arena-run-kpi-s">this run</span>
+        </div>
+      </article>
+      <article class="arena-run-kpi">
+        <div class="arena-kpi-wash" data-arena-wash="cost" aria-hidden="true"></div>
+        <div class="arena-kpi-body">
+          <span class="arena-run-kpi-l">Cost / success</span>
+          <strong class="arena-run-kpi-n">${escapeHtml(fmtUsd(sc.cost_per_success_usd))}</strong>
+          <span class="arena-run-kpi-s">illustrative @ $${PRICE}/M</span>
+        </div>
+      </article>`;
+    host.hidden = false;
+    const washOpts = {
+      cut: { color: "brand", intensity: 0.88 },
+      ret: { color: "brand", intensity: 0.62 },
+      lat: { color: "sky", intensity: 0.55 },
+      cost: { color: "sky", intensity: 0.5 },
+    };
+    host.querySelectorAll("[data-arena-wash]").forEach((el) => {
+      paintWash(el, washOpts[el.getAttribute("data-arena-wash")] || washOpts.cut);
+    });
+
+    const well = $("arena-chart-well");
+    if (well && DK()?.renderDitherWash) {
+      well.hidden = false;
+      paintWash(well, { color: "brand", intensity: 0.35 });
+    }
+  }
 
   const PRESETS = {
     coding: {
@@ -128,7 +209,7 @@
     const user = loadBreaks();
     const rows = [...user, ...SEED_BREAKS];
     if (!rows.length) {
-      el.innerHTML = `<li><span class="meta">No breaks yet. Be the first.</span></li>`;
+      el.innerHTML = `<li><span class="meta">No comparisons yet.</span></li>`;
       return;
     }
     el.innerHTML = rows
@@ -185,7 +266,7 @@
     const cta = $("arena-cta-band");
     if (!box) return;
     const sc = data.supercompress;
-    const hr = data.headroom;
+    const hr = (data.comparators && data.comparators.headroom) || data.headroom;
     const hrOk = hr && hr.status !== "unavailable";
 
     let html = `<h3 class="arena-insights-title">What this run means</h3><div class="arena-insights-grid">`;
@@ -196,44 +277,64 @@
         : null;
 
     html += `<article class="arena-insight-card">
-      <p class="arena-insight-kicker">Your prompt</p>
-      <p class="arena-insight-val">${sc.tokens_in.toLocaleString()} → ${sc.tokens_out.toLocaleString()}</p>
-      <p class="arena-insight-desc">SuperCompress removed <strong>${sc.removed_pct}%</strong> while answer retention is ${sc.answer_retained ? "✅" : "❌"}.</p>
+      <div class="arena-kpi-wash" data-arena-wash="i0" aria-hidden="true"></div>
+      <div class="arena-kpi-body">
+        <p class="arena-insight-kicker">Your prompt</p>
+        <p class="arena-insight-val">${sc.tokens_in.toLocaleString()} → ${sc.tokens_out.toLocaleString()}</p>
+        <p class="arena-insight-desc">SuperCompress removed <strong>${sc.removed_pct}%</strong> while answer retention is ${sc.answer_retained ? "✅" : "❌"}.</p>
+      </div>
     </article>`;
 
     if (hrOk) {
       html += `<article class="arena-insight-card">
-        <p class="arena-insight-kicker">vs Headroom</p>
-        <p class="arena-insight-val">${savedVsHr != null ? `${Math.round(savedVsHr * 100)}% fewer` : "—"} tokens after</p>
-        <p class="arena-insight-desc">Headroom: ${hr.tokens_in.toLocaleString()} → ${hr.tokens_out.toLocaleString()} (−${hr.removed_pct}%). Cost/success: ${fmtUsd(sc.cost_per_success_usd)} vs ${fmtUsd(hr.cost_per_success_usd)}.</p>
+        <div class="arena-kpi-wash" data-arena-wash="i1" aria-hidden="true"></div>
+        <div class="arena-kpi-body">
+          <p class="arena-insight-kicker">vs Headroom</p>
+          <p class="arena-insight-val">${savedVsHr != null ? `${Math.round(savedVsHr * 100)}% fewer` : "—"} tokens after</p>
+          <p class="arena-insight-desc">Headroom: ${hr.tokens_in.toLocaleString()} → ${hr.tokens_out.toLocaleString()} (−${hr.removed_pct}%). Cost/success: ${fmtUsd(sc.cost_per_success_usd)} vs ${fmtUsd(hr.cost_per_success_usd)}.</p>
+        </div>
       </article>`;
 
       const mo = monthlySavings(sc.tokens_in, hr.tokens_out, sc.tokens_out);
       if (mo != null && mo > 0.01) {
         html += `<article class="arena-insight-card highlight">
-          <p class="arena-insight-kicker">Projected @ ${MONTHLY_TURNS.toLocaleString()} turns/mo</p>
-          <p class="arena-insight-val">~$${mo.toFixed(0)}/mo</p>
-          <p class="arena-insight-desc">Illustrative input savings vs Headroom at $${PRICE}/M tokens (same retention).</p>
+          <div class="arena-kpi-wash" data-arena-wash="i2" aria-hidden="true"></div>
+          <div class="arena-kpi-body">
+            <p class="arena-insight-kicker">Projected @ ${MONTHLY_TURNS.toLocaleString()} turns/mo</p>
+            <p class="arena-insight-val">~$${mo.toFixed(0)}/mo</p>
+            <p class="arena-insight-desc">Illustrative input savings vs Headroom at $${PRICE}/M tokens (same retention).</p>
+          </div>
         </article>`;
       }
     } else {
       html += `<article class="arena-insight-card">
-        <p class="arena-insight-kicker">Headroom column</p>
-        <p class="arena-insight-val">Unavailable</p>
-        <p class="arena-insight-desc">${escapeHtml(hr.hint || hr.error || "Run via hosted API for apples-to-apples.")}</p>
+        <div class="arena-kpi-wash" data-arena-wash="i1" aria-hidden="true"></div>
+        <div class="arena-kpi-body">
+          <p class="arena-insight-kicker">Headroom column</p>
+          <p class="arena-insight-val">Unavailable</p>
+          <p class="arena-insight-desc">${escapeHtml(hr.hint || hr.error || "Run via hosted API for apples-to-apples.")}</p>
+        </div>
       </article>`;
     }
 
     html += `</div>`;
     box.innerHTML = html;
     box.hidden = false;
+    const insightWash = {
+      i0: { color: "brand", intensity: 0.75 },
+      i1: { color: "sky", intensity: 0.55 },
+      i2: { color: "brand", intensity: 0.68 },
+    };
+    box.querySelectorAll("[data-arena-wash]").forEach((el) => {
+      paintWash(el, insightWash[el.getAttribute("data-arena-wash")] || insightWash.i0);
+    });
 
     if (cta) {
       const blurb = $("arena-cta-blurb");
       if (blurb) {
         if (data.broke_supercompress) {
           blurb.textContent =
-            "Headroom won this round — fair. Try SuperCompress on your production agent loop anyway; MCP hooks compress before every model call.";
+            "Headroom won this round on this prompt — try SuperCompress in your agent loop anyway; MCP hooks compress before every model call.";
         } else if (savedVsHr != null && savedVsHr > 0.2) {
           blurb.textContent = `You just cut ${Math.round(savedVsHr * 100)}% more input than Headroom on the same question. Wire that into Cursor or your API pipeline.`;
         } else {
@@ -269,80 +370,120 @@
     return win ? "win" : "lose";
   }
 
+  function comparatorSides(data) {
+    // Ordered [id, side] pairs. New API: data.comparators. Legacy: data.headroom only.
+    if (data.comparators && typeof data.comparators === "object") {
+      return Object.entries(data.comparators);
+    }
+    if (data.headroom) return [["headroom", data.headroom]];
+    return [];
+  }
+
+  function sideOk(side) {
+    return side && side.status !== "unavailable";
+  }
+
+  function metricRows(sc, sides) {
+    // Each row: [label, formatter, comparator(mine, best) → higherIsBetter | null]
+    return [
+      ["Original tokens", (s) => s.tokens_in, null],
+      ["Tokens after", (s) => s.tokens_out, null],
+      ["Removed", (s) => `${s.removed_pct}%`, "removed_pct:high"],
+      ["Answer retained", (s) => (s.answer_retained ? "✅" : "❌"), "answer_retained"],
+      ["Answer quality", (s) => `${Math.round((s.answer_quality || 0) * 100)}%`, "answer_quality:high"],
+      ["Latency", (s) => `${s.latency_ms}ms`, "latency_ms:low"],
+      ["Cost / successful task", (s) => fmtUsd(s.cost_per_success_usd), "cost_per_success_usd:low"],
+    ];
+  }
+
+  function cellClassFor(rule, side, allSides) {
+    if (!rule || !sideOk(side)) return "";
+    if (rule === "answer_retained") return side.answer_retained ? "win" : "lose";
+    const [key, dir] = rule.split(":");
+    const mine = side[key];
+    if (mine == null) return "";
+    const others = allSides.filter((s) => s !== side && sideOk(s) && s[key] != null).map((s) => s[key]);
+    if (!others.length) return "";
+    const higher = dir === "high";
+    const bestOther = higher ? Math.max(...others) : Math.min(...others);
+    if (mine === bestOther) return "";
+    const win = higher ? mine > bestOther : mine < bestOther;
+    return win ? "win" : "lose";
+  }
+
   function renderResults(data) {
     const box = $("arena-results");
     box.classList.add("is-open");
     const sc = data.supercompress;
-    const hr = data.headroom;
-    const hrOk = hr && hr.status !== "unavailable";
+    const pairs = comparatorSides(data);
+    const hr = data.comparators?.headroom || data.headroom;
+    const hrOk = sideOk(hr);
 
-    const rows = [
-      ["Original tokens", sc.tokens_in, hrOk ? hr.tokens_in : "—", false],
-      ["Tokens after", sc.tokens_out, hrOk ? hr.tokens_out : "—", false],
-      ["Removed", `${sc.removed_pct}%`, hrOk ? `${hr.removed_pct}%` : "—", true],
-      ["Answer retained", sc.answer_retained ? "✅" : "❌", hrOk ? (hr.answer_retained ? "✅" : "❌") : "—", null],
-      ["Answer quality", `${Math.round((sc.answer_quality || 0) * 100)}%`, hrOk ? `${Math.round((hr.answer_quality || 0) * 100)}%` : "—", true],
-      ["Latency", `${sc.latency_ms}ms`, hrOk ? `${hr.latency_ms}ms` : "—", false],
-      ["Cost / successful task", fmtUsd(sc.cost_per_success_usd), hrOk ? fmtUsd(hr.cost_per_success_usd) : "—", false],
-    ];
+    const columns = [["supercompress", sc], ...pairs];
+    const allSides = columns.map(([, s]) => s);
+    const board = $("arena-scoreboard");
+    board.style.setProperty(
+      "--arena-board-cols",
+      `1.15fr ${columns.map(() => "1fr").join(" ")}`
+    );
 
-    $("arena-scoreboard").innerHTML = `
-      <div class="col-metric">Metric</div>
-      <div class="col-head sc">SuperCompress</div>
-      <div class="col-head">Headroom</div>
-      ${rows
-        .map(([label, a, b, higher]) => {
-          let ca = "";
-          let cb = "";
-          if (typeof a === "number" && typeof b === "number" && higher != null) {
-            ca = cellClass(a, b, higher);
-            cb = cellClass(b, a, higher);
-          }
-          if (label === "Answer retained") {
-            ca = String(a).includes("✅") ? "win" : String(a).includes("❌") ? "lose" : "";
-            cb = String(b).includes("✅") ? "win" : String(b).includes("❌") ? "lose" : "";
-          }
-          if (label === "Cost / successful task" && hrOk && sc.cost_per_success_usd != null && hr.cost_per_success_usd != null) {
-            ca = cellClass(sc.cost_per_success_usd, hr.cost_per_success_usd, false);
-            cb = cellClass(hr.cost_per_success_usd, sc.cost_per_success_usd, false);
-          }
-          if (label === "Latency" && hrOk) {
-            ca = cellClass(sc.latency_ms, hr.latency_ms, false);
-            cb = cellClass(hr.latency_ms, sc.latency_ms, false);
-          }
-          if (label === "Removed" && hrOk) {
-            ca = cellClass(sc.removed_pct, hr.removed_pct, true);
-            cb = cellClass(hr.removed_pct, sc.removed_pct, true);
-          }
-          return `<div class="cell muted">${escapeHtml(label)}</div>
-            <div class="cell ${ca}">${escapeHtml(String(a))}</div>
-            <div class="cell ${cb}">${escapeHtml(String(b))}</div>`;
-        })
-        .join("")}
-    `;
+    const heads = columns
+      .map(([id, side]) => {
+        const label = id === "supercompress" ? "SuperCompress" : side.name || id;
+        return `<div class="col-head ${id === "supercompress" ? "sc" : ""}">${escapeHtml(label)}</div>`;
+      })
+      .join("");
+
+    const bodyRows = metricRows(sc, allSides)
+      .map(([label, fmt, rule]) => {
+        const cells = columns
+          .map(([, side]) => {
+            if (!sideOk(side)) return `<div class="cell muted">—</div>`;
+            const cls = cellClassFor(rule, side, allSides);
+            return `<div class="cell ${cls}">${escapeHtml(String(fmt(side)))}</div>`;
+          })
+          .join("");
+        return `<div class="cell muted">${escapeHtml(label)}</div>${cells}`;
+      })
+      .join("");
+
+    board.innerHTML = `<div class="col-metric">Metric</div>${heads}${bodyRows}`;
 
     const win = data.winner || {};
     const banner = $("arena-winner");
     banner.classList.remove("is-break", "is-win");
-    if (!hrOk) {
-      banner.innerHTML = `<strong>SuperCompress ran.</strong> Headroom unavailable (${escapeHtml(hr.error || "not installed")}). ${escapeHtml(hr.hint || "")}`;
+    const anyComparatorOk = pairs.some(([, s]) => sideOk(s));
+    if (!anyComparatorOk) {
+      const firstErr = pairs.length ? pairs[0][1] : null;
+      banner.innerHTML = `<strong>SuperCompress ran.</strong> Comparators unavailable on this host${firstErr && firstErr.hint ? ` — ${escapeHtml(firstErr.hint)}` : "."}`;
     } else if (data.broke_supercompress) {
       banner.classList.add("is-break");
-      banner.innerHTML = `<strong>You broke SuperCompress.</strong> Headroom wins on <code>${escapeHtml(win.reason || "cost/answer")}</code>. Share it — that is the point.`;
+      banner.innerHTML = `<strong>${escapeHtml(win.system || "A comparator")} wins this round</strong> on <code>${escapeHtml(win.reason || "cost/answer")}</code>. Share the comparison if you want.`;
       $("arena-break-btn").disabled = false;
     } else if (win.system === "SuperCompress") {
       banner.classList.add("is-win");
-      banner.innerHTML = `<strong>SuperCompress wins</strong> on <code>${escapeHtml(win.reason || "cost_per_success")}</code>. Don't trust this — try a nastier prompt.`;
+      banner.innerHTML = `<strong>SuperCompress wins</strong> on <code>${escapeHtml(win.reason || "cost_per_success")}</code>. Try another workload preset or paste your own dump.`;
       $("arena-break-btn").disabled = true;
     } else {
       banner.innerHTML = `<strong>Too close to call</strong> (${escapeHtml(win.reason || "tie")}). Push a harder case.`;
       $("arena-break-btn").disabled = false;
     }
 
-    $("arena-preview-sc").textContent = sc.compressed_preview || "";
-    $("arena-preview-hr").textContent = hrOk ? hr.compressed_preview || "" : hr.hint || hr.error || "Headroom unavailable";
+    const previews = $("arena-previews");
+    if (previews) {
+      previews.innerHTML = columns
+        .map(([id, side]) => {
+          const label = id === "supercompress" ? "SuperCompress output" : `${side.name || id} output`;
+          const content = sideOk(side)
+            ? side.compressed_preview || ""
+            : side.hint || side.error || "Unavailable on this host";
+          return `<div class="arena-preview"><h3>${escapeHtml(label)}</h3><pre>${escapeHtml(content)}</pre></div>`;
+        })
+        .join("");
+    }
 
     renderEngineBadge(data);
+    paintRunKpis(sc);
     renderInsights(data);
 
     window.__arenaLast = data;
@@ -397,6 +538,13 @@
     };
   }
 
+  function selectedComparators() {
+    const active = [...document.querySelectorAll(".arena-comparators button.is-active")]
+      .map((b) => b.dataset.comparator)
+      .filter(Boolean);
+    return active.length ? active : ["headroom", "rtk", "truncation"];
+  }
+
   async function runArena() {
     const context = ($("arena-context").value || "").trim();
     const query = ($("arena-query").value || "").trim();
@@ -410,32 +558,56 @@
       status.textContent = "Add a question — compression is query-aware.";
       return;
     }
+    if (btn.disabled) return;
     btn.disabled = true;
-    status.textContent = "Running SuperCompress vs Headroom…";
+    btn.classList.add("is-loading");
+    const results = $("arena-results");
+    if (results) results.classList.add("is-running");
+    status.textContent = "Running SuperCompress vs the field…";
     try {
       let data;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90000);
       try {
         const res = await fetch(API, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ context, query }),
+          body: JSON.stringify({ context, query, compare: selectedComparators() }),
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
         const body = await res.json().catch(() => ({}));
+        if (res.status === 429) {
+          throw new Error(body.detail || "Rate limit — wait a minute and retry.");
+        }
         if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
         data = body;
       } catch (err) {
-        status.textContent = `API offline (${err.message}). Running SuperCompress locally…`;
+        clearTimeout(timeout);
+        const offline =
+          err.name === "AbortError"
+            ? "Request timed out (90s)"
+            : err.message || "network error";
+        status.textContent = `API offline (${offline}). Running SuperCompress locally…`;
         data = await runClientFallback(context, query);
       }
+      if (!data || !data.supercompress) {
+        throw new Error("Invalid arena response — try again.");
+      }
       renderResults(data);
-      status.textContent =
-        data.headroom && data.headroom.status === "unavailable"
-          ? "Done — Headroom column unavailable on this host."
-          : "Done. Killer metric: cost per successful task.";
+      const unavailable = comparatorSides(data)
+        .filter(([, s]) => !sideOk(s))
+        .map(([, s]) => s.name)
+        .filter(Boolean);
+      status.textContent = unavailable.length
+        ? `Done — unavailable on this host: ${unavailable.join(", ")}.`
+        : "Done. Killer metric: cost per successful task.";
     } catch (err) {
       status.textContent = err.message || "Run failed";
     } finally {
       btn.disabled = false;
+      btn.classList.remove("is-loading");
+      if (results) results.classList.remove("is-running");
     }
   }
 
@@ -463,7 +635,7 @@
 
     ctx.fillStyle = "#0566ff";
     ctx.font = "600 28px Geist, sans-serif";
-    ctx.fillText(broke ? "I BROKE SUPERCOMPRESS" : "MY CONTEXT COMPRESSION TEST", 72, 120);
+    ctx.fillText(broke ? "HEADROOM WON THIS ROUND" : "COMPRESSION ARENA RESULT", 72, 120);
 
     ctx.fillStyle = "#141412";
     ctx.font = "500 64px Platypi, Georgia, serif";
@@ -507,14 +679,21 @@
 
     ctx.fillStyle = "#5c5c56";
     ctx.font = "400 22px Geist, sans-serif";
-    ctx.fillText("Don't trust our benchmark. Break it.", 72, 1030);
+    ctx.fillText("SuperCompress", 72, 1030);
 
     $("arena-card-wrap").classList.add("is-open");
     return canvas;
   }
 
   function downloadCard() {
+    const data = window.__arenaLast;
+    if (!data) {
+      $("arena-status").textContent = "Run the arena first to generate a share card.";
+      return;
+    }
+    drawShareCard(data, data.broke_supercompress ? "break" : "share");
     const canvas = $("arena-share-canvas");
+    if (!canvas) return;
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
     a.download = "supercompress-arena.png";
@@ -524,8 +703,8 @@
   function tweetIntent(data, broke) {
     const sc = data.supercompress;
     const text = broke
-      ? `I broke SuperCompress.\n\n${sc.tokens_in} → ${sc.tokens_out} tokens (−${sc.removed_pct}%)\nHeadroom won this round.\n\nArena: try to break it →`
-      : `My context compression test\n\n${sc.tokens_in} → ${sc.tokens_out} tokens\n${sc.removed_pct}% smaller · answer retained ${sc.answer_retained ? "✅" : "❌"}\nSuperCompress vs Headroom\n\nBreak it →`;
+      ? `Compression Arena — Headroom won this round\n\n${sc.tokens_in} → ${sc.tokens_out} tokens (−${sc.removed_pct}%)\n\nCompare your own context →`
+      : `Compression Arena result\n\n${sc.tokens_in} → ${sc.tokens_out} tokens\n${sc.removed_pct}% smaller · answer retained ${sc.answer_retained ? "✅" : "❌"}\nSuperCompress\n\nTry the arena →`;
     const url = "https://www.supercompress.dev/arena";
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
@@ -553,7 +732,7 @@
     const data = window.__arenaLast;
     if (!data) return;
     const sc = data.supercompress;
-    const hr = data.headroom || {};
+    const hr = (data.comparators && data.comparators.headroom) || data.headroom || {};
     saveBreak({
       id: `break-${Date.now()}`,
       query: data.query,
@@ -568,7 +747,7 @@
     renderBoard();
     drawShareCard(data, "break");
     tweetIntent(data, true);
-    $("arena-status").textContent = "Logged to the break board. Share the loss — it makes the wins believable.";
+    $("arena-status").textContent = "Saved to community comparisons.";
   }
 
   function init() {
@@ -578,12 +757,26 @@
       banner.classList.remove("is-hidden");
     }
 
+    paintProofWashes();
+    // Re-paint after fonts/layout settle so washes fill the card bounds.
+    requestAnimationFrame(() => paintProofWashes());
+    window.addEventListener("resize", () => paintProofWashes(), { passive: true });
+
     renderBoard();
     document.querySelectorAll(".arena-presets button").forEach((btn) => {
       btn.addEventListener("click", () => setPreset(btn.dataset.preset));
     });
     $("arena-context").addEventListener("input", updateContextStats);
-    setPreset("incident");
+    $("arena-context").addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runArena();
+    });
+    $("arena-query").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") runArena();
+    });
+    setPreset("coding");
+    document.querySelectorAll(".arena-comparators button").forEach((btn) => {
+      btn.addEventListener("click", () => btn.classList.toggle("is-active"));
+    });
     $("arena-run").addEventListener("click", runArena);
     $("arena-share-btn").addEventListener("click", onShare);
     $("arena-copy-btn").addEventListener("click", onCopyJson);

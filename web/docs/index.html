@@ -6,7 +6,7 @@
   <title>SuperCompress Documentation — Prompt Compression for LLMs</title>
   <meta name="description" content="Comprehensive documentation for SuperCompress: quickstart, API reference, integration guides, deployment options, and architecture deep-dive." />
   <meta property="og:title" content="SuperCompress Documentation" />
-  <meta property="og:description" content="Learn how to use SuperCompress to reduce LLM token costs by ~65% while preserving answer-critical evidence." />
+  <meta property="og:description" content="Learn how to use SuperCompress to reduce LLM token costs by ~64% while preserving answer-critical evidence." />
   <meta property="og:url" content="https://docs.supercompress.dev" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:type" content="website" />
@@ -98,7 +98,7 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">SuperCompress documentation</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Everything you need to reduce LLM token costs with query-aware context compression. Open source (MIT), runs on CPU, a learned query-aware neural policy, no GPU required.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">v2 is a 400M-parameter engine that keeps the context that answers the query and cuts the rest. Open source (MIT). API, and an agent plugin for 40+ harnesses.</p>
 
         <div class="doc-card-grid">
           <a href="https://docs.supercompress.dev/quickstart" class="doc-card">
@@ -144,8 +144,8 @@
         </div>
 
         <h2>What is SuperCompress?</h2>
-        <p>SuperCompress is a <strong>query-aware context compiler</strong> for LLM inference. It sits between your application and the language model, preprocessing the prompt to remove tokens that aren't relevant to the current user question. This reduces input token counts by ~65% on average, cutting API costs and latency while preserving the evidence the model needs to answer correctly.</p>
-        <p>Unlike truncation (which blindly drops the tail) or summarization (which rewrites content and risks losing detail), SuperCompress <strong>scores every segment of the prompt</strong> against the user's actual question and keeps only what matters for that query.</p>
+        <p>SuperCompress v2 is a <strong>400M-parameter, query-aware context engine</strong> — <strong>Neural Keep is live</strong> on the hosted API. It looks at the full context, keeps what is relevant to answering the query, and cuts the rest. On the coding-agent benchmark it cut context <strong>64.1%</strong> on average, held the required evidence in <strong>24/24</strong> cases, and took one dump from <strong>16,647 tokens to 5,148</strong>. One case reached <strong>96.6%</strong> reduction at ≥99% evidence retention.</p>
+        <p>It is strongest on coding-agent dumps: tool output, logs, diffs, and stack traces. Unlike truncation (which blindly drops the tail) or summarization (which rewrites IDs and errors), SuperCompress <strong>keeps the original lines</strong> that answer the current question. The query itself is never compressed.</p>
 
         <h2>Key facts</h2>
         <table>
@@ -156,13 +156,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>Policy size</td><td><strong>~5,200 parameters</strong></td></tr>
-            <tr><td>Latency</td><td><strong>~60ms</strong> per compression (CPU)</td></tr>
-            <tr><td>Token savings (compiler mode)</td><td><strong>82.5% avg</strong> on bundled presets</td></tr>
-            <tr><td>Oracle recall</td><td><strong>100%</strong> — every answer-critical line preserved (fixed-budget suite)</td></tr>
-            <tr><td>Held-out answers</td><td><strong>≥98%</strong> gold containment · <strong>≥55%</strong> mean cut on real/fresh suites</td></tr>
-            <tr><td>Model download</td><td><strong>None</strong> — weights included in pip package</td></tr>
-            <tr><td>GPU required</td><td><strong>No</strong> — runs on CPU before inference</td></tr>
+            <tr><td>Engine</td><td><strong>~400M Neural Keep</strong> (hosted, live) · query-aware</td></tr>
+            <tr><td>Coding-agent benchmark</td><td><strong>64.1%</strong> mean cut · <strong>24/24</strong> evidence held · <strong>16,647 → 5,148</strong> tokens</td></tr>
+            <tr><td>Best case on that suite</td><td><strong>96.6%</strong> reduction at ≥99% evidence retention</td></tr>
+            <tr><td>Access</td><td><strong>API</strong> and an agent plugin for <strong>40+ harnesses</strong></td></tr>
+            <tr><td>Hosted price</td><td><strong>Launch promo (live):</strong> 5M free tokens/month, then <strong>$0.10 per 1M tokens</strong></td></tr>
             <tr><td>License</td><td><strong>MIT</strong> — free for commercial use</td></tr>
           </tbody>
         </table>
@@ -201,7 +199,7 @@
               <aside class="docs-signup-cta" aria-label="Get started">
           <p class="docs-signup-cta-kicker">Free to start</p>
           <h2>Get your API key</h2>
-          <p>1M free tokens/mo · then $0.30/1M. No credit card.</p>
+          <p>5M free tokens/mo · then $0.10/1M. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
             <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>

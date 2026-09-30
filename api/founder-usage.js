@@ -3,7 +3,7 @@
  */
 const { json } = require("./_lib/http");
 const { verifyUser, initFirebaseAdmin } = require("./_lib/auth");
-const { isFounderEmail } = require("./_lib/founder");
+const { isFounderUser } = require("./_lib/founder");
 const {
   monthKey,
   isHumanUser,
@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
 
   try {
     const user = await verifyUser(req);
-    if (!isFounderEmail(user.email)) {
+    if (!isFounderUser(user)) {
       return json(res, 403, { detail: "Access denied. Founder access only." });
     }
 

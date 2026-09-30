@@ -220,6 +220,25 @@
     </header>
 
     <div class="cl-feed">
+      <article class="cl-entry" id="v2">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v2">v2</a>
+          <span class="cl-date">2026-09-29</span>
+          <span class="cl-badge">launch</span>
+        </div>
+        <div class="cl-body">
+          <h3>SuperCompress v2</h3>
+          <ul>
+            <li><strong>~400M Neural Keep is live</strong> on the hosted compress API — scores context against the query, keeps original lines, cuts the rest.</li>
+            <li>Coding-agent benchmark: <strong>64.1%</strong> mean cut, required evidence in <strong>24/24</strong> cases, <strong>16,647 → 5,148</strong> tokens. One case reached <strong>96.6%</strong> reduction at ≥99% evidence retention.</li>
+            <li>Open source. API, and an agent plugin for 40+ harnesses.</li>
+            <li>Launch promo (live in billing): <strong>5M free tokens/month, then $0.10 per 1M tokens</strong>. No seat plans.</li>
+            <li>Strongest on coding-agent dumps — tool output, logs, diffs, stack traces — where the answer is a few original lines inside a long context.</li>
+          </ul>
+          <p><a href="/engine-v2-launch">Launch note</a> · <a href="/dashboard?signup=1">Get an API key</a> · <a href="https://docs.supercompress.dev/coding-agents">Agent plugin</a></p>
+        </div>
+      </article>
+
       <article class="cl-entry" id="unreleased">
         <div class="cl-meta">
           <a class="cl-ver" href="#unreleased">Unreleased</a>
@@ -478,7 +497,7 @@
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
               <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
-              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/playground">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
           </div>

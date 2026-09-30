@@ -15,6 +15,8 @@ primary_region = "sjc"
 [http_service]
   internal_port = 8080
   force_https = true
+  # Keep one machine warm so prod doesn't fall back to compiler on cold/hung CPU.
+  # Tradeoff: burns Fly credit faster; revisit auto-stop once GPU or faster path ships.
   auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
@@ -26,9 +28,9 @@ primary_region = "sjc"
     soft_limit = 2
 
 [[vm]]
-  memory = "4gb"
+  memory = "8gb"
   cpu_kind = "shared"
-  cpus = 2
+  cpus = 4
 
 [mounts]
   source = "neural_weights"
@@ -36,7 +38,7 @@ primary_region = "sjc"
 
 [checks]
   [checks.health]
-    grace_period = "120s"
+    grace_period = "180s"
     interval = "30s"
     method = "GET"
     path = "/health"

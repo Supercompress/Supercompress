@@ -49,8 +49,41 @@ web/local-only
 web/pitch.html
 web/internal.html
 web/outreach.html
+
+# Unreleased / local trees — never ship
+launch/**
+scripts/launch/**
+web/local-*/
+web/local-only
+web/_local-only
+web/_local-only/**
+docs/goals/**
+docs/enterprise
+
 scripts/drain_welcome_emails.py
 scripts/drain_weekly_emails.py
 scripts/dev.supercompress.welcome-drain.plist
 scripts/outreach_suppression.py
+scripts/scneural/**
+scripts/amcp/**
+scripts/gtm_bench/**
+scripts/send_*_blast.js
+scripts/schedule_*_blast.js
+scripts/resume_*_blast.js
 .env.*
+
+# Local bloat — never upload
+kaggle
+videos
+checkpoints
+private
+games
+games/**
+brand/explorations
+brand/dither-identity
+brand/gauntlet-*
+
+# Local brand explorations — not product OSS
+brand/explorations/
+web/_local-only
+web/_local-only/**

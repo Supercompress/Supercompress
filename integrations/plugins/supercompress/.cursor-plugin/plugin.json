@@ -1,0 +1,35 @@
+{
+  "name": "supercompress",
+  "displayName": "SuperCompress",
+  "description": "Query-aware context compression for Grok Bot and coding agents. Compress tool dumps, logs, diffs, and pasted files before they burn tokens \u2014 64% mean context reduction with 24/24 evidence-retention passes on the B5 coding-agent benchmark. Hosted remote MCP (works in Grok Bot cloud).",
+  "version": "0.5.32",
+  "author": {
+    "name": "SuperCompress",
+    "email": "team@supercompress.dev"
+  },
+  "homepage": "https://www.supercompress.dev",
+  "repository": "https://github.com/Supercompress/Supercompress",
+  "license": "MIT",
+  "keywords": [
+    "context-compression",
+    "prompt-compression",
+    "token-compression",
+    "llm-cost",
+    "mcp",
+    "grok-bot"
+  ],
+  "logo": "assets/logo.png",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "SUPERCOMPRESS_API_KEY": {
+        "type": "string",
+        "title": "SuperCompress API key",
+        "description": "From https://www.supercompress.dev/dashboard (starts with sc_). Required for Grok Bot / remote MCP."
+      }
+    },
+    "required": [
+      "SUPERCOMPRESS_API_KEY"
+    ]
+  }
+}

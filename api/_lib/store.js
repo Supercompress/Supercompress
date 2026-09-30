@@ -64,6 +64,8 @@ function emptyStore() {
     weekly_emails: {},
     weekly_unsubscribes: {},
     compress_logs: {},
+    onboarding: {},
+    checkout_opens: {},
     _version: 0,
   };
 }
@@ -95,6 +97,8 @@ function normalizeStore(raw) {
     weekly_emails: raw.weekly_emails && typeof raw.weekly_emails === "object" ? raw.weekly_emails : {},
     weekly_unsubscribes: raw.weekly_unsubscribes && typeof raw.weekly_unsubscribes === "object" ? raw.weekly_unsubscribes : {},
     compress_logs: raw.compress_logs && typeof raw.compress_logs === "object" ? raw.compress_logs : {},
+    onboarding: raw.onboarding && typeof raw.onboarding === "object" ? raw.onboarding : {},
+    checkout_opens: raw.checkout_opens && typeof raw.checkout_opens === "object" ? raw.checkout_opens : {},
     _version: typeof raw._version === "number" ? raw._version : 0,
     _updated_at: raw._updated_at || null,
   };

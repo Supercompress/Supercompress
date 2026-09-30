@@ -48,7 +48,8 @@ const agentOnly = aggregateUsage({
   coding_agent_usage: {
     cursor: { requests: 12, tokens_in: 12639, tokens_saved: 6452, tokens_out: 6187 },
   },
-  account_usage: null,
+  // Pin a full calendar month so day-1-of-month CI doesn't collapse the axis.
+  account_usage: { month: "2026-08", requests: 0, tokens_in: 0, tokens_saved: 0, tokens_out: 0 },
 });
 const series = bundleToSeries(agentOnly);
 assert.strictEqual(series.live, true);
@@ -62,7 +63,7 @@ assert.ok(
 );
 assert.ok(
   series.areaData.filter((d) => d.y > 0).length > 1,
-  "spreads month totals across the calendar, not a single spike"
+  "synthesizes a multi-day month shape when by_day is empty"
 );
 assert.ok(series.areaData.length >= 8, "full month-to-date axis");
 assert.ok(

@@ -4,8 +4,56 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.32] — 2026-09-30
+
+- **v2 live**: hosted ~400M Neural Keep (query-aware). Coding-agent B5: **64.1%** mean cut, **24/24** evidence, 16,647 → 5,148 tokens.
+- Launch promo copy: **5M free / mo**, then **$0.10 / 1M** (paywall + README aligned).
+- **Grok Bot plugin**: hosted Streamable HTTP MCP at `https://www.supercompress.dev/api/mcp` (cloud-reachable). Cursor/marketplace pack uses remote URL + `SUPERCOMPRESS_API_KEY`. Chat install: `Add this MCP server: https://www.supercompress.dev/api/mcp`.
+
+## [0.5.31] — 2026-09-30
+
+- **50+ harness plugin story**: catalog expanded; `agents` / `doctor` / docs surface auto-plugin vs recipe.
+- **Native writers**: Goose YAML `extensions.supercompress`; Continue `experimental.modelContextProtocolServers` (no more Cursor-shaped `mcpServers` in Continue); Claude Desktop; Pi / Void / PearAI / Crush / Amp / Kilo / Vibe mcp-json.
+- Cleaner install summary: “N catalogued · M auto-plugin · K on this machine”.
+
+## [0.5.30] — 2026-09-30
+
+- **Plugin polish**: `supercompress doctor` — clean per-harness health matrix (account / MCP / hooks / instructions).
+- **Setup UX**: quieter output, shared install summary table, `setup --yes` skips reconnect prompt.
+- **MCP launch**: prefer `supercompress-mcp` shim in agent configs when on PATH (one-arg, upgrade-safe).
+- Unified Agent Plugin skill copy (local + hosted/cloud). Docs: `doctor` in coding-agents quickstart.
+
+## [0.5.29] — 2026-09-28
+
+- **Grok Build**: PostToolUse now replaces the model's tool result via `updatedToolOutput` (Grok discards `UserPromptSubmit` `additionalContext`). Keeps Bash/`toolResult` shape; truncated payloads get a short note only. Inbox + MCP remain fallbacks. Replace helpers live in `grok-post-tool.js` and are copied into `~/.cursor/hooks/supercompress/` on install.
+
+## [0.5.28] — 2026-08-18
+
+- **Grok Build video-ready**: session digests also mirror to `~/.supercompress/inbox/latest.md` (what AGENTS.md points at). Earlier attempt used `UserPromptSubmit` inject; see 0.5.29 for the PostToolUse replace path. Stronger `~/.grok/AGENTS.md` + skill playbook.
 - **postinstall is guidance-only** — never mutates MCP/agent configs; run `supercompress setup` or `plugin`
 - `prepack` / `npm run sync:assets` copies compress-engine + model from canonical `web/assets/`
+
+## [0.5.27] — 2026-08-18
+
+- **fx (Vercel Labs)**: auto-install trusted MCP at `~/.fx/mcp.json`, always-on `~/.fx/AGENTS.md`, and `~/.fx/skills/supercompress` (lazy MCP tool discovery instructions).
+- **Any agent**: `supercompress agents connect` prints a one-shot MCP recipe and writes an [Agent Plugins 1.0](https://agent-plugins.org/) pack (`agent-plugin/` — plugin.json + mcp.json + skill).
+- Ship portable `agent-plugin/` with the npm package for open/closed-source hosts and DIY agents.
+
+## [0.5.26] — 2026-08-18
+
+- **Grok Build actually works**: write always-on rules to `~/.grok/AGENTS.md` (Grok never reads `~/.grok/rules/`), plus a user skill. MCP uses Grok's inline `env = { … }` table, an absolute `node` path, and `[mcp] max_output_bytes = 2000000` so compress digests are not truncated at 20KB. Hooks use `env{}` (not a `VAR=value` command prefix Grok may fail to spawn), 60s timeout, and parse Grok's camelCase `toolResult` payload. MCP usage is attributed as Grok Build.
+
+## [0.5.25] — 2026-08-16
+
+- **Grok Build (xAI) first-class**: auto-install MCP in `~/.grok/config.toml`, hooks in `~/.grok/hooks/supercompress.json`, and always-on rules in `~/.grok/rules/supercompress.md` via `setup` / `plugin`.
+- Classic CLI remains the default; OpenTUI is opt-in (`supercompress tui` / `SUPERCOMPRESS_TUI=1`).
+- `connect` / MCP `connect_account`: skip browser when already linked (`--force` to re-link).
+
+## [0.5.24] — 2026-08-16
+
+- **Classic CLI is the default again** — bare `supercompress` shows help; OpenTUI is opt-in via `supercompress tui` or `SUPERCOMPRESS_TUI=1`.
+- **`connect` / MCP `connect_account`**: if already linked with a valid key, skip the browser loop (use `--force` to re-link).
+- Dashboard: when already signed in, `?connect=` auto-links with retries and a clear success message.
 
 ## [0.5.23] — 2026-08-15
 
@@ -82,7 +130,7 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 ## 0.5.11 — 2026-08-07
 
 - **CLI `account` / `usage`**: show linked account, plan/quota, and per-agent token savings (`supercompress usage [--json]`).
-- Louder **paywall** handling in the proxy compressor (402 / free quota / credits exhausted) with correct **$0.30 / 1M** copy.
+- Louder **paywall** handling in the proxy compressor (402 / free quota / credits exhausted) with correct **$0.10 / 1M** copy.
 - Hooks/MCP compress requests pass `source` + `session_id` for better activity attribution; clearer timeout vs error skip reasons.
 
 ## 0.5.10 — 2026-08-05

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Welcome — SuperCompress</title>
+  <meta name="description" content="Finish SuperCompress setup and earn free tokens." />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <meta name="theme-color" content="rgb(251,251,248)" />
+  <link rel="stylesheet" href="/assets/css/fonts.css?v=2" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/dashboard-onboarding.css?v=6" />
+  <style>
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      min-height: 100dvh;
+      background: rgb(251, 251, 248);
+      overflow-x: clip;
+      font-family: var(--sans);
+      color: #141820;
+      -webkit-font-smoothing: antialiased;
+    }
+    #sc-onboard-status {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-family: var(--sans);
+      color: rgba(20, 24, 32, 0.65);
+      padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <p id="sc-onboard-status">Loading your SuperCompress welcome…</p>
+  <div id="sc-onboard-mount"></div>
+  <script src="/assets/js/dither-kit-lite.js?v=15"></script>
+  <script type="module" src="/assets/js/onboard-page.js?v=4"></script>
+</body>
+</html>

@@ -3,6 +3,17 @@
  * Run: node api/arena/compare.test.js
  */
 const assert = require("assert");
+const { installNeuralKeepMock, lineKeepFilter } = require("../_lib/test-neural-mock");
+
+installNeuralKeepMock((context, query) =>
+  lineKeepFilter(context, query, (line) => {
+    const l = line.toLowerCase();
+    if (/w-orbit|incident|action:|safety|s-19|tipped/i.test(line)) return true;
+    if (/rfid_ping/.test(line)) return Math.random() < 0.08;
+    return false;
+  })
+);
+
 const handler = require("./compare");
 
 function mockRes() {
@@ -64,9 +75,26 @@ function mockReq(body, method = "POST") {
   await handler(mockReq({ context: "" }), resBad);
   assert.equal(resBad.out.statusCode, 422);
 
+  // multi-comparator: truncation + v1 run in-process and must be real
+  const resMulti = mockRes();
+  await handler(
+    mockReq({ context: ctx, query, compare: ["truncation", "supercompress-v1"] }),
+    resMulti
+  );
+  assert.equal(resMulti.out.statusCode, 200);
+  const multi = resMulti.out.body;
+  assert.ok(multi.comparators.truncation.tokens_out > 0, "truncation must run");
+  assert.ok(multi.comparators["supercompress-v1"].tokens_out > 0, "v1 must run");
+  assert.ok(
+    multi.comparators["supercompress-v1"].compressed_preview.length > 0,
+    "v1 preview must be real output"
+  );
+
   console.log("arena/compare.test.js: ok", {
     sc_removed: data.supercompress.removed_pct,
     hr: data.headroom.status || data.headroom.source || "ok",
+    v1_removed: multi.comparators["supercompress-v1"].removed_pct,
+    trunc_removed: multi.comparators.truncation.removed_pct,
     winner: data.winner.system,
   });
 })().catch((err) => {

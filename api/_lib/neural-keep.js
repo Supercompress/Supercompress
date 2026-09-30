@@ -1,11 +1,8 @@
 /**
- * Remote Neural Keep client — calls the Fly-hosted cross-encoder service.
+ * Remote neural keep client — optional hosted relevance path for compress.
  *
- * Env:
- *   SC_NEURAL_KEEP_URL     base URL (e.g. https://sc-neural-keep.fly.dev)
- *   SC_NEURAL_KEEP_SECRET  optional bearer shared with the service
- *   SC_NEURAL_KEEP=0       force off even when URL is set
- *   SC_NEURAL_KEEP_TIMEOUT_MS  default 120000
+ * Operator env (private): SC_NEURAL_KEEP_URL, SC_NEURAL_KEEP_SECRET,
+ * SC_NEURAL_KEEP, SC_NEURAL_KEEP_TIMEOUT_MS.
  */
 
 const DEFAULT_TIMEOUT_MS = 120_000;

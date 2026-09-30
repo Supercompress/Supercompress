@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 360 48" role="img" aria-label="SuperCompress">
+  <image xlink:href="logo-mark-64.png" x="0" y="4" width="40" height="40"/>
+  <text x="52" y="33" font-family="Platypi, Georgia, 'Times New Roman', serif" font-weight="700" font-size="26" letter-spacing="-0.02em">
+    <tspan fill="#171717">Super</tspan><tspan fill="#0566ff" font-style="italic">Compress</tspan>
+  </text>
+</svg>

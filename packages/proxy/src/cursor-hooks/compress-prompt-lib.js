@@ -91,10 +91,11 @@ function writeInbox(query, compressed, meta, extra = {}) {
   const sessionId = extra.session_id || extra.sessionId || null;
   const { dir, latestMd, latestJson } = inboxPaths(sessionId);
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const savedAt = new Date().toISOString();
   const body = [
     "# SuperCompress context digest",
     "",
-    `Saved: ${new Date().toISOString()}`,
+    `Saved: ${savedAt}`,
     meta ? `Stats: ${meta}` : "",
     extra.kind ? `Kind: ${extra.kind}` : "",
     sessionId ? `Session: ${sessionId}` : "",
@@ -108,23 +109,32 @@ function writeInbox(query, compressed, meta, extra = {}) {
     compressed || "(empty)",
     "",
   ].join("\n");
+  const payload = {
+    saved_at: savedAt,
+    query,
+    compressed,
+    meta,
+    ...extra,
+    session_id: sessionId || extra.session_id || null,
+  };
   fs.writeFileSync(latestMd, body, { mode: 0o600 });
-  fs.writeFileSync(
-    latestJson,
-    JSON.stringify(
-      {
-        saved_at: new Date().toISOString(),
-        query,
-        compressed,
-        meta,
-        ...extra,
-        session_id: sessionId || extra.session_id || null,
-      },
-      null,
-      2
-    ),
-    { mode: 0o600 }
-  );
+  fs.writeFileSync(latestJson, JSON.stringify(payload, null, 2), { mode: 0o600 });
+  // Always mirror to inbox/latest.md so AGENTS.md / skills that point at the
+  // global path (Grok Build, fx, etc.) see the newest digest without needing
+  // the session id. Session folders stay the source of truth per session.
+  if (sessionId && dir !== INBOX_DIR) {
+    try {
+      fs.mkdirSync(INBOX_DIR, { recursive: true, mode: 0o700 });
+      fs.writeFileSync(path.join(INBOX_DIR, "latest.md"), body, { mode: 0o600 });
+      fs.writeFileSync(
+        path.join(INBOX_DIR, "latest.json"),
+        JSON.stringify(payload, null, 2),
+        { mode: 0o600 }
+      );
+    } catch {
+      /* fail-open */
+    }
+  }
   return latestMd;
 }
 
@@ -139,6 +149,32 @@ function readInboxDigest(sessionId) {
   } catch {
     return "";
   }
+}
+
+/**
+ * Prefer session digest, else global inbox/latest.md.
+ * Kept for agents that only surface digests on the next prompt. Grok Build
+ * replaces the tool result on PostToolUse instead (UserPromptSubmit
+ * additionalContext is discarded there).
+ */
+function readFreshInboxDigest(sessionId, maxAgeMs = 15 * 60 * 1000) {
+  const candidates = [];
+  const safe = safeSessionSegment(sessionId);
+  if (safe) candidates.push(path.join(INBOX_DIR, safe, "latest.md"));
+  candidates.push(path.join(INBOX_DIR, "latest.md"));
+  const now = Date.now();
+  for (const p of candidates) {
+    try {
+      if (!fs.existsSync(p)) continue;
+      const st = fs.statSync(p);
+      if (maxAgeMs > 0 && now - st.mtimeMs > maxAgeMs) continue;
+      const body = fs.readFileSync(p, "utf8").trim();
+      if (body.length > 40) return body;
+    } catch {
+      /* try next */
+    }
+  }
+  return "";
 }
 
 function hashText(text) {
@@ -656,6 +692,7 @@ module.exports = {
   shouldPublishCompressedResult,
   writeInbox,
   readInboxDigest,
+  readFreshInboxDigest,
   inboxPaths,
   loadApiKey,
   splitAskAndContext,

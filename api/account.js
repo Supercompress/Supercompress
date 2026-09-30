@@ -18,6 +18,7 @@ const {
   drainPendingWelcomes,
 } = require("./_lib/welcome");
 const { drainPendingPowerUsers } = require("./_lib/power-user");
+const { drainPendingQuotaMails } = require("./_lib/quota-mail");
 const {
   weeklyTick,
   listPendingWeekly,
@@ -29,6 +30,8 @@ const {
   isoWeekCampaignId,
   tipCampaignId,
   shipCampaignId,
+  runLaunchT0,
+  LAUNCH_V2_CAMPAIGN_ID,
 } = require("./_lib/weekly");
 
 function normalizeCode(code) {
@@ -119,13 +122,13 @@ function planUsage(owner, fallbackUsed = 0) {
     limit_reached: !payg && !creditWallet && freeRemaining === 0,
     upgrade_url: "https://www.supercompress.dev/dashboard#billing",
     upgrade_hint:
-      "Free token allowance used this month. Compression is paused — add a payment method ($0.30/1M after free) to unlock.",
+      "Free token allowance used this month. Compression is paused — add a payment method ($0.10/1M after free) to unlock.",
     paywall: !payg && !creditWallet && freeRemaining === 0
       ? {
           title: "Free allowance used — unlock to keep compressing",
           detail: "You've hit your free token allowance this month. Add a payment method to resume.",
           cta: "Add payment method",
-          price: "$0.30 / 1M tokens after free",
+          price: "$0.10 / 1M tokens after free",
         }
       : null,
   };
@@ -618,13 +621,19 @@ module.exports = async (req, res) => {
     } catch (powerErr) {
       power_user = { ok: false, error: powerErr.message || "power_user_drain_failed" };
     }
+    let quota = null;
+    try {
+      quota = await drainPendingQuotaMails();
+    } catch (quotaErr) {
+      quota = { ok: false, error: quotaErr.message || "quota_drain_failed" };
+    }
     let weekly = null;
     try {
       weekly = await weeklyTick();
     } catch (weeklyErr) {
       weekly = { ok: false, error: weeklyErr.message || "weekly_tick_failed" };
     }
-    return json(res, 200, { ok: true, ...welcome, power_user, weekly });
+    return json(res, 200, { ok: true, ...welcome, power_user, quota, weekly });
   }
   if (op === "power-user-drain" && (req.method === "POST" || req.method === "GET")) {
     const body = req.method === "POST" ? readBody(req) : {};
@@ -633,6 +642,15 @@ module.exports = async (req, res) => {
       return json(res, 200, { ok: true, ...(await drainPendingPowerUsers()) });
     } catch (err) {
       return json(res, err.status || 500, { detail: err.message || "power_user_drain_failed" });
+    }
+  }
+  if (op === "quota-drain" && (req.method === "POST" || req.method === "GET")) {
+    const body = req.method === "POST" ? readBody(req) : {};
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      return json(res, 200, { ok: true, ...(await drainPendingQuotaMails()) });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "quota_drain_failed" });
     }
   }
 
@@ -687,12 +705,26 @@ module.exports = async (req, res) => {
     if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     try {
       const limit = Number(body.limit || req.query?.limit || 0) || undefined;
+      const campaignId =
+        String(body.campaign_id || req.query?.campaign_id || "").trim() || undefined;
       return json(res, 200, {
         ok: true,
-        ...(await drainPendingWeekly({ limit })),
+        ...(await drainPendingWeekly({ limit, campaignId })),
       });
     } catch (err) {
       return json(res, err.status || 500, { detail: err.message });
+    }
+  }
+  if (op === "launch-t0" && (req.method === "POST" || req.method === "GET")) {
+    const body = req.method === "POST" ? readBody(req) : {};
+    if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
+    try {
+      const force =
+        String(body.force || req.query?.force || "").trim() === "1" ||
+        String(body.force || req.query?.force || "").toLowerCase() === "true";
+      return json(res, 200, await runLaunchT0({ force }));
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "launch_t0_failed" });
     }
   }
   if (op === "weekly-mark" && req.method === "POST") {
@@ -913,6 +945,7 @@ module.exports = async (req, res) => {
       "welcome",
       "welcome-drain",
       "power-user-drain",
+      "quota-drain",
       "weekly-tick",
       "weekly-drain",
       "weekly-unsubscribe",

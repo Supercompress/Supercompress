@@ -6,7 +6,7 @@
 const ONBOARD_ACTION_TOKENS = 10_000;
 const ONBOARD_ACTIONS = ["star", "x_follow", "plugin"];
 const HEARD_SOURCES = ["x", "reddit", "linkedin", "instagram", "word_of_mouth"];
-const ONBOARD_MAX_AGE_MS = 72 * 60 * 60 * 1000; // only brand-new accounts
+const ONBOARD_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000; // new accounts (2 weeks — covers late deploys)
 
 const REPO_URL = "https://github.com/Supercompress/Supercompress";
 const X_FOLLOW_URL = "https://x.com/arjunkshah21";
@@ -48,16 +48,27 @@ function parseActions(claims = {}) {
   return out;
 }
 
+function accountCreatedMs(owner) {
+  const raw = owner?.metadata?.creationTime || owner?.metadata?.creation_time || "";
+  if (!raw) return null;
+  const created = Date.parse(raw);
+  return Number.isFinite(created) && created > 0 ? created : null;
+}
+
 function isYoungAccount(owner) {
-  const created = Date.parse(owner?.metadata?.creationTime || owner?.metadata?.creation_time || 0);
-  if (!Number.isFinite(created)) return false;
+  const created = accountCreatedMs(owner);
+  if (created == null) return false;
   return Date.now() - created < ONBOARD_MAX_AGE_MS;
 }
 
 function needsOnboarding(claims = {}, owner = null) {
   if (claims.sc_onboard_done || claims.sc_onboard_skipped) return false;
-  if (!owner) return false;
-  return isYoungAccount(owner);
+  // Post-mutation payloads often omit owner — still treat unfinished users as in-flow.
+  if (!owner) return true;
+  const created = accountCreatedMs(owner);
+  // Missing creationTime should not silently suppress onboarding for unfinished accounts.
+  if (created == null) return true;
+  return Date.now() - created < ONBOARD_MAX_AGE_MS;
 }
 
 function needsPowerCelebrate(claims = {}) {
@@ -117,6 +128,38 @@ function statusPayload(claims = {}, owner = null) {
   };
 }
 
+async function persistOnboardingRecord(uid, patch) {
+  if (!uid) return;
+  try {
+    const { mutateStore } = require("./store");
+    await mutateStore((store) => {
+      if (!store.onboarding) store.onboarding = {};
+      const prev = store.onboarding[uid] && typeof store.onboarding[uid] === "object" ? store.onboarding[uid] : {};
+      store.onboarding[uid] = {
+        ...prev,
+        uid,
+        ...patch,
+        updated_at: new Date().toISOString(),
+      };
+      return store.onboarding[uid];
+    });
+  } catch (err) {
+    console.warn("onboarding store persist skipped:", err.message || err);
+  }
+}
+
+async function loadOnboardingRecord(uid) {
+  if (!uid) return null;
+  try {
+    const { loadStore } = require("./store");
+    const store = await loadStore({ forceRemote: false });
+    const rec = store?.onboarding?.[uid];
+    return rec && typeof rec === "object" ? rec : null;
+  } catch {
+    return null;
+  }
+}
+
 async function mergeOnboardingClaims(uid, mutator) {
   const { patchUserClaims } = require("./billing-ledger");
   return patchUserClaims(uid, (live) => mutator({ ...live }));
@@ -129,11 +172,21 @@ async function saveHeard(uid, source) {
     err.status = 400;
     throw err;
   }
-  const claims = await mergeOnboardingClaims(uid, (c) => {
-    c.sc_heard = heard;
-    c.sc_heard_at = new Date().toISOString();
-    return c;
-  });
+  const at = new Date().toISOString();
+  await persistOnboardingRecord(uid, { heard, heard_at: at });
+  let claims = {};
+  try {
+    claims = await mergeOnboardingClaims(uid, (c) => {
+      c.sc_heard = heard;
+      // Keep claims tiny — timestamp lives in the durable store.
+      delete c.sc_heard_at;
+      return c;
+    });
+  } catch (err) {
+    console.warn("saveHeard claims stamp failed:", err.message || err);
+    const rec = await loadOnboardingRecord(uid);
+    return statusPayload({ sc_heard: rec?.heard || heard });
+  }
   return statusPayload(claims);
 }
 
@@ -144,38 +197,67 @@ async function claimAction(uid, actionRaw) {
     err.status = 400;
     throw err;
   }
-  const claims = await mergeOnboardingClaims(uid, (c) => {
-    const actions = parseActions(c);
-    if (!actions[action]) {
-      actions[action] = true;
-      c.sc_onboard_actions = actions;
-      const count = ONBOARD_ACTIONS.filter((a) => actions[a]).length;
-      c.sc_onboard_bonus = count * ONBOARD_ACTION_TOKENS;
-      c.sc_onboard_bonus_at = new Date().toISOString();
-    }
-    if (ONBOARD_ACTIONS.every((a) => actions[a])) {
-      c.sc_onboard_done = true;
-    }
-    return c;
+  const at = new Date().toISOString();
+  await persistOnboardingRecord(uid, {
+    [`action_${action}`]: true,
+    [`action_${action}_at`]: at,
   });
+  let claims = {};
+  try {
+    claims = await mergeOnboardingClaims(uid, (c) => {
+      const actions = parseActions(c);
+      if (!actions[action]) {
+        actions[action] = true;
+        c.sc_onboard_actions = actions;
+        const count = ONBOARD_ACTIONS.filter((a) => actions[a]).length;
+        c.sc_onboard_bonus = count * ONBOARD_ACTION_TOKENS;
+      }
+      if (ONBOARD_ACTIONS.every((a) => actions[a])) {
+        c.sc_onboard_done = true;
+      }
+      return c;
+    });
+  } catch (err) {
+    console.warn("claimAction claims stamp failed:", err.message || err);
+    const rec = await loadOnboardingRecord(uid);
+    const actions = {};
+    for (const key of ONBOARD_ACTIONS) {
+      if (rec?.[`action_${key}`]) actions[key] = true;
+    }
+    claims = { sc_onboard_actions: actions, sc_heard: rec?.heard || null };
+  }
   return statusPayload(claims);
 }
 
 async function skipOnboarding(uid) {
-  const claims = await mergeOnboardingClaims(uid, (c) => {
-    c.sc_onboard_skipped = true;
-    c.sc_onboard_skipped_at = new Date().toISOString();
-    return c;
-  });
+  await persistOnboardingRecord(uid, { skipped: true, skipped_at: new Date().toISOString() });
+  let claims = {};
+  try {
+    claims = await mergeOnboardingClaims(uid, (c) => {
+      c.sc_onboard_skipped = true;
+      return c;
+    });
+  } catch (err) {
+    console.warn("skipOnboarding claims stamp failed:", err.message || err);
+    const rec = await loadOnboardingRecord(uid);
+    claims = { sc_onboard_skipped: true, sc_heard: rec?.heard || null };
+  }
   return statusPayload(claims);
 }
 
 async function markOnboardingDone(uid) {
-  const claims = await mergeOnboardingClaims(uid, (c) => {
-    c.sc_onboard_done = true;
-    c.sc_onboard_done_at = new Date().toISOString();
-    return c;
-  });
+  await persistOnboardingRecord(uid, { done: true, done_at: new Date().toISOString() });
+  let claims = {};
+  try {
+    claims = await mergeOnboardingClaims(uid, (c) => {
+      c.sc_onboard_done = true;
+      return c;
+    });
+  } catch (err) {
+    console.warn("markOnboardingDone claims stamp failed:", err.message || err);
+    const rec = await loadOnboardingRecord(uid);
+    claims = { sc_onboard_done: true, sc_heard: rec?.heard || null };
+  }
   return statusPayload(claims);
 }
 
@@ -215,6 +297,9 @@ module.exports = {
   markOnboardingDone,
   markPowerCelebrateShown,
   markPowerCelebratePending,
+  persistOnboardingRecord,
+  loadOnboardingRecord,
+  normalizeHeard,
   powerShareIntentUrl,
   REPO_URL,
   X_FOLLOW_URL,

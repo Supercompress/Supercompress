@@ -20,8 +20,13 @@ print(json.dumps({"context": ctx, "query": "What happened in warehouse W-ORBIT?"
 PY
 
 echo "==> compress"
+AUTH=()
+if [[ -n "${SC_NEURAL_KEEP_SECRET:-}" ]]; then
+  AUTH=(-H "Authorization: Bearer $SC_NEURAL_KEEP_SECRET")
+fi
 curl -fsS -X POST "$BASE/v1/compress" \
   -H 'Content-Type: application/json' \
+  "${AUTH[@]}" \
   -d @"$TMP" | python3 -m json.tool
 
 echo "OK neural-keep smoke"

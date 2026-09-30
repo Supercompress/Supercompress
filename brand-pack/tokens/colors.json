@@ -1,0 +1,24 @@
+{
+  "paper": "#fbfbf8",
+  "ink": "#171717",
+  "muted": "#696967",
+  "bgDark": "#0a0a0a",
+  "inkOnDark": "#f5f5f5",
+  "brand": "#0566ff",
+  "brandHover": "#0055df",
+  "brandDeep": "#0347b8",
+  "brandClassic": "#2563eb",
+  "brandSoft": "#dbeafe",
+  "brandLight": "#93c5fd",
+  "superBlue": "#2563eb",
+  "compressBlue": "#60a5fa",
+  "ditherPalette": {
+    "brand": { "fill": [5, 102, 255], "line": [120, 170, 255] },
+    "sky": { "fill": [94, 156, 255], "line": [160, 200, 255] },
+    "orange": { "fill": [230, 140, 40], "line": [255, 195, 130] },
+    "purple": { "fill": [110, 90, 210], "line": [180, 165, 255] },
+    "pink": { "fill": [220, 80, 160], "line": [255, 170, 220] },
+    "red": { "fill": [220, 70, 70], "line": [255, 150, 140] },
+    "grey": { "fill": [92, 92, 100], "line": [140, 140, 150] }
+  }
+}

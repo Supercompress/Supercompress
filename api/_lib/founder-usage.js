@@ -53,6 +53,9 @@ function rowFromUser(user, month = monthKey()) {
     recorded_requests: requests,
     cut_pct: cutPct(current ? tokens_saved : tokens_saved, current ? tokens_in : tokens_in),
     created_at: user.metadata?.creationTime || null,
+    heard: claims.sc_heard || null,
+    onboard_done: Boolean(claims.sc_onboard_done),
+    onboard_skipped: Boolean(claims.sc_onboard_skipped),
     by_day: current
       ? fillMonthGap(
           expandPackedDays({ m: month, d: usage.d || {} }, month),
@@ -88,9 +91,19 @@ function summarizeRows(rows, month = monthKey()) {
   const processed = Math.max(totals.tokens_in, totals.recorded_tokens_in);
   const savedAll = Math.max(totals.tokens_saved, totals.recorded_tokens_saved);
   const plans = {};
+  const heard = {};
+  let heard_answered = 0;
+  let onboard_done = 0;
+  let onboard_skipped = 0;
   for (const r of humans) {
     const p = r.plan || "free";
     plans[p] = (plans[p] || 0) + 1;
+    if (r.heard) {
+      heard_answered += 1;
+      heard[r.heard] = (heard[r.heard] || 0) + 1;
+    }
+    if (r.onboard_done) onboard_done += 1;
+    if (r.onboard_skipped) onboard_skipped += 1;
   }
   const leaderboard = humans
     .slice()
@@ -113,6 +126,10 @@ function summarizeRows(rows, month = monthKey()) {
     plans: Object.entries(plans)
       .map(([label, value]) => ({ label, value }))
       .sort((a, b) => b.value - a.value),
+    heard: Object.entries(heard)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value),
+    onboard: { answered: heard_answered, done: onboard_done, skipped: onboard_skipped },
     leaderboard,
   };
 }

@@ -112,7 +112,7 @@ X-API-Key: sc_live_…
       { length: 24 },
       (_, i) =>
         `## Appendix ${i + 1} — deployment notes\n\n` +
-        `Region ${i + 1} runs CPU eviction before GPU prefill. Budget ratio 0.35 targets ~65% KV savings. ` +
+        `Region ${i + 1} runs CPU eviction before GPU prefill. Budget ratio 0.35 targets 64% KV savings. ` +
         `Quality checks use oracle recall on benchmark seeds.\n`
     ).join("\n");
 

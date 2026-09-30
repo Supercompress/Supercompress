@@ -3,7 +3,7 @@
 <head>
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>API Dashboard — SuperCompress</title>
   <meta name="description" content="Manage SuperCompress API keys, view usage, and access documentation." />
   <meta property="og:title" content="API Dashboard — SuperCompress" />
@@ -26,11 +26,11 @@
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
   <meta name="theme-color" content="rgb(251,251,248)" />
-  <link rel="stylesheet" href="/assets/css/supercompress.css?v=113" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
-  <link rel="stylesheet" href="/assets/css/dashboard-analytics.css?v=3" />
-  <link rel="stylesheet" href="/assets/css/dashboard-onboarding.css?v=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/fonts.css?v=2" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/dashboard-analytics.css?v=4" />
+  <link rel="stylesheet" href="/assets/css/dashboard-onboarding.css?v=6" />
 <style>
     /* Dashboard: no dark bg layers, full light page */
     html, body.dash-page {
@@ -567,14 +567,14 @@
         </nav>
         <a href="/dashboard?signup=1" class="df-nav-cta" id="dash-nav-cta">Get API key</a>
         <div class="dash-profile hidden" id="dash-profile">
-          <button type="button" class="dash-profile-btn" id="dash-profile-btn" aria-label="Account menu">
+          <button type="button" class="dash-profile-btn" id="dash-profile-btn" aria-label="Account menu" aria-expanded="false" aria-haspopup="true" title="Account menu">
             <span class="dash-profile-initial" id="dash-profile-initial">?</span>
           </button>
-          <div class="dash-profile-dropdown">
+          <div class="dash-profile-dropdown" id="dash-profile-dropdown" role="menu">
             <div class="dash-profile-dropdown-name" id="dash-profile-name">—</div>
             <div class="dash-profile-dropdown-email" id="dash-profile-email">—</div>
-            <button type="button" class="dash-profile-action" id="dash-change-password">Change password</button>
-            <button type="button" class="dash-profile-signout" id="dash-signout">Sign out</button>
+            <button type="button" class="dash-profile-action hidden" id="dash-change-password" role="menuitem">Change password</button>
+            <button type="button" class="dash-profile-signout" id="dash-signout" role="menuitem">Sign out</button>
           </div>
         </div>
         <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
@@ -608,7 +608,7 @@
       <div class="dash-auth-card">
         <p class="dash-section-label">Free to start</p>
         <h1 id="auth-title">Get your free API key</h1>
-        <p class="dash-auth-sub" id="auth-subtitle">1M free tokens/mo · then $0.30/1M. Google takes one click — your key is ready instantly.</p>
+        <p class="dash-auth-sub" id="auth-subtitle">5M free tokens/mo · then $0.10/1M. Google takes one click — your key is ready instantly.</p>
 
         <div id="firebase-auth-area">
           <button type="button" class="dash-btn-google" id="btn-google">
@@ -949,7 +949,7 @@ npm exec supercompress setup</pre>
           <div class="dash-panel-head">
             <div>
               <h1>Usage &amp; billing</h1>
-              <p>Every account includes 1M free tokens each month. After that, pay-as-you-go is $0.30 per 1M tokens.</p>
+              <p>Every account includes 5M free tokens each month. After that, pay-as-you-go is $0.10 per 1M tokens.</p>
             </div>
           </div>
 
@@ -974,9 +974,9 @@ npm exec supercompress setup</pre>
 
             <div class="dash-plan-card dash-plan-card--featured" data-plan="payg">
               <div class="dash-plan-badge">Pay as you go</div>
-              <div class="dash-plan-price">$0.30<span> / 1M tokens</span></div>
+              <div class="dash-plan-price">$0.10<span> / 1M tokens</span></div>
               <ul class="dash-plan-features">
-                <li>Same 1M free included</li>
+                <li>Same 5M free included</li>
                 <li>Unlimited after free allowance</li>
                 <li>Prepaid credits · auto-recharge optional</li>
               </ul>
@@ -1042,24 +1042,12 @@ npm exec supercompress setup</pre>
     </div>
   </div>
 
-  <!-- Change password modal -->
+  <!-- Change password modal (email link via Resend — email/password accounts only) -->
   <div class="dash-modal hidden" id="modal-password">
     <div class="dash-modal-card">
       <h2 id="password-modal-title">Change password</h2>
-      <p class="dash-auth-sub" id="password-modal-lead" style="margin-top:0">Update the password for this SuperCompress account.</p>
-      <div id="password-email-fields">
-        <label class="dash-field-label" for="password-current">Current password</label>
-        <input class="dash-field-input" id="password-current" type="password" autocomplete="current-password" minlength="6" />
-        <label class="dash-field-label" for="password-new">New password</label>
-        <input class="dash-field-input" id="password-new" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters" />
-        <label class="dash-field-label" for="password-confirm">Confirm new password</label>
-        <input class="dash-field-input" id="password-confirm" type="password" autocomplete="new-password" minlength="6" />
-        <button type="button" class="btn-brand" id="btn-confirm-password">Save password</button>
-      </div>
-      <div id="password-google-only" class="hidden">
-        <p class="dash-auth-sub" style="margin-top:0">This account signs in with Google. Manage your password in your Google Account, or we can email a reset link if email/password is also enabled.</p>
-        <button type="button" class="btn-brand" id="btn-send-password-reset">Email password reset link</button>
-      </div>
+      <p class="dash-auth-sub" id="password-modal-lead" style="margin-top:0">We’ll email you a secure link to set a new password. The link expires after a short time.</p>
+      <button type="button" class="btn-brand" id="btn-confirm-password">Email me a password link</button>
       <p class="dash-auth-error hidden" id="password-error" style="margin-top:10px"></p>
       <p class="dash-auth-sub hidden" id="password-ok" style="margin-top:10px;color:#166534"></p>
       <button type="button" class="btn-link-muted" id="btn-cancel-password">Cancel</button>
@@ -1070,7 +1058,7 @@ npm exec supercompress setup</pre>
   <div class="dash-modal hidden" id="modal-credits">
     <div class="dash-modal-card dash-modal-card--credits">
       <h2 id="credits-modal-title">Add credits</h2>
-      <p class="dash-credits-lead" id="credits-modal-lead">$0.30 = 1M tokens after your free monthly allowance. Minimum load $10 (~33M tokens).</p>
+      <p class="dash-credits-lead" id="credits-modal-lead">$0.10 = 1M tokens after your free monthly allowance. Minimum load $10 (~100M tokens).</p>
       <div class="dash-credits-presets" id="credits-presets" role="group" aria-label="Suggested amounts">
         <button type="button" class="dash-credits-preset" data-amount="10">$10</button>
         <button type="button" class="dash-credits-preset" data-amount="20">$20</button>
@@ -1083,7 +1071,7 @@ npm exec supercompress setup</pre>
         <span class="dash-credits-currency" aria-hidden="true">$</span>
         <input class="dash-field-input dash-credits-amount" id="credits-amount" type="number" inputmode="decimal" min="10" max="1000" step="1" value="10" />
       </div>
-      <p class="dash-credits-hint" id="credits-hint">About 33M tokens · $10 minimum</p>
+      <p class="dash-credits-hint" id="credits-hint">About 100M tokens · $10 minimum</p>
       <label class="dash-credits-auto">
         <input type="checkbox" id="credits-auto-recharge" checked />
         <span>Auto-recharge this amount when balance hits $0</span>
@@ -1127,7 +1115,7 @@ npm exec supercompress setup</pre>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
               <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
-              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/playground">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
           </div>
@@ -1174,10 +1162,10 @@ npm exec supercompress setup</pre>
   </footer>
   <script src="assets/js/firebase-config.js?v=3"></script>
   <script src="assets/js/supercompress.js?v=1"></script>
-  <script src="/assets/js/dither-kit-lite.js?v=15"></script>
-  <script src="/assets/js/analytics-data.js?v=4"></script>
+  <script src="/assets/js/dither-kit-lite.js?v=18"></script>
+  <script src="/assets/js/analytics-data.js?v=5"></script>
   <script src="/assets/js/dashboard-analytics.js?v=6"></script>
-  <script type="module" src="/assets/js/dashboard-api.js?v=42"></script>
+  <script type="module" src="/assets/js/dashboard-api.js?v=54"></script>
   <script src="assets/js/affiliate-track.js?v=1"></script>
   <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>
