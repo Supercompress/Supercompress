@@ -270,8 +270,9 @@ def _run_compress_in_pool(context: str, query: str, threshold: float | None) -> 
         return fut.result(timeout=_INFER_TIMEOUT_S)
     except FuturesTimeout as e:
         _kill_pool("inference_timeout")
-        # Recreate in background so next request can warm up.
-        threading.Thread(target=_ensure_pool, name="nk-respawn", daemon=True).start()
+        # Pool respawn after a wedged torch child is unreliable on 8GB shared CPU —
+        # exit so Fly brings a clean machine (TCP health already tolerates restart).
+        _schedule_process_exit("inference_timeout")
         raise TimeoutError("inference_timeout") from e
 
 
