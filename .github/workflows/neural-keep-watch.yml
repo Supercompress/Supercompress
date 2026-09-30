@@ -1,0 +1,113 @@
+# Free Neural Keep liveness + self-heal (GitHub Actions — $0 compute).
+# Pings public /health every 5 minutes. Optional Fly restart when wedged
+# (needs repo secret FLY_API_TOKEN; no paid monitoring).
+
+name: neural-keep-watch
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: neural-keep-watch
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Health + ready probe
+        id: probe
+        env:
+          NK_URL: https://sc-neural-keep.fly.dev
+        run: |
+          set -euo pipefail
+          echo "::group::/health"
+          code=$(curl -sS -m 12 -o /tmp/nk-health.json -w "%{http_code}" "$NK_URL/health" || echo "000")
+          echo "http=$code"
+          cat /tmp/nk-health.json || true
+          echo
+          echo "::endgroup::"
+
+          NEED_RESTART=0
+          if [ "$code" != "200" ]; then
+            echo "::error::neural-keep /health returned $code"
+            NEED_RESTART=1
+          else
+            python3 - <<'PY'
+          import json, os, sys
+          d = json.load(open("/tmp/nk-health.json"))
+          assert d.get("ok") is True, d
+          busy = float(d.get("busy_for_s") or 0)
+          wedged = bool(d.get("wedged"))
+          timeout = float(d.get("infer_timeout_s") or 120)
+          print(
+              "ok service=", d.get("service"),
+              "version=", d.get("version"),
+              "model_loaded=", d.get("model_loaded"),
+              "inflight=", d.get("inflight"),
+              "busy_for_s=", busy,
+              "wedged=", wedged,
+              "jobs_ok=", d.get("jobs_ok"),
+              "jobs_timeout=", d.get("jobs_timeout"),
+          )
+          # Stuck job longer than timeout + grace ⇒ machine needs bounce.
+          if wedged or busy > timeout + 30:
+              print("::warning::neural-keep looks wedged; requesting restart")
+              open("/tmp/nk-need-restart", "w").write("1")
+          PY
+            if [ -f /tmp/nk-need-restart ]; then
+              NEED_RESTART=1
+            fi
+          fi
+
+          echo "::group::/ready (soft)"
+          rcode=$(curl -sS -m 15 -o /tmp/nk-ready.json -w "%{http_code}" "$NK_URL/ready" || echo "000")
+          echo "http=$rcode"
+          cat /tmp/nk-ready.json || true
+          echo
+          echo "::endgroup::"
+          if [ "$rcode" != "200" ]; then
+            echo "::warning::neural-keep /ready returned $rcode (model still loading or error)"
+          fi
+
+          echo "need_restart=$NEED_RESTART" >> "$GITHUB_OUTPUT"
+          if [ "$NEED_RESTART" = "1" ] && [ -z "${{ secrets.FLY_API_TOKEN }}" ]; then
+            echo "::error::wedged/down but FLY_API_TOKEN secret not set — cannot auto-restart"
+            exit 1
+          fi
+          if [ "$NEED_RESTART" != "1" ] && [ "$code" != "200" ]; then
+            exit 1
+          fi
+
+      - name: Restart Fly machine (free self-heal)
+        if: steps.probe.outputs.need_restart == '1'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FLY_API_TOKEN:-}" ]; then
+            echo "::error::FLY_API_TOKEN missing"
+            exit 1
+          fi
+          curl -fsSL https://fly.io/install.sh | sh
+          export FLYCTL_INSTALL="$HOME/.fly"
+          export PATH="$FLYCTL_INSTALL/bin:$PATH"
+          flyctl version
+          echo "Restarting sc-neural-keep…"
+          flyctl machines restart -a sc-neural-keep --force
+          # Wait for TCP/health back.
+          for i in $(seq 1 36); do
+            code=$(curl -sS -m 8 -o /tmp/nk-health2.json -w "%{http_code}" https://sc-neural-keep.fly.dev/health || echo "000")
+            if [ "$code" = "200" ]; then
+              echo "health restored after ${i}0s-ish"
+              cat /tmp/nk-health2.json
+              exit 0
+            fi
+            echo "wait $i code=$code"
+            sleep 10
+          done
+          echo "::error::health did not recover after restart"
+          exit 1

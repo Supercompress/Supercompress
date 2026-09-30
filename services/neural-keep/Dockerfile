@@ -28,10 +28,23 @@ COPY inference.py server.py ./
 
 ENV SC_NEURAL_DIR=/data/model
 ENV PYTHONUNBUFFERED=1
+ENV OMP_NUM_THREADS=4
+ENV MKL_NUM_THREADS=4
+ENV OPENBLAS_NUM_THREADS=4
+ENV TORCH_NUM_THREADS=4
+ENV SC_ARENA=0
+ENV SC_NEURAL_BATCH=32
+ENV SC_NEURAL_MAX_LINES=128
+ENV SC_NEURAL_MAX_LENGTH=128
+ENV SC_NEURAL_INFER_TIMEOUT_S=90
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')" || exit 1
+# Container-local HTTP health (Docker only). Fly uses TCP checks in fly.toml.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=180s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)" || exit 1
 
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080", "--timeout-keep-alive", "120"]
+# Single worker — model is ~1.5G + runtime; multi-worker OOMs the 8GB VM.
+# limit-concurrency keeps proxy from stacking jobs while torch holds the GIL.
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080", \
+     "--workers", "1", "--limit-concurrency", "4", "--timeout-keep-alive", "75"]

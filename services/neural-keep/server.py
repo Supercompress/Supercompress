@@ -1,20 +1,72 @@
-"""HTTP service for SuperCompress Neural Keep (Fly / local)."""
+"""HTTP service for SuperCompress Neural Keep (Fly / local).
+
+Reliability rules:
+- /health is liveness-only and must never wait on the model.
+- Inference runs in a **single child process** so torch's GIL cannot stall
+  the HTTP event loop (that was the 502 / health-hang root cause).
+- At most one compress at a time; overflow returns 503 busy after a short wait.
+- On inference timeout the worker process is killed and respawned (no zombie lock).
+"""
 
 from __future__ import annotations
 
+import asyncio
 import os
+import threading
 import time
+from concurrent.futures import ProcessPoolExecutor, TimeoutError as FuturesTimeout
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
-from inference import NeuralKeepModel
+app = FastAPI(title="SuperCompress Neural Keep", version="1.3.0")
 
-app = FastAPI(title="SuperCompress Neural Keep", version="1.0.0")
-
-_model: NeuralKeepModel | None = None
+_model_loaded_flag = False
 _loaded_at: float | None = None
+_load_error: str | None = None
+_inflight = 0
+_inflight_lock = threading.Lock()
+_busy_since: float | None = None
+_last_ok_at: float | None = None
+_last_err: str | None = None
+_jobs_ok = 0
+_jobs_fail = 0
+_jobs_busy = 0
+_jobs_timeout = 0
+_started_at = time.time()
+_exit_scheduled = False
+
+_pool: ProcessPoolExecutor | None = None
+_pool_lock = threading.Lock()
+_POOL_MODEL = None  # set inside worker process only
+
+_INFER_TIMEOUT_S = float(os.environ.get("SC_NEURAL_INFER_TIMEOUT_S", "90"))
+_MAX_CONTEXT_CHARS = int(os.environ.get("SC_NEURAL_MAX_CONTEXT_CHARS", "120000"))
+_BUSY_WAIT_S = float(os.environ.get("SC_NEURAL_BUSY_WAIT_S", "3.0"))
+
+
+def _cap_threads() -> None:
+    n = str(os.environ.get("TORCH_NUM_THREADS", "4"))
+    for key in (
+        "OMP_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OPENBLAS_NUM_THREADS",
+        "NUMEXPR_NUM_THREADS",
+        "TORCH_NUM_THREADS",
+    ):
+        os.environ.setdefault(key, n)
+    try:
+        import torch
+
+        torch.set_num_threads(int(os.environ.get("TORCH_NUM_THREADS", "4")))
+        if hasattr(torch, "set_num_interop_threads"):
+            try:
+                torch.set_num_interop_threads(1)
+            except RuntimeError:
+                pass
+    except Exception:
+        pass
 
 
 def _pick_device() -> str:
@@ -41,20 +93,80 @@ def _auth_secret() -> str:
     return os.environ.get("SC_NEURAL_KEEP_SECRET", "").strip()
 
 
-def get_model() -> NeuralKeepModel:
-    global _model, _loaded_at
-    if _model is None:
-        d = _model_dir()
-        if not os.path.isdir(d):
-            raise RuntimeError(f"SC_NEURAL_DIR not found: {d}")
-        _model = NeuralKeepModel(d, device=_pick_device())
-        _loaded_at = time.time()
-    return _model
+def _pool_init() -> None:
+    """Runs once inside the inference child process."""
+    global _POOL_MODEL
+    _cap_threads()
+    from inference import NeuralKeepModel
+
+    d = _model_dir()
+    if not os.path.isdir(d):
+        raise RuntimeError(f"SC_NEURAL_DIR not found: {d}")
+    _POOL_MODEL = NeuralKeepModel(d, device=_pick_device())
+    print(f"[neural-keep] worker model loaded device={_pick_device()}", flush=True)
+
+
+def _pool_compress(context: str, query: str, threshold: float | None) -> dict[str, Any]:
+    if _POOL_MODEL is None:
+        raise RuntimeError("worker model not initialized")
+    return _POOL_MODEL.compress(context, query, threshold=threshold)
+
+
+def _ensure_pool() -> ProcessPoolExecutor:
+    global _pool, _model_loaded_flag, _loaded_at, _load_error
+    with _pool_lock:
+        if _pool is not None:
+            return _pool
+        _cap_threads()
+        _pool = ProcessPoolExecutor(
+            max_workers=1,
+            initializer=_pool_init,
+        )
+        # Warm the worker so first user request isn't a cold load.
+        fut = _pool.submit(_pool_compress, "warmup", "warmup", None)
+        try:
+            fut.result(timeout=300)
+            _model_loaded_flag = True
+            _loaded_at = time.time()
+            _load_error = None
+        except Exception as e:
+            _load_error = str(e)
+            _model_loaded_flag = False
+            print(f"[neural-keep] worker warmup failed: {e}", flush=True)
+        return _pool
+
+
+def _kill_pool(reason: str) -> None:
+    global _pool, _model_loaded_flag
+    print(f"[neural-keep] killing inference pool: {reason}", flush=True)
+    with _pool_lock:
+        if _pool is not None:
+            try:
+                _pool.shutdown(wait=False, cancel_futures=True)
+            except Exception as e:
+                print(f"[neural-keep] pool shutdown err: {e}", flush=True)
+            _pool = None
+            _model_loaded_flag = False
+
+
+def _schedule_process_exit(reason: str, code: int = 75) -> None:
+    """Last-resort: Fly restarts the whole machine."""
+    global _exit_scheduled
+    if _exit_scheduled:
+        return
+    _exit_scheduled = True
+    print(f"[neural-keep] scheduling process exit ({code}): {reason}", flush=True)
+
+    def _boom() -> None:
+        time.sleep(0.8)
+        os._exit(code)
+
+    threading.Thread(target=_boom, name="nk-exit", daemon=True).start()
 
 
 class CompressRequest(BaseModel):
-    context: str = Field(..., min_length=1)
-    query: str = Field(default="")
+    context: str = Field(..., min_length=1, max_length=_MAX_CONTEXT_CHARS)
+    query: str = Field(default="", max_length=8_000)
     threshold: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
@@ -69,27 +181,73 @@ class CompressResponse(BaseModel):
     policy_name: str
     mode: str
     latency_ms: float
+    truncated: bool = False
 
 
 @app.on_event("startup")
 def startup() -> None:
-    # Fail fast when misconfigured — health stays red until weights exist.
-    if os.environ.get("SC_NEURAL_LAZY_LOAD", "").strip() not in ("1", "true", "yes"):
-        get_model()
+    # Spawn avoids forking a threaded uvicorn parent (deadlocks / hung workers).
+    try:
+        import multiprocessing as mp
+
+        mp.set_start_method("spawn", force=True)
+    except RuntimeError:
+        pass
+
+    lazy = os.environ.get("SC_NEURAL_LAZY_LOAD", "").strip().lower() in ("1", "true", "yes")
+
+    def _boot() -> None:
+        try:
+            _ensure_pool()
+        except Exception as e:
+            print(f"[neural-keep] boot pool failed: {e}", flush=True)
+
+    if not lazy:
+        threading.Thread(target=_boot, name="nk-boot", daemon=True).start()
 
 
 @app.get("/health")
-def health() -> dict[str, Any]:
+async def health() -> dict[str, Any]:
+    """Liveness only — never waits on torch / locks."""
     d = _model_dir()
-    ready = _model is not None
+    busy_for = round(time.time() - _busy_since, 1) if _busy_since is not None else 0.0
+    wedged = bool(_busy_since is not None and busy_for > _INFER_TIMEOUT_S + 15)
     return {
-        "ok": ready or os.path.isdir(d),
+        "ok": True,
         "service": "neural-keep",
+        "version": app.version,
         "model_dir": d,
-        "model_loaded": ready,
+        "model_dir_present": os.path.isdir(d),
+        "model_loaded": _model_loaded_flag,
+        "load_error": _load_error,
         "loaded_at": _loaded_at,
-        "device": _pick_device() if ready else None,
+        "inflight": _inflight,
+        "busy_for_s": busy_for,
+        "wedged": wedged,
+        "last_ok_at": _last_ok_at,
+        "last_err": _last_err,
+        "jobs_ok": _jobs_ok,
+        "jobs_fail": _jobs_fail,
+        "jobs_busy": _jobs_busy,
+        "jobs_timeout": _jobs_timeout,
+        "uptime_s": round(time.time() - _started_at, 1),
+        "device": _pick_device() if _model_loaded_flag else None,
+        "infer_timeout_s": _INFER_TIMEOUT_S,
+        "isolation": "process",
     }
+
+
+@app.get("/ready")
+async def ready() -> dict[str, Any]:
+    if not _model_loaded_flag:
+        threading.Thread(target=_ensure_pool, name="nk-boot", daemon=True).start()
+        raise HTTPException(
+            status_code=503,
+            detail={"ready": False, "reason": _load_error or "model_loading"},
+        )
+    if _exit_scheduled:
+        raise HTTPException(status_code=503, detail={"ready": False, "reason": "restarting"})
+    return {"ready": True, "model_loaded": True, "loaded_at": _loaded_at}
 
 
 def _check_auth(authorization: str | None, x_api_key: str | None) -> None:
@@ -105,25 +263,81 @@ def _check_auth(authorization: str | None, x_api_key: str | None) -> None:
         raise HTTPException(status_code=401, detail="unauthorized")
 
 
+def _run_compress_in_pool(context: str, query: str, threshold: float | None) -> dict[str, Any]:
+    pool = _ensure_pool()
+    fut = pool.submit(_pool_compress, context, query, threshold)
+    try:
+        return fut.result(timeout=_INFER_TIMEOUT_S)
+    except FuturesTimeout as e:
+        _kill_pool("inference_timeout")
+        # Recreate in background so next request can warm up.
+        threading.Thread(target=_ensure_pool, name="nk-respawn", daemon=True).start()
+        raise TimeoutError("inference_timeout") from e
+
+
 @app.post("/v1/compress", response_model=CompressResponse)
-def compress(
+async def compress(
     body: CompressRequest,
     authorization: str | None = Header(default=None),
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> CompressResponse:
+    global _inflight, _busy_since, _last_ok_at, _last_err
+    global _jobs_ok, _jobs_fail, _jobs_busy, _jobs_timeout
+
     _check_auth(authorization, x_api_key)
+    if _exit_scheduled:
+        raise HTTPException(status_code=503, detail="restarting", headers={"Retry-After": "15"})
+    if not _model_loaded_flag:
+        threading.Thread(target=_ensure_pool, name="nk-boot", daemon=True).start()
+        raise HTTPException(
+            status_code=503,
+            detail="model_loading",
+            headers={"Retry-After": "10"},
+        )
+
+    deadline = time.time() + max(0.0, _BUSY_WAIT_S)
+    while True:
+        with _inflight_lock:
+            if _inflight < 1:
+                _inflight += 1
+                _busy_since = time.time()
+                break
+        if time.time() >= deadline:
+            _jobs_busy += 1
+            raise HTTPException(
+                status_code=503,
+                detail="busy",
+                headers={"Retry-After": "5"},
+            )
+        await asyncio.sleep(0.15)
+
     t0 = time.time()
     try:
-        model = get_model()
-        out = model.compress(body.context, body.query, threshold=body.threshold)
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
-    ms = (time.time() - t0) * 1000.0
-    return CompressResponse(latency_ms=round(ms, 2), **out)
+        try:
+            out = await asyncio.to_thread(
+                _run_compress_in_pool, body.context, body.query, body.threshold
+            )
+        except TimeoutError as e:
+            _jobs_timeout += 1
+            _last_err = "inference_timeout"
+            raise HTTPException(status_code=504, detail="inference_timeout") from e
+        except Exception as e:
+            _jobs_fail += 1
+            _last_err = str(e)
+            raise HTTPException(status_code=503, detail=str(e)) from e
+        ms = (time.time() - t0) * 1000.0
+        _jobs_ok += 1
+        _last_ok_at = time.time()
+        _last_err = None
+        return CompressResponse(latency_ms=round(ms, 2), **out)
+    finally:
+        with _inflight_lock:
+            _inflight = max(0, _inflight - 1)
+            if _inflight == 0:
+                _busy_since = None
 
 
-# ── Compression Arena comparators ───────────────────────────────────────────
-# Each endpoint runs the REAL tool inside this container. Nothing simulated.
+# ── Compression Arena comparators (opt-in; off by default to save RAM) ───────
 
 
 class ArenaRequest(BaseModel):
@@ -137,12 +351,18 @@ class ArenaResponse(BaseModel):
     source: str
 
 
+def _arena_enabled() -> bool:
+    return os.environ.get("SC_ARENA", "").strip().lower() in ("1", "true", "yes")
+
+
 @app.post("/arena/headroom", response_model=ArenaResponse)
 def arena_headroom(
     body: ArenaRequest,
     authorization: str | None = Header(default=None),
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> ArenaResponse:
+    if not _arena_enabled():
+        raise HTTPException(status_code=404, detail="arena disabled")
     _check_auth(authorization, x_api_key)
     t0 = time.time()
     text = ""
@@ -184,13 +404,13 @@ def arena_rtk(
     authorization: str | None = Header(default=None),
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> ArenaResponse:
+    if not _arena_enabled():
+        raise HTTPException(status_code=404, detail="arena disabled")
     _check_auth(authorization, x_api_key)
     import subprocess
     import tempfile
 
     t0 = time.time()
-    # RTK filters files/command output, not raw stdin — write the dump to a
-    # temp file and run its log filter (its own dedupe/noise logic, unmodified).
     with tempfile.NamedTemporaryFile("w", suffix=".log", delete=False) as f:
         f.write(body.context)
         path = f.name

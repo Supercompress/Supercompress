@@ -11,12 +11,23 @@ primary_region = "sjc"
 [env]
   SC_NEURAL_DIR = "/data/model"
   SC_NEURAL_DEVICE = "cpu"
+  SC_NEURAL_LAZY_LOAD = "0"
+  SC_ARENA = "0"
+  OMP_NUM_THREADS = "4"
+  MKL_NUM_THREADS = "4"
+  OPENBLAS_NUM_THREADS = "4"
+  TORCH_NUM_THREADS = "4"
+  SC_NEURAL_INFER_TIMEOUT_S = "90"
+  SC_NEURAL_BATCH = "32"
+  SC_NEURAL_MAX_LINES = "128"
+  SC_NEURAL_MAX_LENGTH = "128"
+  SC_NEURAL_BUSY_WAIT_S = "3"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  # Keep one machine warm so prod doesn't fall back to compiler on cold/hung CPU.
-  # Tradeoff: burns Fly credit faster; revisit auto-stop once GPU or faster path ships.
+  # Stay warm — cold-loading ~400M on shared CPU is what caused 502 storms.
+  # Cost: one shared-cpu-4x 8GB machine on the existing Fly credit.
   auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
@@ -24,8 +35,9 @@ primary_region = "sjc"
 
   [http_service.concurrency]
     type = "requests"
-    hard_limit = 4
-    soft_limit = 2
+    # One in-flight compress; extras get 503 busy from the app (and Fly soft-sheds).
+    hard_limit = 2
+    soft_limit = 1
 
 [[vm]]
   memory = "8gb"
@@ -36,12 +48,12 @@ primary_region = "sjc"
   source = "neural_weights"
   destination = "/data/model"
 
+# TCP liveness — does NOT run Python/torch. HTTP /health used to time out while
+# the GIL was held during inference → Fly marked the machine critical → 502s.
 [checks]
-  [checks.health]
-    grace_period = "180s"
-    interval = "30s"
-    method = "GET"
-    path = "/health"
+  [checks.alive]
+    type = "tcp"
     port = 8080
-    timeout = "10s"
-    type = "http"
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "120s"
