@@ -237,6 +237,8 @@
     void question;
     const result = [];
     const seenFingerprints = new Map();
+    // fingerprint -> index in `result` of the line that carries its marker.
+    const repeatMarkers = new Map();
     const traceAccum = [];
 
     function flushTrace() {
@@ -272,9 +274,15 @@
         continue;
       }
 
+      // Severity decides how aggressively two lines may be treated as the same.
+      // Digit-blind fingerprinting is what makes INFO/DEBUG noise collapse, but
+      // on WARN/ERROR/FATAL the digits ARE the evidence: order ids, amounts,
+      // ports and status codes differ only in their digits, so folding them
+      // together deletes the answer the query is asking for.
+      const severe = /\b(WARN|WARNING|ERROR|FATAL|SEVERE|CRIT|CRITICAL)\b/i.test(trimmed);
       const fingerprint = trimmed
         .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/g, "T")
-        .replace(/\d+/g, "#")
+        .replace(severe ? /(?!)/g : /\d+/g, "#")
         .replace(/\s+/g, " ")
         .trim();
 
@@ -284,9 +292,13 @@
         if (count <= 2) {
           result.push(line);
         } else if (count === 3) {
-          result.push(line + `  [repeated ${count - 1}x]`);
+          // Placeholder: the real suppressed count is only known once the whole
+          // input has been walked, so it is back-filled after the loop.
+          repeatMarkers.set(fingerprint, result.length);
+          result.push(line);
         }
-        // Further identical lines are collapsed (structural), not keyword-dropped.
+        // Further lines with this fingerprint are collapsed (structural), not
+        // keyword-dropped. They are counted so the marker can report how many.
       } else {
         seenFingerprints.set(fingerprint, 1);
         result.push(line);
@@ -294,6 +306,17 @@
     }
 
     flushTrace();
+
+    // Back-fill each marker with the number of lines actually suppressed, so
+    // the count is the real one rather than a fixed "2x". A group of exactly
+    // three occurrences suppresses none and keeps its line unmarked.
+    for (const [fingerprint, idx] of repeatMarkers) {
+      const suppressed = (seenFingerprints.get(fingerprint) || 0) - 3;
+      if (suppressed > 0 && result[idx] !== undefined) {
+        result[idx] = `${result[idx]}  [+${suppressed} more suppressed]`;
+      }
+    }
+
     const collapsed = [];
     let blankRun = 0;
     for (const line of result) {
@@ -3871,9 +3894,18 @@
   const CCR_MAX_ENTRIES = 500;
   const CCR_TTL_MS = 48 * 60 * 60 * 1000;
 
+  // Returns the storage key, or null when the key is already taken by DIFFERENT
+  // content. simpleHash is a 32-bit rolling hash passed through Math.abs, so
+  // roughly 31 bits of key space: two different texts of the same length do
+  // collide, and a collision used to hand back a key whose stored content was
+  // somebody else's block. Refusing the key is the honest outcome — the caller
+  // then omits the marker, so retrieval can miss but never returns the wrong
+  // original.
   function ccrStore(original) {
     const hash = simpleHash(original);
     const now = Date.now();
+    const existing = contentCache.get(hash);
+    if (existing && existing.original !== original) return null;
     if (!contentCache.has(hash)) {
       if (contentCache.size >= CCR_MAX_ENTRIES) {
         // Proper LRU: evict least recently accessed (and any expired)
@@ -3991,7 +4023,9 @@
         if (blockStart !== -1 && blockTokens > 10) {
           const blockText = lines.slice(blockStart, i).join("\n");
           const blockHash = ccrStore(blockText);
-          markerLines.push({ lineIndex: i, hash: blockHash, tokens: blockTokens });
+          // null = the key collided with different content. Emitting a marker
+          // anyway would point the reader at somebody else's block.
+          if (blockHash) markerLines.push({ lineIndex: i, hash: blockHash, tokens: blockTokens });
         }
         blockStart = -1;
         blockTokens = 0;
@@ -4001,11 +4035,13 @@
     if (blockStart !== -1 && blockTokens > 10) {
       const blockText = lines.slice(blockStart).join("\n");
       const blockHash = ccrStore(blockText);
-      markerLines.push({
-        lineIndex: lines.length,
-        hash: blockHash,
-        tokens: blockTokens,
-      });
+      if (blockHash) {
+        markerLines.push({
+          lineIndex: lines.length,
+          hash: blockHash,
+          tokens: blockTokens,
+        });
+      }
     }
 
     // Build compressed text with markers interspersed at correct positions

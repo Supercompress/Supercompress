@@ -1782,6 +1782,22 @@
     {
       "source": "/api/:path*",
       "destination": "/api/soft-probe"
+    },
+    {
+      "source": "/aeo-geo",
+      "destination": "/aeo-geo.html"
+    },
+    {
+      "source": "/reduce-chatgpt-costs",
+      "destination": "/reduce-chatgpt-costs.html"
+    },
+    {
+      "source": "/reduce-claude-costs",
+      "destination": "/reduce-claude-costs.html"
+    },
+    {
+      "source": "/reduce-gemini-costs",
+      "destination": "/reduce-gemini-costs.html"
     }
   ],
   "functions": {

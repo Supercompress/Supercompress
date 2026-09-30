@@ -166,7 +166,7 @@ function escapeHtml(s) {
 
 /**
  * Branded email chrome — table layout for Gmail/Outlook.
- * Every product email (welcome, Sunday tip, Wednesday ship) goes through this.
+ * Every product email (welcome, Sunday tip, Friday ship) goes through this.
  *
  * @param {{ preheader?: string, title?: string, bodyHtml: string, footerHtml?: string, unsubUrl?: string, kind?: string }} opts
  */
@@ -344,7 +344,7 @@ Get started:
 • Playground: ${SITE}/playground
 
 One command for agents:
-npm install -g supercompress-proxy && npx supercompress setup
+npm install -g supercompress-proxy && supercompress setup
 
 Free: 5M tokens/month. Then $0.10 / 1M PAYG so you never hard-stop — usually cheaper than the LLM tokens you save.
 
@@ -389,11 +389,11 @@ const WEEKLY_TIPS_FALLBACK = [
     subject: "Your coding agent is burning tokens you can reclaim",
     tipTitle: "Stop paying for every log dump in Cursor / Claude Code",
     tipBody:
-      "Agents re-send huge context every turn. SuperCompress installs as MCP, keeps your login, and compresses dumps before they hit the model — typically ~65% fewer input tokens with ≥98% answer keep on our held-out suites.",
+      "Agents re-send huge context every turn. SuperCompress installs as MCP, keeps your login, and compresses dumps before they hit the model — typically 64% less context on our coding-agent benchmark with 24/24 benchmark evidence-retention passes on our held-out suites.",
     proof: "Install once. Works with Cursor, Claude Code, Codex, and more.",
     ctaLabel: "Install coding agent plugin →",
     ctaUrl: `${SITE}/docs/coding-agents`,
-    command: "npm install -g supercompress-proxy && npx supercompress setup",
+    command: "npm install -g supercompress-proxy && supercompress setup",
     secondaryLabel: "See held-out benchmarks",
     secondaryUrl: `${SITE}/benchmarks`,
   },
@@ -414,7 +414,7 @@ function getWeeklyTipsCatalog() {
   return { seed, byCampaign };
 }
 
-/** Prefer campaign-specific tip (new each week); else rotate seed. */
+/** Prefer campaign-specific tip (new each week). Seed is preview/dev only — never mass-send a recycled seed for a dated -tip campaign. */
 function weeklyTipForCampaign(campaignId) {
   const { seed, byCampaign } = getWeeklyTipsCatalog();
   const cid = String(campaignId || "").trim();
@@ -425,6 +425,10 @@ function weeklyTipForCampaign(campaignId) {
   if (base && byCampaign[base] && byCampaign[base].subject) {
     return { ...byCampaign[base], campaign_id: cid || base };
   }
+  // Dated tip campaigns must be authored uniquely each week (email-campaigns byCampaign).
+  if (/-tip$/i.test(cid)) {
+    return null;
+  }
   const n = (cid || base).split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
   return seed[n % seed.length];
 }
@@ -433,10 +437,22 @@ function weeklyTipForCampaign(campaignId) {
 const WEEKLY_TIPS = getWeeklyTipsCatalog().seed;
 
 function weeklyCopy({ firstName, email, campaignId, unsubUrl }) {
-  const hi = firstName ? `Hi ${firstName}` : "Hi";
   const tip = weeklyTipForCampaign(campaignId);
-  const subject = tip.subject;
   const unsub = unsubUrl || `${SITE}/unsubscribe`;
+  if (!tip || !tip.subject) {
+    return {
+      subject: null,
+      text: null,
+      html: null,
+      to: email,
+      tip_id: null,
+      kind: "tip",
+      unsubUrl: unsub,
+      error: `missing_unique_tip:${campaignId || ""}`,
+    };
+  }
+  const hi = firstName ? `Hi ${firstName}` : "Hi";
+  const subject = tip.subject;
 
   const cmdBlock = tip.command ? `\n${tip.command}\n` : "";
   const text = `${hi},
@@ -1242,6 +1258,15 @@ async function sendWeeklyEmail({ email, firstName, campaignId, unsubUrl, listUns
     campaignId,
     unsubUrl,
   });
+  if (copy.error || !copy.subject || !copy.html) {
+    return {
+      ok: false,
+      error: copy.error || "missing_email_copy",
+      subject: copy.subject,
+      tip_id: copy.tip_id,
+      kind: copy.kind || campaignKind(campaignId),
+    };
+  }
   const result = await sendViaResend({
     ...copy,
     unsubUrl: copy.unsubUrl || unsubUrl,
