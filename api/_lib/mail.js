@@ -342,7 +342,7 @@ Get started:
 One command for agents:
 npm install -g supercompress-proxy && supercompress setup
 
-Pricing: free 1M tokens/mo, then $0.10 per 1M. Pay-as-you-go means you never hard-stop — usually cheaper than the LLM tokens you save.
+Pricing: 5M tokens/month free, no card needed. Then $0.10 per 1M original tokens on prepaid or pay-as-you-go credits, so you never hard-stop — usually cheaper than the LLM tokens you save. Self-hosting (MIT) is $0.
 
 Thanks again,
 Arjun
@@ -365,7 +365,7 @@ npx supercompress setup</pre>
   · <a href="${SITE}/playground" style="color:${BRAND};text-decoration:none;font-weight:600;">Playground</a>
   · <a href="${SITE}/reduce-llm-costs" style="color:${BRAND};text-decoration:none;font-weight:600;">Cut API costs</a>
 </p>
-${proofCallout("Pricing: free 1M tokens/mo, then $0.10 per 1M · pay-as-you-go, so you never hard-stop.")}
+${proofCallout("Pricing: 5M tokens/month free, no card needed · then $0.10 per 1M original tokens (prepaid or pay-as-you-go) · self-host (MIT) $0.")}
 ${signatureBlock()}`;
 
   const html = brandedEmailHtml({
@@ -725,7 +725,7 @@ Or post now: https://twitter.com/intent/tweet?text=${encodeURIComponent(
     `Just hit power user on SuperCompress — 1M+ tokens compressed.\n\nCut agent context, keep the answer → ${SITE}`
   )}
 
-Pricing: free 1M tokens/mo, then $0.10 per 1M. Load credits anytime: ${billingUrl}
+Pricing: 5M tokens/month free, then $0.10 per 1M original tokens on prepaid or pay-as-you-go credits. Load credits anytime: ${billingUrl}
 
 — Arjun
 Founder, SuperCompress
@@ -764,7 +764,7 @@ Founder, SuperCompress
     }
     <p style="margin:0 0 12px;">Tell the timeline — post about it on X.</p>
     ${ctaButton("Post on X", xShareUrl)}
-    <p style="margin:16px 0 12px;">Pricing: <strong>free 1M tokens/mo, then $0.10 per 1M</strong> — load credits anytime.</p>
+    <p style="margin:16px 0 12px;">Pricing: <strong>5M tokens/month free, then $0.10 per 1M original tokens</strong> on prepaid or pay-as-you-go credits — load credits anytime.</p>
     ${ctaButton("Load credits", billingUrl)}
     ${signatureBlock()}
   `;
@@ -823,7 +823,7 @@ function quotaExhaustedCopy({ email, firstName, tokensUsed, freeTokens, month })
 
 You've burned through your free ${freeM}M tokens this month (${usedM}M so far) — nice. Compression is paused until you add credits.
 
-Pricing: free 1M tokens/mo, then $0.10 per 1M (minimum $10 load, credits never expire). Load credits and you're back instantly:
+Pricing: 5M tokens/month free, then $0.10 per 1M original tokens on prepaid or pay-as-you-go credits (minimum $10 load, credits never expire). Load credits and you're back instantly:
 ${billingUrl}
 
 ${resetLine} If you'd rather wait, everything picks up again then — your account, keys, and integrations stay exactly as they are.
@@ -836,14 +836,14 @@ Founder, SuperCompress
     ${eyebrow("Free tier used")}
     ${displayHeadline(`${hi} — you've used your free ${freeM}M tokens`)}
     <p style="margin:0 0 14px;">You've compressed <strong>${escapeHtml(usedM)}M tokens</strong> this month — that puts you in the top slice of SuperCompress users. Compression is paused until you add credits.</p>
-    <p style="margin:0 0 12px;">Pricing: <strong>free 1M tokens/mo, then $0.10 per 1M</strong> (minimum $10 load, credits never expire). Load credits and you're back instantly.</p>
+    <p style="margin:0 0 12px;">Pricing: <strong>5M tokens/month free, then $0.10 per 1M original tokens</strong> on prepaid or pay-as-you-go credits (minimum $10 load, credits never expire). Load credits and you're back instantly.</p>
     ${ctaButton("Add credits", billingUrl)}
     <p style="margin:16px 0 0;font-size:14px;line-height:1.55;color:${MUTED};">${escapeHtml(resetLine)} If you'd rather wait, everything picks up again then — your account, keys, and integrations stay exactly as they are.</p>
     ${signatureBlock()}
   `;
 
   const html = brandedEmailHtml({
-    preheader: `Free ${freeM}M tokens used — add credits to keep compressing ($0.10 per 1M).`,
+    preheader: `Free ${freeM}M tokens used — add credits to keep compressing ($0.10 per 1M original tokens).`,
     title: subject,
     bodyHtml,
     kind: "welcome",
