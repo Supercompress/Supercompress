@@ -45,6 +45,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=180s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)" || exit 1
 
 # Single worker — model is ~1.5G + runtime; multi-worker OOMs the 8GB VM.
-# limit-concurrency keeps proxy from stacking jobs while torch holds the GIL.
+# High limit-concurrency: app serializes compress itself. A low uvicorn cap
+# (was 4) made /health 503 under API retry storms ("Exceeded concurrency limit").
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080", \
-     "--workers", "1", "--limit-concurrency", "4", "--timeout-keep-alive", "75"]
+     "--workers", "1", "--limit-concurrency", "64", "--timeout-keep-alive", "75"]

@@ -102,10 +102,13 @@ async function compressAdaptive(context, query) {
   const E = getEngine();
   const neuralBoost = await loadNeuralBoost(context, query);
   // Hosted API never returns line_annotations — skip building them (big win on large dumps).
-  return E.compressAdaptive(context, query, getModel(), {
+  const local = E.compressAdaptive(context, query, getModel(), {
     includeAnnotations: false,
     ...(neuralBoost ? { neuralBoost } : {}),
   });
+  // Always stamp an explicit mode so callers never see an ambiguous fallback.
+  if (local && !local.mode) local.mode = "compiler";
+  return local;
 }
 
 async function compressCCR(context, query) {

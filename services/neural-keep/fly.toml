@@ -24,6 +24,8 @@ primary_region = "sjc"
   SC_NEURAL_CHECKPOINT = "sc-keep-crossencoder-v4-large"
   SC_NEURAL_EXPECTED_BYTES = "1583351632"
   SC_NEURAL_EXPECTED_PARAMS_M = "395.83"
+  SC_NEURAL_BUSY_WAIT_S = "0"
+  SC_NEURAL_TIMEOUT_EXITS = "0"
 
 [http_service]
   internal_port = 8080
@@ -37,10 +39,10 @@ primary_region = "sjc"
 
   [http_service.concurrency]
     type = "requests"
-    # App still serializes compress (inflight=1). Soft/hard must leave headroom
-    # for /health+/ready or Fly queues them behind a long CPU job → "hangs"/502s.
-    hard_limit = 8
-    soft_limit = 4
+    # App serializes compress (inflight=1). Keep plenty of headroom for
+    # /health+/ready + client retries — low caps made health 503 under load.
+    hard_limit = 32
+    soft_limit = 16
 
 [[vm]]
   memory = "8gb"

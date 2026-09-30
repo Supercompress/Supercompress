@@ -26,11 +26,25 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function retryAfterMs(res, attempt) {
+function detailText(body) {
+  const d = body && body.detail;
+  if (d == null) return "";
+  if (typeof d === "string") return d;
+  try {
+    return JSON.stringify(d);
+  } catch {
+    return String(d);
+  }
+}
+
+function retryAfterMs(res, attempt, detail) {
   const raw = res && res.headers && typeof res.headers.get === "function" ? res.headers.get("retry-after") : null;
   const sec = raw != null ? Number(raw) : NaN;
-  if (Number.isFinite(sec) && sec >= 0) return Math.min(20_000, Math.max(500, sec * 1000));
-  // 0.8s, 1.6s, 3.2s, 6.4s, 8s — wait out the single CPU slot instead of compiler fallback.
+  if (Number.isFinite(sec) && sec >= 0) return Math.min(25_000, Math.max(500, sec * 1000));
+  // model_loading / restarting needs a longer pause than a brief busy slot.
+  if (/model_loading|restarting/i.test(String(detail || ""))) {
+    return Math.min(20_000, 3_000 * (attempt + 1));
+  }
   return Math.min(8_000, 800 * 2 ** attempt);
 }
 
@@ -52,6 +66,26 @@ async function fetchOnce(url, headers, context, query, timeout) {
   }
 }
 
+/** Soft wait for worker warm — never throws; compress still retries on 503. */
+async function waitReady(budgetMs) {
+  const readyUrl = `${baseUrl()}/ready`;
+  const deadline = Date.now() + Math.min(45_000, Math.max(0, budgetMs));
+  while (Date.now() < deadline) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 4_000);
+      const res = await fetch(readyUrl, { method: "GET", signal: ctrl.signal }).finally(() =>
+        clearTimeout(timer)
+      );
+      if (res.ok) return true;
+    } catch {
+      // ignore
+    }
+    await sleep(1_500);
+  }
+  return false;
+}
+
 /**
  * @param {string} context
  * @param {string} query
@@ -70,24 +104,27 @@ async function compressViaNeuralKeep(context, query) {
   const budget = timeoutMs();
   const tStart = Date.now();
   let lastErr = null;
-  const maxAttempts = 5;
+  const maxAttempts = 6;
 
-  // Retry on 503 busy / transient 502/504 (Fly proxy blip or single-slot queue).
+  // Prefer a warm worker before burning the first compress attempt.
+  await waitReady(Math.min(20_000, budget / 3));
+
+  // Retry on 503 busy / model_loading / transient 502/504.
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const remaining = budget - (Date.now() - tStart);
     if (remaining < 3_000) break;
     try {
       const { res, body, ms } = await fetchOnce(url, headers, context, query, remaining);
+      const detail = detailText(body) || body.error || res.statusText;
       if (res.status === 503 || res.status === 502 || res.status === 504) {
-        lastErr = new Error(`neural-keep HTTP ${res.status}: ${body.detail || body.error || res.statusText}`);
+        lastErr = new Error(`neural-keep HTTP ${res.status}: ${detail}`);
         if (attempt < maxAttempts - 1) {
-          await sleep(retryAfterMs(res, attempt));
+          await sleep(retryAfterMs(res, attempt, detail));
           continue;
         }
         break;
       }
       if (!res.ok) {
-        const detail = body.detail || body.error || res.statusText;
         throw new Error(`neural-keep HTTP ${res.status}: ${detail}`);
       }
       const compressed = String(body.compressed_text || "");
@@ -113,8 +150,8 @@ async function compressViaNeuralKeep(context, query) {
     } catch (err) {
       lastErr = err;
       const msg = String(err && err.message ? err.message : err);
-      if (/aborted|timeout|ECONNRESET|fetch failed|502|503|504/i.test(msg) && attempt < maxAttempts - 1) {
-        await sleep(retryAfterMs(null, attempt));
+      if (/aborted|timeout|ECONNRESET|fetch failed|502|503|504|model_loading|restarting/i.test(msg) && attempt < maxAttempts - 1) {
+        await sleep(retryAfterMs(null, attempt, msg));
         continue;
       }
       break;
