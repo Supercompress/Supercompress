@@ -24,10 +24,19 @@ let writeCache = null;
 let firestoreUnavailable = skipFirestore();
 let useGistStore = false;
 
-/** Gist is the real prod store while Firestore API is disabled on this project.
- * Set SUPERCOMPRESS_DISABLE_GIST=1 to force Firestore-only (fails closed). */
+/** Gist is emergency-only and never on for production by default.
+ * Secret Gists are unlisted, not secret storage — do not park customer ops data there.
+ * Set SUPERCOMPRESS_ALLOW_GIST=1 to opt in (non-prod / break-glass).
+ * SUPERCOMPRESS_DISABLE_GIST=1 always forces Firestore-only (fail closed). */
 function gistAllowed() {
   if (String(process.env.SUPERCOMPRESS_DISABLE_GIST || "").trim() === "1") {
+    return false;
+  }
+  const prod =
+    process.env.VERCEL_ENV === "production" ||
+    process.env.NODE_ENV === "production" ||
+    String(process.env.SC_FORCE_PROD || "").trim() === "1";
+  if (prod && String(process.env.SUPERCOMPRESS_ALLOW_GIST || "").trim() !== "1") {
     return false;
   }
   return gistConfigured();
@@ -783,7 +792,6 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
       ? Math.max(0, Math.round(Number(stats.latency_ms)))
       : null;
   const cutPct = tokensIn > 0 ? Math.round((tokensSaved / tokensIn) * 10000) / 100 : 0;
-  const lastQuery = String(stats.query || "").trim().slice(0, 160);
   const source = stats.source
     ? String(stats.source).toLowerCase().replace(/[^a-z0-9_-]/g, "_").slice(0, 32)
     : null;
@@ -799,7 +807,8 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
       first_seen: prev.first_seen || now,
       last_seen: now,
       last_pct: cutPct,
-      last_query: lastQuery || prev.last_query || null,
+      // Strip any legacy last_query on write — prompts must not be retained.
+      last_query: null,
       last_source: source || prev.last_source || null,
       latency_sum_ms: prev.latency_sum_ms || 0,
       latency_samples: prev.latency_samples || 0,
@@ -834,7 +843,7 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
       first_seen: months[month].first_seen || base.first_seen || now,
       last_seen: now,
       last_pct: cutPct,
-      last_query: lastQuery || base.last_query || null,
+      last_query: null,
       last_source: source || base.last_source || null,
       latency_sum_ms: months[month].latency_sum_ms,
       latency_samples: months[month].latency_samples,
@@ -877,11 +886,10 @@ function repairMisattributedCodingAgents(agents) {
   if (!bad || typeof bad !== "object") return { agents: next, changed: false };
 
   const src = String(bad.last_source || "").toLowerCase();
-  const q = String(bad.last_query || "");
   const looksLikeCursorTool =
     /^tool_(shell|read|grep|task|awaitshell|await|webfetch|websearch|edit|write|glob|mcp)/i.test(
       src
-    ) || /^Compress new .+ output for the current coding task/i.test(q);
+    );
 
   if (!looksLikeCursorTool) return { agents: next, changed: false };
 
@@ -904,7 +912,7 @@ function repairMisattributedCodingAgents(agents) {
           snap.last_seen ||
           null,
         last_pct: snap.last_pct != null ? snap.last_pct : prev.last_pct ?? null,
-        last_query: snap.last_query || prev.last_query || null,
+        last_query: null,
         last_source: snap.last_source || prev.last_source || null,
         latency_sum_ms: (prev.latency_sum_ms || 0) + (snap.latency_sum_ms || 0),
         latency_samples: (prev.latency_samples || 0) + (snap.latency_samples || 0),
@@ -927,7 +935,7 @@ function repairMisattributedCodingAgents(agents) {
     first_seen: [cursor?.first_seen, bad.first_seen].filter(Boolean).sort()[0] || bad.first_seen || null,
     last_seen: [cursor?.last_seen, bad.last_seen].filter(Boolean).sort().slice(-1)[0] || bad.last_seen || null,
     last_pct: bad.last_pct != null ? bad.last_pct : cursor?.last_pct ?? null,
-    last_query: bad.last_query || cursor?.last_query || null,
+    last_query: null,
     last_source: bad.last_source || cursor?.last_source || null,
     latency_sum_ms: (cursor?.latency_sum_ms || 0) + (bad.latency_sum_ms || 0),
     latency_samples: (cursor?.latency_samples || 0) + (bad.latency_samples || 0),
@@ -1059,4 +1067,5 @@ module.exports = {
   loadAgentPluginLink,
   markAgentPluginLinked,
   importAuthStoreRecordsInto,
+  gistAllowed,
 };

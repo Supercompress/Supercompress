@@ -1,6 +1,8 @@
 /**
  * POST /api/billing-webhook
  * Stripe webhook handler — credit top-ups, checkout.completed, subscription.updated/deleted.
+ *
+ * No CORS (server-to-server). Raw body is capped before buffering.
  */
 const {
   getStripe,
@@ -13,37 +15,49 @@ const {
 
 module.exports.config = { api: { bodyParser: false } };
 
-function corsHeaders(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Stripe-Signature");
-}
+/** Stripe events are small; refuse anything larger before concat. */
+const MAX_WEBHOOK_BYTES = 1024 * 1024; // 1 MiB
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    req.on("data", (chunk) => chunks.push(chunk));
+    let total = 0;
+    req.on("data", (chunk) => {
+      total += chunk.length;
+      if (total > MAX_WEBHOOK_BYTES) {
+        reject(Object.assign(new Error("Webhook body too large"), { status: 413 }));
+        try {
+          req.destroy();
+        } catch (_) {
+          /* ignore */
+        }
+        return;
+      }
+      chunks.push(chunk);
+    });
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
 }
 
 module.exports = async (req, res) => {
-  if (req.method === "OPTIONS") { corsHeaders(res); return res.status(204).end(); }
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
   // Scanner GETs / missing signature — soft 200 (Vercel Observability error rate).
   if (req.method !== "POST") {
-    corsHeaders(res);
     return res.status(200).json({ ok: false, probe: true, detail: "Method not allowed", allow: "POST" });
   }
 
   const sig = req.headers["stripe-signature"];
   if (!sig) {
-    corsHeaders(res);
     return res.status(200).json({ ok: false, probe: true, detail: "Missing Stripe-Signature header" });
   }
 
   const webhookSecret = (process.env.STRIPE_WEBHOOK_SECRET || "").trim();
-  if (!webhookSecret) { corsHeaders(res); return res.status(503).json({ detail: "Webhook secret not configured" }); }
+  if (!webhookSecret) {
+    return res.status(503).json({ detail: "Webhook secret not configured" });
+  }
 
   try {
     const stripe = getStripe();
@@ -82,6 +96,7 @@ module.exports = async (req, res) => {
               stripe_customer_id: session.customer,
               plan_id: planId,
               status: "active",
+              sc_metered: planId === "payg",
               updated_at: new Date().toISOString(),
             };
           }
@@ -155,18 +170,24 @@ module.exports = async (req, res) => {
         }
         break;
       }
+      default:
+        break;
     }
 
-    corsHeaders(res);
     return res.status(200).json({ received: true });
   } catch (err) {
-    console.error("Webhook error:", err);
-    corsHeaders(res);
-    // Signature / parse failures → 400 (no retry useful). Processing failures → 500 so Stripe retries.
+    console.error("Webhook error:", err?.message || err);
+    const status = err?.status === 413 ? 413 : undefined;
     const msg = String(err?.message || err || "");
     const isSig =
       /signature|No signatures found|Invalid signature|payload/i.test(msg) ||
       err?.type === "StripeSignatureVerificationError";
-    return res.status(isSig ? 400 : 500).json({ detail: `Webhook Error: ${msg}` });
+    if (status === 413) {
+      return res.status(413).json({ detail: "Webhook body too large" });
+    }
+    // Never echo raw internal errors to an unauthenticated Stripe caller.
+    return res.status(isSig ? 400 : 500).json({
+      detail: isSig ? "Invalid webhook" : "Webhook processing failed",
+    });
   }
 };

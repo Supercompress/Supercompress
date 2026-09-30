@@ -598,7 +598,7 @@ module.exports = async (req, res) => {
           kept_tokens: result.kept_tokens,
           tokens_saved: tokensSaved,
           latency_ms: latencyMs,
-          query,
+          // Never persist query text — privacy: analytics is counts/latency/source only.
           source: inferredSource,
         }), Math.min(2500, remainingMs() - 500), "coding_agent_usage");
       } catch (err) {

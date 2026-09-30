@@ -6,7 +6,9 @@
  */
 
 const SITE = "https://www.supercompress.dev";
-const FOUNDER_ALERT_TO = "arjunkshah21@gmail.com";
+/** Ops alerts — set FOUNDER_ALERT_TO in prod; never hardcode personal Gmail. */
+const FOUNDER_ALERT_TO =
+  (process.env.FOUNDER_ALERT_TO || process.env.WELCOME_REPLY_TO || "support@supercompress.dev").trim();
 
 function recoveryStoreKey(uid, cycle) {
   return `${String(uid || "").trim()}:c${Number(cycle) || 0}`;

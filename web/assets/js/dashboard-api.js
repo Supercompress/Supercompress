@@ -21,6 +21,13 @@ import { createOnboardingController } from "./dashboard-onboarding.js?v=4";
 const API_BASE = window.SC_API_BASE || "";
 const SESSION_KEY = "sc_dash_session";
 const SECRET_KEY = "sc_last_api_secret";
+/** In-memory only — never persist sc_live_ keys in sessionStorage (XSS blast radius). */
+let memorySecret = "";
+try {
+  sessionStorage.removeItem(SECRET_KEY);
+} catch {
+  /* ignore */
+}
 
 const onboarding = createOnboardingController({
   apiFetch: (...args) => apiFetch(...args),
@@ -662,19 +669,11 @@ async function ensureDefaultKey() {
 }
 
 function storedSecret() {
-  try {
-    return sessionStorage.getItem(SECRET_KEY) || "";
-  } catch {
-    return "";
-  }
+  return memorySecret || "";
 }
 
 function saveSecret(secret) {
-  try {
-    if (secret) sessionStorage.setItem(SECRET_KEY, secret);
-  } catch {
-    /* ignore */
-  }
+  memorySecret = secret ? String(secret) : "";
 }
 
 async function sendTestRequest() {

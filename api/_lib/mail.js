@@ -2,25 +2,21 @@
  * Transactional product email helpers (welcome / weekly / receipts).
  * Sends via Resend only (`RESEND_API_KEY`). From / reply-to:
  *   WELCOME_FROM_EMAIL (default hello@supercompress.dev on verified Resend domain)
- *   WELCOME_REPLY_TO (default founder Gmail)
+ *   WELCOME_REPLY_TO (default support@supercompress.dev)
  *
- * Campaign copy is NOT in the OSS tree. Canonical private repo:
- *   https://github.com/Supercompress/email-campaigns
- * Load order:
- *   1. WEEKLY_TIPS_JSON / WEEKLY_SHIP_JSON env (Vercel; sync from that repo)
+ * Campaign copy is NOT in the OSS tree. Load order:
+ *   1. WEEKLY_TIPS_JSON / WEEKLY_SHIP_JSON env (Vercel)
  *   2. SUPERCOMPRESS_EMAIL_CONTENT_DIR/{weekly-tips,weekly-ship}.json
- *   3. ~/agent-bridge/private/supercompress-email/content/ (local mirror)
- *   4. Minimal fallback seed + CHANGELOG-derived ship bullets
+ *   3. Local api/_lib fallback seed + CHANGELOG-derived ship bullets
  */
 
 const fs = require("fs");
 const path = require("path");
-const os = require("os");
 
 const DEFAULT_FROM =
   process.env.WELCOME_FROM_EMAIL ||
   "Arjun at SuperCompress <hello@supercompress.dev>";
-const REPLY_TO = process.env.WELCOME_REPLY_TO || "arjunkshah21@gmail.com";
+const REPLY_TO = process.env.WELCOME_REPLY_TO || "support@supercompress.dev";
 const SITE = "https://www.supercompress.dev";
 const LOGO = `${SITE}/assets/img/logo-chevrons.png`;
 // Match live site chrome (landing-chrome.css)
@@ -32,14 +28,6 @@ const MUTED = "#5c5a55";
 const BG = "#f4f5f8";
 const CARD = "#ffffff";
 const BORDER = "#e6e7eb";
-
-const PRIVATE_EMAIL_CONTENT_DIR = path.join(
-  os.homedir(),
-  "agent-bridge",
-  "private",
-  "supercompress-email",
-  "content"
-);
 
 function parseJsonObject(raw) {
   try {
@@ -130,8 +118,7 @@ function loadCampaignJson(envName, fileName) {
   const dirs = [];
   const contentDir = (process.env.SUPERCOMPRESS_EMAIL_CONTENT_DIR || "").trim();
   if (contentDir) dirs.push(contentDir);
-  dirs.push(PRIVATE_EMAIL_CONTENT_DIR);
-  // Local dev mirror (gitignored; not deployed — use WEEKLY_SHIP_JSON on Vercel).
+  // Local seed next to this module (gitignored ops copy via SUPERCOMPRESS_EMAIL_CONTENT_DIR).
   dirs.push(path.join(__dirname));
   for (const dir of dirs) {
     try {
@@ -425,7 +412,7 @@ function weeklyTipForCampaign(campaignId) {
   if (base && byCampaign[base] && byCampaign[base].subject) {
     return { ...byCampaign[base], campaign_id: cid || base };
   }
-  // Dated tip campaigns must be authored uniquely each week (email-campaigns byCampaign).
+  // Dated tip campaigns must be authored uniquely each week (private content + WEEKLY_TIPS_JSON).
   if (/-tip$/i.test(cid)) {
     return null;
   }

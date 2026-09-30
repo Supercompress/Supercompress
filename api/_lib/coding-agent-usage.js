@@ -29,7 +29,6 @@ function agentUsageForMonth(agents, month) {
       first_seen: bucket.first_seen || snap.first_seen || null,
       last_seen: bucket.last_seen || snap.last_seen || null,
       last_pct: bucket.last_pct != null ? bucket.last_pct : snap.last_pct ?? null,
-      last_query: bucket.last_query || snap.last_query || null,
       last_source: bucket.last_source || snap.last_source || null,
       latency_sum_ms: bucket.latency_sum_ms || 0,
       latency_samples: bucket.latency_samples || 0,

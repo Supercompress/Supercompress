@@ -10,7 +10,7 @@ Do **not** open a public issue for security reports.
 
 **Preferred:** [GitHub Private vulnerability reporting](https://github.com/Supercompress/Supercompress/security/advisories/new) on this repository (Settings → Code security and analysis → Private vulnerability reporting). Use this for full reproduction steps, PoCs, and proposed fixes.
 
-**Also accepted:** email [arjunkshah21@gmail.com](mailto:arjunkshah21@gmail.com) for initial contact only. If the report includes exploit details, we will ask you to move the full write-up to GitHub private reporting or another encrypted channel.
+**Also accepted:** email [security@supercompress.dev](mailto:security@supercompress.dev) for initial contact only. If the report includes exploit details, we will ask you to move the full write-up to GitHub private reporting or another encrypted channel.
 
 Include:
 
