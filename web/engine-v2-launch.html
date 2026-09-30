@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SuperCompress v2 is live — query-aware context compression</title>
+  <meta name="description" content="SuperCompress v2 is a 400M-parameter engine that keeps the context that answers the query and cuts the rest. Coding-agent benchmark: 64.1% mean cut, required evidence in 24/24 cases, 16,647 → 5,148 tokens." />
+  <meta property="og:title" content="SuperCompress v2 is live" />
+  <meta property="og:description" content="400M-parameter query-aware compression for coding agents. 64.1% mean cut. Required evidence in 24/24 cases. 16,647 → 5,148 tokens. Open source. $0.10/1M." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/engine-v2-launch" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:title" content="SuperCompress v2 is live" />
+  <meta name="twitter:description" content="64.1% mean context cut. Required evidence in 24/24 cases. 16,647 → 5,148 tokens. Open source." />
+  <meta name="twitter:site" content="@supercompress" />
+  <link rel="canonical" href="https://www.supercompress.dev/engine-v2-launch" />
+  <meta property="article:published_time" content="2026-09-29T09:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-09-29T09:00:00-07:00" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=106" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=2" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <style>
+    .launch-brand {
+      margin: 0 auto 10px;
+      text-align: center;
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(1.15rem, 2.4vw, 1.35rem);
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .launch-brand em { font-style: italic; color: var(--brand); }
+    .launch-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      max-width: 760px;
+      margin: 36px auto 8px;
+    }
+    .launch-stat {
+      padding: 18px 14px 16px;
+      border: 0.5px solid var(--line);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.88);
+    }
+    .launch-stat .label {
+      display: block;
+      margin-bottom: 10px;
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--brand);
+    }
+    .launch-stat .value {
+      display: block;
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(1.55rem, 3vw, 2rem);
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    .launch-stat .sub {
+      display: block;
+      margin-top: 8px;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+    .launch-example {
+      margin: 8px 0 0;
+      padding: 18px 18px 16px;
+      border: 0.5px solid var(--line);
+      border-radius: 4px;
+      background: #fff;
+    }
+    .launch-example .ex-label {
+      margin: 0 0 8px;
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--brand);
+    }
+    .launch-example pre {
+      margin: 0 0 16px !important;
+      padding: 14px 14px !important;
+      border-radius: 4px !important;
+      background: #f4f5f7 !important;
+      font-size: 0.78rem !important;
+      line-height: 1.5 !important;
+      white-space: pre-wrap !important;
+      word-break: break-word;
+    }
+    .launch-example pre:last-child { margin-bottom: 0 !important; }
+    .launch-example .kept { color: #0b3d91; font-weight: 600; }
+    .launch-example .cut { color: #9a9892; text-decoration: line-through; }
+    @media (max-width: 800px) {
+      .launch-stats { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .launch-stats { grid-template-columns: 1fr; }
+    }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "SuperCompress v2 is live",
+    "description": "SuperCompress v2 is a 400M-parameter engine that keeps the context that answers the query and cuts the rest. Coding-agent benchmark: 64.1% mean cut, required evidence in 24/24 cases.",
+    "datePublished": "2026-09-29T09:00:00-07:00",
+    "dateModified": "2026-09-29T09:00:00-07:00",
+    "author": {
+      "@type": "Person",
+      "name": "Arjun Shah",
+      "url": "https://www.linkedin.com/in/arjunkshah"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "SuperCompress",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"
+      }
+    },
+    "mainEntityOfPage": "https://www.supercompress.dev/engine-v2-launch",
+    "image": "https://www.supercompress.dev/assets/img/og-share-light.png"
+  }
+  </script>
+</head>
+<body>
+<header class="df-header">
+    <div class="df-header-blur" aria-hidden="true"></div>
+    <div class="df-header-inner">
+      <a href="/" class="df-logo-desktop">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="df-header-end">
+        <nav class="df-nav-pill" aria-label="Main">
+          <a href="/benchmarks">Benchmarks</a>
+          <a href="/#agents">Agents</a>
+          <a href="/blog">Blog</a>
+          <a href="/changelog">Changelog</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
+        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+        <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
+      </div>
+      <div class="df-mobile-bar">
+        <a href="/" class="df-logo-mobile">
+          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+          <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+        </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+        <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    <div class="df-mobile-nav" id="df-mobile-nav">
+      <a href="/benchmarks">Benchmarks</a>
+      <a href="/#agents">Agents</a>
+      <a href="/blog">Blog</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
+      <a href="/playground">Playground</a>
+      <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+  <div class="df-header-spacer" aria-hidden="true"></div>
+
+<main class="seo-page">
+    <p class="seo-kicker">Product launch · September 29, 2026</p>
+    <p class="launch-brand">Super<em>Compress</em></p>
+    <h1>v2 is live</h1>
+    <p class="seo-lead">A 400M-parameter engine that reads your whole context against the current query, keeps the original lines that answer it, and cuts the rest.</p>
+    <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> · Founder</p>
+
+    <div class="launch-stats" aria-label="Coding-agent benchmark highlights">
+      <div class="launch-stat">
+        <span class="label">Mean cut</span>
+        <span class="value">64.1%</span>
+        <span class="sub">coding-agent suite</span>
+      </div>
+      <div class="launch-stat">
+        <span class="label">Evidence held</span>
+        <span class="value">24/24</span>
+        <span class="sub">required lines kept</span>
+      </div>
+      <div class="launch-stat">
+        <span class="label">Tokens</span>
+        <span class="value">16.6k→5.1k</span>
+        <span class="sub">16,647 → 5,148</span>
+      </div>
+      <div class="launch-stat">
+        <span class="label">Peak cut</span>
+        <span class="value">96.6%</span>
+        <span class="sub">at ≥99% retention</span>
+      </div>
+    </div>
+
+    <section class="seo-section">
+      <h2>The problem</h2>
+      <p>Coding agents drown models in tool dumps: logs, diffs, stack traces, RFID heartbeats, the same boot line twelve times. Somewhere in that pile is the one error, ID, or path that answers the question.</p>
+      <p>Truncation often deletes that line. Summarization rewrites it. Either way you pay for tokens that do not help — or you lose the evidence that does.</p>
+    </section>
+
+    <section class="seo-section">
+      <h2>What v2 does</h2>
+      <p>v2 scores context against <em>this</em> query. It keeps original lines. It does not paraphrase the stack trace. The question itself is never compressed.</p>
+      <p>That is strongest on coding-agent turns. It also helps on RAG chunks and long support threads when most of the text is not about the ask in front of you.</p>
+      <div class="launch-example" aria-label="Illustrative keep and drop">
+        <p class="ex-label">Illustrative · keep vs drop</p>
+        <pre><span class="cut">INFO boot ok
+INFO heartbeat
+INFO heartbeat
+INFO heartbeat</span>
+<span class="kept">ERROR db timeout at 12:01 — pool exhausted (conn_id=9f2a)</span>
+<span class="cut">INFO heartbeat
+DEBUG retry scheduled</span></pre>
+        <p class="ex-label">Query</p>
+        <pre>what failed?</pre>
+        <p class="ex-label">Kept</p>
+        <pre><span class="kept">ERROR db timeout at 12:01 — pool exhausted (conn_id=9f2a)</span></pre>
+      </div>
+    </section>
+
+    <section class="seo-section seo-proof">
+      <h2>Coding-agent benchmark</h2>
+      <p>Held-out coding-agent suite. Same scorer for every case. We measure whether the <strong>required evidence</strong> survives — not whether a downstream chat model finishes a task.</p>
+      <table class="seo-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>SuperCompress v2</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="best-row">
+            <td>Mean context cut</td>
+            <td><strong>64.1%</strong></td>
+          </tr>
+          <tr class="best-row">
+            <td>Required evidence retained</td>
+            <td><strong>24 / 24</strong></td>
+          </tr>
+          <tr>
+            <td>Average tokens</td>
+            <td><strong>16,647 → 5,148</strong></td>
+          </tr>
+          <tr>
+            <td>Max cut @ ≥99% retention</td>
+            <td><strong>96.6%</strong></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Raw numbers: <a href="/assets/data/launch-benchmark.json">launch-benchmark.json</a> · full writeup on <a href="/benchmarks">benchmarks</a>.</p>
+    </section>
+
+    <section class="seo-section">
+      <h2>Pricing</h2>
+      <p>Self-host is free under MIT. Hosted API: <strong>5M tokens/month free</strong>, then <strong>$0.10 per million</strong> original tokens. No seat plans.</p>
+      <p class="seo-verdict"><strong>Launch promo.</strong> Inference at scale without lighting API spend on noise.</p>
+    </section>
+
+    <section class="seo-section">
+      <h2>How to use it</h2>
+      <p>Open source. Available now as a hosted API, and as an agent plugin for 40+ harnesses (Cursor, Claude Code, Codex, and more).</p>
+      <ol>
+        <li><a href="/dashboard?signup=1">Get an API key</a> — compress over HTTPS before the model call.</li>
+        <li><a href="https://docs.supercompress.dev/coding-agents">Install the agent plugin</a> — hooks compress tool dumps in your harness.</li>
+        <li><a href="/playground">Try the playground</a> — paste context, see what v2 keeps.</li>
+      </ol>
+    </section>
+
+    <section class="seo-cta">
+      <h2>Ship with less context</h2>
+      <p>Keep what answers the query. Cut the rest. Open source.</p>
+      <p>
+        <a class="btn" href="/dashboard?signup=1">Get API key</a>
+        &nbsp;
+        <a href="https://docs.supercompress.dev/coding-agents">Agent plugin →</a>
+        &nbsp;
+        <a href="https://github.com/Supercompress/Supercompress">GitHub →</a>
+      </p>
+    </section>
+</main>
+
+<footer class="df-footer">
+    <div class="df-footer-inner">
+      <div class="df-footer-grid">
+        <div class="df-footer-brand">
+          <a href="/" class="df-footer-lockup">
+            <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+            <p class="df-footer-heading">Super<em>Compress</em></p>
+          </a>
+          <p>Query-aware context compression for AI apps and coding agents.<br />Open source · hosted API · agent plugin.</p>
+          <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+        </div>
+        <div class="df-footer-links">
+          <div>
+            <p class="df-footer-heading">Navigation</p>
+            <ul>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="/#agents">Agents</a></li>
+              <li><a href="/blog">Blog</a></li>
+              <li><a href="/changelog">Changelog</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Resources</p>
+            <ul>
+              <li><a href="/playground">Playground</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/engine-v2-launch">v2 launch</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="df-footer-copy">© SuperCompress · MIT License · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+    </div>
+  </footer>
+  <script src="/assets/js/site-chrome.js?v=12"></script>
+</body>
+</html>
