@@ -20,7 +20,7 @@ from typing import Any
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="SuperCompress Neural Keep", version="1.3.1")
+app = FastAPI(title="SuperCompress Neural Keep", version="1.3.2")
 
 _model_loaded_flag = False
 _loaded_at: float | None = None
@@ -44,10 +44,11 @@ _POOL_MODEL = None  # set inside worker process only
 
 _INFER_TIMEOUT_S = float(os.environ.get("SC_NEURAL_INFER_TIMEOUT_S", "90"))
 _MAX_CONTEXT_CHARS = int(os.environ.get("SC_NEURAL_MAX_CONTEXT_CHARS", "120000"))
-_BUSY_WAIT_S = float(os.environ.get("SC_NEURAL_BUSY_WAIT_S", "3.0"))
+_BUSY_WAIT_S = float(os.environ.get("SC_NEURAL_BUSY_WAIT_S", "0"))
 _EXPECTED_BYTES = int(os.environ.get("SC_NEURAL_EXPECTED_BYTES", "1583351632"))
 _EXPECTED_PARAMS_M = float(os.environ.get("SC_NEURAL_EXPECTED_PARAMS_M", "395.83"))
 _CHECKPOINT_ID = os.environ.get("SC_NEURAL_CHECKPOINT", "sc-keep-crossencoder-v4-large")
+_TIMEOUT_EXITS = int(os.environ.get("SC_NEURAL_TIMEOUT_EXITS", "0"))  # 0=respawn pool; 1=os._exit
 
 
 def _cap_threads() -> None:
@@ -364,9 +365,12 @@ def _run_compress_in_pool(context: str, query: str, threshold: float | None) -> 
         return fut.result(timeout=_INFER_TIMEOUT_S)
     except FuturesTimeout as e:
         _kill_pool("inference_timeout")
-        # Pool respawn after a wedged torch child is unreliable on 8GB shared CPU —
-        # exit so Fly brings a clean machine (TCP health already tolerates restart).
-        _schedule_process_exit("inference_timeout")
+        # Prefer in-process pool respawn so /health keeps answering during reload.
+        # Set SC_NEURAL_TIMEOUT_EXITS=1 only if respawn proves flaky on this VM.
+        if _TIMEOUT_EXITS:
+            _schedule_process_exit("inference_timeout")
+        else:
+            threading.Thread(target=_ensure_pool, name="nk-respawn", daemon=True).start()
         raise TimeoutError("inference_timeout") from e
 
 

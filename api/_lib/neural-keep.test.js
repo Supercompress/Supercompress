@@ -3,6 +3,16 @@
 const { describe, it, beforeEach, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
 
+function mockFetch(handler) {
+  global.fetch = async (url, opts) => {
+    const u = String(url);
+    if (u.endsWith("/ready")) {
+      return { ok: true, status: 200, json: async () => ({ ready: true }) };
+    }
+    return handler(u, opts || {});
+  };
+}
+
 describe("neural-keep client", () => {
   const origFetch = global.fetch;
   const origEnv = { ...process.env };
@@ -11,11 +21,13 @@ describe("neural-keep client", () => {
     process.env.SC_NEURAL_KEEP_URL = "https://neural.example.test";
     process.env.SC_NEURAL_KEEP_SECRET = "sekret";
     delete process.env.SC_NEURAL_KEEP;
+    delete require.cache[require.resolve("./neural-keep")];
   });
 
   afterEach(() => {
     global.fetch = origFetch;
     process.env = { ...origEnv };
+    delete require.cache[require.resolve("./neural-keep")];
   });
 
   it("disabled when URL missing", async () => {
@@ -36,12 +48,13 @@ describe("neural-keep client", () => {
     let seenUrl = "";
     let seenBody = null;
     let seenAuth = "";
-    global.fetch = async (url, opts) => {
+    mockFetch(async (url, opts) => {
       seenUrl = url;
       seenBody = JSON.parse(opts.body);
       seenAuth = opts.headers.Authorization;
       return {
         ok: true,
+        status: 200,
         json: async () => ({
           compressed_text: "kept line",
           original_tokens: 100,
@@ -53,9 +66,12 @@ describe("neural-keep client", () => {
           lines_in: 10,
           lines_kept: 2,
           threshold: 0.12,
+          checkpoint: "sc-keep-crossencoder-v4-large",
+          params_m: 395.83,
+          weights_match_expected: true,
         }),
       };
-    };
+    });
 
     const mod = require("./neural-keep");
     const out = await mod.compressViaNeuralKeep("long\ncontext", "why fail?");
@@ -66,11 +82,13 @@ describe("neural-keep client", () => {
     assert.equal(out.compressed_text, "kept line");
     assert.equal(out.tokens_saved_pct, 80);
     assert.equal(out.mode, "neural-keep");
+    assert.equal(out.checkpoint, "sc-keep-crossencoder-v4-large");
+    assert.equal(out.weights_match_expected, true);
   });
 
   it("retries once on 503 busy then succeeds", async () => {
     let n = 0;
-    global.fetch = async () => {
+    mockFetch(async () => {
       n += 1;
       if (n === 1) {
         return {
@@ -94,7 +112,7 @@ describe("neural-keep client", () => {
           latency_ms: 5,
         }),
       };
-    };
+    });
     const mod = require("./neural-keep");
     const out = await mod.compressViaNeuralKeep("ctx", "q");
     assert.equal(n, 2);
@@ -104,7 +122,7 @@ describe("neural-keep client", () => {
 
   it("returns null after exhausted 503 retries", async () => {
     let n = 0;
-    global.fetch = async () => {
+    mockFetch(async () => {
       n += 1;
       return {
         ok: false,
@@ -113,33 +131,34 @@ describe("neural-keep client", () => {
         headers: { get: () => "0" },
         json: async () => ({ detail: "busy" }),
       };
-    };
+    });
     const mod = require("./neural-keep");
     const out = await mod.compressViaNeuralKeep("ctx", "q");
     assert.equal(out, null);
-    assert.ok(n >= 5);
+    assert.ok(n >= 6);
   });
 });
 
 describe("engine prefers neural-keep when SC_NEURAL_KEEP_URL is set", () => {
   const origEnv = { ...process.env };
+  const origFetch = global.fetch;
 
   afterEach(() => {
     process.env = { ...origEnv };
+    global.fetch = origFetch;
     delete require.cache[require.resolve("./engine")];
     delete require.cache[require.resolve("./neural-keep")];
-    if (global.fetch && global.fetch.mockRestore) global.fetch.mockRestore();
-    delete global.fetch;
   });
 
   it("compressAdaptive uses neural-keep remote when enabled", async () => {
     process.env.SC_NEURAL_KEEP_URL = "https://neural.example.test";
     process.env.SC_NEURAL_KEEP = "1";
     let fetched = false;
-    global.fetch = async () => {
+    mockFetch(async () => {
       fetched = true;
       return {
         ok: true,
+        status: 200,
         json: async () => ({
           compressed_text: "ERROR db timeout — kept",
           original_tokens: 40,
@@ -150,7 +169,7 @@ describe("engine prefers neural-keep when SC_NEURAL_KEEP_URL is set", () => {
           latency_ms: 12,
         }),
       };
-    };
+    });
 
     const engine = require("./engine");
     const result = await engine.compressAdaptive(

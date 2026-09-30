@@ -25,6 +25,7 @@
     "sync:assets": "node scripts/sync-compress-assets.js",
     "mcp": "node mcp/server.js",
     "check:version": "node scripts/check-versions.js",
+    "test": "node --test api/_lib/*.test.js",
     "test:neural-keep": "node --test api/_lib/neural-keep.test.js",
     "test:arena": "bash scripts/arena-smoke.sh"
   },
