@@ -150,7 +150,7 @@ impact = sustainability_from_tokens_saved(saved)
         <ul>
           <li>The eviction itself consumes negligible energy — ~0.000001 kWh per compression on a modern CPU core</li>
           <li>But it avoids much larger GPU prefill work on long contexts</li>
-          <li>At 65% token reduction, every 1 kWh spent on CPU eviction avoids ~1,000 kWh of GPU prefill</li>
+          <li>At 64% token reduction, every 1 kWh spent on CPU eviction avoids ~1,000 kWh of GPU prefill</li>
         </ul>
         <p>This 1:1000 energy ratio is why CPU-side eviction is environmentally significant. The tiny policy makes it possible — a 165M-parameter model running on CPU would consume much more energy per eviction, eroding the net savings.</p>
 
@@ -173,7 +173,7 @@ impact = sustainability_from_tokens_saved(saved)
               <aside class="docs-signup-cta" aria-label="Get started">
           <p class="docs-signup-cta-kicker">Free to start</p>
           <h2>Get your API key</h2>
-          <p>5M free tokens/mo · then $1/1M. No credit card.</p>
+          <p>5M free tokens/mo · then $0.10/1M. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
             <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>

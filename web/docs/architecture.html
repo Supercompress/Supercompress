@@ -143,11 +143,11 @@
           </ol>
         </div>
 
-        <p><code>cache_prefix=true</code> (CacheAligner) wraps output in a deterministic ~60-token XML preamble so the <em>envelope</em> is stable. It does <strong>not</strong> freeze kept content across turns. See <a href="https://www.supercompress.dev/cache-aligner-prefix-stabilization">CacheAligner</a>. Sticky / append-only session compression is the path for automatic cache-friendly loops.</p>
+        <p><code>cache_prefix=true</code> (CacheAligner) wraps output in a deterministic ~60-token XML preamble so the <em>envelope</em> is stable. It does <strong>not</strong> freeze kept content across turns. See the architecture notes on <code>cache_prefix</code>. Sticky / append-only session compression is the path for automatic cache-friendly loops.</p>
 
         <h2 id="economics">Cost model</h2>
         <ul>
-          <li>Hosted API: <strong>$1 / 1M tokens</strong> on original tokens processed (5M/month free, then PAYG).</li>
+          <li>Hosted API: <strong>$0.10 / 1M tokens</strong> on original tokens processed (5M/month free, then PAYG).</li>
           <li>Self-hosted Python / in-browser engine: <strong>$0</strong> compression fee.</li>
           <li>End-to-end savings = model input dollars avoided − SuperCompress fee (if any).</li>
         </ul>
@@ -200,7 +200,7 @@
               <aside class="docs-signup-cta" aria-label="Get started">
           <p class="docs-signup-cta-kicker">Free to start</p>
           <h2>Get your API key</h2>
-          <p>5M free tokens/mo · then $1/1M. No credit card.</p>
+          <p>5M free tokens/mo · then $0.10/1M. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
             <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>

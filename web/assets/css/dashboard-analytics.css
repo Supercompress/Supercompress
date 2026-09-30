@@ -59,7 +59,11 @@
 }
 .an-scope .kpi-body { position: relative; z-index: 1; padding: 16px 16px 14px; }
 .an-scope .kpi-l { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--an-faint); }
-.an-scope .kpi-n { display: block; margin-top: 8px; font-family: var(--an-serif); font-size: 2rem; font-weight: 400; letter-spacing: -0.03em; color: var(--an-ink); line-height: 1; }
+.an-scope .kpi-n {
+  display: block; margin-top: 8px; font-family: var(--an-serif);
+  font-size: clamp(1.35rem, 2.6vw, 2rem); font-weight: 400; letter-spacing: -0.03em;
+  color: var(--an-ink); line-height: 1.05; font-variant-numeric: tabular-nums;
+}
 .an-scope .kpi-s { display: block; margin-top: 8px; font-size: 12px; color: var(--an-muted); }
 .an-scope .charts {
   display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 14px;

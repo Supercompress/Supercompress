@@ -15,11 +15,8 @@ import {
   setPersistence,
   browserLocalPersistence,
   getAdditionalUserInfo,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updatePassword,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import { createOnboardingController } from "./dashboard-onboarding.js";
+import { createOnboardingController } from "./dashboard-onboarding.js?v=4";
 
 const API_BASE = window.SC_API_BASE || "";
 const SESSION_KEY = "sc_dash_session";
@@ -252,6 +249,55 @@ function isAuthNetworkError(err) {
   return code === "auth/network-request-failed" || /network-request-failed|ERR_CONNECTION_RESET/i.test(message);
 }
 
+/** Human copy for Firebase Auth errors — never dump raw `Firebase: Error (auth/…)`. */
+function authErrorCode(err) {
+  const direct = String(err?.code || err?.errorInfo?.code || "").trim().toLowerCase();
+  if (direct.startsWith("auth/")) return direct;
+  const msg = String(err?.message || err?.errorInfo?.message || "");
+  const m = msg.match(/\(?(auth\/[a-z0-9_-]+)\)?/i);
+  return m ? m[1].toLowerCase() : "";
+}
+
+function friendlyAuthError(err, { intent = "auth" } = {}) {
+  if (isAuthNetworkError(err)) return AUTH_NETWORK_MESSAGE;
+  const code = authErrorCode(err);
+  switch (code) {
+    case "auth/email-already-in-use":
+      return "That email already has an account. Log in instead.";
+    case "auth/invalid-email":
+      return "Enter a valid email address.";
+    case "auth/weak-password":
+      return "Choose a stronger password (at least 6 characters).";
+    case "auth/user-not-found":
+      return "No account found with that email. Sign up instead.";
+    case "auth/wrong-password":
+    case "auth/invalid-credential":
+    case "auth/invalid-login-credentials":
+      return intent === "signup"
+        ? "Could not create that account. Try a different email or log in."
+        : "Incorrect email or password.";
+    case "auth/too-many-requests":
+      return "Too many sign-in attempts. Wait a few minutes, then try again — or use Continue with Google.";
+    case "auth/user-disabled":
+      return "This account has been disabled. Contact support if that seems wrong.";
+    case "auth/popup-closed-by-user":
+    case "auth/cancelled-popup-request":
+      return "Sign-in was cancelled.";
+    case "auth/account-exists-with-different-credential":
+      return "That email is already registered with a different sign-in method. Try Log in with email or Continue with Google.";
+    default:
+      break;
+  }
+  const raw = String(err?.message || "").trim();
+  if (/auth\/too-many-requests/i.test(raw)) {
+    return "Too many sign-in attempts. Wait a few minutes, then try again — or use Continue with Google.";
+  }
+  if (/^Firebase:\s*Error\s*\(auth\//i.test(raw) || /\(auth\//i.test(raw)) {
+    return "Sign-in failed. Check your email and password, or try Continue with Google.";
+  }
+  return raw || "Sign-in failed. Try again.";
+}
+
 async function getUserToken(user, retries = 2) {
   let lastErr;
   for (let i = 0; i <= retries; i++) {
@@ -285,7 +331,12 @@ function setError(msg) {
     authError.textContent = "";
     return;
   }
-  authError.textContent = msg;
+  let text = String(msg);
+  // Last-resort sanitize if a raw Firebase string slips through.
+  if (/Firebase:\s*Error\s*\(auth\//i.test(text) || /\(auth\/[a-z0-9_-]+\)/i.test(text)) {
+    text = friendlyAuthError({ message: text, code: authErrorCode({ message: text }) });
+  }
+  authError.textContent = text;
   show(authError);
 }
 
@@ -686,8 +737,19 @@ async function sendTestRequest() {
   }
 }
 
-async function showDashboard(user) {
-  // Transition to dashboard view FIRST (synchronous, before any async calls)
+async function showDashboard(user, { isNewUser = false } = {}) {
+  // Onboarding is a full page — redirect before painting dashboard chrome.
+  try {
+    await detectApiMode();
+  } catch (_) {}
+  let celebrateAfter = false;
+  try {
+    const gate = await onboarding.maybeShow({ forceNew: Boolean(isNewUser), phase: "gate" });
+    if (gate === true) return;
+    celebrateAfter = gate === "celebrate";
+  } catch (_) {}
+
+  // Transition to dashboard view
   hide(viewAuth);
   show(viewDash);
   show($("dash-profile"));
@@ -699,11 +761,14 @@ async function showDashboard(user) {
   if (emailEl) emailEl.textContent = user.email || "";
   const initialEl = $("dash-profile-initial");
   if (initialEl) initialEl.textContent = name.charAt(0).toUpperCase();
+  // Change password is email/password accounts only — hide for Google-only sign-in.
+  const changePw = $("dash-change-password");
+  if (changePw) {
+    if (userHasPasswordProvider(user)) show(changePw);
+    else hide(changePw);
+  }
   window.scrollTo(0, 0);
   // Async data loading — errors are caught per-function, won't break dashboard
-  try {
-    await detectApiMode();
-  } catch (_) {}
   try {
     await loadKeys();
   } catch (_) {}
@@ -718,10 +783,11 @@ async function showDashboard(user) {
     const panel = (new URLSearchParams(window.location.search).get("panel") || "").trim().toLowerCase();
     if (panel && panel !== "keys") openDashboardPanel(panel, { updateUrl: false });
   } catch (_) {}
-  // Signup onboarding + power-user celebrate (skippable overlays)
-  try {
-    await onboarding.maybeShow();
-  } catch (_) {}
+  if (celebrateAfter) {
+    try {
+      onboarding.showCelebrate();
+    } catch (_) {}
+  }
 }
 
 function showAuth() {
@@ -814,19 +880,42 @@ async function enterDashboard(user, { isNewUser = false } = {}) {
     displayName: user.displayName || user.email?.split("@")[0] || "User",
   });
   const connectCode = connectCodeFromUrl();
+  let deviceLinked = false;
   if (connectCode) {
-    try {
-      await completeDeviceConnect(connectCode);
-    } catch (err) {
-      console.warn("Device connect failed", err);
-      setError(err.message || "Account connection failed");
+    for (let attempt = 0; attempt < 3 && !deviceLinked; attempt++) {
+      try {
+        await completeDeviceConnect(connectCode);
+        deviceLinked = true;
+        const ok = $("auth-error");
+        if (ok) {
+          ok.textContent = "Coding agent linked. You can return to the terminal — connect finished automatically.";
+          ok.style.color = "#166534";
+          show(ok);
+          setTimeout(() => {
+            ok.style.color = "";
+            hide(ok);
+          }, 8000);
+        }
+      } catch (err) {
+        console.warn("Device connect failed", err);
+        if (attempt === 2) {
+          setError(err.message || "Account connection failed — refresh this page or re-run connect.");
+        } else {
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        }
+      }
     }
+    // Keep ?connect= on failure so a refresh can retry auto-link.
+    if (!deviceLinked) {
+      /* leave URL */
+    }
+  } else {
+    cleanAuthQuery();
+    setError("");
   }
-  cleanAuthQuery();
-  setError("");
   // Fire-and-forget founder welcome for new signups (deduped server-side).
   void triggerWelcomeEmail(user, { isNewUser });
-  await showDashboard(user);
+  await showDashboard(user, { isNewUser });
 }
 
 /* ── Billing / Plans ── */
@@ -874,7 +963,7 @@ function renderPaygNudge(sub) {
     return;
   }
 
-  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 1_000_000;
+  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 5_000_000;
   const used = sub.tokens_used_this_period || totalTokensIn() || 0;
   const pct = freeCap > 0 ? Math.min(100, (Math.min(used, freeCap) / freeCap) * 100) : 0;
   const hasUse = used > 0 || totalRequests() > 0;
@@ -886,21 +975,21 @@ function renderPaygNudge(sub) {
 
   if (limitHit) {
     tone = "dash-payg-banner--blocked";
-    title = "Compression paused — free 1M used";
+    title = "Compression paused — free 5M used";
     copy =
       `You've hit your free ${formatNum(freeCap)} tokens this month (${formatNum(used)} used). ` +
-      `Add credits to unlock again — $1 per 1M tokens after free.`;
+      `Add credits to unlock again — $0.10 per 1M tokens after free.`;
     cta = "Add credits";
   } else if (pct >= 80) {
     tone = "dash-payg-banner--urgent";
-    copy = `You've used ${Math.round(pct)}% of your free 5M tokens. Add credits now so compression never hard-stops — $1/1M after free.`;
+    copy = `You've used ${Math.round(pct)}% of your free 5M tokens. Add credits now so compression never hard-stops — $0.10/1M after free.`;
   } else if (pct >= 50) {
     tone = "dash-payg-banner--warn";
-    copy = `Halfway through your free 1M this month. Add credits so a busy agent week doesn't cut you off.`;
+    copy = `Halfway through your free 5M this month. Add credits so a busy agent week doesn't cut you off.`;
   } else if (hasUse) {
     tone = "";
     copy =
-      "Nice — first compress landed. Add credits so compression never hard-stops. You still get 5M free, then $1/1M.";
+      "Nice — first compress landed. Add credits so compression never hard-stops. You still get 5M free, then $0.10/1M.";
   } else {
     banner.classList.add("hidden");
     banner.innerHTML = "";
@@ -911,7 +1000,7 @@ function renderPaygNudge(sub) {
   banner.innerHTML = `
     <div class="dash-payg-banner-copy">
       <p><strong>${escapeHtml(title)}</strong> ${escapeHtml(copy)}</p>
-      ${limitHit ? `<p class="dash-payg-banner-price">$1 / 1M after free · load credits anytime</p>` : ""}
+      ${limitHit ? `<p class="dash-payg-banner-price">$0.10 / 1M after free · load credits anytime</p>` : ""}
     </div>
     <button type="button" class="btn-brand dash-payg-banner-cta" id="btn-payg-nudge">${escapeHtml(cta)}</button>
   `;
@@ -1004,7 +1093,7 @@ function renderSubscription(sub) {
   if (!statusCard) return;
   lastBillingSub = sub;
 
-  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 1_000_000;
+  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 5_000_000;
   const used = sub.tokens_used_this_period || 0;
   const freeUsed = Math.min(used, freeCap);
   const pct = Math.min(100, Math.round((freeUsed / freeCap) * 10000) / 100);
@@ -1034,7 +1123,7 @@ function renderSubscription(sub) {
       <div class="dash-paywall-lock" role="alert">
         <div class="dash-paywall-lock-kicker">Paywall</div>
         <h2>Compression is paused</h2>
-        <p>You used your free <strong>${formatNum(freeCap)}</strong> tokens this month (<strong>${formatNum(used)}</strong> in). Add credits to unlock — <strong>$1 / 1M</strong> after free.</p>
+        <p>You used your free <strong>${formatNum(freeCap)}</strong> tokens this month (<strong>${formatNum(used)}</strong> in). Add credits to unlock — <strong>$0.10 / 1M</strong> after free.</p>
         <button type="button" class="btn-brand dash-paywall-lock-cta" id="btn-paywall-unlock">Add credits</button>
       </div>
     ` : ""}
@@ -1047,7 +1136,7 @@ function renderSubscription(sub) {
             ? `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">Credit balance <strong>$${creditBalance.toFixed(2)}</strong></span>`
             : payg && sub.has_active_subscription
               ? `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">Period ends ${formatDate(sub.period_end)}</span>`
-              : `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">$1 free / 1M tokens each month</span>`
+              : `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">5M free tokens each month · then $0.10 / 1M</span>`
           }
         </p>
       </div>
@@ -1075,11 +1164,11 @@ function renderSubscription(sub) {
       </div>
     </div>
     ${creditWallet || hasCreditBalance
-      ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">Prepaid wallet at $1 / 1M after free. Load $${Number(sub.min_credit_limit_usd || 10)}+ (about ${Math.round(Number(sub.min_credit_limit_usd || 10) / Number(sub.usd_per_million || 1))}M+ tokens).</p>`
+      ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">Prepaid wallet at $0.10 / 1M after free. Load $${Number(sub.min_credit_limit_usd || 10)}+ (about ${Math.round(Number(sub.min_credit_limit_usd || 10) / Number(sub.usd_per_million || 0.1))}M+ tokens).</p>`
       : payg && billable > 0
       ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">Overage this month: <strong>${formatNum(billable)}</strong> tokens (~$${overageUsd.toFixed(2)} estimated)</p>`
       : payg
-        ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">No overage yet. Usage beyond 5M bills at $1 / 1M tokens.</p>`
+        ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">No overage yet. Usage beyond 5M bills at $0.10 / 1M tokens.</p>`
         : pct >= 100
           ? `<p style="margin:12px 0 0;font-size:14px;color:#b91c1c;font-weight:600">Free allowance used. Add credits to keep compressing.</p>`
           : ""
@@ -1130,7 +1219,7 @@ function creditLimitsFromSub(sub) {
     min: Number.isFinite(min) && min > 0 ? min : 10,
     max: Number.isFinite(max) && max > 0 ? max : 1000,
     def: Number.isFinite(def) && def > 0 ? def : 10,
-    rate: Number.isFinite(rate) && rate > 0 ? rate : 0.3,
+    rate: Number.isFinite(rate) && rate > 0 ? rate : 0.1,
   };
 }
 
@@ -1173,8 +1262,8 @@ function openCreditsModal() {
   if (title) title.textContent = payg ? "Add credits" : "Unlock with credits";
   if (lead) {
     lead.textContent = payg
-      ? `Balance $${balance.toFixed(2)}. $1 = 1M tokens after free. $10 ≈ ${Math.round(10 / rate)}M tokens.`
-      : `$1 = 1M tokens after your free monthly allowance. $10 ≈ ${Math.round(10 / rate)}M tokens.`;
+      ? `Balance $${balance.toFixed(2)}. $0.10 = 1M tokens after free. $10 ≈ ${Math.round(10 / rate)}M tokens.`
+      : `$0.10 = 1M tokens after your free monthly allowance. $10 ≈ ${Math.round(10 / rate)}M tokens.`;
   }
   if (input) {
     input.min = String(min);
@@ -1319,7 +1408,7 @@ async function handleManageBilling() {
 }
 
 async function handleCancelSubscription() {
-  if (!confirm("Disable pay-as-you-go? You'll keep access until the end of the current billing period, then return to the free 1M token allowance.")) {
+  if (!confirm("Disable pay-as-you-go? You'll keep access until the end of the current billing period, then return to the free 5M token allowance.")) {
     return;
   }
   try {
@@ -1451,7 +1540,7 @@ function showPaySuccessCelebration({ bonusTokens = 0, bonusUsd = 0, creditedUsd 
   if (bonusEl) {
     if (bonusTokens > 0) {
       bonusEl.hidden = false;
-      bonusEl.textContent = `As a thank you, we added 1M tokens on the house (${formatMoneyUsd(bonusUsd || 0.3)}).`;
+      bonusEl.textContent = `As a thank you, we added 1M tokens on the house (${formatMoneyUsd(bonusUsd || 0.1)}).`;
     } else {
       bonusEl.hidden = true;
     }
@@ -1966,78 +2055,54 @@ function openPasswordModal() {
     setError("Sign in to change your password.");
     return;
   }
-  const emailFields = $("password-email-fields");
-  const googleOnly = $("password-google-only");
+  // Google-only accounts have no SuperCompress password — do not open the modal.
+  if (!userHasPasswordProvider(user)) {
+    hide($("modal-password"));
+    return;
+  }
   const title = $("password-modal-title");
   const lead = $("password-modal-lead");
   setPasswordModalError("");
   setPasswordModalOk("");
-  ["password-current", "password-new", "password-confirm"].forEach((id) => {
-    const el = $(id);
-    if (el) el.value = "";
-  });
-  if (userHasPasswordProvider(user)) {
-    show(emailFields);
-    hide(googleOnly);
-    if (title) title.textContent = "Change password";
-    if (lead) lead.textContent = "Update the password for this SuperCompress account.";
-  } else {
-    hide(emailFields);
-    show(googleOnly);
-    if (title) title.textContent = "Account password";
-    if (lead) {
-      lead.textContent = "This account uses Google sign-in.";
-    }
+  if (title) title.textContent = "Change password";
+  if (lead) {
+    lead.textContent = `We’ll email a secure link to ${user.email || "your inbox"} so you can set a new password.`;
+  }
+  const btn = $("btn-confirm-password");
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "Email me a password link";
   }
   show($("modal-password"));
 }
 
 async function confirmPasswordChange() {
-  const user = auth?.currentUser;
-  if (!user?.email) {
-    setPasswordModalError("Sign in again, then retry.");
-    return;
-  }
-  const current = String($("password-current")?.value || "");
-  const next = String($("password-new")?.value || "");
-  const confirm = String($("password-confirm")?.value || "");
-  if (current.length < 6 || next.length < 6) {
-    setPasswordModalError("Passwords must be at least 6 characters.");
-    return;
-  }
-  if (next !== confirm) {
-    setPasswordModalError("New password and confirmation do not match.");
-    return;
-  }
-  if (next === current) {
-    setPasswordModalError("Choose a new password different from the current one.");
+  const user = auth?.currentUser || currentUser;
+  if (!user?.email || !userHasPasswordProvider(user)) {
+    hide($("modal-password"));
     return;
   }
   const btn = $("btn-confirm-password");
-  if (btn) btn.disabled = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+  }
+  setPasswordModalError("");
+  setPasswordModalOk("");
   try {
-    const cred = EmailAuthProvider.credential(user.email, current);
-    await reauthenticateWithCredential(user, cred);
-    await updatePassword(user, next);
-    setPasswordModalOk("Password updated.");
-    setTimeout(() => hide($("modal-password")), 900);
+    await requestBrandedPasswordReset(user.email, { intent: "change" });
+    setPasswordModalOk(`Check ${user.email} for a SuperCompress password link (inbox + spam).`);
   } catch (err) {
-    const code = err?.code || "";
-    if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
-      setPasswordModalError("Current password is incorrect.");
-    } else if (code === "auth/requires-recent-login") {
-      setPasswordModalError("Please sign out, sign back in, then change your password.");
-    } else if (code === "auth/weak-password") {
-      setPasswordModalError("Choose a stronger password (at least 6 characters).");
-    } else {
-      setPasswordModalError(err?.message || "Could not update password.");
-    }
+    setPasswordModalError(err?.message || "Could not send password email.");
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Email me a password link";
+    }
   }
 }
 
-async function requestBrandedPasswordReset(email) {
+async function requestBrandedPasswordReset(email, { intent = "reset" } = {}) {
   const clean = String(email || "").trim();
   if (!clean) throw new Error("Enter your email to receive a password reset link.");
   // Prefer hosted API even before detectApiMode settles (forgot-password is pre-login).
@@ -2049,7 +2114,7 @@ async function requestBrandedPasswordReset(email) {
   const res = await fetch(`${API_BASE}/api/account?op=password-reset`, {
     method: "POST",
     headers,
-    body: JSON.stringify({ email: clean }),
+    body: JSON.stringify({ email: clean, intent }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.detail || res.statusText || "Could not send reset email.");
@@ -2058,6 +2123,10 @@ async function requestBrandedPasswordReset(email) {
 
 async function sendAccountPasswordReset() {
   const user = auth?.currentUser || currentUser;
+  if (!user || !userHasPasswordProvider(user)) {
+    hide($("modal-password"));
+    return;
+  }
   const email = user?.email || String($("auth-email")?.value || "").trim();
   if (!email) {
     setPasswordModalError("Add your account email, then try again.");
@@ -2076,12 +2145,17 @@ async function sendAccountPasswordReset() {
 function initPasswordControls() {
   $("dash-change-password")?.addEventListener("click", (e) => {
     e.preventDefault();
+    $("dash-profile")?.classList.remove("is-open");
+    $("dash-profile-btn")?.setAttribute("aria-expanded", "false");
+    const user = auth?.currentUser || currentUser;
+    if (!userHasPasswordProvider(user)) return;
     openPasswordModal();
   });
   $("btn-cancel-password")?.addEventListener("click", () => hide($("modal-password")));
   $("btn-confirm-password")?.addEventListener("click", () => {
     void confirmPasswordChange();
   });
+  // Password reset only for email/password accounts (no CTA for Google-only).
   $("btn-send-password-reset")?.addEventListener("click", () => {
     void sendAccountPasswordReset();
   });
@@ -2092,22 +2166,47 @@ function initPasswordControls() {
       return;
     }
     try {
-      await requestBrandedPasswordReset(email);
+      const data = await requestBrandedPasswordReset(email);
       setError("");
       const msg = $("auth-error");
       if (msg) {
-        msg.textContent = `Password reset email sent to ${email}. Check inbox and spam — from hello@supercompress.dev.`;
+        msg.textContent =
+          data?.detail ||
+          `If that email has a password login, we sent a reset link. Google-only accounts use Continue with Google.`;
         msg.style.color = "#166534";
         show(msg);
         setTimeout(() => {
           msg.style.color = "";
           hide(msg);
-        }, 7000);
+        }, 9000);
       }
     } catch (err) {
       setError(err?.message || "Could not send reset email.");
     }
   });
+
+  const profileRoot = $("dash-profile");
+  const profileBtn = $("dash-profile-btn");
+  if (profileRoot && profileBtn) {
+    profileBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const open = !profileRoot.classList.contains("is-open");
+      profileRoot.classList.toggle("is-open", open);
+      profileBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    document.addEventListener("click", (e) => {
+      if (!profileRoot.classList.contains("is-open")) return;
+      if (profileRoot.contains(e.target)) return;
+      profileRoot.classList.remove("is-open");
+      profileBtn.setAttribute("aria-expanded", "false");
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      profileRoot.classList.remove("is-open");
+      profileBtn.setAttribute("aria-expanded", "false");
+    });
+  }
 }
 
 function initDevAuth(message) {
@@ -2173,7 +2272,7 @@ async function initFirebaseAuth() {
       await enterDashboard(redirectResult.user, { isNewUser });
     }
   } catch (err) {
-    setError(isAuthNetworkError(err) ? AUTH_NETWORK_MESSAGE : err.message);
+    setError(friendlyAuthError(err));
   }
 
   let authTab = "signup";
@@ -2203,7 +2302,7 @@ async function initFirebaseAuth() {
       if (subtitle) {
         subtitle.textContent =
           authTab === "signup"
-            ? "5M free tokens/mo · then $1/1M. Google takes one click — your key is ready instantly."
+            ? "5M free tokens/mo · then $0.10/1M. Google takes one click — your key is ready instantly."
             : "Sign in to manage API keys, usage, and billing.";
       }
       document.querySelectorAll(".dash-auth-tab").forEach((t) => {
@@ -2262,7 +2361,7 @@ async function initFirebaseAuth() {
         await signInWithRedirect(auth, provider);
         return;
       }
-      setError(isAuthNetworkError(err) ? AUTH_NETWORK_MESSAGE : err.message);
+      setError(friendlyAuthError(err));
     }
   });
 
@@ -2282,7 +2381,7 @@ async function initFirebaseAuth() {
       }
       if (result?.user) await enterDashboard(result.user, { isNewUser });
     } catch (err) {
-      setError(err.message);
+      setError(friendlyAuthError(err, { intent: authTab === "signup" ? "signup" : "signin" }));
     }
   });
 
@@ -2300,7 +2399,7 @@ async function initFirebaseAuth() {
         clearSession();
         await signOut(auth).catch(() => {});
         showAuth();
-        setError(isAuthNetworkError(err) ? AUTH_NETWORK_MESSAGE : err.message);
+        setError(friendlyAuthError(err));
       }
     } else {
       idToken = null;

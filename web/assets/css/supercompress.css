@@ -104,13 +104,12 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
 }
 
 .df-logo-desktop {
-  position: absolute;
-  top: 50%;
-  left: var(--frame-buffer);
-  transform: translateY(-50%);
+  position: relative;
   display: none;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
+  margin-right: 12px;
   color: var(--text-primary);
   z-index: 2;
 }
@@ -166,9 +165,18 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
   align-items: center;
   gap: 12px;
   margin-left: auto;
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-end;
 }
 @media (min-width: 900px) {
   .df-header-end { display: flex; }
+}
+@media (min-width: 900px) and (max-width: 1100px) {
+  .df-nav-pill a[href="/changelog"],
+  .df-nav-pill a[href="/#agents"] {
+    display: none;
+  }
 }
 
 .df-nav-pill--solo {
@@ -256,7 +264,7 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
   gap: 5px;
   width: 36px;
   height: 36px;
-  margin-left: auto;
+  flex-shrink: 0;
   padding: 8px;
   border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 6px;
@@ -268,18 +276,46 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
   height: 1.5px;
   background: var(--text-primary);
 }
-@media (min-width: 820px) {
+@media (min-width: 900px) {
   .df-menu-btn { display: none; }
 }
 
 .df-mobile-bar {
   display: flex;
   width: 100%;
+  min-width: 0;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
 }
-@media (min-width: 820px) {
+@media (min-width: 900px) {
   .df-mobile-bar { display: none; }
+}
+.df-mobile-bar .df-logo-mobile {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.df-mobile-bar .df-logo-word {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.df-mobile-bar .df-nav-cta--compact {
+  flex-shrink: 0;
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+}
+.df-mobile-bar .df-menu-btn {
+  margin-left: 0;
+}
+@media (max-width: 380px) {
+  .df-mobile-bar .df-logo-word { display: none; }
+  .df-mobile-bar .df-nav-cta--compact {
+    padding: 0 10px;
+    font-size: 12px;
+  }
 }
 
 .df-mobile-nav {
@@ -518,8 +554,10 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
 .hero-frame {
   position: relative;
   width: 100%;
-  min-width: min(1200px, 100%);
-  height: 675px;
+  min-width: 0;
+  height: min(675px, 56vw);
+  min-height: 280px;
+  max-height: 675px;
   overflow: hidden;
   border-radius: 10px;
   border: 1px solid #d8d8d8;
@@ -826,7 +864,7 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
 /* Coding agent plugin — installable product surface */
 .sc-agent-section {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   align-items: center;
   gap: clamp(40px, 7vw, 112px);
   margin: 72px 0 24px;
@@ -1612,12 +1650,11 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
 /* Vision / editorial scroll section */
 .df-vision {
   position: relative;
-  left: 50%;
-  right: 50%;
+
   margin-top: 48px;
-  width: 100vw;
+  width: 100%;
   max-width: 1920px;
-  transform: translateX(-50%);
+
   scroll-margin-top: 64px;
   background: var(--vision-bg);
 }
@@ -1690,11 +1727,10 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
 /* Trust / security section */
 .df-trust {
   position: relative;
-  left: 50%;
-  right: 50%;
-  width: 100vw;
+
+  width: 100%;
   max-width: 1920px;
-  transform: translateX(-50%);
+
   margin-top: -2px;
   scroll-margin-top: 64px;
   background: var(--section-bg);
@@ -2055,11 +2091,10 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
 /* Demo — contained product frame */
 .df-demo {
   position: relative;
-  left: 50%;
-  right: 50%;
-  width: 100vw;
+
+  width: 100%;
   max-width: 1920px;
-  transform: translateX(-50%);
+
   scroll-margin-top: 64px;
   background: var(--section-bg);
   padding: 80px var(--frame-buffer) 96px;
@@ -2104,11 +2139,10 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
 
 .df-api {
   position: relative;
-  left: 50%;
-  right: 50%;
-  width: 100vw;
+
+  width: 100%;
   max-width: 1920px;
-  transform: translateX(-50%);
+
   padding: 56px var(--frame-buffer) 96px;
   background: var(--bg-page);
   border-top: 0.5px solid rgba(0, 0, 0, 0.06);
@@ -2121,11 +2155,10 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
 
 .df-stats-band {
   position: relative;
-  left: 50%;
-  right: 50%;
-  width: 100vw;
+
+  width: 100%;
   max-width: 1920px;
-  transform: translateX(-50%);
+
   margin-top: -2px;
   background: var(--card-bg);
   border-top: 0.5px solid rgba(0, 0, 0, 0.06);
@@ -2244,11 +2277,10 @@ code { font-family: ui-monospace, monospace; font-size: 0.9em; }
 /* FAQ — SuperCompress two-column */
 .df-faq {
   position: relative;
-  left: 50%;
-  right: 50%;
-  width: 100vw;
+
+  width: 100%;
   max-width: 1920px;
-  transform: translateX(-50%);
+
   margin-top: -2px;
   background: var(--card-bg);
   padding: 56px 24px 32px;
@@ -3457,7 +3489,8 @@ button.btn-link-muted {
 }
 
 .dash-profile:hover .dash-profile-dropdown,
-.dash-profile:focus-within .dash-profile-dropdown {
+.dash-profile:focus-within .dash-profile-dropdown,
+.dash-profile.is-open .dash-profile-dropdown {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);

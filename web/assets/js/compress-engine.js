@@ -1,7 +1,7 @@
 /**
  * SuperCompress browser engine — mirrors Python compress.py (no API keys, no server).
  *
- * v2.2 — Preprocessors are structural only (no keyword eviction). Language detection expanded.
+ * compress-engine — Preprocessors are structural only (no keyword eviction). Language detection expanded.
  *         Keep/drop is ML/compiler/neural-driven. See web/docs/compress-engine.html.
  */
 (function (global) {
@@ -1628,7 +1628,7 @@
   }
 
   // ── Compiler selection: maximize removal, never drop important evidence ──
-  // ~65% average savings is an observed outcome on real workloads — NOT a keep floor.
+  // 64% mean savings is an observed outcome on real workloads — NOT a keep floor.
   function selectCompilerLines(lines, lineForToken, lineRelevance, tokenCounts, question, neuralBoost = null) {
     const q = normalizeQuestion(question);
     const original = lines.join("\n");

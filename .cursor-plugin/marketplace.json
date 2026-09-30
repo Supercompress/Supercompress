@@ -5,18 +5,13 @@
     "email": "team@supercompress.dev"
   },
   "metadata": {
-    "description": "SuperCompress \u2014 query-aware context compression for coding agents."
+    "description": "SuperCompress — query-aware context compression for coding agents."
   },
   "plugins": [
     {
       "name": "supercompress",
       "source": "integrations/plugins/supercompress",
-      "description": "Query-aware context compression for Grok Bot, Cursor, Claude Code, and Codex. Hosted MCP at https://www.supercompress.dev/api/mcp. 64% mean context cut, 24/24 B5 keep-floor.",
-      "version": "0.5.29",
-      "keywords": [
-        "grok-bot",
-        "mcp"
-      ]
+      "description": "Compress tool dumps, logs, diffs, and pasted files before they burn tokens. 64% mean context reduction, 24/24 evidence-retention passes on the B5 coding-agent benchmark. Links to your SuperCompress account (free tier: 5M tokens/month, then $0.10/1M)."
     }
   ]
 }

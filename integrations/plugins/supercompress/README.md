@@ -1,33 +1,28 @@
 # SuperCompress plugin
 
-Query-aware context compression for **Grok Bot**, Cursor, Claude Code, and Codex.
+Query-aware context compression for **Cursor, Claude Code, Codex, Grok Bot**, and other MCP hosts.
 
-Compress tool dumps, logs, diffs, and pasted files before they burn tokens. **64% mean context reduction with 24/24 evidence-retention passes** on the B5 coding-agent benchmark. Details: [supercompress.dev/benchmarks](https://www.supercompress.dev/benchmarks).
+Compress tool dumps, logs, diffs, and pasted files before they burn tokens. **64% mean context reduction with 24/24 evidence-retention passes** on the B5 coding-agent benchmark → [benchmarks](https://www.supercompress.dev/benchmarks).
 
-## Grok Bot (required path)
+## Easiest path (laptop agents)
 
-Grok Bot runs in the cloud — it cannot use local `npx` MCP. This plugin uses the **hosted** Streamable HTTP MCP:
+```bash
+npm install -g supercompress-proxy
+supercompress setup          # link account + MCP/hooks on every detected agent
+supercompress doctor         # clean health matrix
+```
+
+Re-run `supercompress plugin` anytime. Keep your normal Cursor / Claude / Codex login.
+
+## Marketplace / cloud (Grok Bot, Cursor Cloud)
+
+This plugin tree uses the **hosted** Streamable HTTP MCP (no local `npx`):
 
 `https://www.supercompress.dev/api/mcp`
 
-### Install in Grok Bot
-
-1. Open **Plugins** in the sidebar → search **SuperCompress** → Add  
-   (or load this folder from the Cursor marketplace / local plugins).
-2. Open Plugins → SuperCompress → **Configure** and paste your API key (`sc_…`) from [the dashboard](https://www.supercompress.dev/dashboard).
-3. Ask the Bot to compress a large dump with `compress_context`.
-
-**Chat install (no marketplace):**
-
-```
-Add this MCP server: https://www.supercompress.dev/api/mcp
-```
-
-When Grok asks for auth, set header `Authorization: Bearer sc_YOUR_KEY`.
-
-## Cursor / Claude / Codex
-
-Same plugin tree. Cursor Marketplace and local install use the hosted MCP above (works in Cloud Agents and Grok Bot).
+1. Add the SuperCompress plugin (marketplace or this folder).
+2. Set `SUPERCOMPRESS_API_KEY` (`sc_…` from [dashboard](https://www.supercompress.dev/dashboard)).
+3. Call `compress_context` on large dumps.
 
 ```
 # Claude Code
@@ -39,20 +34,12 @@ codex plugin marketplace add Supercompress/Supercompress
 codex plugin add supercompress@supercompress
 ```
 
-For always-on local hooks (prompt-submit / post-tool) on your laptop, also run:
-
-```
-npx -y supercompress-proxy supercompress setup
-```
-
 ## Tools
 
-- `compress_context` — compress a bulky dump, guided by the user's query
-- `connect_account` — dashboard link to create/copy an API key
-- `usage_summary` — tokens compressed and quota
-
-## Account
-
-Create a free account at [supercompress.dev/dashboard](https://www.supercompress.dev/dashboard), copy an API key (`sc_…`), and set `SUPERCOMPRESS_API_KEY` on the plugin. Free tier includes monthly tokens; see the dashboard for launch pricing.
+| Tool | Purpose |
+|------|---------|
+| `compress_context` | Compress a dump guided by the user query |
+| `connect_account` | Dashboard link to create/copy an API key |
+| `usage_summary` | Tokens compressed + quota |
 
 Docs: [docs.supercompress.dev/coding-agents](https://docs.supercompress.dev/coding-agents)

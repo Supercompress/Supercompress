@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Affiliate Creator Kit — SuperCompress</title>
+  <meta name="description" content="Copy-ready SuperCompress affiliate campaign assets for AI and developer creators: hooks, post templates, demo scripts, disclosures, and referral link examples." />
+  <meta property="og:title" content="SuperCompress Affiliate Creator Kit" />
+  <meta property="og:description" content="Copy-ready campaign assets for creators promoting SuperCompress prompt compression." />
+  <meta property="og:url" content="https://www.supercompress.dev/affiliate-creator-kit" />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/affiliate-creator-kit" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <style>
+    html { overflow-x: clip; }
+    body { background: var(--bg-page); color: var(--text-primary); font-family: var(--sans); }
+    .kit-page { max-width: min(1120px, 100%); margin: 0 auto; padding: 40px 24px 80px; width: 100%; box-sizing: border-box; }
+    .kit-page .kit-lead,
+    .kit-page .kit-card,
+    .kit-page .kit-card p,
+    .kit-page .kit-hero h1,
+    .kit-page .kit-copy,
+    .kit-page .kit-table-wrap,
+    .kit-page .kit-cta { max-width: 100%; }
+    .kit-back { color: var(--text-muted); font-size: 14px; text-decoration: none; }
+    .kit-back:hover { color: var(--brand); }
+    .kit-hero { padding: 28px 0 34px; border-bottom: 0.5px solid var(--card-border); }
+    .kit-kicker { color: var(--brand); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px; }
+    .kit-hero h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(30px, 6vw, 58px); line-height: 1.05; letter-spacing: -.03em; max-width: 18ch; margin: 0 0 16px; overflow-wrap: anywhere; }
+    .kit-lead { max-width: 720px; color: var(--text-body); font-size: 17px; line-height: 1.58; }
+    .kit-grid { display: grid; gap: 14px; margin-top: 34px; grid-template-columns: minmax(0, 1fr); }
+    @media (min-width: 900px) { .kit-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .kit-card { border: 0.5px solid var(--card-border); border-radius: 8px; background: #fff; padding: 22px; min-width: 0; }
+    .kit-card h2, .kit-section h2 { font-family: var(--serif); font-weight: 300; letter-spacing: -.01em; color: var(--text-primary); }
+    .kit-card h2 { font-size: 22px; margin: 0 0 10px; }
+    .kit-card p, .kit-card li, .kit-section p, .kit-section li { color: var(--text-body); font-size: 14px; line-height: 1.6; }
+    .kit-card ul, .kit-section ul { padding-left: 18px; margin: 12px 0 0; }
+    .kit-section { margin-top: 46px; min-width: 0; }
+    .kit-section h2 { font-size: clamp(26px, 4vw, 38px); margin: 0 0 16px; }
+    .kit-copy { background: #f7f7f4; color: #262626; border: 1px solid #ebeae5; border-radius: 8px; padding: 16px; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.55; }
+    .kit-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 0.5px solid var(--card-border); border-radius: 8px; background: #fff; }
+    .kit-table { width: 100%; min-width: 640px; border-collapse: collapse; }
+    .kit-table th, .kit-table td { padding: 14px; border-bottom: 0.5px solid var(--card-border); text-align: left; vertical-align: top; font-size: 14px; line-height: 1.5; }
+    .kit-table tr:last-child td { border-bottom: 0; }
+    .kit-table th { color: var(--text-muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; background: #f9f9f6; }
+    .kit-cta { margin-top: 52px; padding: 28px; border: 0.5px solid var(--card-border); border-radius: 8px; background: var(--feat-blue); }
+    .kit-cta h2 { margin: 0 0 10px; font-family: var(--serif); font-weight: 300; }
+    .kit-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    @media (max-width: 640px) {
+      .kit-page { padding: 24px 16px 64px; }
+      .kit-lead { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+<header class="df-header">
+    <div class="df-header-blur" aria-hidden="true"></div>
+    <div class="df-header-inner">
+      <a href="/" class="df-logo-desktop">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="df-header-end">
+        <nav class="df-nav-pill" aria-label="Main">
+          <a href="/benchmarks">Benchmarks</a>
+          <a href="/#agents">Agents</a>
+          <a href="/blog">Blog</a>
+          <a href="/changelog">Changelog</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
+        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+        <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
+      </div>
+      <div class="df-mobile-bar">
+        <a href="/" class="df-logo-mobile">
+          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+          <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+        </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+        <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    <div class="df-mobile-nav" id="df-mobile-nav">
+      <a href="/benchmarks">Benchmarks</a>
+      <a href="/#agents">Agents</a>
+      <a href="/blog">Blog</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
+      <a href="/playground">Playground</a>
+      <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+  <div class="df-header-spacer" aria-hidden="true"></div>
+<main class="kit-page">
+    <a class="kit-back" href="/affiliates">Back to affiliate program</a>
+    <section class="kit-hero">
+      <p class="kit-kicker">Creator kit</p>
+      <h1>Campaign assets for selling prompt compression without sounding like an ad.</h1>
+      <p class="kit-lead">Use these angles, scripts, and templates with your own referral link. The best content is a quick before/after demo: paste oversized context, compress it, show the tokens saved, then point builders to the free API key.</p>
+      <div class="kit-grid">
+        <article class="kit-card">
+          <h2>Core offer</h2>
+          <p>SuperCompress is open-source prompt compression for AI apps. It cuts oversized LLM inputs before OpenAI, Claude, Gemini, or local models see them.</p>
+        </article>
+        <article class="kit-card">
+          <h2>Affiliate payout</h2>
+          <p>40% of pay-as-you-go usage invoices. Customers get 5M free tokens/mo, then $0.10 / 1M — you earn $0.40 per dollar of overage billed.</p>
+        </article>
+        <article class="kit-card">
+          <h2>Creator CTA</h2>
+          <p>Send people to your referral link first, then tell them to create a free API key. No card required for the free tier.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="kit-section">
+      <h2>Best campaign angles</h2>
+      <div class="kit-table-wrap">
+        <table class="kit-table">
+          <thead><tr><th>Angle</th><th>Hook</th><th>Demo</th></tr></thead>
+          <tbody>
+            <tr><td>RAG cost leak</td><td>Your RAG app is probably sending useless chunks to the model.</td><td>Paste retrieval output, ask a specific query, show before/after tokens.</td></tr>
+            <tr><td>Agent trace cleanup</td><td>Agents generate huge tool traces. Most of it should not hit the next LLM call.</td><td>Paste a long coding-agent log, compress against the next task.</td></tr>
+            <tr><td>Truncation failure</td><td>Head/tail truncation can drop the one line that answers the question.</td><td>Compare blind truncation with query-aware compression.</td></tr>
+            <tr><td>API quick win</td><td>Add one preprocessing call before your LLM call and measure what you saved.</td><td>Use the cURL endpoint with a free key and show the response metadata.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="kit-section">
+      <h2>X / LinkedIn post</h2>
+      <pre class="kit-copy">Most AI apps are paying for context the model does not need.
+
+I tested SuperCompress on a long RAG/chat-history prompt:
+
+- original context: [X] tokens
+- after compression: [Y] tokens
+- saved: [Z]%
+
+It runs before OpenAI, Claude, Gemini, or local models.
+Open source + free hosted API key.
+
+Try it here: [YOUR_REFERRAL_LINK]</pre>
+    </section>
+
+    <section class="kit-section">
+      <h2>Short video script</h2>
+      <pre class="kit-copy">"Here is a hidden cost in AI apps.
+
+This prompt has RAG chunks, chat history, and tool output. It is huge.
+
+Before sending it to the model, I run it through SuperCompress.
+
+Now the model gets the context that matters for this query, but not all the noise.
+
+That means fewer input tokens, less prefill work, and lower LLM cost.
+
+It is open source, and the hosted API has a free key.
+Link is in the description."</pre>
+    </section>
+
+    <section class="kit-section">
+      <h2>Email/newsletter blurb</h2>
+      <pre class="kit-copy">Tool worth trying: SuperCompress.
+
+If you are building with RAG, agents, support logs, or long chat history, you may be sending thousands of unnecessary input tokens to your LLM provider.
+
+SuperCompress runs before the model call and compresses context around the current query. It works with OpenAI, Claude, Gemini, LangChain, Vercel AI SDK, and local flows.
+
+Free API key: [YOUR_REFERRAL_LINK]</pre>
+    </section>
+
+    <section class="kit-section">
+      <h2>Disclosure language</h2>
+      <p>Use a clear disclosure anywhere you post an affiliate link. Keep it simple:</p>
+      <pre class="kit-copy">Disclosure: this is an affiliate link. I may earn a commission if you become a paid SuperCompress customer.</pre>
+    </section>
+
+    <section class="kit-cta">
+      <h2>Need your link?</h2>
+      <p>Generate it on the affiliate page, then replace <code>[YOUR_REFERRAL_LINK]</code> in the templates above.</p>
+      <div class="kit-actions">
+        <a class="btn-brand" href="/affiliates#signup">Generate referral link</a>
+        <a class="btn-link-muted" href="/affiliates">Affiliate program</a>
+      </div>
+    </section>
+  </main>
+<footer class="df-footer">
+    <div class="df-footer-inner">
+      <div class="df-footer-grid">
+        <div class="df-footer-brand">
+          <a href="/" class="df-footer-lockup">
+            <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+            <p class="df-footer-heading">Super<em>Compress</em></p>
+          </a>
+          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+        </div>
+        <div class="df-footer-links">
+          <div>
+            <p class="df-footer-heading">Navigation</p>
+            <ul>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="/#agents">Agents</a></li>
+              <li><a href="/blog">Blog</a></li>
+              <li><a href="/changelog">Changelog</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+              <li><a href="/dashboard?login=1">Log in</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Resources</p>
+            <ul>
+              <li><a href="/playground">Playground</a></li>
+              <li><a href="/token-compression">Token compression guide</a></li>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/playground">Compare methods</a></li>
+              <li><a href="/research">Research</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Blog</p>
+            <ul>
+              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/token-compression">Token compression</a></li>
+              <li><a href="/prompt-compression">Prompt compression</a></li>
+              <li><a href="/context-compression">Context compression</a></li>
+              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
+              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Documentation</p>
+            <ul>
+              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Social</p>
+            <ul>
+              <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
+              <li><a href="https://x.com/arjunkshah21" target="_blank" rel="noopener">X</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Legal</p>
+            <ul>
+              <li><a href="/terms">Terms of Service</a></li>
+              <li><a href="/privacy">Privacy Policy</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="df-footer-copy">© SuperCompress · MIT License · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+    </div>
+  </footer>
+  <script src="/assets/js/site-chrome.js?v=12"></script>
+</body>
+</html>

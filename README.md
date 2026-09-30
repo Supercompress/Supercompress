@@ -4,22 +4,24 @@
   </a>
 </p>
 
-<h1 align="center">SuperCompress</h1>
+<h1 align="center">SuperCompress v2</h1>
 
 <p align="center">
-  <strong>Query-aware context compression for LLMs and coding agents.</strong><br />
-  Keep the evidence. Drop the filler. Pay for fewer input tokens.
+  <strong>Query-aware context compression for AI applications and coding agents.</strong><br />
+  Give your AI less. Keep what matters.
 </p>
 
 <p align="center">
-  <a href="https://www.supercompress.dev">Website</a> ·
+  <strong>64% less context</strong> · <strong>24/24</strong> coding benchmark passes · up to <strong>96.6%</strong> reduction at ≥99% evidence retention<br />
+  <em>(B5 coding-agent suite · evidence containment metric — not downstream LLM completion)</em>
+</p>
+
+<p align="center">
+  <a href="https://www.supercompress.dev/dashboard?signup=1">Get API key</a> ·
   <a href="https://www.supercompress.dev/playground">Playground</a> ·
+  <a href="https://www.npmjs.com/package/supercompress-proxy">Install</a> ·
   <a href="https://www.supercompress.dev/benchmarks">Benchmarks</a> ·
-  <a href="https://docs.supercompress.dev">Docs</a> ·
-  <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a> ·
-  <a href="./CHANGELOG.md">Changelog</a> ·
-  <a href="./ROADMAP.md">Roadmap</a> ·
-  <a href="./CONTRIBUTING.md">Contributing</a>
+  <a href="https://docs.supercompress.dev">Docs</a>
 </p>
 
 <p align="center">
@@ -48,7 +50,7 @@ Every LLM call ships a pile of context: RAG chunks, chat history, tool dumps, lo
 | **Summarize** | Rewrites evidence. IDs, stack traces, and exact errors get soft. |
 | **Hope** | Ship the full dump. Watch the bill climb. |
 
-**SuperCompress** compresses context **against the query**. It keeps answer-critical lines in their original wording and drops the rest — typically **~65% fewer input tokens**.
+**SuperCompress v2** compresses context **against the query**. It keeps answer-critical lines in their original wording and drops the rest — on our coding-agent benchmark (B5), **64.1% mean context reduction** with **24/24 evidence-retention passes**.
 
 ---
 

@@ -279,7 +279,11 @@ async function main() {
     assert.equal(fb.mcpServers.supercompress.env.SUPERCOMPRESS_API_KEY, undefined);
     const oc = JSON.parse(fs.readFileSync(path.join(home, ".config/opencode/opencode.jsonc"), "utf8"));
     assert.equal(oc.mcp.supercompress.type, "local");
-    assert.ok(oc.mcp.supercompress.command.some((c) => String(c).includes("mcp.js")));
+    const ocCmd = oc.mcp.supercompress.command.map(String);
+    assert.ok(
+      ocCmd.some((c) => c.includes("mcp.js") || c.includes("supercompress-mcp")),
+      `unexpected OpenCode command: ${JSON.stringify(ocCmd)}`,
+    );
     os.homedir = originalHome;
     process.env.SUPERCOMPRESS_CONFIG_DIR = originalConfigDir;
     fs.rmSync(home, { recursive: true, force: true });

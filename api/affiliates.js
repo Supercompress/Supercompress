@@ -21,7 +21,7 @@ const REF_BASE = "https://supercompress.dev";
 const TRACK_RPM = 30;
 const TRACK_FIELD_MAX = 300;
 const AFFILIATE_DAILY_RETENTION_DAYS = 120;
-const { FOUNDER_EMAILS, isFounderEmail } = require("./_lib/founder");
+const { isFounderUser } = require("./_lib/founder");
 const PLAN_PRICES = { starter: 1000, pro: 2000, business: 6000 };
 
 /* ── Helpers ── */
@@ -511,7 +511,7 @@ async function handleMeView(req, res) {
       });
     }
 
-    const isFounder = FOUNDER_EMAILS.has(email);
+    const isFounder = isFounderUser(user);
     const stats = computeAffiliateStats(affiliate, tracking, conversions, daily);
 
     return json(res, 200, { affiliate, stats, is_founder: isFounder });
@@ -527,8 +527,7 @@ async function handleMeView(req, res) {
 async function handleAdminView(req, res) {
   try {
     const user = await verifyUser(req);
-    const email = (user.email || "").toLowerCase().trim();
-    const isFounder = FOUNDER_EMAILS.has(email);
+    const isFounder = isFounderUser(user);
 
     if (!isFounder) {
       return json(res, 403, { detail: "Access denied. Founder access only." });

@@ -12,6 +12,9 @@
  *   - Aider           ~/.aider.conf.yml or ~/.config/aider/conf.yml
  *   - Zed             macOS app + ~/Library/Application Support/Zed/settings.json
  *                     (context_servers MCP — not Cursor-style mcpServers)
+ *   - fx (Vercel)     ~/.fx/mcp.json (trusted profile only) + ~/.fx/AGENTS.md + skills
+ *   - OpenCode        ~/.config/opencode/opencode.json(c) mcp block
+ *   - Any custom      `supercompress agents connect` / Agent Plugins pack / agents add
  */
 
 const fs = require("fs");
@@ -80,6 +83,8 @@ function instructionTargets() {
     ["OpenCode", path.join(HOME, ".config", "opencode", "AGENTS.md")],
     ["Hermes", path.join(HOME, ".hermes", "AGENTS.md")],
     ["OpenClaw", path.join(HOME, ".openclaw", "AGENTS.md")],
+    ["Grok Build", path.join(process.env.GROK_HOME || path.join(HOME, ".grok"), "AGENTS.md")],
+    ["fx", path.join(HOME, ".fx", "AGENTS.md")],
   ];
   const seen = new Set(base.map(([name]) => name));
   for (const [name, filePath] of agentPlugins.instructionTargetsFromPlugins()) {
@@ -99,6 +104,8 @@ const INSTRUCTION_TARGETS = [
   ["OpenCode", path.join(HOME, ".config", "opencode", "AGENTS.md")],
   ["Hermes", path.join(HOME, ".hermes", "AGENTS.md")],
   ["OpenClaw", path.join(HOME, ".openclaw", "AGENTS.md")],
+  ["Grok Build", path.join(process.env.GROK_HOME || path.join(HOME, ".grok"), "AGENTS.md")],
+  ["fx", path.join(HOME, ".fx", "AGENTS.md")],
 ];
 
 const CURSOR_RULE_DIRS = [
@@ -110,6 +117,7 @@ const CURSOR_RULE_DIRS = [
 const AGENT_HOOK_TARGETS = [
   ["Claude Code", path.join(HOME, ".claude", "settings.json"), false],
   ["Codex", path.join(HOME, ".codex", "hooks.json"), true],
+  ["Grok Build", path.join(process.env.GROK_HOME || path.join(HOME, ".grok"), "hooks", "supercompress.json"), true],
 ];
 
 /**
@@ -144,17 +152,264 @@ function resolveNodeBin() {
   return process.execPath;
 }
 
+function whichPath(command) {
+  try {
+    const out = execFileSync("which", [command], { encoding: "utf8" }).trim();
+    const first = out.split("\n")[0].trim();
+    if (first && fs.existsSync(first)) return first;
+  } catch {}
+  return null;
+}
+
+function resolveNodeBinAbsolute() {
+  return whichPath("node") || (commandExists("node") ? "node" : process.execPath);
+}
+
 /**
  * Launch command for MCP stdio servers.
  * Default: PATH `node` + this package's mcp.js (stable across brew upgrades;
  * GUI apps like Cursor often lack npm global bins on PATH).
  * Set preferShim for CLIs that reliably have `supercompress-mcp` on PATH.
+ * Set absoluteNode for hosts (Grok) whose spawn PATH may not include `node`.
  */
-function resolveMcpLaunchCommand({ preferShim = false } = {}) {
+function resolveMcpLaunchCommand({ preferShim = true, absoluteNode = false } = {}) {
+  // Prefer the global `supercompress-mcp` shim when present — cleaner agent
+  // configs (one argv) and survives package moves better than a pinned mcp.js path.
+  // Callers that need a stable absolute node+script (fx, some sandboxes) pass preferShim:false.
   if (preferShim && commandExists("supercompress-mcp")) {
-    return ["supercompress-mcp"];
+    return [whichPath("supercompress-mcp") || "supercompress-mcp"];
   }
-  return [resolveNodeBin(), MCP_SERVER_PATH];
+  return [absoluteNode ? resolveNodeBinAbsolute() : resolveNodeBin(), MCP_SERVER_PATH];
+}
+
+/** Upsert `[mcp_servers.supercompress]` in Codex / Grok-style TOML configs. */
+function upsertTomlMcpServer(filePath, {
+  agentName = null,
+  extra = {},
+  inlineEnv = false,
+  preferShim = false,
+  absoluteNode = false,
+} = {}) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  backupFile(filePath);
+  let raw = fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : "";
+  const launch = resolveMcpLaunchCommand({ preferShim, absoluteNode });
+  const envLines = [
+    `SUPERCOMPRESS_CONFIG_DIR = ${JSON.stringify(CONFIG_DIR)}`,
+  ];
+  if (agentName) {
+    envLines.push(`SUPERCOMPRESS_AGENT_NAME = ${JSON.stringify(agentName)}`);
+  }
+  let block =
+    `[mcp_servers.supercompress]\n` +
+    `command = ${JSON.stringify(launch[0])}\n` +
+    (launch.length > 1
+      ? `args = [${launch
+          .slice(1)
+          .map((a) => JSON.stringify(a))
+          .join(", ")}]\n`
+      : `args = []\n`);
+  if (extra.startup_timeout_sec != null) {
+    block += `startup_timeout_sec = ${Number(extra.startup_timeout_sec)}\n`;
+  }
+  if (extra.tool_timeout_sec != null) {
+    block += `tool_timeout_sec = ${Number(extra.tool_timeout_sec)}\n`;
+  }
+  if (extra.enabled != null) {
+    block += `enabled = ${extra.enabled ? "true" : "false"}\n`;
+  }
+  if (inlineEnv) {
+    block += `env = { ${envLines.join(", ")} }\n`;
+  } else {
+    block +=
+      `[mcp_servers.supercompress.env]\n` +
+      envLines.map((l) => `${l}\n`).join("");
+  }
+  raw = raw
+    .replace(/\n?\[mcp_servers\.supercompress\.env\][\s\S]*?(?=\n\[|$)/, "\n")
+    .replace(/\n?\[mcp_servers\.supercompress\][\s\S]*?(?=\n\[|$)/, "\n");
+  raw = `${raw.trimEnd()}\n\n${block}`;
+  fs.writeFileSync(filePath, raw.startsWith("\n") ? raw.slice(1) : raw);
+}
+
+/** Grok truncates MCP tool results at 20KB unless raised — compress digests are larger. */
+function upsertGrokMcpOutputCap(filePath, floor = 2_000_000) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  backupFile(filePath);
+  let raw = fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : "";
+  const mcpIdx = raw.search(/^\[mcp\]\s*$/m);
+  if (mcpIdx < 0) {
+    raw = `${raw.trimEnd()}\n\n[mcp]\nmax_output_bytes = ${floor}\n`;
+    fs.writeFileSync(filePath, raw.startsWith("\n") ? raw.slice(1) : raw);
+    return;
+  }
+  const after = raw.slice(mcpIdx);
+  const next = after.search(/\n\[/);
+  const section = next >= 0 ? after.slice(0, next) : after;
+  const rest = next >= 0 ? after.slice(next) : "";
+  const prefix = raw.slice(0, mcpIdx);
+  const current = section.match(/^\s*max_output_bytes\s*=\s*(\d+)/m);
+  if (current && Number(current[1]) >= floor) return;
+  const newSection = current
+    ? section.replace(/^\s*max_output_bytes\s*=\s*\d+/m, `max_output_bytes = ${floor}`)
+    : section.replace(/^\[mcp\]\s*\n/, `[mcp]\nmax_output_bytes = ${floor}\n`);
+  fs.writeFileSync(filePath, prefix + newSection + rest);
+}
+
+function grokSkillDest() {
+  return path.join(grokHome(), "skills", "supercompress", "SKILL.md");
+}
+
+function writeGrokSkill() {
+  const src = path.join(__dirname, "grok-hooks", "skills", "supercompress", "SKILL.md");
+  if (!fs.existsSync(src)) return false;
+  const dest = grokSkillDest();
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  backupFile(dest);
+  fs.copyFileSync(src, dest);
+  return true;
+}
+
+function grokInstructionBody(inboxPath) {
+  return [
+    "# SuperCompress (always on · context only)",
+    "",
+    "Compress bulky **context** (tool dumps, files, logs, diffs, history). Never compress the user's ask/query.",
+    "",
+    "## How it works in Grok Build",
+    "- Hooks auto-compress large tool outputs. PostToolUse replaces the model's copy of the tool result with the digest (`updatedToolOutput`).",
+    "- Digests are also written to `" + inboxPath + "` (and `inbox/<sessionId>/`).",
+    "- Grok discards UserPromptSubmit additionalContext — do not wait for the next prompt; the replaced tool result is the mid-turn path.",
+    "- Prefer the replaced result (or Read the inbox) over re-reading / re-pasting raw dumps.",
+    "",
+    "## Playbook",
+    "1. Prefer the PostToolUse-replaced tool result when present.",
+    "2. Else if `" + inboxPath + "` exists, **Read it** — compressed digest (ask is unchanged).",
+    "3. Session digests may also be at `~/.supercompress/inbox/<sessionId>/latest.md`.",
+    "4. Otherwise call MCP `supercompress__compress_context` with `context`=<dump> and `query`=<user ask>.",
+    "   If that tool is not listed, `search_tool` then `use_tool` with `supercompress__compress_context`.",
+    "   Also: `supercompress__connect_account`, `supercompress__usage_summary`.",
+    "5. Prefer the digest over raw dumps. Keep normal login — no provider API-key mode required.",
+    "6. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
+    "",
+  ].join("\n");
+}
+
+function removeTomlMcpServer(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+  const raw = fs.readFileSync(filePath, "utf8");
+  const cleaned = raw
+    .replace(/\n?\[mcp_servers\.supercompress\.env\][\s\S]*?(?=\n\[|$)/, "\n")
+    .replace(/\n?\[mcp_servers\.supercompress\][\s\S]*?(?=\n\[|$)/, "\n");
+  if (cleaned === raw) return false;
+  fs.writeFileSync(filePath, cleaned.trimEnd() + "\n");
+  return true;
+}
+
+function grokHome() {
+  return process.env.GROK_HOME || path.join(HOME, ".grok");
+}
+
+function grokInstalled() {
+  return commandExists("grok") || fs.existsSync(grokHome());
+}
+
+function fxHome() {
+  return process.env.FX_HOME || path.join(HOME, ".fx");
+}
+
+function fxInstalled() {
+  return (
+    commandExists("fx") ||
+    fs.existsSync(fxHome()) ||
+    fs.existsSync(path.join(fxHome(), "mcp.json"))
+  );
+}
+
+/** fx trusted profile — only ~/.fx/mcp.json (repo-local MCP is never loaded). */
+function writeFxMcp() {
+  const filePath = path.join(fxHome(), "mcp.json");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  backupFile(filePath);
+  let data = { mcp: {} };
+  if (fs.existsSync(filePath)) {
+    try {
+      data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    } catch (err) {
+      throw new Error(`fx mcp.json is not valid JSON (${filePath}): ${err.message}`);
+    }
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error(`fx mcp.json must be a JSON object (${filePath})`);
+  }
+  data.mcp = data.mcp && typeof data.mcp === "object" ? data.mcp : {};
+  const launch = resolveMcpLaunchCommand({ absoluteNode: true });
+  data.mcp.supercompress = {
+    type: "local",
+    command: launch,
+    enabled: true,
+    required: false,
+    environment: {
+      SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR,
+      SUPERCOMPRESS_AGENT_NAME: "fx",
+    },
+  };
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+  return filePath;
+}
+
+function removeFxMcp() {
+  const filePath = path.join(fxHome(), "mcp.json");
+  if (!fs.existsSync(filePath)) return false;
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return false;
+  }
+  if (!data.mcp || !data.mcp.supercompress) return false;
+  delete data.mcp.supercompress;
+  if (Object.keys(data.mcp).length === 0) delete data.mcp;
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+  return true;
+}
+
+function writeFxSkill() {
+  const src = path.join(__dirname, "..", "agent-plugin", "skills", "supercompress", "SKILL.md");
+  const dest = path.join(fxHome(), "skills", "supercompress", "SKILL.md");
+  if (!fs.existsSync(src)) return false;
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  backupFile(dest);
+  fs.copyFileSync(src, dest);
+  return true;
+}
+
+function removeFxSkill() {
+  const dest = path.join(fxHome(), "skills", "supercompress", "SKILL.md");
+  if (!fs.existsSync(dest)) return false;
+  try {
+    fs.unlinkSync(dest);
+    const dir = path.dirname(dest);
+    try { fs.rmdirSync(dir); } catch {}
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function fxInstructionBody(inboxPath) {
+  return [
+    "# SuperCompress (always on · context only)",
+    "",
+    "Compress bulky **context** (tool dumps, files, logs, diffs, history). Never compress the user's ask/query.",
+    "",
+    "1. If `" + inboxPath + "` exists, Read it — compressed context digest (ask is unchanged).",
+    "2. Otherwise discover MCP tools (`mcp_search_tools` / `mcp_select_tool`) for SuperCompress, then call `compress_context` with `context`=<dump> and `query`=<user ask>.",
+    "3. Prefer the digest over raw dumps. Keep normal login — no provider API-key mode required.",
+    "4. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
+    "5. After installing MCP: `/mcp reload` (or restart fx).",
+    "",
+  ].join("\n");
 }
 
 function writeMcpJson(filePath) {
@@ -360,6 +615,91 @@ function writeZedMcp(filePath) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
 }
 
+/**
+ * Goose (Block) registers MCP as YAML `extensions.<id>` with type:stdio.
+ * Do not write Cursor-style mcpServers JSON into config.yaml.
+ */
+function writeGooseYaml(filePath) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  let raw = fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : "";
+  const launch = resolveMcpLaunchCommand();
+  const cmd = launch[0];
+  const args = launch.slice(1);
+  const argLines = args.length
+    ? ["    args:", ...args.map((a) => `      - ${JSON.stringify(a)}`)]
+    : ["    args: []"];
+  const block = [
+    "  supercompress:",
+    "    enabled: true",
+    "    type: stdio",
+    "    name: supercompress",
+    `    cmd: ${JSON.stringify(cmd)}`,
+    ...argLines,
+    "    timeout: 600",
+    "    envs:",
+    `      SUPERCOMPRESS_CONFIG_DIR: ${JSON.stringify(CONFIG_DIR)}`,
+    "",
+  ].join("\n");
+
+  // Strip any prior SuperCompress extension block (indented under extensions:)
+  raw = raw.replace(/(^|\n) {2}supercompress:\n(?: {4}.+\n)*/g, "$1");
+
+  if (/^extensions:\s*$/m.test(raw) || /^extensions:\s*\n/m.test(raw)) {
+    raw = raw.replace(/^(extensions:\s*\n)/m, `$1${block}`);
+  } else if (/^extensions:/m.test(raw)) {
+    raw = raw.replace(/^(extensions:[^\n]*\n)/m, `$1${block}`);
+  } else {
+    raw = `${raw.trimEnd()}\n\nextensions:\n${block}`;
+  }
+  fs.writeFileSync(filePath, raw.endsWith("\n") ? raw : `${raw}\n`);
+}
+
+/**
+ * Continue uses experimental.modelContextProtocolServers (array), not mcpServers map.
+ */
+function writeContinueMcp(filePath) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  let data = {};
+  if (fs.existsSync(filePath)) {
+    try {
+      data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    } catch (err) {
+      throw new Error(`Continue config is not valid JSON (${filePath}): ${err.message}`);
+    }
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error(`Continue config must be a JSON object (${filePath})`);
+  }
+  // Remove mistaken Cursor-style registration from older setup runs
+  if (data.mcpServers && data.mcpServers.supercompress) {
+    delete data.mcpServers.supercompress;
+    if (Object.keys(data.mcpServers).length === 0) delete data.mcpServers;
+  }
+  data.experimental = data.experimental && typeof data.experimental === "object"
+    ? data.experimental
+    : {};
+  const launch = resolveMcpLaunchCommand();
+  const entry = {
+    transport: {
+      type: "stdio",
+      command: launch[0],
+      args: launch.slice(1),
+      env: { SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR },
+    },
+  };
+  const list = Array.isArray(data.experimental.modelContextProtocolServers)
+    ? data.experimental.modelContextProtocolServers
+    : [];
+  const filtered = list.filter((item) => {
+    const cmd = item?.transport?.command || item?.command || "";
+    const name = item?.name || "";
+    return !/supercompress/i.test(String(cmd)) && !/supercompress/i.test(String(name));
+  });
+  filtered.push(entry);
+  data.experimental.modelContextProtocolServers = filtered;
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+}
+
 function shouldWriteMcpTarget(name, filePath, detect) {
   if (typeof detect === "function") return detect();
   if (fs.existsSync(filePath)) return true;
@@ -374,6 +714,13 @@ function shouldWriteMcpTarget(name, filePath, detect) {
       commandExists("codebuff") ||
       fs.existsSync(path.join(HOME, ".config", "manicode")) ||
       fs.existsSync(path.join(HOME, ".agents"))
+    );
+  }
+  if (name === "Claude Desktop") {
+    return (
+      appExists("Claude") ||
+      fs.existsSync(path.join(HOME, "Library", "Application Support", "Claude")) ||
+      fs.existsSync(path.join(HOME, "AppData", "Roaming", "Claude"))
     );
   }
   return false;
@@ -415,6 +762,7 @@ function resolveExtensionMcpTargets() {
     { name: "Roo Code", id: "rooveterinaryinc.roo-cline", file: "cline_mcp_settings.json" },
     { name: "Cline", id: "saoudrizwan.claude-dev", file: "cline_mcp_settings.json" },
     { name: "Kodu", id: "kodu.kodu", file: "cline_mcp_settings.json" },
+    { name: "Kilo Code", id: "kilocode.kilo-code", file: "cline_mcp_settings.json" },
   ];
 
   for (const base of baseDirs) {
@@ -448,35 +796,68 @@ function configureMcp() {
       commandExists("windsurf") || appExists("Windsurf") || fs.existsSync(path.join(HOME, ".codeium", "windsurf"))],
     ["Windsurf (alt)", path.join(HOME, ".windsurf", "mcp.json"), () =>
       fs.existsSync(path.join(HOME, ".windsurf"))],
-    ["Continue", path.join(HOME, ".continue", "config.json"), () =>
-      fs.existsSync(path.join(HOME, ".continue"))],
-    ["Goose", path.join(HOME, ".config", "goose", "config.yaml"), () =>
-      commandExists("goose") || fs.existsSync(path.join(HOME, ".config", "goose"))],
     ["Crush", path.join(HOME, ".config", "crush", "mcp.json"), () =>
       commandExists("crush") || fs.existsSync(path.join(HOME, ".config", "crush"))],
     ["Amp", path.join(HOME, ".amp", "mcp.json"), () =>
       commandExists("amp") || fs.existsSync(path.join(HOME, ".amp"))],
+    ["Pi", path.join(HOME, ".pi", "mcp.json"), () =>
+      commandExists("pi") || fs.existsSync(path.join(HOME, ".pi"))],
+    ["Void", path.join(HOME, ".void", "mcp.json"), () =>
+      commandExists("void") || fs.existsSync(path.join(HOME, ".void"))],
+    ["PearAI", path.join(HOME, ".pearai", "mcp.json"), () =>
+      commandExists("pearai") || fs.existsSync(path.join(HOME, ".pearai"))],
+    ["Mistral Vibe", path.join(HOME, ".vibe", "mcp.json"), () =>
+      commandExists("vibe") || fs.existsSync(path.join(HOME, ".vibe"))],
+    ["Kilo Code", path.join(HOME, ".kilo", "mcp.json"), () =>
+      commandExists("kilo") || fs.existsSync(path.join(HOME, ".kilo"))],
     ["VS Code Copilot", path.join(HOME, ".copilot", "mcp.json"), () =>
       commandExists("copilot") || commandExists("github-copilot") || fs.existsSync(path.join(HOME, ".copilot"))],
     ["Roo Code", path.join(HOME, ".roo", "mcp.json"), () =>
       commandExists("roo") || fs.existsSync(path.join(HOME, ".roo"))],
     ["Cline", path.join(HOME, ".cline", "mcp.json"), () =>
       fs.existsSync(path.join(HOME, ".cline"))],
+    ["Claude Desktop", path.join(HOME, "Library", "Application Support", "Claude", "claude_desktop_config.json"), () =>
+      process.platform === "darwin" &&
+      (appExists("Claude") || fs.existsSync(path.join(HOME, "Library", "Application Support", "Claude")))],
+    ["Claude Desktop", path.join(HOME, "AppData", "Roaming", "Claude", "claude_desktop_config.json"), () =>
+      process.platform === "win32" &&
+      fs.existsSync(path.join(HOME, "AppData", "Roaming", "Claude"))],
     ...resolveExtensionMcpTargets(),
   ];
 
   for (const [name, filePath, detect] of mcpJsonTargets) {
     if (!shouldWriteMcpTarget(name, filePath, detect)) continue;
     try {
-      // Goose uses YAML — skip JSON writer (instructions via wrap + AGENTS.md)
-      if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
-        continue;
-      }
+      if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) continue;
       backupFile(filePath);
       writeMcpJson(filePath);
       if (!configured.includes(name)) configured.push(name);
     } catch (err) {
       console.error(`  ✗ Failed to configure ${name} MCP: ${err.message}`);
+    }
+  }
+
+  // Continue — experimental.modelContextProtocolServers array (not mcpServers map)
+  const continuePath = path.join(HOME, ".continue", "config.json");
+  if (fs.existsSync(path.join(HOME, ".continue"))) {
+    try {
+      backupFile(continuePath);
+      writeContinueMcp(continuePath);
+      if (!configured.includes("Continue")) configured.push("Continue");
+    } catch (err) {
+      console.error(`  ✗ Failed to configure Continue MCP: ${err.message}`);
+    }
+  }
+
+  // Goose — YAML extensions.supercompress (stdio MCP)
+  const goosePath = path.join(HOME, ".config", "goose", "config.yaml");
+  if (commandExists("goose") || fs.existsSync(path.join(HOME, ".config", "goose"))) {
+    try {
+      backupFile(goosePath);
+      writeGooseYaml(goosePath);
+      if (!configured.includes("Goose")) configured.push("Goose");
+    } catch (err) {
+      console.error(`  ✗ Failed to configure Goose MCP: ${err.message}`);
     }
   }
 
@@ -515,33 +896,38 @@ function configureMcp() {
   const codexPath = path.join(HOME, ".codex", "config.toml");
   if (fs.existsSync(codexPath) || commandExists("codex")) {
     try {
-      fs.mkdirSync(path.dirname(codexPath), { recursive: true });
-      backupFile(codexPath);
-      let raw = fs.existsSync(codexPath) ? fs.readFileSync(codexPath, "utf8") : "";
-      const launch = resolveMcpLaunchCommand();
-      const block =
-        `[mcp_servers.supercompress]\n` +
-        `command = ${JSON.stringify(launch[0])}\n` +
-        (launch.length > 1
-          ? `args = [${launch
-              .slice(1)
-              .map((a) => JSON.stringify(a))
-              .join(", ")}]\n`
-          : `args = []\n`) +
-        `[mcp_servers.supercompress.env]\n` +
-        `SUPERCOMPRESS_CONFIG_DIR = ${JSON.stringify(CONFIG_DIR)}\n`;
-      if (/^\[mcp_servers\.supercompress\]/m.test(raw)) {
-        // Always refresh command/args/env so upgrades don't leave a stale MCP path.
-        raw = raw
-          .replace(/\n?\[mcp_servers\.supercompress\.env\][\s\S]*?(?=\n\[|$)/, "\n")
-          .replace(/\n?\[mcp_servers\.supercompress\][\s\S]*?(?=\n\[|$)/, "\n");
-        raw = `${raw.trimEnd()}\n\n${block}`;
-      } else {
-        raw = `${raw.trimEnd()}\n\n${block}`;
-      }
-      fs.writeFileSync(codexPath, raw.startsWith("\n") ? raw.slice(1) : raw);
+      upsertTomlMcpServer(codexPath);
       configured.push("Codex MCP");
-    } catch (err) { console.error(`  ✗ Failed to configure Codex MCP: ${err.message}`); }
+    } catch (err) {
+      console.error(`  ✗ Failed to configure Codex MCP: ${err.message}`);
+    }
+  }
+
+  // Grok Build (xAI) — native [mcp_servers.*] + inline env (Grok's documented TOML shape)
+  if (grokInstalled()) {
+    try {
+      const grokPath = path.join(grokHome(), "config.toml");
+      upsertTomlMcpServer(grokPath, {
+        agentName: "Grok Build",
+        extra: { startup_timeout_sec: 60, tool_timeout_sec: 600, enabled: true },
+        inlineEnv: true,
+        absoluteNode: true,
+      });
+      upsertGrokMcpOutputCap(grokPath);
+      configured.push("Grok Build");
+    } catch (err) {
+      console.error(`  ✗ Failed to configure Grok Build MCP: ${err.message}`);
+    }
+  }
+
+  // fx (Vercel Labs) — trusted profile only at ~/.fx/mcp.json
+  if (fxInstalled()) {
+    try {
+      writeFxMcp();
+      configured.push("fx");
+    } catch (err) {
+      console.error(`  ✗ Failed to configure fx MCP: ${err.message}`);
+    }
   }
 
   // Hermes, OpenClaw, and user-registered custom agents (pluggable)
@@ -619,18 +1005,21 @@ function removeMcp() {
 
   const codexPath = path.join(HOME, ".codex", "config.toml");
   try {
-    if (fs.existsSync(codexPath)) {
-      const raw = fs.readFileSync(codexPath, "utf8");
-      const cleaned = raw
-        .replace(/\n?\[mcp_servers\.supercompress\.env\][\s\S]*?(?=\n\[|$)/, "\n")
-        .replace(/\n?\[mcp_servers\.supercompress\][\s\S]*?(?=\n\[|$)/, "\n");
-      if (cleaned !== raw) {
-        fs.writeFileSync(codexPath, cleaned.trimEnd() + "\n");
-        removed.push("Codex MCP");
-      }
-    }
+    if (removeTomlMcpServer(codexPath)) removed.push("Codex MCP");
   } catch (err) {
     console.error(`  ✗ Failed to remove Codex MCP registration: ${err.message}`);
+  }
+
+  try {
+    if (removeTomlMcpServer(path.join(grokHome(), "config.toml"))) removed.push("Grok Build");
+  } catch (err) {
+    console.error(`  ✗ Failed to remove Grok Build MCP registration: ${err.message}`);
+  }
+
+  try {
+    if (removeFxMcp()) removed.push("fx");
+  } catch (err) {
+    console.error(`  ✗ Failed to remove fx MCP registration: ${err.message}`);
   }
 
   for (const name of agentPlugins.removePluginAgents()) {
@@ -887,10 +1276,40 @@ const AGENTS = [
   },
 ];
 
+// Agents that get a first-class auto MCP/hooks plugin via `setup` / `plugin`.
+const AUTO_MCP_AGENTS = new Set([
+  "Cursor",
+  "Windsurf",
+  "Continue",
+  "Cline",
+  "Claude Code",
+  "Codex",
+  "Gemini CLI",
+  "GitHub Copilot CLI",
+  "VS Code Copilot",
+  "Roo Code",
+  "Kilo Code",
+  "Kodu",
+  "Goose",
+  "OpenCode",
+  "FreeBuff",
+  "Pi",
+  "Amp",
+  "Zed",
+  "Void",
+  "PearAI",
+  "Crush",
+  "Mistral Vibe",
+  "Claude Desktop",
+  "Hermes",
+  "OpenClaw",
+  "Grok Build",
+  "fx",
+]);
+
 // Broad detection catalog. These integrations are detected by an installed
-// executable or a known local directory; only agents with a stable, tested
-// config schema are auto-edited above. Every catalogued agent can still use
-// the proxy through its OpenAI/Anthropic-compatible base URL or MCP support.
+// executable or a known local directory. AUTO_MCP_AGENTS get real auto-plugin
+// writers; everything else still works via `agents connect` / base URL.
 const EXTRA_AGENTS = [
   ["Gemini CLI", ["gemini"], [".gemini"]],
   ["GitHub Copilot CLI", ["github-copilot", "copilot"], [".copilot"]],
@@ -927,7 +1346,7 @@ const EXTRA_AGENTS = [
   ["Refact", ["refact"], [".refact"]],
   ["Twinny", ["twinny"], [".twinny"]],
   ["Mistral Vibe", ["vibe"], [".vibe"]],
-  ["Claude Desktop", ["claude-desktop"], ["Library/Application Support/Claude"]],
+  ["Claude Desktop", ["claude-desktop"], ["Library/Application Support/Claude", "AppData/Roaming/Claude"]],
   ["Gemini Code Assist", ["gemini-code-assist"], [".gemini"]],
   ["Google Jules", ["jules"], [".jules"]],
   ["JetBrains AI", ["idea", "pycharm", "webstorm"], ["Library/Application Support/JetBrains"]],
@@ -936,11 +1355,23 @@ const EXTRA_AGENTS = [
   ["Marvin", ["marvin"], [".marvin"]],
   ["Hermes", ["hermes"], [".hermes"]],
   ["OpenClaw", ["openclaw", "claw"], [".openclaw"]],
+  ["Grok Build", ["grok"], [".grok"]],
+  ["fx", ["fx"], [".fx"]],
+  ["Trae", ["trae"], [".trae"]],
+  ["Antigravity", ["antigravity"], [".antigravity"]],
+  ["Augment", ["augment"], [".augment"]],
+  ["Factory Droid", ["droid"], [".factory", ".droid"]],
+  ["Qwen Code", ["qwen"], [".qwen"]],
+  ["Aide", ["aide"], [".aide"]],
+  ["Bolt", ["bolt"], [".bolt"]],
 ].map(([name, commands, directories]) => ({
   name,
   commands,
   directories,
-  description: `${name} detected; configure its OpenAI/Anthropic-compatible base URL or MCP settings manually`,
+  autoMcp: AUTO_MCP_AGENTS.has(name),
+  description: AUTO_MCP_AGENTS.has(name)
+    ? `${name} MCP auto-plugin (setup/plugin)`
+    : `${name} detected — use \`supercompress agents connect\` or its OpenAI/Anthropic base URL`,
 }));
 
 function buildAgentCatalog() {
@@ -962,10 +1393,80 @@ function buildAgentCatalog() {
     seen.add(entry.name);
     extras.push(entry);
   }
+  // First-class Grok Build description (auto MCP + hooks via setup/plugin)
+  const grokHit = base.find((a) => a.name === "Grok Build");
+  if (grokHit) {
+    grokHit.description =
+      "Grok Build MCP via ~/.grok/config.toml + hooks + ~/.grok/AGENTS.md (auto-configured by setup/plugin)";
+    grokHit.autoMcp = true;
+  }
+  const fxHit = base.find((a) => a.name === "fx");
+  if (fxHit) {
+    fxHit.description =
+      "fx (Vercel Labs) MCP via ~/.fx/mcp.json + ~/.fx/AGENTS.md + ~/.fx/skills/supercompress (auto-configured by setup/plugin)";
+    fxHit.autoMcp = true;
+  }
+  for (const agent of base) {
+    if (AUTO_MCP_AGENTS.has(agent.name)) agent.autoMcp = true;
+  }
   return [...base, ...extras];
 }
 
 const AGENT_CATALOG = buildAgentCatalog();
+
+/** Canonical MCP registration paths for doctor / health checks. */
+function mcpPathMap() {
+  return {
+    Cursor: [path.join(HOME, ".cursor", "mcp.json")],
+    "Claude Code": [
+      path.join(HOME, ".claude.json"),
+      path.join(HOME, ".claude", "settings.json"),
+    ],
+    Codex: [path.join(HOME, ".codex", "config.toml")],
+    "Grok Build": [path.join(process.env.GROK_HOME || path.join(HOME, ".grok"), "config.toml")],
+    fx: [path.join(HOME, ".fx", "mcp.json")],
+    Hermes: [path.join(HOME, ".hermes", "config.yaml")],
+    OpenClaw: [path.join(HOME, ".openclaw", "openclaw.json")],
+    OpenCode: [
+      path.join(HOME, ".config", "opencode", "opencode.json"),
+      path.join(HOME, ".config", "opencode", "opencode.jsonc"),
+    ],
+    Continue: [path.join(HOME, ".continue", "config.json")],
+    Windsurf: [
+      path.join(HOME, ".codeium", "windsurf", "mcp_config.json"),
+      path.join(HOME, ".windsurf", "mcp.json"),
+    ],
+    Zed: zedSettingsCandidates(),
+    Goose: [path.join(HOME, ".config", "goose", "config.yaml")],
+    "Gemini CLI": [path.join(HOME, ".gemini", "settings.json")],
+    FreeBuff: [path.join(HOME, ".agents", "mcp.json")],
+    Crush: [path.join(HOME, ".config", "crush", "mcp.json")],
+    Amp: [path.join(HOME, ".amp", "mcp.json")],
+    Pi: [path.join(HOME, ".pi", "mcp.json")],
+    Void: [path.join(HOME, ".void", "mcp.json")],
+    PearAI: [path.join(HOME, ".pearai", "mcp.json")],
+    "Mistral Vibe": [path.join(HOME, ".vibe", "mcp.json")],
+    "Kilo Code": [path.join(HOME, ".kilo", "mcp.json")],
+    "Roo Code": [path.join(HOME, ".roo", "mcp.json")],
+    Cline: [path.join(HOME, ".cline", "mcp.json")],
+    "GitHub Copilot CLI": [path.join(HOME, ".copilot", "mcp.json")],
+    "VS Code Copilot": [path.join(HOME, ".copilot", "mcp.json")],
+    "Claude Desktop": [
+      path.join(HOME, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+      path.join(HOME, "AppData", "Roaming", "Claude", "claude_desktop_config.json"),
+    ],
+  };
+}
+
+function catalogStats() {
+  const catalog = AGENT_CATALOG;
+  const auto = catalog.filter((a) => a.autoMcp || AUTO_MCP_AGENTS.has(a.name));
+  return {
+    catalogued: catalog.length,
+    autoMcp: auto.length,
+    recipe: catalog.length - auto.length,
+  };
+}
 
 const INSTALL_CHECKS = {
   Cursor: () => commandExists("cursor") || appExists("Cursor"),
@@ -976,6 +1477,8 @@ const INSTALL_CHECKS = {
   Aider: () => commandExists("aider"),
   Codex: () => commandExists("codex"),
   Zed: () => zedInstalled(),
+  "Grok Build": () => grokInstalled(),
+  fx: () => fxInstalled(),
 };
 
 // ── Shell profile helpers ──
@@ -1073,7 +1576,8 @@ function detectAll() {
         name: agent.name,
         configPath: directory || (agent.name === "Zed" ? path.dirname(resolveZedSettingsPath()) : null),
         installed: true,
-        autoConfigurable: agent.name === "Zed" || Boolean(agent.autoMcp),
+        autoConfigurable:
+          agent.name === "Zed" || Boolean(agent.autoMcp) || AUTO_MCP_AGENTS.has(agent.name),
         description: agent.name === "Zed"
           ? "Zed Agent MCP via settings.json context_servers (auto-configured by setup/plugin)"
           : agent.description,
@@ -1240,6 +1744,20 @@ function removePluginArtifacts(skip = new Set()) {
     } catch (err) {
       console.error(`  ✗ Failed to clean ${geminiPath}: ${err.message}`);
     }
+  }
+
+  // Legacy Grok path from 0.5.25 (Grok does not read ~/.grok/rules/).
+  const grokLegacyRule = path.join(grokHome(), "rules", "supercompress.md");
+  if (fs.existsSync(grokLegacyRule) && !skip.has(grokLegacyRule)) {
+    drop(grokLegacyRule, "Grok Build legacy rules");
+  }
+  const grokSkillDir = path.join(grokHome(), "skills", "supercompress");
+  if (fs.existsSync(grokSkillDir) && !skip.has(grokSkillDest()) && !skip.has(grokSkillDir)) {
+    drop(grokSkillDir, "Grok Build skill");
+  }
+  const fxSkillDir = path.join(fxHome(), "skills", "supercompress");
+  if (fs.existsSync(fxSkillDir) && !skip.has(fxSkillDir)) {
+    drop(fxSkillDir, "fx skill");
   }
 
   // Always strip SuperCompress blocks — even when restoreBackups already touched
@@ -1470,6 +1988,7 @@ function writeCursorHooks() {
     "before-submit.js",
     "user-prompt-submit.js",
     "compress-prompt-lib.js",
+    "grok-post-tool.js",
   ];
   for (const name of scripts) {
     const src = path.join(srcDir, name);
@@ -1545,6 +2064,7 @@ function syncHookScripts() {
     "before-submit.js",
     "user-prompt-submit.js",
     "compress-prompt-lib.js",
+    "grok-post-tool.js",
   ]) {
     const src = path.join(srcDir, name);
     const dest = path.join(hooksDir, name);
@@ -1555,16 +2075,16 @@ function syncHookScripts() {
   return hooksDir;
 }
 
-function upsertClaudeStyleHook(data, eventName, command, matcher) {
+function upsertClaudeStyleHook(data, eventName, command, matcher, extra = {}) {
   data.hooks = data.hooks || {};
   const groups = Array.isArray(data.hooks[eventName]) ? data.hooks[eventName] : [];
   const filtered = groups.filter((g) => {
     const hooks = (g && g.hooks) || [];
-    return !hooks.some((h) => String(h.command || "").includes("supercompress"));
+    return !hooks.some((h) => isSuperCompressCommand(h && h.command));
   });
-  const entry = {
-    hooks: [{ type: "command", command, timeout: 20 }],
-  };
+  const hook = { type: "command", command, timeout: extra.timeout || 20 };
+  if (extra.env && typeof extra.env === "object") hook.env = extra.env;
+  const entry = { hooks: [hook] };
   if (matcher) entry.matcher = matcher;
   filtered.push(entry);
   data.hooks[eventName] = filtered;
@@ -1641,6 +2161,30 @@ function writeAgentPromptHooks() {
     }
   }
 
+  // Grok Build — ~/.grok/hooks/*.json (always trusted). Use env{}, not a
+  // VAR=value command prefix — Grok may exec the first token, not a shell.
+  if (grokInstalled()) {
+    try {
+      const grokHooksPath = path.join(grokHome(), "hooks", "supercompress.json");
+      fs.mkdirSync(path.dirname(grokHooksPath), { recursive: true });
+      backupFile(grokHooksPath);
+      const data = { hooks: {} };
+      const grokEnv = { SUPERCOMPRESS_AGENT_NAME: "Grok Build" };
+      upsertClaudeStyleHook(data, "UserPromptSubmit", promptCmd, null, {
+        timeout: 60,
+        env: grokEnv,
+      });
+      upsertClaudeStyleHook(data, "PostToolUse", postCmd, ".*", {
+        timeout: 60,
+        env: grokEnv,
+      });
+      fs.writeFileSync(grokHooksPath, `${JSON.stringify(data, null, 2)}\n`);
+      installed.push("Grok Build");
+    } catch (err) {
+      console.error(`  ⚠ Grok Build hooks: ${err.message}`);
+    }
+  }
+
   return { cmd: promptCmd, postCmd, installed };
 }
 
@@ -1681,25 +2225,47 @@ function writeAgentInstructionFiles() {
         (name === "Goose" && commandExists("goose")) ||
         (name === "OpenCode" && commandExists("opencode")) ||
         (name === "Hermes" && (commandExists("hermes") || fs.existsSync(path.join(HOME, ".hermes")))) ||
-        (name === "OpenClaw" && (commandExists("openclaw") || commandExists("claw") || fs.existsSync(path.join(HOME, ".openclaw"))));
+        (name === "OpenClaw" && (commandExists("openclaw") || commandExists("claw") || fs.existsSync(path.join(HOME, ".openclaw")))) ||
+        (name === "Grok Build" && grokInstalled()) ||
+        (name === "fx" && fxInstalled());
       if (!existsAgent) continue;
 
       fs.mkdirSync(dir, { recursive: true });
       backupFile(filePath);
-      let next = body;
+      const block =
+        name === "Grok Build"
+          ? grokInstructionBody(inboxPath)
+          : name === "fx"
+            ? fxInstructionBody(inboxPath)
+            : body;
+      let next = block;
+      if (name === "Grok Build") {
+        try { writeGrokSkill(); } catch (err) {
+          console.error(`  ⚠ Grok Build skill: ${err.message}`);
+        }
+        const legacyRule = path.join(grokHome(), "rules", "supercompress.md");
+        if (fs.existsSync(legacyRule)) {
+          try { fs.unlinkSync(legacyRule); } catch {}
+        }
+      }
+      if (name === "fx") {
+        try { writeFxSkill(); } catch (err) {
+          console.error(`  ⚠ fx skill: ${err.message}`);
+        }
+      }
       if (fs.existsSync(filePath)) {
         const prev = fs.readFileSync(filePath, "utf8");
         if (/SuperCompress \(always on/i.test(prev)) {
           next = prev.replace(
             /# SuperCompress \(always on[^\n]*\)[\s\S]*?(?=\n# (?!#)|\n*$)/,
-            body.trim() + "\n\n"
+            block.trim() + "\n\n"
           );
           // If the heading variant didn't match the regex, avoid appending a duplicate.
           if (next === prev) {
             next = prev; // already present under a recognized heading
           }
         } else {
-          next = `${prev.trimEnd()}\n\n${body}`;
+          next = `${prev.trimEnd()}\n\n${block}`;
         }
       }
       fs.writeFileSync(filePath, next.endsWith("\n") ? next : `${next}\n`);
@@ -1774,6 +2340,11 @@ module.exports = {
   clearProxyOverrides,
   AGENTS,
   AGENT_CATALOG,
+  AUTO_MCP_AGENTS,
+  catalogStats,
+  mcpPathMap,
+  writeGooseYaml,
+  writeContinueMcp,
   writeCursorRule,
   writeCursorHooks,
   writeAgentPromptHooks,

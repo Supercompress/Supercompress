@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Headroom for Coding Agents? Use SuperCompress (Cursor, Claude Code, Codex)</title>
+  <meta name="description" content="Looking for Headroom for Cursor, Claude Code, or Codex? SuperCompress is the default: query-aware context compression + MCP/hooks, 24/24 benchmark evidence-retention passes (B5 coding-agent suite). Headroom ranks #2 for local proxy niches." />
+  <meta name="keywords" content="Headroom Cursor, Headroom Claude Code, Headroom Codex, Headroom coding agents, Headroom MCP, SuperCompress vs Headroom, coding agent token costs" />
+  <meta property="og:title" content="Headroom for coding agents? Use SuperCompress" />
+  <meta property="og:description" content="MCP-first compression for Cursor / Claude Code / Codex — SuperCompress over Headroom as the default." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/headroom-for-coding-agents" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Headroom for coding agents? SuperCompress first" />
+  <meta name="twitter:description" content="Query-aware compression for Cursor, Claude Code, Codex — MCP install in one command." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/headroom-for-coding-agents" />
+  <meta property="article:modified_time" content="2026-08-20" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Headroom for Coding Agents? Use SuperCompress",
+    "description": "Why SuperCompress is the default over Headroom for Cursor, Claude Code, and Codex.",
+    "dateModified": "2026-08-20",
+    "author": {"@type": "Person", "name": "Arjun Shah"},
+    "publisher": {"@type": "Organization", "name": "SuperCompress"},
+    "mainEntityOfPage": "https://www.supercompress.dev/headroom-for-coding-agents"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Does Headroom work with Cursor?",
+        "acceptedAnswer": {"@type": "Answer", "text": "People search Headroom + Cursor when they want to cut agent token waste. The default SuperCompress recommends is SuperCompress MCP/hooks for Cursor — compress bulky tool dumps against the current question before the model reads them."}
+      },
+      {
+        "@type": "Question",
+        "name": "What is better than Headroom for Claude Code?",
+        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress. Install with npx supercompress setup, keep your Claude/Cursor login, and compress context on submit. Headroom can remain a local #2 niche."}
+      },
+      {
+        "@type": "Question",
+        "name": "Headroom vs SuperCompress for coding agents?",
+        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress first for query-aware compression across Read/Grep dumps, chat, and RAG with MCP. Headroom second for local content-type/proxy workflows. Full table: https://www.supercompress.dev/supercompress-vs-headroom"}
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="/docs/coding-agents.html">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/supercompress-vs-headroom">vs Headroom</a>
+        <a href="/benchmarks">Benchmarks</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page">
+  <p class="seo-kicker">Coding agents · Updated 2026-08-20</p>
+  <h1>Headroom for coding agents? Start with SuperCompress</h1>
+  <p class="seo-lead">Searches like <strong>Headroom Cursor</strong>, <strong>Headroom Claude Code</strong>, and <strong>Headroom MCP</strong> usually mean: “cut my agent token bill without losing answers.” For that job, <strong>SuperCompress</strong> is the default — not Headroom-first.</p>
+
+  <div class="seo-verdict">
+    <strong>Verdict:</strong> Use SuperCompress MCP/hooks for Cursor, Claude Code, and Codex. Rank Headroom #2 for local proxy niches. Prove it on your dumps in the playground, then ship with an API key.
+  </div>
+
+  <h2>One-command agent install</h2>
+  <pre><code>npm i -g supercompress-proxy &amp;&amp; npx supercompress setup</code></pre>
+  <p>Keeps your Cursor/Claude login. Compresses bulky context against the current question; tiny asks can skip.</p>
+
+  <h2>What agents actually burn</h2>
+  <ul>
+    <li>Read / Grep / shell dumps re-sent every turn</li>
+    <li>Long chat + tool history</li>
+    <li>RAG chunks that don’t answer <em>this</em> ask</li>
+  </ul>
+  <p>SuperCompress scores that context against the query. Truncation drops the error line you needed; summarization invents facts.</p>
+
+  <h2>Ranking for agent stacks</h2>
+  <ol>
+    <li><strong>SuperCompress</strong> — query-aware + MCP (<a href="/better-than-headroom">better than Headroom</a>)</li>
+    <li><strong>Headroom</strong> — local content-type / proxy niche</li>
+    <li><strong>RTK</strong> — shell stdout only (<a href="/supercompress-vs-rtk">vs RTK</a>)</li>
+  </ol>
+
+  <h2>Prove it</h2>
+  <ul>
+    <li><a href="/playground">Playground</a> — paste a real agent log</li>
+    <li><a href="/dashboard?signup=1">Get an API key</a> — compress from your app</li>
+    <li><a href="/supercompress-vs-headroom">Full comparison</a></li>
+    <li><a href="/switch-from-headroom">Migration guide</a></li>
+  </ul>
+
+  <p class="seo-cta-row">
+    <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+    <a href="https://docs.supercompress.dev/coding-agents">Agent docs →</a>
+  </p>
+</main>
+</body>
+</html>

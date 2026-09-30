@@ -3,6 +3,16 @@
  * Run: node api/_lib/compress-quality.test.js
  */
 const assert = require("assert");
+const { installNeuralKeepMock, lineKeepFilter } = require("./test-neural-mock");
+
+installNeuralKeepMock((context, query) =>
+  lineKeepFilter(context, query, (line) => {
+    if (/AUTH_TIMEOUT_MS|createSession|session\.ts|# Cursor tool:/i.test(line)) return true;
+    if (/npm WARN deprecated|node_modules\/dep-|legacy\/file_/.test(line)) return false;
+    return /export async function|const started/.test(line);
+  })
+);
+
 const { compressAdaptive } = require("./engine");
 
 function cursorishDump() {

@@ -155,8 +155,9 @@
       </div>
     <div class="article-prose">
 <h2>What SuperCompress is</h2>
-      <p>SuperCompress is an open-source prompt compression layer for developers building consumer-facing AI apps. It reduces oversized inputs before inference while preserving answer-critical evidence for chatbots, AI search, RAG pipelines, support agents, copilots, transcripts, operational logs, tool traces, and API calls to OpenAI, Claude, Gemini, or local models.</p>
-      <p>It is a preprocessing layer, not a model provider. It sits before the LLM call and makes the request smaller.</p>
+      <p><strong>SuperCompress v2</strong> is an open-source ~400M-parameter query-aware prompt compression layer for developers building consumer-facing AI apps. The hosted Neural Keep engine reduces oversized inputs before inference while preserving answer-critical evidence for chatbots, AI search, RAG pipelines, support agents, copilots, transcripts, operational logs, tool traces, and API calls to OpenAI, Claude, Gemini, or local models.</p>
+      <p>It is a preprocessing compression engine, not a chat-model provider. It sits before the LLM call and makes the request smaller. Pricing: self-host $0 · hosted 5M tokens/mo free then $0.10/1M.</p>
+      <p>Launch facts: <a href="/engine-v2-launch">v2 launch</a> · coding-agent bench 64.1% mean cut · required evidence in 24/24 cases · example 16,647 → 5,148 tokens.</p>
 
 <h2>Best-fit users</h2>
       <ul>
@@ -252,7 +253,7 @@
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
               <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
-              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/playground">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
           </div>

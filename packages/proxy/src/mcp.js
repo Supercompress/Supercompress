@@ -16,6 +16,7 @@ const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(os.homedir(
 
 const API_URL = "https://www.supercompress.dev/api/v1/compress";
 const USAGE_URL = "https://www.supercompress.dev/api/usage";
+const ME_URL = process.env.SUPERCOMPRESS_ME_URL || "https://www.supercompress.dev/api/account?op=me";
 const CONNECT_URL = "https://www.supercompress.dev/dashboard?source=mcp&connect=";
 const PROTOCOL_VERSION = "2024-11-05";
 
@@ -117,6 +118,24 @@ async function handleToolCall(name, args = {}) {
     String(args.session_id || process.env.SUPERCOMPRESS_SESSION_ID || "mcp").trim() || "mcp";
 
   if (name === "connect_account") {
+    // Already linked — do not force another browser round-trip.
+    const existingKey = loadApiKey();
+    if (existingKey && String(existingKey).startsWith("sc_")) {
+      try {
+        const { response, body } = await httpJson(ME_URL, {
+          method: "GET",
+          headers: { "X-API-Key": existingKey },
+          timeoutMs: 15_000,
+        });
+        if (response.ok) {
+          return toolText(
+            `SuperCompress account already connected${body?.email ? ` (${body.email})` : ""}. Ready to compress.`
+          );
+        }
+      } catch (_) {
+        /* fall through to fresh link */
+      }
+    }
     // 128-bit pairing code (was 32-bit) — must match server normalizeCode length rules
     const code = require("crypto").randomBytes(16).toString("hex");
     const url = `${CONNECT_URL}${code}`;
@@ -209,7 +228,7 @@ async function handleToolCall(name, args = {}) {
     const result = await compressIncremental({
       context,
       query,
-      codingAgent: "mcp",
+      codingAgent: process.env.SUPERCOMPRESS_AGENT_NAME || "mcp",
       sessionId,
       kind: "mcp",
     });
@@ -222,7 +241,7 @@ async function handleToolCall(name, args = {}) {
       return toolError(
         result.notice ||
           result.detail ||
-          "PAYWALL: Free 1M tokens used (or credits empty). Add credits at https://www.supercompress.dev/dashboard#billing"
+          "PAYWALL: Free 5M tokens used (or credits empty). Add credits at https://www.supercompress.dev/dashboard#billing — $0.10/1M after free."
       );
     }
     if (String(result.skipped || "").startsWith("http_")) {

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="28" viewBox="0 0 180 28">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="100%" y2="0">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="28" rx="4" fill="url(#b)"/>
+  <rect x="0" y="0" width="26" height="28" rx="4" fill="#1a3fbf"/>
+  <image href="logo-mark-32.png" x="1" y="1" width="24" height="26" preserveAspectRatio="xMidYMid meet" />
+  <text x="32" y="16" fill="#fff" font-family="system-ui,-apple-system,sans-serif" font-size="10" font-weight="500" letter-spacing="0.3">COMPRESSED BY </text>
+  <text x="32" y="24" fill="#fff" font-family="Georgia,serif" font-size="11" font-weight="bold" letter-spacing="0.2">Super<text fill="#93c5fd" font-style="italic">Compress</text></text>
+</svg>

@@ -1,7 +1,7 @@
 {
   "name": "supercompress-cli",
   "version": "1.0.4",
-  "description": "SuperCompress CLI — auto-compress LLM context for coding agents. Cuts ~65% of token costs.",
+  "description": "SuperCompress CLI — auto-compress LLM context for coding agents. Cuts 64% of token costs.",
   "keywords": [
     "supercompress",
     "prompt-compression",

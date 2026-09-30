@@ -184,7 +184,7 @@
         "name": "Is SuperCompress free?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. SuperCompress is open source under MIT license. The Python library and browser demo are free. The hosted API includes 5M free tokens per month, then $1 per 1M tokens pay-as-you-go."
+          "text": "Yes. SuperCompress is open source under MIT license. The Python library and browser demo are free. The hosted API includes 5M free tokens per month, then $0.10 per 1M tokens pay-as-you-go."
         }
       }
     ]
@@ -263,7 +263,7 @@
           <div class="bench-stat">
             <span class="label">Runtime</span>
             <span class="value">~47ms</span>
-            <span class="sub">CPU policy path. Hosted neural ranking optional. No extra LLM call.</span>
+            <span class="sub">v2 hosted path: ~400M Neural Keep. CPU policy path also available. No extra LLM call.</span>
           </div>
         </div>
       </div>
@@ -574,8 +574,8 @@
               <p>It’s the share of lines that contain the information needed to answer the question that still appear after compression. 100% means nothing required for a correct answer was deleted. That’s the metric that protects quality.</p>
             </details>
             <details>
-              <summary>Why do all methods show ~65% tokens saved in the first table?</summary>
-              <p>Because that test forces the same budget: keep 35% of prompt tokens, drop 65%, so <code>tokens_saved_pct</code> is ~65% for every method. It’s a quality contest, not a savings contest. The interesting number is who still has the answer afterward.</p>
+              <summary>Why do all methods show ~64% tokens saved in the first table?</summary>
+              <p>Because that test forces the same budget: keep 35% of prompt tokens, drop 64%, so <code>tokens_saved_pct</code> is ~64% for every method. It’s a quality contest, not a savings contest. The interesting number is who still has the answer afterward.</p>
             </details>
             <details>
               <summary>Why do savings vary by workload?</summary>
@@ -654,7 +654,7 @@
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks" aria-current="page">Benchmarks</a></li>
               <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
-              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/playground">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
           </div>

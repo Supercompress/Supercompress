@@ -5,13 +5,38 @@
 const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
 const { passwordResetCopy } = require("./mail");
-const { normalizeEmail, isValidEmail, CONTINUE_URL } = require("./password-reset");
+const {
+  normalizeEmail,
+  isValidEmail,
+  userHasPasswordProvider,
+  CONTINUE_URL,
+} = require("./password-reset");
 
 describe("password reset helpers", () => {
   it("normalizes and validates email", () => {
     assert.equal(normalizeEmail("  User@Example.COM "), "user@example.com");
     assert.equal(isValidEmail("user@example.com"), true);
     assert.equal(isValidEmail("nope"), false);
+  });
+
+  it("detects password vs Google-only providers", () => {
+    assert.equal(
+      userHasPasswordProvider({
+        providerData: [{ providerId: "google.com" }],
+      }),
+      false
+    );
+    assert.equal(
+      userHasPasswordProvider({
+        providerData: [
+          { providerId: "google.com" },
+          { providerId: "password" },
+        ],
+      }),
+      true
+    );
+    assert.equal(userHasPasswordProvider({ providerData: [] }), false);
+    assert.equal(userHasPasswordProvider(null), false);
   });
 
   it("branded copy includes reset url and site branding cues", () => {

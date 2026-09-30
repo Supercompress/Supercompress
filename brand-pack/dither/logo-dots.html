@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>SuperCompress — dithered mark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Platypi:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --muted: #94a3b8;
+      --brand: #2563eb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      overflow: hidden;
+    }
+    body { display: grid; place-items: center; cursor: crosshair; }
+    canvas {
+      display: block;
+      width: min(98vw, 1280px);
+      height: min(48vw, 420px);
+      max-height: 72vh;
+      touch-action: none;
+    }
+    .hud {
+      position: fixed; left: 24px; bottom: 22px;
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); pointer-events: none;
+    }
+    .hud strong { color: var(--brand); }
+    .title {
+      position: fixed; top: 28px; left: 0; right: 0; text-align: center;
+      font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--muted); pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <p class="title">supercompress · dithered lockup</p>
+  <canvas id="c" aria-label="Interactive dithered SuperCompress logo and wordmark"></canvas>
+  <p class="hud" id="hud">loading…</p>
+
+  <script>
+(function () {
+  "use strict";
+
+  var canvas = document.getElementById("c");
+  var ctx = canvas.getContext("2d", { alpha: true });
+  var hud = document.getElementById("hud");
+  var LOGO = "../logos/logo-mark-512.png";
+  var WORD = "SuperCompress";
+
+  var BLUE_DEEP = [37, 99, 235];   // #2563EB — Super
+  var BLUE_SOFT = [96, 165, 250];  // #60A5FA — Compress (readable on white)
+
+  var BAYER = [
+    0,48,12,60,3,51,15,63,
+    32,16,44,28,35,19,47,31,
+    8,56,4,52,11,59,7,55,
+    40,24,36,20,43,27,39,23,
+    2,50,14,62,1,49,13,61,
+    34,18,46,30,33,17,45,29,
+    10,58,6,54,9,57,5,53,
+    42,26,38,22,41,25,37,21,
+  ].map(function (t) { return (t + 0.5) / 64; });
+
+  var hx, hy, x, y, vx, vy, rad, cr, cg, cb, mass;
+  var n = 0;
+  var mouse = { x: -1e4, y: -1e4, on: false };
+  var W = 0, H = 0;
+  var dpr = 1;
+  var logoImg = null;
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var CELL = 28;
+  var buckets, buckW, buckH;
+
+  function resize() {
+    var cssW = Math.min(innerWidth * 0.98, 1280);
+    var cssH = Math.min(innerHeight * 0.72, cssW * 0.36, 420);
+    cssH = Math.max(260, cssH);
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = cssW;
+    H = cssH;
+    canvas.style.width = cssW + "px";
+    canvas.style.height = cssH + "px";
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function sampleMask(mask, Sx, Sy, ox, oy, cell, thrCut) {
+    var list = [];
+    var dotR = cell * 0.4;
+    for (var gy = 0; gy < Sy; gy++) {
+      for (var gx = 0; gx < Sx; gx++) {
+        var kind = mask[gy * Sx + gx];
+        if (!kind) continue;
+        var thr = BAYER[(gy & 7) * 8 + (gx & 7)];
+        // Keep nearly all ink — still read as discrete dots via white gaps
+        if (thr > thrCut) continue;
+        var col = kind === 2 ? BLUE_SOFT : BLUE_DEEP;
+        list.push(ox + (gx + 0.5) * cell, oy + (gy + 0.5) * cell, dotR, col[0], col[1], col[2]);
+      }
+    }
+    return list;
+  }
+
+  /** Light cleanup only — don’t eat thin letter stems. */
+  function softClean(mask, Sx, Sy) {
+    var out = new Uint8Array(mask);
+    for (var y = 1; y < Sy - 1; y++) {
+      for (var x = 1; x < Sx - 1; x++) {
+        var idx = y * Sx + x;
+        if (!mask[idx]) continue;
+        var nbor =
+          (mask[idx - 1] ? 1 : 0) + (mask[idx + 1] ? 1 : 0) +
+          (mask[idx - Sx] ? 1 : 0) + (mask[idx + Sx] ? 1 : 0);
+        if (nbor === 0) out[idx] = 0;
+      }
+    }
+    return out;
+  }
+
+  function logoMask(img, S) {
+    var c = document.createElement("canvas");
+    c.width = S;
+    c.height = S;
+    var g = c.getContext("2d", { willReadFrequently: true });
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = "#000";
+    g.fillRect(0, 0, S, S);
+    var pad = Math.round(S * 0.05);
+    g.drawImage(img, pad, pad, S - pad * 2, S - pad * 2);
+    var d = g.getImageData(0, 0, S, S).data;
+    var mask = new Uint8Array(S * S);
+    for (var i = 0, p = 0; i < d.length; i += 4, p++) {
+      var R = d[i], G = d[i + 1], B = d[i + 2], A = d[i + 3];
+      var L = (0.2126 * R + 0.7152 * G + 0.0722 * B) / 255;
+      if (A < 180 || L < 0.1) { mask[p] = 0; continue; }
+      mask[p] = L > 0.62 ? 2 : 1;
+    }
+    return softClean(mask, S, S);
+  }
+
+  /**
+   * Solid white glyphs on black → hard mask (full "SuperCompress").
+   * Color split by x: Super = deep blue, Compress = soft blue.
+   */
+  function textMask(Sx, Sy) {
+    var hi = 6;
+    var cw = Sx * hi;
+    var ch = Sy * hi;
+    var c = document.createElement("canvas");
+    c.width = cw;
+    c.height = ch;
+    var g = c.getContext("2d", { willReadFrequently: true });
+    g.fillStyle = "#000";
+    g.fillRect(0, 0, cw, ch);
+    g.textAlign = "left";
+    g.textBaseline = "alphabetic";
+    g.imageSmoothingEnabled = true;
+
+    var fontFamily = '"Platypi", Georgia, "Times New Roman", serif';
+    var padX = Math.round(cw * 0.015);
+    var lo = 8, hiFs = Math.floor(ch * 0.9), best = lo;
+    while (lo <= hiFs) {
+      var mid = (lo + hiFs) >> 1;
+      g.font = "700 " + mid + "px " + fontFamily;
+      var w = g.measureText(WORD).width;
+      if (w <= cw - padX * 2) { best = mid; lo = mid + 1; }
+      else hiFs = mid - 1;
+    }
+    g.font = "700 " + best + "px " + fontFamily;
+    var fullW = g.measureText(WORD).width;
+    var superW = g.measureText("Super").width;
+    var x0 = Math.round((cw - fullW) / 2);
+    var y0 = Math.round(ch * 0.74);
+
+    // Solid white ink for EVERY letter (no soft-blue fade in the mask)
+    g.fillStyle = "#ffffff";
+    g.fillText(WORD, x0, y0);
+
+    var small = document.createElement("canvas");
+    small.width = Sx;
+    small.height = Sy;
+    var sg = small.getContext("2d", { willReadFrequently: true });
+    // Mild smooth downsample so thin stems survive, then threshold hard
+    sg.imageSmoothingEnabled = true;
+    sg.imageSmoothingQuality = "high";
+    sg.drawImage(c, 0, 0, Sx, Sy);
+    var d = sg.getImageData(0, 0, Sx, Sy).data;
+
+    // Split Super | Compress in mask-space
+    var splitX = ((x0 + superW) / cw) * Sx;
+    var mask = new Uint8Array(Sx * Sy);
+    for (var i = 0, p = 0; i < d.length; i += 4, p++) {
+      var L = d[i] / 255; // white ink → high
+      if (L < 0.28) { mask[p] = 0; continue; }
+      var gx = p % Sx;
+      mask[p] = gx >= splitX ? 2 : 1;
+    }
+    return softClean(mask, Sx, Sy);
+  }
+
+  function build(img) {
+    // Dense pitch — lots of dots, still readable as circles
+    var pitch = Math.max(2.6, Math.min(3.2, Math.min(W, H) / 120));
+
+    // Mark ~24% width; wordmark gets the rest so "SuperCompress" fits fully
+    var markBox = Math.min(H * 0.88, W * 0.24);
+    var markOx = W * 0.025;
+    var markOy = (H - markBox) / 2;
+    var textOx = markOx + markBox + W * 0.02;
+    var textW = W - textOx - W * 0.025;
+    var textH = H * 0.82;
+    var textOy = (H - textH) / 2;
+
+    var Sm = Math.max(80, Math.round(markBox / pitch));
+    if (Sm % 2) Sm++;
+    var cellM = markBox / Sm;
+
+    var Sx = Math.max(220, Math.round(textW / pitch));
+    var Sy = Math.max(64, Math.round(textH / pitch));
+    if (Sx % 2) Sx++;
+    if (Sy % 2) Sy++;
+    var cellT = Math.min(textW / Sx, textH / Sy);
+    var textDrawW = Sx * cellT;
+    var textDrawH = Sy * cellT;
+    var textPadX = textOx + (textW - textDrawW) / 2;
+    var textPadY = textOy + (textH - textDrawH) / 2;
+
+    var mMask = logoMask(img, Sm);
+    var tMask = textMask(Sx, Sy);
+
+    // Keep almost every ink cell
+    var list = []
+      .concat(sampleMask(mMask, Sm, Sm, markOx, markOy, cellM, 0.94))
+      .concat(sampleMask(tMask, Sx, Sy, textPadX, textPadY, cellT, 0.96));
+
+    n = list.length / 6;
+    hx = new Float32Array(n);
+    hy = new Float32Array(n);
+    x = new Float32Array(n);
+    y = new Float32Array(n);
+    vx = new Float32Array(n);
+    vy = new Float32Array(n);
+    rad = new Float32Array(n);
+    cr = new Uint8Array(n);
+    cg = new Uint8Array(n);
+    cb = new Uint8Array(n);
+    mass = new Float32Array(n);
+
+    for (var i = 0; i < n; i++) {
+      var o = i * 6;
+      hx[i] = list[o];
+      hy[i] = list[o + 1];
+      x[i] = hx[i];
+      y[i] = hy[i];
+      vx[i] = 0;
+      vy[i] = 0;
+      rad[i] = list[o + 2];
+      cr[i] = list[o + 3];
+      cg[i] = list[o + 4];
+      cb[i] = list[o + 5];
+      mass[i] = 0.85 + Math.random() * 0.4;
+    }
+
+    buckW = Math.ceil(W / CELL) + 1;
+    buckH = Math.ceil(H / CELL) + 1;
+    buckets = new Array(buckW * buckH);
+
+    hud.innerHTML =
+      "pitch " + pitch.toFixed(1) + "px · <strong>" +
+      n.toLocaleString() + " dots</strong> · full wordmark · move mouse";
+  }
+
+  function rebucket() {
+    var len = buckW * buckH;
+    for (var b = 0; b < len; b++) buckets[b] = null;
+    for (var i = 0; i < n; i++) {
+      var cx = (x[i] / CELL) | 0;
+      var cy = (y[i] / CELL) | 0;
+      if (cx < 0 || cy < 0 || cx >= buckW || cy >= buckH) continue;
+      var id = cy * buckW + cx;
+      if (!buckets[id]) buckets[id] = [i];
+      else buckets[id].push(i);
+    }
+  }
+
+  function ptr(e) {
+    var rect = canvas.getBoundingClientRect();
+    var cx = e.clientX != null ? e.clientX : e.touches && e.touches[0] && e.touches[0].clientX;
+    var cy = e.clientY != null ? e.clientY : e.touches && e.touches[0] && e.touches[0].clientY;
+    if (cx == null) return;
+    mouse.x = cx - rect.left;
+    mouse.y = cy - rect.top;
+    mouse.on = true;
+  }
+  function leave() { mouse.on = false; mouse.x = -1e4; mouse.y = -1e4; }
+
+  canvas.addEventListener("pointermove", ptr, { passive: true });
+  canvas.addEventListener("pointerdown", ptr, { passive: true });
+  canvas.addEventListener("pointerenter", ptr, { passive: true });
+  canvas.addEventListener("pointerleave", leave);
+  addEventListener("blur", leave);
+
+  var frame = 0;
+  function tick() {
+    ctx.clearRect(0, 0, W, H);
+
+    var spring = 0.14;
+    var damp = 0.8;
+    var push = 22;
+    var R = Math.min(W, H) * 0.14;
+    var R2 = R * R;
+
+    if (!reduce && mouse.on) {
+      var mcx = (mouse.x / CELL) | 0;
+      var mcy = (mouse.y / CELL) | 0;
+      var reach = ((R / CELL) | 0) + 2;
+      for (var by = mcy - reach; by <= mcy + reach; by++) {
+        if (by < 0 || by >= buckH) continue;
+        for (var bx = mcx - reach; bx <= mcx + reach; bx++) {
+          if (bx < 0 || bx >= buckW) continue;
+          var list = buckets[by * buckW + bx];
+          if (!list) continue;
+          for (var li = 0; li < list.length; li++) {
+            var i = list[li];
+            var dx = x[i] - mouse.x;
+            var dy = y[i] - mouse.y;
+            var d2 = dx * dx + dy * dy;
+            if (d2 >= R2 || d2 < 1e-4) continue;
+            var dist = Math.sqrt(d2);
+            var f = (1 - dist / R);
+            f = f * f * push / mass[i];
+            vx[i] += (dx / dist) * f;
+            vy[i] += (dy / dist) * f;
+          }
+        }
+      }
+    }
+
+    for (var i = 0; i < n; i++) {
+      vx[i] += (hx[i] - x[i]) * spring;
+      vy[i] += (hy[i] - y[i]) * spring;
+      vx[i] *= damp;
+      vy[i] *= damp;
+      x[i] += vx[i];
+      y[i] += vy[i];
+
+      ctx.beginPath();
+      ctx.fillStyle = "rgb(" + cr[i] + "," + cg[i] + "," + cb[i] + ")";
+      ctx.arc(x[i], y[i], rad[i], 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if ((++frame % 2) === 0) rebucket();
+    requestAnimationFrame(tick);
+  }
+
+  function rebuild() {
+    resize();
+    if (!logoImg) return;
+    build(logoImg);
+    rebucket();
+  }
+
+  function boot() {
+    resize();
+    logoImg = new Image();
+    logoImg.onload = function () {
+      var start = function () {
+        build(logoImg);
+        rebucket();
+        requestAnimationFrame(tick);
+      };
+      var waitFonts = (document.fonts && document.fonts.load)
+        ? document.fonts.load('700 64px "Platypi"').then(function () {
+            return document.fonts.ready;
+          })
+        : Promise.resolve();
+      waitFonts.then(start).catch(start);
+    };
+    logoImg.onerror = function () { hud.textContent = "failed to load logo"; };
+    logoImg.src = LOGO;
+  }
+
+  var t;
+  addEventListener("resize", function () {
+    clearTimeout(t);
+    t = setTimeout(rebuild, 100);
+  });
+
+  boot();
+})();
+  </script>
+</body>
+</html>

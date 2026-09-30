@@ -4,7 +4,7 @@
  *
  * Pricing model:
  *   Free:  5M tokens / month
- *   PAYG:  prepaid credit wallet — $1 per 1M tokens after free allowance
+ *   PAYG:  prepaid credit wallet — $0.10 per 1M tokens after free allowance
  *          (legacy metered subscriptions still supported via sc_metered)
  */
 
@@ -34,10 +34,11 @@ function envTrim(name, fallback) {
   return v != null && String(v).trim() ? String(v).trim() : fallback;
 }
 
-/** Free monthly allowance: 5M tokens. Paid usage is $1 / 1M after that. */
+/** Free monthly allowance: 5M tokens. Launch promo: $0.10 / 1M after that.
+ *  Raising the rate is apply-pricing-30c.sh, and only after an explicit approval. */
 const FREE_TOKENS_PER_MONTH = 5_000_000;
-const USD_PER_MILLION = 1;
-const TOKENS_PER_BILLING_UNIT = 1_000_000; // 1M tokens @ $1
+const USD_PER_MILLION = 0.1;
+const TOKENS_PER_BILLING_UNIT = 1_000_000; // 1M tokens @ $0.10
 const DEFAULT_CREDIT_LIMIT_USD = 10;
 const MIN_CREDIT_LIMIT_USD = 10;
 const MAX_CREDIT_LIMIT_USD = 1000;
@@ -75,7 +76,7 @@ const PLANS = {
     price_id: envTrim("STRIPE_PRICE_PAYG", ""),
     price: 0,
     metered: false, // new enables use prepaid credits; legacy meters use sc_metered claim
-    price_display: "$1 / 1M tokens",
+    price_display: "$0.10 / 1M tokens",
     sort_order: 1,
   },
   starter: {
@@ -155,7 +156,7 @@ function roundUsd(n) {
   return Math.round(Number(n || 0) * 10000) / 10000;
 }
 
-/** USD cost for a token delta at $1 / 1M (display/aggregate helper). */
+/** USD cost for a token delta at $0.10 / 1M (display/aggregate helper). */
 function tokensToUsd(tokenCount) {
   // Keep sub-cent precision in micros, then round for display.
   const micros = Math.ceil(Number(tokenCount || 0) * USD_PER_MILLION);
@@ -281,7 +282,7 @@ async function createCreditTopUpCheckout({
           unit_amount: unitAmount,
           product_data: {
             name: "SuperCompress credit",
-            description: `$${amount.toFixed(2)} prepaid usage credit ($1 / 1M tokens after 5M free/mo)`,
+            description: `$${amount.toFixed(2)} prepaid usage credit ($0.10 / 1M tokens after 5M free/mo)`,
           },
         },
       },
@@ -324,9 +325,102 @@ function isAutoRechargeEnabled(claims = {}, ledger = {}) {
   return false;
 }
 
+function isIndiaMandateError(err) {
+  const msg = String(err?.message || err || "");
+  const code = String(err?.code || "");
+  return (
+    /mandate for off-session card payments made with cards issued in India/i.test(msg) ||
+    /india-recurring-payments/i.test(msg) ||
+    code === "india_recurring_payment_mandate_required"
+  );
+}
+
+async function cancelStaleAutoRechargeIntents(stripe, customerId, { keepId = null } = {}) {
+  try {
+    const list = await stripe.paymentIntents.list({ customer: customerId, limit: 20 });
+    for (const pi of list.data || []) {
+      if (keepId && pi.id === keepId) continue;
+      if (pi.metadata?.kind !== "credit_auto_recharge") continue;
+      if (!["requires_confirmation", "requires_payment_method", "requires_action"].includes(pi.status)) {
+        continue;
+      }
+      try {
+        await stripe.paymentIntents.cancel(pi.id, { cancellation_reason: "abandoned" });
+      } catch (err) {
+        console.warn("Could not cancel stale auto-recharge PI:", pi.id, err.message || err);
+      }
+    }
+  } catch (err) {
+    console.warn("Stale auto-recharge cleanup failed:", err.message || err);
+  }
+}
+
+/**
+ * On-session Checkout fallback when silent off-session debit cannot complete
+ * (India RBI, 3DS, declined card, missing PM). Reuses open sessions.
+ */
+async function createAutoRechargeCheckout({ customerId, userId, creditUsd }) {
+  const { session, amount } = await createCreditTopUpCheckout({
+    customerId,
+    userId,
+    creditUsd,
+    autoRecharge: true,
+    kind: "credit_auto_recharge_checkout",
+  });
+  return { checkoutUrl: session.url, sessionId: session.id, amount };
+}
+
+async function fallbackAutoRechargeToCheckout({
+  stripe,
+  owner,
+  customerId,
+  amount,
+  cycle,
+  reason,
+}) {
+  const {
+    createOrReuseRecoveryCheckout,
+    scheduleAutoRechargeRecoveryNotify,
+  } = require("./auto-recharge-recovery");
+
+  await cancelStaleAutoRechargeIntents(stripe, customerId);
+  const checkout = await createOrReuseRecoveryCheckout({
+    stripe,
+    customerId,
+    userId: owner.uid,
+    creditUsd: amount,
+    createCheckout: createAutoRechargeCheckout,
+  });
+
+  const email = owner.email || owner.customClaims?.email || null;
+  const firstName =
+    (owner.displayName || owner.customClaims?.name || "").toString().trim().split(/\s+/)[0] ||
+    null;
+  scheduleAutoRechargeRecoveryNotify({
+    uid: owner.uid,
+    email,
+    firstName,
+    amount: checkout.amount || amount,
+    checkoutUrl: checkout.checkoutUrl,
+    reason,
+    cycle,
+    customerId,
+  });
+
+  return {
+    ok: false,
+    error: reason,
+    checkoutUrl: checkout.checkoutUrl,
+    sessionId: checkout.sessionId,
+    amount: checkout.amount || amount,
+    recovery: true,
+  };
+}
+
 async function attemptAutoRecharge(owner) {
   const claims = owner.customClaims || {};
   const { loadLedger, acquireRechargeLock, creditBalance } = require("./billing-ledger");
+  const { needsCheckoutFallback } = require("./auto-recharge-recovery");
   const ledger = await loadLedger(owner.uid, claims);
   if (!isAutoRechargeEnabled(claims, ledger)) {
     return { ok: false, error: "auto_recharge_disabled" };
@@ -342,6 +436,21 @@ async function attemptAutoRecharge(owner) {
   );
   const lock = await acquireRechargeLock(owner.uid);
   if (!lock.acquired) {
+    // Another compress is already charging — surface any open Checkout so the
+    // client can still complete payment instead of a dead-end 402.
+    try {
+      const { findOpenCreditCheckout } = require("./auto-recharge-recovery");
+      const open = await findOpenCreditCheckout(getStripe(), customerId, amount);
+      if (open?.url) {
+        return {
+          ok: false,
+          error: "recharge_in_progress",
+          checkoutUrl: open.url,
+          sessionId: open.id,
+          amount: Number(open.amount_total || 0) / 100 || amount,
+        };
+      }
+    } catch (_) {}
     return { ok: false, error: "recharge_in_progress" };
   }
 
@@ -360,34 +469,113 @@ async function attemptAutoRecharge(owner) {
       null;
     if (typeof pm === "object" && pm?.id) pm = pm.id;
 
+    let pmObj = null;
+    if (pm) {
+      try {
+        pmObj = await stripe.paymentMethods.retrieve(pm);
+      } catch {
+        pmObj = null;
+      }
+    }
     if (!pm) {
       const pms = await stripe.paymentMethods.list({ customer: customerId, type: "card", limit: 1 });
       pm = pms.data[0]?.id || null;
+      pmObj = pms.data[0] || null;
     }
     if (!pm) {
-      return { ok: false, error: "no_payment_method" };
+      return await fallbackAutoRechargeToCheckout({
+        stripe,
+        owner,
+        customerId,
+        amount,
+        cycle,
+        reason: "no_payment_method",
+      });
     }
 
-    const pi = await stripe.paymentIntents.create(
-      {
-        amount: Math.round(amount * 100),
-        currency: "usd",
-        customer: customerId,
-        payment_method: pm,
-        off_session: true,
-        confirm: true,
-        description: `SuperCompress auto-recharge $${amount.toFixed(2)}`,
-        metadata: {
-          user_id: owner.uid,
-          plan_id: "payg",
-          kind: "credit_auto_recharge",
-          credit_usd: String(amount),
+    const cardCountry = String(pmObj?.card?.country || "").toUpperCase();
+    if (cardCountry === "IN") {
+      // India cards cannot be charged off-session via bare PaymentIntents (RBI).
+      // Never create orphan requires_confirmation PIs — go straight to Checkout + email.
+      return await fallbackAutoRechargeToCheckout({
+        stripe,
+        owner,
+        customerId,
+        amount,
+        cycle,
+        reason: "india_requires_checkout",
+      });
+    }
+
+    let pi;
+    try {
+      pi = await stripe.paymentIntents.create(
+        {
+          amount: Math.round(amount * 100),
+          currency: "usd",
+          customer: customerId,
+          payment_method: pm,
+          off_session: true,
+          confirm: true,
+          // Off-session card debit only — redirect methods break silent recharge.
+          automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+          description: `SuperCompress auto-recharge $${amount.toFixed(2)}`,
+          metadata: {
+            user_id: owner.uid,
+            plan_id: "payg",
+            kind: "credit_auto_recharge",
+            credit_usd: String(amount),
+          },
         },
-      },
-      { idempotencyKey }
-    );
+        { idempotencyKey }
+      );
+    } catch (err) {
+      await cancelStaleAutoRechargeIntents(stripe, customerId);
+      if (isIndiaMandateError(err) || needsCheckoutFallback(err)) {
+        return await fallbackAutoRechargeToCheckout({
+          stripe,
+          owner,
+          customerId,
+          amount,
+          cycle,
+          reason: isIndiaMandateError(err)
+            ? "india_requires_checkout"
+            : err.code || err.message || "charge_requires_checkout",
+        });
+      }
+      throw err;
+    }
+
+    if (pi.status === "requires_confirmation" || pi.status === "requires_action") {
+      try {
+        await stripe.paymentIntents.cancel(pi.id, { cancellation_reason: "abandoned" });
+      } catch {}
+      return await fallbackAutoRechargeToCheckout({
+        stripe,
+        owner,
+        customerId,
+        amount,
+        cycle,
+        reason: `payment_${pi.status}`,
+      });
+    }
+
+    // processing: webhook will credit on payment_intent.succeeded — do not Checkout-spam.
+    if (pi.status === "processing") {
+      return { ok: false, error: "payment_processing", paymentIntentId: pi.id, pending: true };
+    }
 
     if (pi.status !== "succeeded") {
+      if (needsCheckoutFallback({ status: pi.status, message: pi.last_payment_error?.message })) {
+        return await fallbackAutoRechargeToCheckout({
+          stripe,
+          owner,
+          customerId,
+          amount,
+          cycle,
+          reason: `payment_${pi.status}`,
+        });
+      }
       return { ok: false, error: `payment_${pi.status}`, paymentIntentId: pi.id };
     }
 
@@ -425,6 +613,20 @@ async function attemptAutoRecharge(owner) {
     };
   } catch (err) {
     console.warn("Auto-recharge failed:", err.message || err);
+    try {
+      if (needsCheckoutFallback(err)) {
+        return await fallbackAutoRechargeToCheckout({
+          stripe: getStripe(),
+          owner,
+          customerId,
+          amount,
+          cycle,
+          reason: err.code || err.message || "charge_failed",
+        });
+      }
+    } catch (fallbackErr) {
+      console.warn("Auto-recharge checkout fallback failed:", fallbackErr.message || fallbackErr);
+    }
     return { ok: false, error: err.message || "charge_failed" };
   } finally {
     if (lock.release) await lock.release();

@@ -1,12 +1,13 @@
 /**
  * Server-side compression — loads web compress-engine.js + model.json via vm.
- * Neural/BGE boost is opt-in (SC_NEURAL=1) and excluded from Vercel lambdas
- * (onnx/transformers exceed Hobby size limits). Default path is the local policy.
+ * Prefer hosted Neural Keep (SC_NEURAL_KEEP_URL) when configured; else local policy.
+ * Optional BGE boost (SC_NEURAL=1) is excluded from typical Vercel lambdas.
  */
 
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
+const { compressViaNeuralKeep, neuralKeepEnabled } = require("./neural-keep");
 
 let engine = null;
 let model = null;
@@ -66,6 +67,35 @@ function compress(context, query, budgetRatio = 0.35) {
 }
 
 async function compressAdaptive(context, query) {
+  // Hosted Neural Keep (cross-encoder) when SC_NEURAL_KEEP_URL is set.
+  if (neuralKeepEnabled()) {
+    const remote = await compressViaNeuralKeep(context, query);
+    if (remote && remote.compressed_text != null) {
+      const E = getEngine();
+      const orig = E.countTokens
+        ? E.countTokens(String(context || ""))
+        : remote.original_tokens;
+      const kept = E.countTokens
+        ? E.countTokens(String(remote.compressed_text || ""))
+        : remote.kept_tokens;
+      const saved =
+        orig > 0 ? Math.max(0, Math.round((1 - kept / orig) * 1000) / 10) : 0;
+      return {
+        compressed_text: remote.compressed_text,
+        original_tokens: orig || remote.original_tokens,
+        compressed_tokens: kept || remote.kept_tokens,
+        tokens_saved: Math.max(0, (orig || remote.original_tokens) - (kept || remote.kept_tokens)),
+        tokens_saved_pct: remote.tokens_saved_pct || saved,
+        policy_name: remote.policy_name || "SuperCompress Neural Keep",
+        mode: remote.mode || "neural-keep",
+        neural_keep_latency_ms: remote.neural_keep_latency_ms,
+        lines_in: remote.lines_in,
+        lines_kept: remote.lines_kept,
+        threshold: remote.threshold,
+      };
+    }
+  }
+
   const E = getEngine();
   const neuralBoost = await loadNeuralBoost(context, query);
   // Hosted API never returns line_annotations — skip building them (big win on large dumps).

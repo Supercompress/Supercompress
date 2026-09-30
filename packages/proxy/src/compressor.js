@@ -328,13 +328,30 @@ async function compress(messages, agentName) {
       response.status === 402 ||
       /PAYWALL|free_quota_exhausted|credits_exhausted/i.test(errorBody);
     if (paywalled) {
+      let checkoutUrl = "";
+      let upgradeUrl = "https://www.supercompress.dev/dashboard#billing";
+      try {
+        const parsed = JSON.parse(errorBody || "{}");
+        checkoutUrl = String(parsed.checkout_url || parsed.upgrade_url || "").trim();
+        if (checkoutUrl.startsWith("http")) upgradeUrl = checkoutUrl;
+      } catch (_) {
+        const m = String(errorBody || "").match(/https:\/\/checkout\.stripe\.com\/[^\s"'<>]+/);
+        if (m) {
+          checkoutUrl = m[0];
+          upgradeUrl = checkoutUrl;
+        }
+      }
       const msg =
-        "PAYWALL: Free 1M tokens used (or credits empty). Compression paused. " +
-        "Add credits at https://www.supercompress.dev/dashboard#billing — $0.30/1M after free ($10 min).";
+        checkoutUrl
+          ? `PAYWALL: Auto-recharge needs confirm. Open ${upgradeUrl}`
+          : "PAYWALL: Free tokens used (or credits empty). Compression paused. " +
+            "Add credits at https://www.supercompress.dev/dashboard#billing — $0.10/1M after free ($10 min).";
       console.error(`[supercompress] ${msg}`);
       const err = new Error(msg);
       err.status = 402;
       err.paywall = true;
+      err.upgrade_url = upgradeUrl;
+      err.checkout_url = checkoutUrl || null;
       throw err;
     }
     if (response.status === 429) {

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "supercompress": {
+      "command": "supercompress-mcp",
+      "args": [],
+      "env": {
+        "SUPERCOMPRESS_CONFIG_DIR": "${userHome}/.supercompress"
+      }
+    }
+  }
+}

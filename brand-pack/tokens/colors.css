@@ -1,0 +1,36 @@
+/* SuperCompress brand tokens — canonical for marketing + product */
+:root {
+  /* Paper (light surfaces) */
+  --sc-paper: #fbfbf8;
+  --sc-paper-2: #fbfbf8;
+  --sc-ink: #171717;
+  --sc-muted: #696967;
+  --sc-line: rgba(23, 23, 23, 0.12);
+  --sc-line-strong: rgba(23, 23, 23, 0.18);
+
+  /* Dark surfaces */
+  --sc-bg-dark: #0a0a0a;
+  --sc-ink-on-dark: #f5f5f5;
+  --sc-muted-on-dark: #a3a3a3;
+
+  /* Brand blue — landing / arena primary */
+  --sc-brand: #0566ff;
+  --sc-brand-hover: #0055df;
+  --sc-brand-deep: #0347b8;
+
+  /* Brand blue — docs / legacy product chrome */
+  --sc-brand-classic: #2563eb;
+  --sc-brand-classic-hover: #1d4ed8;
+  --sc-brand-classic-dark: #1e40af;
+  --sc-brand-soft: #dbeafe;
+  --sc-brand-light: #93c5fd;
+
+  /* Dither / logo-dots accent split */
+  --sc-super-blue: #2563eb;
+  --sc-compress-blue: #60a5fa;
+
+  /* Typography */
+  --sc-serif: "Platypi", Georgia, "Times New Roman", serif;
+  --sc-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sc-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}

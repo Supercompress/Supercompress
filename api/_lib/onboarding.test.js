@@ -32,14 +32,15 @@ describe("needsOnboarding", () => {
     assert.equal(needsOnboarding({ sc_onboard_skipped: true }, young), false);
   });
 
-  it("only for young accounts", () => {
+  it("only for young accounts (14d); unfinished without owner still needs it", () => {
     const young = { metadata: { creationTime: new Date().toISOString() } };
     const old = {
-      metadata: { creationTime: new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString() },
+      metadata: { creationTime: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString() },
     };
     assert.equal(needsOnboarding({}, young), true);
     assert.equal(needsOnboarding({}, old), false);
-    assert.equal(needsOnboarding({}, null), false);
+    assert.equal(needsOnboarding({}, null), true);
+    assert.equal(needsOnboarding({}, { metadata: {} }), true);
   });
 });
 
@@ -78,5 +79,20 @@ describe("statusPayload", () => {
     assert.deepEqual(p.actions, { star: true });
     assert.equal(p.bonus_tokens, 10_000);
     assert.deepEqual(p.completed_actions, ["star"]);
+  });
+});
+
+describe("heard sources", () => {
+  const { normalizeHeard, HEARD_SOURCES } = require("./onboarding");
+  it("normalizes aliases", () => {
+    assert.equal(normalizeHeard("twitter"), "x");
+    assert.equal(normalizeHeard("friend"), "word_of_mouth");
+    assert.equal(normalizeHeard("linkedin"), "linkedin");
+    assert.equal(normalizeHeard("spam"), null);
+  });
+  it("has the onboarding choices", () => {
+    for (const id of ["x", "reddit", "linkedin", "instagram", "word_of_mouth"]) {
+      assert.ok(HEARD_SOURCES.includes(id));
+    }
   });
 });

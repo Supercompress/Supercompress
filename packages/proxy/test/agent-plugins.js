@@ -108,6 +108,16 @@ if (lib.readInboxDigest("sessA").includes("digest B")) {
 if (!lib.readInboxDigest("sessA").includes("digest A")) {
   throw new Error("sessA digest missing");
 }
+const globalLatest = path.join(lib.INBOX_DIR, "latest.md");
+if (!fs.existsSync(globalLatest) || !fs.readFileSync(globalLatest, "utf8").includes("digest B")) {
+  throw new Error("session write must mirror to inbox/latest.md");
+}
+if (typeof lib.readFreshInboxDigest !== "function") {
+  throw new Error("readFreshInboxDigest missing");
+}
+if (!lib.readFreshInboxDigest("sessB").includes("digest B")) {
+  throw new Error("readFreshInboxDigest should find sessB");
+}
 if (typeof lib.compactSessionMemory !== "function") {
   throw new Error("compactSessionMemory missing");
 }

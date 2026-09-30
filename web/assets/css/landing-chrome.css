@@ -4,7 +4,7 @@
   --max-w: 1400px;
   --serif: "Platypi", Georgia, "Palatino Linotype", Palatino, serif;
   --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --frame-buffer: clamp(16px, 4vw, 40px);
+  --frame-buffer: clamp(14px, 4vw, 40px);
   --nav-h: 72px;
   --text-primary: #171717;
   --brand: #0566ff;
@@ -40,13 +40,13 @@
   min-height: var(--nav-h);
 }
 .df-logo-desktop {
-  position: absolute;
-  top: 50%;
-  left: var(--frame-buffer);
-  transform: translateY(-50%);
+  /* Stay in flex flow so nav/CTA cannot paint over the lockup */
+  position: relative;
   display: none;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
+  margin-right: 12px;
   color: var(--text-primary);
   z-index: 2;
 }
@@ -118,12 +118,21 @@
   align-items: center;
   gap: 10px;
   margin-left: auto;
-  max-width: calc(100% - 240px);
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-end;
   flex-wrap: nowrap;
-  padding-left: 16px;
+  padding-left: 12px;
 }
 @media (min-width: 900px) {
   .df-header-end { display: flex; }
+}
+@media (min-width: 900px) and (max-width: 1100px) {
+  /* Mid desktop: drop lower-priority nav labels before colliding with CTA */
+  .df-nav-pill a[href="/changelog"],
+  .df-nav-pill a[href="/#agents"] {
+    display: none;
+  }
 }
 .df-nav-pill {
   display: flex;
@@ -242,7 +251,7 @@
   gap: 5px;
   width: 36px;
   height: 36px;
-  margin-left: auto;
+  flex-shrink: 0;
   padding: 8px;
   border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 6px;
@@ -254,10 +263,40 @@
 .df-mobile-bar {
   display: flex;
   width: 100%;
+  min-width: 0;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
 }
 @media (min-width: 900px) { .df-mobile-bar { display: none; } }
+/* Logo yields space; CTA + menu stay intact and never cover the mark */
+.df-mobile-bar .df-logo-mobile {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.df-mobile-bar .df-logo-word {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.df-mobile-bar .df-nav-cta--compact {
+  flex-shrink: 0;
+  margin-left: auto; /* pin CTA+menu to the right as a pair */
+  position: relative;
+  z-index: 1;
+}
+.df-mobile-bar .df-menu-btn {
+  margin-left: 0;
+}
+@media (max-width: 380px) {
+  /* Ultra-narrow: keep mark only so Get key never sits on the wordmark */
+  .df-mobile-bar .df-logo-word { display: none; }
+  .df-mobile-bar .df-nav-cta--compact {
+    padding: 0 10px;
+    font-size: 12px;
+  }
+}
 .df-mobile-nav {
   display: none;
   flex-direction: column;
@@ -418,4 +457,17 @@
 .internal-badge {
   display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px;
   background: rgba(5,102,255,.1); color: var(--brand); font-size: 12px; font-weight: 600;
+}
+
+
+/* responsive harden */
+.df-header-inner, .df-footer-inner { max-width: 100%; }
+.df-footer { padding-left: max(var(--frame-buffer), env(safe-area-inset-left)); padding-right: max(var(--frame-buffer), env(safe-area-inset-right)); }
+@media (max-width: 480px) {
+  .df-footer-links { grid-template-columns: 1fr 1fr; gap: 24px 16px; }
+  .df-footer-brand p { max-width: 100%; }
+  .df-nav-cta { padding: 0 12px; font-size: 13px; }
+}
+@media (max-width: 360px) {
+  .df-footer-links { grid-template-columns: 1fr; }
 }

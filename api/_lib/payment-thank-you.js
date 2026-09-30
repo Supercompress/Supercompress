@@ -36,7 +36,8 @@ function thankYouIdempotencyKey(paymentKey) {
 function shouldSendPaymentThankYou({ kind, paymentCreatedSec, alreadyCredited }) {
   if (alreadyCredited) return false;
   const k = String(kind || "");
-  // Checkout credit packs only — not off-session auto-recharge.
+  // Checkout credit packs only — not silent off-session auto-recharge PIs.
+  // India on-session Checkout (credit_auto_recharge_checkout) still gets a thank-you.
   if (k === "credit_auto_recharge") return false;
   if (!k.startsWith("credit_")) return false;
   if (paymentCreatedSec != null) {

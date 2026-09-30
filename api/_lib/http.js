@@ -131,7 +131,7 @@ function cors(res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-API-Key, Idempotency-Key, X-Request-Id"
+    "Content-Type, Authorization, X-API-Key, Idempotency-Key, X-Request-Id, Mcp-Session-Id, MCP-Protocol-Version, Last-Event-ID"
   );
 }
 

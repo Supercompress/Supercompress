@@ -186,7 +186,11 @@ function brandedEmailHtml({
         ? "Weekly tip"
         : kind === "welcome"
           ? "Welcome"
-          : "";
+          : kind === "payment_thanks"
+            ? "Thank you"
+            : kind === "billing" || kind === "recharge"
+              ? "Billing"
+              : "";
   const kindChip = kindLabel
     ? `<span style="display:inline-block;margin-left:10px;padding:3px 9px;border-radius:999px;background:${BRAND_SOFT};color:${BRAND};font-family:${FONT_SANS};font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;vertical-align:middle;">${escapeHtml(kindLabel)}</span>`
     : "";
@@ -342,7 +346,7 @@ Get started:
 One command for agents:
 npm install -g supercompress-proxy && supercompress setup
 
-Free: 5M tokens/month. Then $1 / 1M PAYG so you never hard-stop — usually cheaper than the LLM tokens you save.
+Free: 5M tokens/month. Then $0.10 / 1M PAYG so you never hard-stop — usually cheaper than the LLM tokens you save.
 
 Thanks again,
 Arjun
@@ -365,7 +369,7 @@ npx supercompress setup</pre>
   · <a href="${SITE}/playground" style="color:${BRAND};text-decoration:none;font-weight:600;">Playground</a>
   · <a href="${SITE}/reduce-llm-costs" style="color:${BRAND};text-decoration:none;font-weight:600;">Cut API costs</a>
 </p>
-${proofCallout("Free: 5M tokens/month · then $1 / 1M PAYG so you never hard-stop.")}
+${proofCallout("Free: 5M tokens/month · then $0.10 / 1M PAYG so you never hard-stop.")}
 ${signatureBlock()}`;
 
   const html = brandedEmailHtml({
@@ -652,6 +656,106 @@ async function sendPaymentThankYouEmail({
 }
 
 /**
+ * Auto-recharge could not finish silently — ask customer to confirm Checkout.
+ * Always use branded chrome (logo / CTA / signature). Do not send raw div HTML.
+ */
+function autoRechargeRecoveryCopy({
+  email,
+  firstName,
+  amount,
+  checkoutUrl,
+  reason,
+}) {
+  const hi = firstName ? `Hey ${firstName}` : "Hey";
+  const amtNum = Number(amount);
+  const amt =
+    Number.isFinite(amtNum) && amtNum > 0
+      ? `$${amtNum.toFixed(amtNum % 1 ? 2 : 0)}`
+      : "your prepaid pack";
+  const why =
+    reason === "india_requires_checkout"
+      ? "Your card is issued in India, so RBI rules require a one-tap on-session confirm for each top-up (we cannot silently debit it)."
+      : reason === "no_payment_method"
+        ? "We don’t have a card on file that can complete auto-recharge."
+        : reason === "authentication_required" ||
+            /requires_action|requires_confirmation/i.test(String(reason || ""))
+          ? "Your bank asked for an extra confirmation (3-D Secure / mandate), so the silent charge could not finish."
+          : "The silent auto-recharge charge could not complete.";
+
+  const subject = `Confirm ${amt} SuperCompress recharge to keep compressing`;
+  const billingUrl = `${SITE}/dashboard#billing`;
+  const safeCheckout = String(checkoutUrl || billingUrl).trim();
+
+  const text = `${hi},
+
+It's Arjun from SuperCompress.
+
+Your prepaid balance hit $0 and auto-recharge is on, but ${why}
+
+Confirm once here to add ${amt} and resume immediately:
+${safeCheckout}
+
+Billing: ${billingUrl}
+
+Nothing was charged for the failed silent attempts — this Checkout is the real top-up.
+
+— Arjun
+Founder, SuperCompress
+${REPLY_TO}`;
+
+  const bodyHtml = `
+<p style="margin:0 0 16px;font-size:16px;">${escapeHtml(hi)},</p>
+${eyebrow("Billing")}
+${displayHeadline(`Confirm ${amt} to keep compressing`)}
+<p style="margin:0 0 16px;">It’s <strong>Arjun</strong> from SuperCompress.</p>
+<p style="margin:0 0 16px;">Your prepaid balance hit <strong>$0</strong> and auto-recharge is on, but ${escapeHtml(why)}</p>
+${proofCallout("Nothing was charged for the failed silent attempts — this Checkout is the real top-up.")}
+${ctaButton(`Confirm ${amt} recharge →`, safeCheckout)}
+<p style="margin:12px 0 0;font-size:13px;line-height:1.5;color:${MUTED};">If the button doesn’t work, paste this into your browser:<br /><a href="${escapeHtml(safeCheckout)}" style="color:${BRAND};word-break:break-all;">${escapeHtml(safeCheckout)}</a></p>
+<p style="margin:16px 0 0;font-size:14px;">
+  <a href="${billingUrl}" style="color:${BRAND};text-decoration:none;font-weight:600;">Open Billing</a>
+</p>
+${signatureBlock()}`;
+
+  const html = brandedEmailHtml({
+    preheader: `Confirm ${amt} SuperCompress recharge — one tap to resume.`,
+    title: subject,
+    bodyHtml,
+    kind: "billing",
+  });
+
+  return { subject, text, html, to: email };
+}
+
+async function sendAutoRechargeRecoveryEmail({
+  email,
+  firstName,
+  amount,
+  checkoutUrl,
+  reason,
+  idempotencyKey,
+}) {
+  if (!email || !String(email).includes("@")) {
+    return { ok: false, error: "missing email" };
+  }
+  if (!checkoutUrl || !String(checkoutUrl).startsWith("http")) {
+    return { ok: false, error: "missing checkout url" };
+  }
+  const copy = autoRechargeRecoveryCopy({
+    email: String(email).trim(),
+    firstName,
+    amount,
+    checkoutUrl: String(checkoutUrl).trim(),
+    reason,
+  });
+  const result = await sendViaResend({
+    ...copy,
+    idempotencyKey: idempotencyKey || null,
+  });
+  return { ...result, subject: copy.subject, text: copy.text, html: copy.html };
+}
+
+/**
  * Power-user email when someone newly crosses 1M tokens.
  * Rank/leaderboard lines are optional (omit for the automatic trigger).
  * @param {{ firstName?: string, email: string, rank?: number, tokensIn?: number, tokensSaved?: number, requests?: number, morePct?: number, cutPct?: number }} opts
@@ -719,13 +823,13 @@ You're a SuperCompress power user.
 
 ${leadText}
 ${statsText}
-Brag about it on X (Twitter): ${SITE}/dashboard?power=1
+You're clearly getting value. Don't let the free wall interrupt a session — load credits for $0.10 per million tokens (min $10, never expire):
+${billingUrl}
 
+Brag about it on X: ${SITE}/dashboard?power=1
 Or post now: https://twitter.com/intent/tweet?text=${encodeURIComponent(
     `Just hit power user on SuperCompress — 1M+ tokens compressed.\n\nCut agent context, keep the answer → ${SITE}`
   )}
-
-Pay-as-you-go is only $1 per million tokens. Load credits anytime: ${billingUrl}
 
 — Arjun
 Founder, SuperCompress
@@ -762,10 +866,10 @@ Founder, SuperCompress
     </ul>`
         : ""
     }
-    <p style="margin:0 0 12px;">Tell the timeline — post about it on X.</p>
+    <p style="margin:0 0 12px;">Don't lose a coding-agent turn at the free wall — unlock for <strong>$0.10 / 1M</strong> (min $10).</p>
+    ${ctaButton("Load credits — keep compressing", billingUrl)}
+    <p style="margin:16px 0 12px;">Tell the timeline — post about it on X.</p>
     ${ctaButton("Post on X", xShareUrl)}
-    <p style="margin:16px 0 12px;">Pay-as-you-go is only <strong>$1 per million tokens</strong> — load credits anytime.</p>
-    ${ctaButton("Load credits", billingUrl)}
     ${signatureBlock()}
   `;
 
@@ -792,21 +896,20 @@ async function sendPowerUserEmail(opts) {
 }
 
 /**
- * Quota-exhausted email — sent once per month when a free-tier user hits the
- * 1M cap and compression 402s. Distinct from the once-ever power-user congrats:
- * this one tells them they're paused and how to unlock.
+ * Quota-exhausted email — once per month when a free-tier user hits the
+ * free cap and compression 402s. Distinct from the once-ever power-user
+ * congrats: this one tells them they're paused and how to unlock.
  * @param {{ email: string, firstName?: string, tokensUsed?: number, freeTokens?: number, month?: string }} opts
  */
 function quotaExhaustedCopy({ email, firstName, tokensUsed, freeTokens, month }) {
   const hi = firstName ? `Hey ${firstName}` : "Hey";
   const billingUrl = `${SITE}/dashboard?panel=billing`;
-  const free = Number(freeTokens || 1_000_000);
+  const free = Number(freeTokens || 5_000_000);
   const used = Math.max(Number(tokensUsed || 0), free);
   const freeM = (free / 1e6).toFixed(free % 1e6 === 0 ? 0 : 1);
   const usedM = (used / 1e6).toFixed(2);
-  const subject = `You've used your free ${freeM}M tokens — compression is paused`;
+  const subject = `Compression paused — add credits to keep cutting tokens`;
 
-  // First day of next month, e.g. "September 1"
   let resetLine = "Your free allowance resets on the 1st of next month.";
   const m = /^(\d{4})-(\d{2})$/.exec(String(month || ""));
   if (m) {
@@ -821,29 +924,32 @@ function quotaExhaustedCopy({ email, firstName, tokensUsed, freeTokens, month })
 
   const text = `${hi},
 
-You've burned through your free ${freeM}M tokens this month (${usedM}M so far) — nice. Compression is paused until you add credits.
+You've used your free ${freeM}M tokens this month (${usedM}M so far). Compression is paused until you add credits.
 
-Pay-as-you-go is $1 per million tokens after the free tier (minimum $10 load, credits never expire). Load credits and you're back instantly:
+Keep shipping for $0.10 per million tokens after free (min $10 load — credits never expire). Most power users unlock in under a minute:
+
 ${billingUrl}
 
-${resetLine} If you'd rather wait, everything picks up again then — your account, keys, and integrations stay exactly as they are.
+That's usually cheaper than the LLM tokens SuperCompress just saved you.
+
+${resetLine} Waiting is fine — your keys and integrations stay put. Or load credits now and don't lose a session.
 
 — Arjun
 Founder, SuperCompress
 `;
 
   const bodyHtml = `
-    ${eyebrow("Free tier used")}
-    ${displayHeadline(`${hi} — you've used your free ${freeM}M tokens`)}
-    <p style="margin:0 0 14px;">You've compressed <strong>${escapeHtml(usedM)}M tokens</strong> this month — that puts you in the top slice of SuperCompress users. Compression is paused until you add credits.</p>
-    <p style="margin:0 0 12px;">Pay-as-you-go is <strong>$1 per million tokens</strong> after the free tier (minimum $10 load, credits never expire). Load credits and you're back instantly.</p>
-    ${ctaButton("Add credits", billingUrl)}
-    <p style="margin:16px 0 0;font-size:14px;line-height:1.55;color:${MUTED};">${escapeHtml(resetLine)} If you'd rather wait, everything picks up again then — your account, keys, and integrations stay exactly as they are.</p>
+    ${eyebrow("Paywall")}
+    ${displayHeadline(`${hi} — compression is paused`)}
+    <p style="margin:0 0 14px;">You've used your free <strong>${escapeHtml(freeM)}M tokens</strong> this month (<strong>${escapeHtml(usedM)}M</strong> so far). Nice volume — now unlock to keep going.</p>
+    <p style="margin:0 0 12px;">Pay-as-you-go is <strong>$0.10 per million tokens</strong> after free (minimum $10 load, credits never expire). Most people are back compressing in under a minute.</p>
+    ${ctaButton("Add credits — unlock now", billingUrl)}
+    <p style="margin:16px 0 0;font-size:14px;line-height:1.55;color:${MUTED};">${escapeHtml(resetLine)} Or load credits now so you don't lose a coding-agent session mid-flight.</p>
     ${signatureBlock()}
   `;
 
   const html = brandedEmailHtml({
-    preheader: `Free ${freeM}M tokens used — add credits to keep compressing ($1/1M).`,
+    preheader: `Free ${freeM}M used — unlock at $0.10/1M (min $10).`,
     title: subject,
     bodyHtml,
     kind: "welcome",
@@ -926,6 +1032,7 @@ async function sendPasswordResetEmail({ email, resetUrl, firstName, idempotencyK
 
 function campaignKind(campaignId) {
   const id = String(campaignId || "");
+  if (id.includes("launch-v2")) return "launch";
   if (id.endsWith("-ship") || id.includes("-ship")) return "ship";
   return "tip";
 }
@@ -1131,7 +1238,11 @@ ${signatureBlock()}`;
 }
 
 function weeklyEmailCopy(opts) {
-  if (campaignKind(opts.campaignId) === "ship") {
+  const kind = campaignKind(opts.campaignId);
+  if (kind === "launch") {
+    return launchV2Copy(opts);
+  }
+  if (kind === "ship") {
     return shipCopy(opts);
   }
   return weeklyCopy(opts);
@@ -1171,11 +1282,71 @@ async function sendWeeklyEmail({ email, firstName, campaignId, unsubUrl, listUns
   };
 }
 
+function launchV2Copy({ firstName, unsubUrl } = {}) {
+  const hi = firstName ? `Hi ${firstName}` : "Hi";
+  const unsub = unsubUrl || `${SITE}/unsubscribe`;
+  const subject = "SuperCompress v2 is live";
+  const text = `${hi},
+
+SuperCompress v2 is live.
+
+We built a 400M-parameter engine that looks at all of your context, figures out what's relevant to answering the query, and cuts the rest.
+
+It is strongest on coding-agent dumps: tool output, logs, diffs, and stack traces, where the answer is a few original lines. It keeps those lines. It does not rewrite them. The question itself is never compressed.
+
+On our coding-agent benchmark, v2:
+- cut context by 64.1% on average
+- preserved the required evidence in 24/24 cases
+- took 16,647 tokens → 5,148
+- reached 96.6% reduction on an individual case at ≥99% evidence retention
+
+Launch promo: 5M tokens/month free, then $0.10 per million. Open source. API, plus an agent plugin for 40+ harnesses.
+
+Get an API key: ${SITE}/dashboard?signup=1
+Agent plugin: https://docs.supercompress.dev/coding-agents
+Playground: ${SITE}/playground
+
+— Arjun
+Founder, SuperCompress
+
+Unsubscribe: ${unsub}
+`;
+  const html = brandedEmailHtml({
+    preheader: "Coding-agent dumps: 64.1% mean cut, 24/24 evidence held. Launch promo $0.10/1M.",
+    title: "SuperCompress v2 is live",
+    kind: "ship",
+    unsubUrl: unsub,
+    bodyHtml: `<p>${escapeHtml(hi)},</p>
+<p>We built a 400M-parameter engine that looks at all of your context, figures out what's relevant to answering the query, and cuts the rest.</p>
+<p>It is strongest on coding-agent dumps: tool output, logs, diffs, and stack traces, where the answer is a few original lines. It keeps those lines. It does not rewrite them. The question itself is never compressed.</p>
+<p>On our coding-agent benchmark, v2:</p>
+<ul>
+<li>cut context by 64.1% on average</li>
+<li>preserved the required evidence in 24/24 cases</li>
+<li>took 16,647 tokens → 5,148</li>
+<li>reached 96.6% reduction on an individual case at ≥99% evidence retention</li>
+</ul>
+<p>Launch promo: 5M tokens/month free, then $0.10 per million. Open source. API, plus an agent plugin for 40+ harnesses.</p>
+<p><a href="${SITE}/dashboard?signup=1">Get an API key</a> · <a href="https://docs.supercompress.dev/coding-agents">Install the agent plugin</a> · <a href="${SITE}/playground">Playground</a></p>
+<p>— Arjun<br>Founder, SuperCompress</p>`,
+  });
+  return {
+    subject,
+    text,
+    html,
+    tip_id: "launch-v2-2026-09-29",
+    kind: "ship",
+    unsubUrl: unsub,
+  };
+}
+
 module.exports = {
   welcomeCopy,
+  launchV2Copy,
   powerUserCopy,
   quotaExhaustedCopy,
   paymentThankYouCopy,
+  autoRechargeRecoveryCopy,
   passwordResetCopy,
   weeklyCopy,
   shipCopy,
@@ -1191,6 +1362,7 @@ module.exports = {
   sendPowerUserEmail,
   sendQuotaExhaustedEmail,
   sendPaymentThankYouEmail,
+  sendAutoRechargeRecoveryEmail,
   sendPasswordResetEmail,
   sendWeeklyEmail,
   DEFAULT_FROM,

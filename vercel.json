@@ -8,6 +8,16 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/arena",
+      "destination": "/benchmarks",
+      "permanent": true
+    },
+    {
+      "source": "/compare",
+      "destination": "/playground",
+      "permanent": true
+    },
+    {
       "source": "/",
       "has": [
         {
@@ -103,7 +113,7 @@
           "value": "api.supercompress.dev"
         }
       ],
-      "destination": "https://www.supercompress.dev/arena",
+      "destination": "https://www.supercompress.dev/benchmarks",
       "permanent": true
     },
     {
@@ -126,6 +136,61 @@
         }
       ],
       "destination": "https://www.supercompress.dev/token-compression",
+      "permanent": true
+    },
+    {
+      "source": "/aeo-geo",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/aeo-geo",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-chatgpt-costs",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/reduce-chatgpt-costs",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-claude-costs",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/reduce-claude-costs",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-gemini-costs",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/reduce-gemini-costs",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-openai-costs",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/reduce-openai-costs",
       "permanent": true
     },
     {
@@ -241,7 +306,7 @@
     },
     {
       "source": "/vs-headroom",
-      "destination": "/headroom-api",
+      "destination": "/supercompress-vs-headroom",
       "permanent": true
     },
     {
@@ -252,6 +317,46 @@
     {
       "source": "/what-is-headroom-api",
       "destination": "/headroom-api",
+      "permanent": true
+    },
+    {
+      "source": "/replace-headroom",
+      "destination": "/switch-from-headroom",
+      "permanent": true
+    },
+    {
+      "source": "/migrate-from-headroom",
+      "destination": "/switch-from-headroom",
+      "permanent": true
+    },
+    {
+      "source": "/headroom-migration",
+      "destination": "/switch-from-headroom",
+      "permanent": true
+    },
+    {
+      "source": "/headroom-cursor",
+      "destination": "/headroom-for-coding-agents",
+      "permanent": true
+    },
+    {
+      "source": "/headroom-claude-code",
+      "destination": "/headroom-for-coding-agents",
+      "permanent": true
+    },
+    {
+      "source": "/headroom-mcp",
+      "destination": "/headroom-for-coding-agents",
+      "permanent": true
+    },
+    {
+      "source": "/headroom-open-source-alternative",
+      "destination": "/open-source-headroom-alternative",
+      "permanent": true
+    },
+    {
+      "source": "/oss-headroom-alternative",
+      "destination": "/open-source-headroom-alternative",
       "permanent": true
     },
     {
@@ -1173,73 +1278,23 @@
       "permanent": true
     },
     {
-      "source": "/aeo",
-      "destination": "/aeo-geo",
+      "source": "/cache-aligner-prefix-stabilization",
+      "destination": "/blog",
       "permanent": true
     },
     {
-      "source": "/geo",
-      "destination": "/aeo-geo",
+      "source": "/precision-mode-compression",
+      "destination": "/blog",
       "permanent": true
     },
     {
-      "source": "/chatgpt-traffic",
-      "destination": "/aeo-geo",
+      "source": "/domain-preprocessors",
+      "destination": "/blog",
       "permanent": true
     },
     {
-      "source": "/aeo-geo",
-      "has": [
-        {
-          "type": "host",
-          "value": "api.supercompress.dev"
-        }
-      ],
-      "destination": "https://www.supercompress.dev/aeo-geo",
-      "permanent": true
-    },
-    {
-      "source": "/reduce-chatgpt-costs",
-      "has": [
-        {
-          "type": "host",
-          "value": "api.supercompress.dev"
-        }
-      ],
-      "destination": "https://www.supercompress.dev/reduce-chatgpt-costs",
-      "permanent": true
-    },
-    {
-      "source": "/reduce-claude-costs",
-      "has": [
-        {
-          "type": "host",
-          "value": "api.supercompress.dev"
-        }
-      ],
-      "destination": "https://www.supercompress.dev/reduce-claude-costs",
-      "permanent": true
-    },
-    {
-      "source": "/reduce-gemini-costs",
-      "has": [
-        {
-          "type": "host",
-          "value": "api.supercompress.dev"
-        }
-      ],
-      "destination": "https://www.supercompress.dev/reduce-gemini-costs",
-      "permanent": true
-    },
-    {
-      "source": "/reduce-openai-costs",
-      "has": [
-        {
-          "type": "host",
-          "value": "api.supercompress.dev"
-        }
-      ],
-      "destination": "https://www.supercompress.dev/reduce-openai-costs",
+      "source": "/reversible-compression-ccr",
+      "destination": "/blog",
       "permanent": true
     }
   ],
@@ -1509,10 +1564,6 @@
       "destination": "/playground.html"
     },
     {
-      "source": "/arena",
-      "destination": "/arena.html"
-    },
-    {
       "source": "/benchmarks",
       "destination": "/benchmarks.html"
     },
@@ -1561,10 +1612,6 @@
       "destination": "/favicon.ico"
     },
     {
-      "source": "/compare",
-      "destination": "/compare.html"
-    },
-    {
       "source": "/token-compression",
       "destination": "/token-compression.html"
     },
@@ -1579,10 +1626,6 @@
     {
       "source": "/affiliate-creator-kit",
       "destination": "/affiliate-creator-kit.html"
-    },
-    {
-      "source": "/launch-kit",
-      "destination": "/launch-kit.html"
     },
     {
       "source": "/founder",
@@ -1603,6 +1646,34 @@
     {
       "source": "/reduce-openai-costs",
       "destination": "/reduce-openai-costs.html"
+    },
+    {
+      "source": "/reduce-claude-costs",
+      "destination": "/reduce-claude-costs.html"
+    },
+    {
+      "source": "/reduce-chatgpt-costs",
+      "destination": "/reduce-chatgpt-costs.html"
+    },
+    {
+      "source": "/reduce-gemini-costs",
+      "destination": "/reduce-gemini-costs.html"
+    },
+    {
+      "source": "/aeo-geo",
+      "destination": "/aeo-geo.html"
+    },
+    {
+      "source": "/aeo",
+      "destination": "/aeo-geo.html"
+    },
+    {
+      "source": "/geo",
+      "destination": "/aeo-geo.html"
+    },
+    {
+      "source": "/chatgpt-traffic",
+      "destination": "/aeo-geo.html"
     },
     {
       "source": "/llm-cost-optimization",
@@ -1669,6 +1740,18 @@
       "destination": "/supercompress-vs-headroom.html"
     },
     {
+      "source": "/switch-from-headroom",
+      "destination": "/switch-from-headroom.html"
+    },
+    {
+      "source": "/headroom-for-coding-agents",
+      "destination": "/headroom-for-coding-agents.html"
+    },
+    {
+      "source": "/open-source-headroom-alternative",
+      "destination": "/open-source-headroom-alternative.html"
+    },
+    {
       "source": "/prompt-compression-guide",
       "destination": "/prompt-compression-guide.html"
     },
@@ -1718,8 +1801,15 @@
     }
   ],
   "functions": {
+    "api/mcp.js": {
+      "maxDuration": 60
+    },
+    "api/account.js": {
+      "maxDuration": 300,
+      "includeFiles": "web/assets/**"
+    },
     "api/v1/compress.js": {
-      "maxDuration": 60,
+      "maxDuration": 180,
       "includeFiles": "web/assets/**"
     },
     "api/**/*.js": {
@@ -1731,6 +1821,30 @@
     {
       "path": "/api/account?op=welcome-drain",
       "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/account?op=power-user-drain",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/account?op=quota-drain",
+      "schedule": "30 */2 * * *"
+    },
+    {
+      "path": "/api/account?op=weekly-drain",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/account?op=launch-t0",
+      "schedule": "0 16 29 9 *"
+    },
+    {
+      "path": "/api/account?op=launch-t0",
+      "schedule": "5 16 29 9 *"
+    },
+    {
+      "path": "/api/account?op=launch-t0",
+      "schedule": "15 16 29 9 *"
     }
   ],
   "headers": [

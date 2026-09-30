@@ -47,7 +47,7 @@ async function connectViaBrowser() {
   } catch {}
 
   console.log("  → Finish sign-in in the browser to connect your account.");
-  console.log(`  → If the tab is already open on the dashboard, refresh it.`);
+  console.log("  → If you are already logged in, the dashboard links automatically.");
   console.log(`  → Connection code: ${code}`);
   console.log(`  → Link: ${connectUrl}`);
 
@@ -85,32 +85,31 @@ async function connectViaBrowser() {
 
 module.exports = async function setup({ CONFIG_DIR, CONFIG_PATH, PID_PATH, LOG_PATH, loadConfig, saveConfig }) {
   const wantProxy = process.argv.includes("--proxy");
+  const yes = process.argv.includes("--yes") || process.argv.includes("-y");
 
-  console.log("  ┌─────────────────────────────────────────────┐");
-  console.log("  │          SuperCompress Setup              │");
-  console.log("  └─────────────────────────────────────────────┘");
   console.log("");
-  console.log(wantProxy
-    ? "  Mode: MCP plugin + optional API proxy (--proxy)"
-    : "  Mode: auto-detect + MCP plugin (subscription/login safe)");
+  console.log("  SuperCompress setup");
+  console.log("  ───────────────────");
+  console.log(
+    wantProxy
+      ? "  MCP + hooks for every agent, plus optional local proxy."
+      : "  One link → auto-detect agents → MCP + hooks (login-safe)."
+  );
   console.log("");
 
   const existingConfig = loadConfig();
   let apiKey = existingConfig && existingConfig.api_key;
 
   if (apiKey) {
-    console.log("  ✓ Existing SuperCompress account link found.");
-    const answer = await ask("  → Reconnect account? (y/N): ");
-    if (answer.toLowerCase() === "y") apiKey = null;
+    console.log("  ✓ Account already linked.");
+    if (!yes) {
+      const answer = await ask("  → Reconnect? (y/N): ");
+      if (answer.toLowerCase() === "y") apiKey = null;
+    }
   }
 
   if (!apiKey) {
-    console.log("");
-    console.log("  Step 1: Connect your SuperCompress account");
-    console.log("  ─────────────────────────────");
-    console.log("  Browser sign-in links this install automatically.");
-    console.log("");
-    console.log("  → Connecting your account in the browser...");
+    console.log("  Connect account (browser)…");
     try {
       apiKey = await connectViaBrowser();
     } catch (err) {
@@ -130,56 +129,21 @@ module.exports = async function setup({ CONFIG_DIR, CONFIG_PATH, PID_PATH, LOG_P
   };
   saveConfig(config);
 
-  console.log("");
-  console.log("  Step 2: Detect agents + install MCP plugin");
-  console.log("  ──────────────────────────────────────────");
-  const found = detector.detectAll();
-  if (found.length === 0) {
-    console.log("  ○ No coding agents detected yet.");
-  } else {
-    console.log("  Found:");
-    for (const agent of found) {
-      console.log(`    ✓ ${agent.name}`);
-    }
-  }
-
   const auto = detector.installAutoPlugin();
   config.configured_agents = auto.mcpConfigured;
   saveConfig(config);
 
-  if (auto.mcpConfigured.length) {
-    console.log(`  ✓ MCP plugin installed for: ${auto.mcpConfigured.join(", ")}`);
-  } else {
-    console.log("  ○ No MCP-capable agent configs found to update.");
-  }
-  console.log(`  ✓ Cursor rule written: ${auto.rulePath}`);
-  console.log(`  ✓ Cursor hooks written: ${auto.hooks.hooksPath}`);
-  console.log("    → beforeSubmitPrompt compresses every submit with context (ask stays the query)");
-  console.log("    → postToolUse auto-compresses large tool dumps (main savings path)");
-  if (auto.agentHooks.installed.length) {
-    console.log(`  ✓ Prompt/tool hooks: ${auto.agentHooks.installed.join(", ")}`);
-  }
-  if (auto.instructions.length) {
-    console.log(`  ✓ Always-on instructions: ${auto.instructions.join(", ")}`);
-  }
+  const { printInstallSummary } = require("./doctor");
+  const VERSION = require("../package.json").version;
+  printInstallSummary(auto, { version: VERSION });
   if (auto.cleared.length) {
-    console.log(`  ✓ Cleared provider API-key proxy overrides: ${auto.cleared.join(", ")}`);
+    console.log(`  Cleared old proxy overrides: ${auto.cleared.join(", ")}`);
+    console.log("");
   }
-  console.log("  → Works with Cursor / Claude / Codex login — no provider API-key mode.");
-  console.log("  → Restart agents so MCP/hooks reload.");
 
   if (!wantProxy) {
-    console.log("");
-    console.log("  ┌─────────────────────────────────────────────┐");
-    console.log("  │           Setup Complete!                  │");
-    console.log("  └─────────────────────────────────────────────┘");
-    console.log("");
-    console.log("  Next steps:");
-    console.log("    1. Restart your coding agent so MCP/hooks reload");
-    console.log("    2. Big dumps auto-compress via hooks; use compress_context for large pastes");
-    console.log("");
-    console.log("  Tip: `supercompress plugin` re-runs detect + install anytime.");
-    console.log("  Tip: `supercompress setup --proxy` only if you need durable base-URL rewrite.");
+    console.log("  Done. Re-run anytime: `supercompress plugin`");
+    console.log("  Health check:        `supercompress doctor`");
     console.log("");
     return;
   }

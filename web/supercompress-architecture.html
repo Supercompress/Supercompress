@@ -12,10 +12,10 @@
 <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SuperCompress Architecture — How Query-Aware Prompt Compression Works | SuperCompress</title>
-  <meta name="description" content="Deep dive into SuperCompress's architecture: the query-aware neural query-aware scoring policy, segment-then-score pipeline, compiler mode with verifier, and how it achieves 65% token reduction with 97% oracle recall." />
+  <meta name="description" content="Deep dive into SuperCompress's architecture: the query-aware neural query-aware scoring policy, segment-then-score pipeline, compiler mode with verifier, and how it achieves 64% token reduction with 97% oracle recall." />
   <meta name="robots" content="index, follow" />
   <meta property="og:title" content="SuperCompress Architecture — How Query-Aware Prompt Compression Works" />
-  <meta property="og:description" content="How a query-aware neural CPU policy achieves 65% token reduction with 97% oracle recall. Full architecture breakdown: segmentation, scoring, compilation, and verification." />
+  <meta property="og:description" content="How a query-aware neural CPU policy achieves 64% token reduction with 97% oracle recall. Full architecture breakdown: segmentation, scoring, compilation, and verification." />
   <meta property="og:url" content="https://supercompress.dev/supercompress-architecture" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
@@ -128,7 +128,7 @@
 <div class="container">
     <h1>SuperCompress Architecture</h1>
     <p class="meta">Last updated July 3, 2026 · 10 min read</p>
-    <p class="subtitle">How query-aware compression removes ~65% of prompt tokens before inference while preserving answer-critical evidence — a technical deep dive.</p>
+    <p class="subtitle">How query-aware compression removes ~64% of prompt tokens before inference while preserving answer-critical evidence — a technical deep dive.</p>
 
     <div class="toc">
       <h2>Contents</h2>
@@ -259,7 +259,7 @@
         <li><strong>Reports verification risk</strong> — the compiler flags segments where dropping them carries uncertainty, producing a risk score alongside the compressed output</li>
       </ol>
 
-      <p>On the bundled long-context presets, compiler mode achieves <strong>82.5% average token savings</strong> with low-risk verification — compared to ~65% for the basic scoring policy alone.</p>
+      <p>On the bundled long-context presets, compiler mode achieves <strong>82.5% average token savings</strong> with low-risk verification — compared to ~64% for the basic scoring policy alone.</p>
     </section>
 
     <section id="verifier">
@@ -406,7 +406,7 @@
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
               <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
-              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/playground">Compare methods</a></li>
               <li><a href="/research">Research</a></li>
             </ul>
           </div>
