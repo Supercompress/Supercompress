@@ -29,8 +29,9 @@ function sleep(ms) {
 function retryAfterMs(res, attempt) {
   const raw = res && res.headers && typeof res.headers.get === "function" ? res.headers.get("retry-after") : null;
   const sec = raw != null ? Number(raw) : NaN;
-  if (Number.isFinite(sec) && sec >= 0) return Math.min(15_000, Math.max(500, sec * 1000));
-  return Math.min(8_000, 750 * (attempt + 1) * (attempt + 1));
+  if (Number.isFinite(sec) && sec >= 0) return Math.min(20_000, Math.max(500, sec * 1000));
+  // 0.8s, 1.6s, 3.2s, 6.4s, 8s — wait out the single CPU slot instead of compiler fallback.
+  return Math.min(8_000, 800 * 2 ** attempt);
 }
 
 async function fetchOnce(url, headers, context, query, timeout) {
@@ -69,7 +70,7 @@ async function compressViaNeuralKeep(context, query) {
   const budget = timeoutMs();
   const tStart = Date.now();
   let lastErr = null;
-  const maxAttempts = 3;
+  const maxAttempts = 5;
 
   // Retry on 503 busy / transient 502/504 (Fly proxy blip or single-slot queue).
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -104,6 +105,10 @@ async function compressViaNeuralKeep(context, query) {
         lines_in: Number(body.lines_in) || 0,
         lines_kept: Number(body.lines_kept) || 0,
         threshold: Number(body.threshold) || 0,
+        checkpoint: body.checkpoint ? String(body.checkpoint) : undefined,
+        params_m: Number(body.params_m) || undefined,
+        weights_match_expected:
+          typeof body.weights_match_expected === "boolean" ? body.weights_match_expected : undefined,
       };
     } catch (err) {
       lastErr = err;

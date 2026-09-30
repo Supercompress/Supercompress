@@ -117,7 +117,7 @@ describe("neural-keep client", () => {
     const mod = require("./neural-keep");
     const out = await mod.compressViaNeuralKeep("ctx", "q");
     assert.equal(out, null);
-    assert.ok(n >= 3);
+    assert.ok(n >= 5);
   });
 });
 

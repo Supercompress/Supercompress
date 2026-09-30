@@ -92,6 +92,9 @@ async function compressAdaptive(context, query) {
         lines_in: remote.lines_in,
         lines_kept: remote.lines_kept,
         threshold: remote.threshold,
+        checkpoint: remote.checkpoint,
+        params_m: remote.params_m,
+        weights_match_expected: remote.weights_match_expected,
       };
     }
   }

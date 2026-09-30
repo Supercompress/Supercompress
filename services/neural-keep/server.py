@@ -20,7 +20,7 @@ from typing import Any
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="SuperCompress Neural Keep", version="1.3.0")
+app = FastAPI(title="SuperCompress Neural Keep", version="1.3.1")
 
 _model_loaded_flag = False
 _loaded_at: float | None = None
@@ -36,6 +36,7 @@ _jobs_busy = 0
 _jobs_timeout = 0
 _started_at = time.time()
 _exit_scheduled = False
+_weights_info: dict[str, Any] | None = None
 
 _pool: ProcessPoolExecutor | None = None
 _pool_lock = threading.Lock()
@@ -44,6 +45,9 @@ _POOL_MODEL = None  # set inside worker process only
 _INFER_TIMEOUT_S = float(os.environ.get("SC_NEURAL_INFER_TIMEOUT_S", "90"))
 _MAX_CONTEXT_CHARS = int(os.environ.get("SC_NEURAL_MAX_CONTEXT_CHARS", "120000"))
 _BUSY_WAIT_S = float(os.environ.get("SC_NEURAL_BUSY_WAIT_S", "3.0"))
+_EXPECTED_BYTES = int(os.environ.get("SC_NEURAL_EXPECTED_BYTES", "1583351632"))
+_EXPECTED_PARAMS_M = float(os.environ.get("SC_NEURAL_EXPECTED_PARAMS_M", "395.83"))
+_CHECKPOINT_ID = os.environ.get("SC_NEURAL_CHECKPOINT", "sc-keep-crossencoder-v4-large")
 
 
 def _cap_threads() -> None:
@@ -91,6 +95,79 @@ def _model_dir() -> str:
 
 def _auth_secret() -> str:
     return os.environ.get("SC_NEURAL_KEEP_SECRET", "").strip()
+
+
+def _scan_weights() -> dict[str, Any]:
+    """Read checkpoint identity from disk (no torch) so /health can prove the right weights."""
+    import hashlib
+    import json
+    from pathlib import Path
+
+    d = Path(_model_dir())
+    sf = d / "model.safetensors"
+    meta_p = d / "sc_meta.json"
+    cfg_p = d / "config.json"
+    info: dict[str, Any] = {
+        "checkpoint": _CHECKPOINT_ID,
+        "weights_present": sf.is_file(),
+        "weights_bytes": int(sf.stat().st_size) if sf.is_file() else 0,
+        "expected_bytes": _EXPECTED_BYTES,
+        "expected_params_m": _EXPECTED_PARAMS_M,
+        "weights_match_expected": False,
+        "base_model": None,
+        "architectures": None,
+        "hidden_size": None,
+        "num_hidden_layers": None,
+        "inference_threshold": None,
+        "sha256_8mb": None,
+        "sha256_tail1mb": None,
+        "private": True,
+    }
+    if cfg_p.is_file():
+        try:
+            cfg = json.loads(cfg_p.read_text())
+            info["architectures"] = cfg.get("architectures")
+            info["hidden_size"] = cfg.get("hidden_size")
+            info["num_hidden_layers"] = cfg.get("num_hidden_layers")
+            info["model_type"] = cfg.get("model_type")
+        except Exception as e:
+            info["config_error"] = str(e)
+    if meta_p.is_file():
+        try:
+            meta = json.loads(meta_p.read_text())
+            info["base_model"] = meta.get("base_model")
+            info["inference_threshold"] = meta.get("inference_threshold")
+        except Exception as e:
+            info["meta_error"] = str(e)
+    if sf.is_file():
+        try:
+            h = hashlib.sha256()
+            with sf.open("rb") as fh:
+                h.update(fh.read(8 * 1024 * 1024))
+            info["sha256_8mb"] = h.hexdigest()[:16]
+            with sf.open("rb") as fh:
+                fh.seek(max(0, sf.stat().st_size - 1024 * 1024))
+                info["sha256_tail1mb"] = hashlib.sha256(fh.read()).hexdigest()[:16]
+        except Exception as e:
+            info["hash_error"] = str(e)
+        info["weights_match_expected"] = info["weights_bytes"] == _EXPECTED_BYTES
+        # Known fingerprint for private v4-large (ModernBERT-large ~395.8M).
+        if info["sha256_8mb"] == "607db82e7024ad35" and info["sha256_tail1mb"] == "9f43a81f93e059bf":
+            info["weights_match_expected"] = True
+            info["params_m"] = _EXPECTED_PARAMS_M
+        elif info["weights_match_expected"]:
+            info["params_m"] = _EXPECTED_PARAMS_M
+    return info
+
+
+def _weights() -> dict[str, Any]:
+    global _weights_info
+    if _weights_info is None:
+        try:
+            _weights_info = _scan_weights()
+        except Exception as e:
+            _weights_info = {"error": str(e), "weights_match_expected": False}
+    return _weights_info
 
 
 def _pool_init() -> None:
@@ -182,6 +259,9 @@ class CompressResponse(BaseModel):
     mode: str
     latency_ms: float
     truncated: bool = False
+    checkpoint: str | None = None
+    params_m: float | None = None
+    weights_match_expected: bool | None = None
 
 
 @app.on_event("startup")
@@ -193,6 +273,12 @@ def startup() -> None:
         mp.set_start_method("spawn", force=True)
     except RuntimeError:
         pass
+
+    # Fingerprint weights on boot (no torch) so operators can verify the private checkpoint.
+    try:
+        _weights()
+    except Exception as e:
+        print(f"[neural-keep] weight scan failed: {e}", flush=True)
 
     lazy = os.environ.get("SC_NEURAL_LAZY_LOAD", "").strip().lower() in ("1", "true", "yes")
 
@@ -212,6 +298,7 @@ async def health() -> dict[str, Any]:
     d = _model_dir()
     busy_for = round(time.time() - _busy_since, 1) if _busy_since is not None else 0.0
     wedged = bool(_busy_since is not None and busy_for > _INFER_TIMEOUT_S + 15)
+    w = _weights()
     return {
         "ok": True,
         "service": "neural-keep",
@@ -234,6 +321,13 @@ async def health() -> dict[str, Any]:
         "device": _pick_device() if _model_loaded_flag else None,
         "infer_timeout_s": _INFER_TIMEOUT_S,
         "isolation": "process",
+        "checkpoint": w.get("checkpoint"),
+        "base_model": w.get("base_model"),
+        "params_m": w.get("params_m") or w.get("expected_params_m"),
+        "weights_bytes": w.get("weights_bytes"),
+        "weights_match_expected": w.get("weights_match_expected"),
+        "sha256_8mb": w.get("sha256_8mb"),
+        "private_weights": True,
     }
 
 
@@ -330,7 +424,14 @@ async def compress(
         _jobs_ok += 1
         _last_ok_at = time.time()
         _last_err = None
-        return CompressResponse(latency_ms=round(ms, 2), **out)
+        w = _weights()
+        return CompressResponse(
+            latency_ms=round(ms, 2),
+            checkpoint=str(w.get("checkpoint") or _CHECKPOINT_ID),
+            params_m=float(w.get("params_m") or w.get("expected_params_m") or _EXPECTED_PARAMS_M),
+            weights_match_expected=bool(w.get("weights_match_expected")),
+            **out,
+        )
     finally:
         with _inflight_lock:
             _inflight = max(0, _inflight - 1)
