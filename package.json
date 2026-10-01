@@ -33,7 +33,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "firebase-admin": "^13.10.0",
     "playwright": "^1.62.1",
-    "stripe": "^22.3.0",
+    "stripe": "^22.6.2",
     "supercompress-proxy": "^0.5.23"
   },
   "overrides": {
