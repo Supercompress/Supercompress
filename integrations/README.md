@@ -53,5 +53,5 @@ No changes to your downstream logic — just wrap your client and save 64% on to
 Your App → SuperCompress Plugin → Compressed Context → LLM (OpenAI, Claude, etc.)
                                     ↓
                           64% less context
-                          24/24 benchmark evidence-retention passes (B5)
+                          evidence-containment methodology (per-task B5 rows pending)
 ```
