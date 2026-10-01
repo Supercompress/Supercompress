@@ -78,13 +78,20 @@ async function compressAdaptive(context, query) {
       const kept = E.countTokens
         ? E.countTokens(String(remote.compressed_text || ""))
         : remote.kept_tokens;
+      const keptTokens = kept || remote.kept_tokens || 0;
+      const origTokens = orig || remote.original_tokens || 0;
       const saved =
-        orig > 0 ? Math.max(0, Math.round((1 - kept / orig) * 1000) / 10) : 0;
+        origTokens > 0
+          ? Math.max(0, Math.round((1 - keptTokens / origTokens) * 1000) / 10)
+          : 0;
+      // Hosted API + billing read `kept_tokens`; MCP clients also accept
+      // `compressed_tokens`. Emit both so usage never reports 0 kept / 100%.
       return {
         compressed_text: remote.compressed_text,
-        original_tokens: orig || remote.original_tokens,
-        compressed_tokens: kept || remote.kept_tokens,
-        tokens_saved: Math.max(0, (orig || remote.original_tokens) - (kept || remote.kept_tokens)),
+        original_tokens: origTokens,
+        kept_tokens: keptTokens,
+        compressed_tokens: keptTokens,
+        tokens_saved: Math.max(0, origTokens - keptTokens),
         tokens_saved_pct: remote.tokens_saved_pct || saved,
         policy_name: remote.policy_name || "SuperCompress Neural Keep",
         mode: remote.mode || "neural-keep",

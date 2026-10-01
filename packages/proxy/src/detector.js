@@ -58,6 +58,16 @@ function restoreBackups() {
   const restored = new Set();
   for (const [filePath, snapshot] of Object.entries(backups)) {
     try {
+      // Shared MCP JSON files accumulate other servers after setup. Never
+      // rewind the whole file to the install-time snapshot — that wipes
+      // anything the user added later (reported for ~/.claude.json).
+      if (isSharedMcpConfigSnapshot(snapshot)) {
+        if (fs.existsSync(filePath)) {
+          stripSupercompressMcpFromFile(filePath);
+        }
+        restored.add(filePath);
+        continue;
+      }
       if (snapshot.exists) {
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(filePath, snapshot.content);
@@ -71,6 +81,49 @@ function restoreBackups() {
   }
   try { fs.unlinkSync(BACKUP_PATH); } catch {}
   return restored;
+}
+
+/** True when a backup snapshot is a shared MCP host config (mcpServers / mcp map). */
+function isSharedMcpConfigSnapshot(snapshot) {
+  if (!snapshot || !snapshot.exists || typeof snapshot.content !== "string") return false;
+  try {
+    const data = JSON.parse(snapshot.content);
+    if (!data || typeof data !== "object") return false;
+    if (data.mcpServers && typeof data.mcpServers === "object") return true;
+    if (data.mcp && typeof data.mcp === "object") return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Surgically remove SuperCompress MCP entries from a live config file without
+ * touching other servers the user may have added after install.
+ */
+function stripSupercompressMcpFromFile(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+  const raw = fs.readFileSync(filePath, "utf8");
+  let data;
+  try {
+    data = typeof parseJsonc === "function" ? parseJsonc(raw) : JSON.parse(raw);
+  } catch {
+    data = JSON.parse(raw);
+  }
+  let changed = false;
+  if (data.mcpServers && data.mcpServers.supercompress) {
+    delete data.mcpServers.supercompress;
+    if (Object.keys(data.mcpServers).length === 0) delete data.mcpServers;
+    changed = true;
+  }
+  if (data.mcp && data.mcp.supercompress) {
+    delete data.mcp.supercompress;
+    if (Object.keys(data.mcp).length === 0) delete data.mcp;
+    changed = true;
+  }
+  if (!changed) return false;
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+  return true;
 }
 
 // Shared by the instruction writer and the uninstaller so the two cannot drift.
@@ -939,22 +992,36 @@ function configureMcp() {
 }
 
 function removeMcpJson(filePath) {
-  if (!fs.existsSync(filePath)) return false;
-  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-  if (!data.mcpServers || !data.mcpServers.supercompress) return false;
-  delete data.mcpServers.supercompress;
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
-  return true;
+  return stripSupercompressMcpFromFile(filePath);
 }
 
 function removeMcp() {
   const removed = [];
-  for (const [name, filePath] of [
+  const seen = new Set();
+  const targets = [
     ["Cursor", path.join(HOME, ".cursor", "mcp.json")],
     ["Gemini CLI", path.join(HOME, ".gemini", "settings.json")],
     ["Claude Code", path.join(HOME, ".claude.json")],
     ["FreeBuff", path.join(HOME, ".agents", "mcp.json")],
-  ]) {
+    ["Windsurf", path.join(HOME, ".codeium", "windsurf", "mcp_config.json")],
+    ["Windsurf (alt)", path.join(HOME, ".windsurf", "mcp.json")],
+    ["Crush", path.join(HOME, ".config", "crush", "mcp.json")],
+    ["Amp", path.join(HOME, ".amp", "mcp.json")],
+    ["Pi", path.join(HOME, ".pi", "mcp.json")],
+    ["Void", path.join(HOME, ".void", "mcp.json")],
+    ["PearAI", path.join(HOME, ".pearai", "mcp.json")],
+    ["Mistral Vibe", path.join(HOME, ".vibe", "mcp.json")],
+    ["Kilo Code", path.join(HOME, ".kilo", "mcp.json")],
+    ["VS Code Copilot", path.join(HOME, ".copilot", "mcp.json")],
+    ["Roo Code", path.join(HOME, ".roo", "mcp.json")],
+    ["Cline", path.join(HOME, ".cline", "mcp.json")],
+    ["Claude Desktop", path.join(HOME, "Library", "Application Support", "Claude", "claude_desktop_config.json")],
+    ["Claude Desktop", path.join(HOME, "AppData", "Roaming", "Claude", "claude_desktop_config.json")],
+    ["fx", path.join(HOME, ".fx", "mcp.json")],
+  ];
+  for (const [name, filePath] of targets) {
+    if (seen.has(filePath)) continue;
+    seen.add(filePath);
     try {
       if (removeMcpJson(filePath)) removed.push(name);
     } catch (err) {
@@ -968,12 +1035,7 @@ function removeMcp() {
   ]) {
     try {
       if (!fs.existsSync(filePath)) continue;
-      const data = parseJsonc(fs.readFileSync(filePath, "utf8"));
-      if (!data.mcp || !data.mcp.supercompress) continue;
-      delete data.mcp.supercompress;
-      if (data.mcp && Object.keys(data.mcp).length === 0) delete data.mcp;
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
-      removed.push("OpenCode");
+      if (stripSupercompressMcpFromFile(filePath)) removed.push("OpenCode");
     } catch (err) {
       console.error(`  ✗ Failed to remove OpenCode MCP registration: ${err.message}`);
     }

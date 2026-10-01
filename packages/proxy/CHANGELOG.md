@@ -4,6 +4,12 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.35] — 2026-09-30
+
+- **kept_tokens**: hosted Neural Keep path now returns `kept_tokens` (and `compressed_tokens`) so MCP usage / billing no longer show 0 kept / 100% savings.
+- **uninstall**: shared MCP configs (`~/.claude.json`, etc.) are surgically stripped — never fully restored from install-time backup — so MCP servers added after setup survive.
+- Claude / Cursor marketplace plugin copy: 64.1% / 24/24 + ~400M Neural Keep (was stale 64%/24/24).
+
 ## [0.5.32] — 2026-09-30
 
 - **v2 live**: hosted ~400M Neural Keep (query-aware). Coding-agent B5: **64.1%** mean cut, **24/24** evidence, 16,647 → 5,148 tokens.

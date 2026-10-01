@@ -223,4 +223,52 @@ let passed = 0;
   passed++;
 }
 
+// 6. Uninstall must not rewind ~/.claude.json — MCP servers added after setup
+//    must survive while SuperCompress is surgically stripped.
+{
+  const home = newHome();
+  const claudeJson = path.join(home, ".claude.json");
+  const configDir = path.join(home, ".supercompress");
+  fs.mkdirSync(configDir, { recursive: true });
+
+  // Snapshot taken at install time — only had supercompress.
+  const installSnapshot = {
+    mcpServers: {
+      supercompress: { command: "npx", args: ["-y", "supercompress-proxy"] },
+    },
+  };
+  fs.writeFileSync(
+    path.join(configDir, "agent-config-backups.json"),
+    JSON.stringify({ [claudeJson]: { exists: true, content: JSON.stringify(installSnapshot, null, 2) + "\n" } }, null, 2)
+  );
+
+  // Live file after the user added another MCP server post-setup.
+  fs.writeFileSync(
+    claudeJson,
+    JSON.stringify(
+      {
+        mcpServers: {
+          supercompress: { command: "npx", args: ["-y", "supercompress-proxy"] },
+          otherAgent: { command: "uvx", args: ["some-mcp"] },
+        },
+      },
+      null,
+      2
+    ) + "\n"
+  );
+
+  run(home, "uninstall");
+
+  const after = JSON.parse(fs.readFileSync(claudeJson, "utf8"));
+  assert.ok(after.mcpServers.otherAgent, "user MCP servers added after setup must survive uninstall");
+  assert.strictEqual(
+    after.mcpServers.supercompress,
+    undefined,
+    "SuperCompress MCP entry must be removed"
+  );
+  fs.rmSync(home, { recursive: true, force: true });
+  console.log("✔ uninstall does not wipe post-setup MCP servers in ~/.claude.json");
+  passed++;
+}
+
 console.log(`\nuninstall-clean: ${passed} checks passed`);
