@@ -66,15 +66,20 @@ function extractApiKey(req) {
     const token = auth.replace(/^bearer\s+/i, "").trim();
     if (token.startsWith("sc_")) return token;
   }
-  // Optional path for chat install: /api/mcp?key=sc_…
-  try {
-    const url = new URL(req.url || "/", "https://www.supercompress.dev");
-    const q = String(url.searchParams.get("key") || "").trim();
-    if (q.startsWith("sc_")) return q;
-  } catch {
-    /* ignore */
-  }
+  // Do not accept ?key= — keys in URLs leak via logs, Referer, and shared links.
   return "";
+}
+
+/** Methods that must 401 (with WWW-Authenticate) so hosts prompt OAuth on connect. */
+function rpcNeedsAuth(msg) {
+  if (!msg || typeof msg !== "object") return false;
+  const method = String(msg.method || "");
+  if (method === "initialize") return true;
+  if (method === "tools/call") {
+    const name = String(msg.params?.name || "");
+    return name !== "connect_account";
+  }
+  return false;
 }
 
 async function httpJson(url, options = {}) {
@@ -291,6 +296,7 @@ module.exports = {
   SERVER_NAME,
   SERVER_VERSION,
   extractApiKey,
+  rpcNeedsAuth,
   dispatchRpc,
   handleToolCall,
 };
