@@ -12,6 +12,11 @@
 </p>
 
 <p align="center">
+  <strong>~400M Neural Keep</strong> on the hosted API · coding-agent plugin via MCP<br />
+  <a href="https://huggingface.co/arjunkshah21/sc-keep-crossencoder-v4-large">Open weights (MIT) on Hugging Face</a>
+</p>
+
+<p align="center">
   <strong>64% less context</strong> · <strong>24/24</strong> coding benchmark passes · up to <strong>96.6%</strong> reduction at ≥99% evidence retention<br />
   <em>(B5 coding-agent suite · evidence containment metric — not downstream LLM completion)</em>
 </p>

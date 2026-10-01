@@ -2,7 +2,7 @@
 
 **SuperCompress v2 — cut ~64% of LLM input tokens for coding agents, without losing the answer.**
 
-~400M Neural Keep scores bulky context (files, logs, tool dumps, pastes) against the current question and drops the rest. Your ask stays intact.
+~400M Neural Keep on the SuperCompress API scores bulky context (files, logs, tool dumps, pastes) against the current question and drops the rest. Your ask stays intact. This package wires Cursor / Claude Code / Codex / 60+ harnesses into that API via MCP + hooks.
 
 [Website](https://www.supercompress.dev) · [Benchmarks](https://www.supercompress.dev/benchmarks) · [Playground](https://www.supercompress.dev/playground) · [Docs](https://docs.supercompress.dev/coding-agents)
 
