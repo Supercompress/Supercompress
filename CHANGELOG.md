@@ -13,6 +13,12 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+## [0.5.38] — 2026-09-30
+
+### Changed
+- Removed unbacked **64.1% / 24/24** headlines from public copy (site, README, llms.txt, mail, SEO pages). `launch-benchmark.json` remains summary-only until per-task B5 rows ship.
+- Safe MCP line: Hosted MCP now supports OAuth 2.1 sign-in (PKCE). Plugin no-key setup is next.
+
 ## [0.5.37] — 2026-09-30
 
 ### Fixed

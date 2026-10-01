@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SuperCompress v2 is live — ~400M Neural Keep · $0.10/1M</title>
-  <meta name="description" content="SuperCompress v2 is live: hosted ~400M-parameter Neural Keep engine. Coding-agent benchmark 64.1% mean cut, required evidence in 24/24 cases, 16,647 → 5,148 tokens. Pricing: 5M free/mo then $0.10 per 1M tokens." />
+  <meta name="description" content="SuperCompress v2 is live: hosted ~400M-parameter Neural Keep engine. Coding-agent benchmark query-aware Neural Keep with published evidence-containment methodology (per-task B5 rows pending). Pricing: 5M free/mo then $0.10 per 1M tokens." />
   <meta property="og:title" content="SuperCompress v2 is live — ~400M Neural Keep" />
-  <meta property="og:description" content="Hosted ~400M Neural Keep is live. 64.1% mean cut. Required evidence in 24/24 cases. 16,647 → 5,148 tokens. 5M free/mo then $0.10 per 1M tokens." />
+  <meta property="og:description" content="Hosted ~400M Neural Keep is live. query-aware Neural Keep with evidence-containment methodology (per-task B5 rows pending). 5M free/mo then $0.10 per 1M tokens." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/engine-v2-launch" />
   <meta property="og:type" content="article" />
@@ -14,7 +14,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="SuperCompress v2 is live — ~400M Neural Keep" />
-  <meta name="twitter:description" content="~400M Neural Keep live on the API. 64.1% mean cut. 24/24 evidence. 5M free/mo then $0.10 per 1M tokens." />
+  <meta name="twitter:description" content="~400M Neural Keep live on the API. Evidence-containment methodology. 5M free/mo then $0.10 per 1M tokens." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/engine-v2-launch" />
   <meta property="article:published_time" content="2026-09-29T09:00:00-07:00" />
@@ -119,7 +119,7 @@
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": "SuperCompress v2 is live — ~400M Neural Keep",
-    "description": "SuperCompress v2 hosted ~400M-parameter Neural Keep engine is live. Coding-agent benchmark: 64.1% mean cut, required evidence in 24/24 cases. Pricing: 5M free/mo then $0.10 per 1M tokens.",
+    "description": "SuperCompress v2 hosted ~400M-parameter Neural Keep engine is live. Coding-agent benchmark: query-aware Neural Keep; evidence-containment methodology (per-task B5 rows pending). Pricing: 5M free/mo then $0.10 per 1M tokens.",
     "datePublished": "2026-09-29T09:00:00-07:00",
     "dateModified": "2026-09-30T00:00:00-07:00",
     "author": {
@@ -200,12 +200,12 @@
       </div>
       <div class="launch-stat">
         <span class="label">Mean cut</span>
-        <span class="value">64.1%</span>
+        <span class="value">pending</span>
         <span class="sub">coding-agent suite</span>
       </div>
       <div class="launch-stat">
         <span class="label">Evidence held</span>
-        <span class="value">24/24</span>
+        <span class="value">pending</span>
         <span class="sub">required lines kept</span>
       </div>
       <div class="launch-stat">
@@ -218,7 +218,7 @@
     <section class="seo-section">
       <h2>Why v2 is different from v1</h2>
       <p>v1 was a tiny / lightweight compiler: fast on CPU, millisecond-class, good at aggressive drop with answer-keep gates. v2 is a <strong>~400M query-aware cross-encoder</strong> — Neural Keep — hosted on GPU. It scores every line against <em>this</em> query and keeps original wording.</p>
-      <p>Critically, it knows when <strong>not</strong> to compress. Across the full 390-case public suite the aggregate mean cut is only ~3.6%: on dense needle and LongBench slices it often keeps nearly everything. The headline <strong>64.1%</strong> is the coding-agent (B5) suite, where dumps are noisy and query-aware keep shines. Mixing those numbers with compiler-era ~47ms CPU claims is wrong — they are different engines.</p>
+      <p>Critically, it knows when <strong>not</strong> to compress. Across the full 390-case public suite the aggregate mean cut is only ~3.6%: on dense needle and LongBench slices it often keeps nearly everything. B5 headline cut rates stay out of copy until per-task rows ship. Mixing those numbers with compiler-era ~47ms CPU claims is wrong — they are different engines.</p>
     </section>
 
     <section class="seo-section">
@@ -264,7 +264,7 @@ DEBUG retry scheduled</span></pre>
           </tr>
           <tr class="best-row">
             <td>Mean context cut</td>
-            <td><strong>64.1%</strong></td>
+            <td><strong>pending</strong></td>
           </tr>
           <tr class="best-row">
             <td>Required evidence retained</td>
