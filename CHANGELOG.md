@@ -13,15 +13,26 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+## [0.5.37] — 2026-09-30
+
+### Fixed
+- Claude Code installs `.mcp.json` — removed `Authorization: Bearer ${SUPERCOMPRESS_API_KEY}` so hosts can prompt OAuth instead of silently sending an empty/missing key.
+- Cursor plugin no longer marks `SUPERCOMPRESS_API_KEY` as required.
+- Hosted MCP returns **401 + WWW-Authenticate on `initialize`** (not only `tools/call`) so clients prompt sign-in on connect.
+- Dropped `?key=` query-string auth on `/api/mcp`.
+
+### Changed
+- Honest OAuth copy: server-side OAuth 2.1 is up; plugin no-key cutover is next. Sunday stays on setup-command installs. Dropped unbacked 64.1%/24/24 claims from plugin marketplace descriptions.
+
 ## [0.5.36] — 2026-09-30
 
 ### Added
-- Hosted MCP **OAuth 2.1 + PKCE** (`.well-known/oauth-*`, register / authorize / token / approve). Same Google login as CLI device-link.
-- Public launch-benchmark.json + `/benchmarks` rewritten for v2 Neural Keep (390 cases / B5 64.1% / 24/24 / ~5.8s p50) with legacy compiler section.
+- Hosted MCP **OAuth 2.1 + PKCE** (`.well-known/oauth-*`, register / authorize / token / approve). Same Google login as CLI device-link. Plugin no-key cutover was incomplete in this cut — see 0.5.37.
+- Public launch-benchmark.json + `/benchmarks` rewritten for v2 Neural Keep with a legacy compiler section. Summary JSON alone does not back 64.1% / 24/24 headline claims.
 
 ### Changed
 - Homepage hero + Neural v2 vs Compiler split; harness count standardized to **40+**; README / launch article honesty pass.
-- Coding-agent plugin **0.5.36** (`supercompress-proxy`): OAuth-first hosted MCP.
+- Coding-agent plugin **0.5.36** (`supercompress-proxy`): OAuth-first hosted MCP (server-side).
 
 ---
 

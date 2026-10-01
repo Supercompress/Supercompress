@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "supercompress",
-  "version": "0.5.35",
-  "description": "SuperCompress v2 — hosted ~400M Neural Keep for coding agents. MCP + hooks, 64.1% mean cut with 24/24 evidence on B5.",
+  "version": "0.5.37",
+  "description": "SuperCompress v2 — hosted ~400M Neural Keep for coding agents. MCP + hooks. Hosted MCP supports OAuth 2.1 sign-in (PKCE); plugin no-key setup is next.",
   "homepage": "https://www.supercompress.dev",
   "license": "MIT"
 }

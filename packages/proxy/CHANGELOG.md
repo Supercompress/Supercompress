@@ -4,6 +4,11 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.37] — 2026-09-30
+
+### Fixed
+- Plugin `.mcp.json` no longer injects `Authorization` / required API key; MCP 401 on `initialize` for OAuth prompt; no `?key=` on `/api/mcp`.
+
 ## [0.5.36] — 2026-09-30
 
 - **MCP OAuth 2.1 (PKCE)** on hosted `/api/mcp`: well-known discovery, DCR, authorize → Google dashboard sign-in, token exchange. Access tokens are real `sc_live_…` keys.

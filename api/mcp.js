@@ -7,7 +7,14 @@
  * Chat install: "Add this MCP server: https://www.supercompress.dev/api/mcp"
  */
 const { cors, securityHeaders } = require("./_lib/http");
-const { dispatchRpc, extractApiKey, SERVER_NAME, SERVER_VERSION, PROTOCOL_VERSION } = require("./_lib/mcp-http");
+const {
+  dispatchRpc,
+  extractApiKey,
+  rpcNeedsAuth,
+  SERVER_NAME,
+  SERVER_VERSION,
+  PROTOCOL_VERSION,
+} = require("./_lib/mcp-http");
 const { wwwAuthenticateHeader, MCP_RESOURCE } = require("./_lib/mcp-oauth");
 
 const MAX_MCP_BODY_BYTES = 1_500_000;
@@ -73,15 +80,6 @@ function sendUnauthorized(res, id = null) {
       id,
     })
   );
-}
-
-function rpcNeedsAuth(msg) {
-  if (!msg || typeof msg !== "object") return false;
-  if (msg.method === "tools/call") {
-    const name = String(msg.params?.name || "");
-    return name !== "connect_account";
-  }
-  return false;
 }
 
 module.exports = async (req, res) => {

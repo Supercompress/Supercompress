@@ -239,6 +239,24 @@
         </div>
       </article>
 
+      <article class="cl-entry" id="v0.5.37">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.37">0.5.37</a>
+          <span class="cl-date">2026-09-30</span>
+          <span class="cl-badge">plugin</span>
+        </div>
+        <div class="cl-body">
+          <h3>OAuth prompt path (plugin + initialize)</h3>
+          <ul>
+            <li>Claude Code <code>.mcp.json</code> no longer sends <code>Authorization: Bearer ${SUPERCOMPRESS_API_KEY}</code> — hosts can prompt OAuth instead of a silent empty key.</li>
+            <li>Cursor plugin: <code>SUPERCOMPRESS_API_KEY</code> is optional, not required.</li>
+            <li>Hosted MCP returns <strong>401 + WWW-Authenticate on <code>initialize</code></strong> (not only tools/call). Query-string <code>?key=</code> auth removed.</li>
+            <li>Safe status line: hosted MCP supports OAuth 2.1 sign-in (PKCE); plugin no-key setup is next. Sunday stays on setup-command installs.</li>
+          </ul>
+          <p><a href="/docs/coding-agents">Coding agents</a> · npm <code>supercompress-proxy@0.5.37</code></p>
+        </div>
+      </article>
+
       <article class="cl-entry" id="v0.5.36">
         <div class="cl-meta">
           <a class="cl-ver" href="#v0.5.36">0.5.36</a>
@@ -246,10 +264,10 @@
           <span class="cl-badge">plugin</span>
         </div>
         <div class="cl-body">
-          <h3>MCP OAuth + benchmark honesty</h3>
+          <h3>MCP OAuth server-side + benchmark page</h3>
           <ul>
-            <li><strong>Hosted MCP OAuth 2.1 (PKCE)</strong> — add <code>https://www.supercompress.dev/api/mcp</code>, sign in with Google, get a real API key. Same account as CLI device-link.</li>
-            <li><code>/benchmarks</code> is the v2 launch suite (390 cases · B5 64.1% · 24/24 · ~5.8s p50). Legacy compiler numbers labeled separately.</li>
+            <li><strong>Hosted MCP OAuth 2.1 (PKCE)</strong> endpoints live (<code>/.well-known/oauth-*</code>, authorize / token / approve). Same Google account path as CLI device-link. Plugin no-key cutover follows in 0.5.37+.</li>
+            <li><code>/benchmarks</code> rewritten for v2 Neural Keep with a separate legacy compiler section. Per-task B5 rows for headline cuts still pending — do not treat summary-only JSON as the source of 64.1% / 24/24 claims.</li>
             <li>Homepage: Neural v2 vs Compiler split · <strong>40+</strong> harnesses · evidence-containment language.</li>
           </ul>
           <p><a href="/docs/coding-agents">Coding agents</a> · <a href="/benchmarks">Benchmarks</a> · npm <code>supercompress-proxy@0.5.36</code></p>

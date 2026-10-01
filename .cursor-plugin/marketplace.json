@@ -11,7 +11,7 @@
     {
       "name": "supercompress",
       "source": "integrations/plugins/supercompress",
-      "description": "SuperCompress v2 — hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Coding-agent B5: 64.1% mean cut, required evidence in 24/24 cases. Free tier: 5M tokens/month, then $0.10/1M."
+      "description": "SuperCompress v2 — hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Hosted MCP supports OAuth 2.1 sign-in (PKCE). Plugin no-key setup is next. Free tier: 5M tokens/month, then $0.10/1M."
     }
   ]
 }

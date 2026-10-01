@@ -1,10 +1,21 @@
 const assert = require("node:assert/strict");
-const { dispatchRpc, extractApiKey, TOOLS, handleToolCall } = require("./mcp-http");
+const { dispatchRpc, extractApiKey, rpcNeedsAuth, TOOLS, handleToolCall } = require("./mcp-http");
 
 async function main() {
   assert.ok(TOOLS.some((t) => t.name === "compress_context"));
   assert.ok(TOOLS.some((t) => t.name === "connect_account"));
   assert.ok(TOOLS.some((t) => t.name === "usage_summary"));
+
+  assert.equal(rpcNeedsAuth({ method: "initialize", id: 1 }), true);
+  assert.equal(
+    rpcNeedsAuth({ method: "tools/call", params: { name: "compress_context" } }),
+    true
+  );
+  assert.equal(
+    rpcNeedsAuth({ method: "tools/call", params: { name: "connect_account" } }),
+    false
+  );
+  assert.equal(rpcNeedsAuth({ method: "tools/list", id: 2 }), false);
 
   const init = await dispatchRpc(
     {
@@ -54,6 +65,12 @@ async function main() {
     url: "/api/mcp",
   });
   assert.equal(key2, "sc_from_header");
+
+  const noQueryKey = extractApiKey({
+    headers: {},
+    url: "/api/mcp?key=sc_should_not_work",
+  });
+  assert.equal(noQueryKey, "");
 
   console.log("✔ mcp-http unit");
 }

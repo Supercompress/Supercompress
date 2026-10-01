@@ -2,7 +2,7 @@
 
 Query-aware context compression for **Cursor, Claude Code, Codex, Grok Bot**, and other MCP hosts.
 
-Compress tool dumps, logs, diffs, and pasted files before they burn tokens. **64% mean context reduction with 24/24 evidence-retention passes** on the B5 coding-agent benchmark → [benchmarks](https://www.supercompress.dev/benchmarks).
+Compress tool dumps, logs, diffs, and pasted files before they burn tokens. Details on [benchmarks](https://www.supercompress.dev/benchmarks).
 
 ## Easiest path (laptop agents)
 
@@ -12,7 +12,7 @@ supercompress setup          # link account + MCP/hooks on every detected agent
 supercompress doctor         # clean health matrix
 ```
 
-Re-run `supercompress plugin` anytime. Keep your normal Cursor / Claude / Codex login.
+Re-run `supercompress plugin` anytime. Keep your normal Cursor / Claude / Codex login. Sunday marketplace installs stay on the setup-command path until the no-key plugin cutover.
 
 ## Marketplace / cloud (Grok Bot, Cursor Cloud)
 
@@ -20,10 +20,10 @@ Hosted Streamable HTTP MCP:
 
 `https://www.supercompress.dev/api/mcp`
 
-**OAuth is live.** Add the server URL — the host should open Google sign-in via SuperCompress OAuth (PKCE). Fallback: set `SUPERCOMPRESS_API_KEY` (`sc_…` from the [dashboard](https://www.supercompress.dev/dashboard)).
+Hosted MCP now supports OAuth 2.1 sign-in (PKCE). Plugin no-key setup is next — until hosts prompt on connect, laptop `supercompress setup` remains the reliable path. Optional fallback: set `SUPERCOMPRESS_API_KEY` (`sc_…` from the [dashboard](https://www.supercompress.dev/dashboard)).
 
 1. Prefer laptop install: `npm i -g supercompress-proxy && supercompress setup` (device-link OAuth, key saved).
-2. Or add the SuperCompress plugin (marketplace / this folder) and complete OAuth when prompted.
+2. Or add the SuperCompress plugin (marketplace / this folder); complete OAuth when the host prompts, or use an API key as fallback.
 3. Call `compress_context` on large dumps.
 
 ```
