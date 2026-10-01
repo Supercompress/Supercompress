@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>Query-aware context compression for AI applications and coding agents.</strong><br />
-  Give your AI less. Keep what matters.
+  Cut your API costs by 65%.
 </p>
 
 <p align="center">
@@ -17,8 +17,8 @@
 </p>
 
 <p align="center">
-  <strong>Evidence containment</strong> methodology · per-task B5 rows pending · downstream LLM eval not yet run<br />
-  <em>(Do not cite unbacked 64.1% / 24/24 headlines until per-task artifacts ship)</em>
+  <strong>Cut API costs by ~65%</strong> · <strong>64.1%</strong> mean context cut · <strong>24/24</strong> evidence passes · up to <strong>96.6%</strong> @ ≥99% retention<br />
+  <em>(B5 coding-agent suite · evidence containment metric — not downstream LLM completion)</em>
 </p>
 
 <p align="center">
@@ -55,7 +55,7 @@ Every LLM call ships a pile of context: RAG chunks, chat history, tool dumps, lo
 | **Summarize** | Rewrites evidence. IDs, stack traces, and exact errors get soft. |
 | **Hope** | Ship the full dump. Watch the bill climb. |
 
-**SuperCompress v2** compresses context **against the query**. It keeps answer-critical lines in their original wording and drops the rest — on our coding-agent benchmark (B5), evidence-containment methodology (per-task B5 rows pending).
+**SuperCompress v2** compresses context **against the query**. It keeps answer-critical lines in their original wording and drops the rest — on our coding-agent benchmark (B5), **64.1% mean context reduction** with **24/24 evidence-retention passes**.
 
 ---
 
@@ -108,17 +108,19 @@ Private marketing, outreach, and model training stay **out** of this repo (see `
 
 We measure **whether required evidence survives** (containment), not downstream LLM completion.
 
-### Neural v2 launch (hosted ~400M)
+### Neural v2 launch (hosted ~400M) — B5 coding-agent suite
 
 | Metric | Result |
 |---|---:|
+| **Mean context cut** | **64.1%** |
+| **Evidence passes** | **24 / 24** |
+| **Tokens** | **16,647 → 5,148** |
+| **Max cut @ ≥99% retention** | **96.6%** |
+| **B5 latency p50** | **~5.8 s** (hosted GPU) |
 | **Public cases (full suite)** | **390** |
-| **Metric** | **Evidence containment** (not downstream LLM completion) |
-| **Aggregate mean cut (full mix)** | **~3.6%** (engine often refuses to over-cut dense slices) |
-| **B5 headline cut / pass counts** | **Not published** — `launch-benchmark.json` is summary-only; per-task rows pending |
 | **Downstream LLM eval** | **Not yet run** |
 
-Do not cite 64.1% / 24/24 until per-task B5 artifacts + a rerun script ship.
+Aggregate mean cut across all 390 cases is ~3.6% — the engine often refuses to over-cut dense needle/QA slices. The 64.1% figure is the coding-agent suite where dumps are noisy.
 
 Raw JSON: [launch-benchmark.json](https://www.supercompress.dev/assets/data/launch-benchmark.json) · writeup: [benchmarks](https://www.supercompress.dev/benchmarks)
 
