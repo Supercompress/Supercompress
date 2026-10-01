@@ -140,43 +140,35 @@
       <li><strong>CCR works seamlessly</strong> — Compress with mode="ccr", get retrieval markers in the output, retrieve blocks as needed — all within the same conversation.</li>
     </ul>
 
-    <h2>Setup</h2>
+    <h2>Setup (OAuth-first)</h2>
 
-    <h3>Claude Desktop</h3>
+    <p><strong>Recommended:</strong> point any OAuth-capable MCP client at the hosted URL and sign in with Google when prompted. Full launch note: <a href="/mcp-oauth">MCP OAuth</a>.</p>
 
-    <p>Add to <code>claude_desktop_config.json</code>:</p>
+    <pre>https://www.supercompress.dev/api/mcp</pre>
 
-    <pre>{
-  "mcpServers": {
-    "supercompress": {
-      "command": "node",
-      "args": ["/absolute/path/to/supercompress/mcp/server.js"]
-    }
-  }
-}</pre>
+    <h3>Claude Code (marketplace)</h3>
 
-    <p>Restart Claude Desktop. The <code>compress</code>, <code>retrieve</code>, and <code>simple_hash</code> tools appear in the available tools list automatically.</p>
+    <pre>/plugin marketplace add Supercompress/Supercompress
+/plugin install supercompress@supercompress</pre>
 
-    <h3>Claude Code</h3>
+    <h3>Claude Desktop / Cursor / other HTTP MCP hosts</h3>
 
-    <p>Add to <code>.mcp.json</code> in your project root:</p>
+    <p>Add a remote/streamable HTTP MCP server:</p>
 
     <pre>{
   "mcpServers": {
     "supercompress": {
-      "command": "node",
-      "args": ["/absolute/path/to/supercompress/mcp/server.js"]
+      "type": "http",
+      "url": "https://www.supercompress.dev/api/mcp"
     }
   }
 }</pre>
 
-    <h3>Cursor</h3>
+    <p>No <code>Authorization</code> header and no <code>SUPERCOMPRESS_API_KEY</code> required when the host supports OAuth — complete Google sign-in when the client prompts.</p>
 
-    <p>Add in Cursor Settings → MCP Servers:</p>
+    <h3>Laptop terminal (all agents)</h3>
 
-    <pre>Name: supercompress
-Type: command
-Command: node /absolute/path/to/supercompress/mcp/server.js</pre>
+    <pre>npm i -g supercompress-proxy &amp;&amp; supercompress setup</pre>
 
     <h2>How the Agent Uses It</h2>
 

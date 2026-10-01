@@ -239,6 +239,23 @@
         </div>
       </article>
 
+      <article class="cl-entry" id="mcp-oauth">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#mcp-oauth">MCP OAuth</a>
+          <span class="cl-date">2026-10-01</span>
+          <span class="cl-badge">launch</span>
+        </div>
+        <div class="cl-body">
+          <h3>SuperCompress MCP now has OAuth</h3>
+          <ul>
+            <li>One URL: <code>https://www.supercompress.dev/api/mcp</code> — Google sign-in via OAuth 2.1 + PKCE. No key paste when the host supports OAuth.</li>
+            <li>Claude Code: <code>/plugin marketplace add Supercompress/Supercompress</code> then <code>/plugin install supercompress@supercompress</code>.</li>
+            <li>Terminal: <code>npm i -g supercompress-proxy &amp;&amp; supercompress setup</code>.</li>
+          </ul>
+          <p><a href="/mcp-oauth">Launch note</a> · <a href="/mcp-integration">MCP docs</a> · npm <code>supercompress-proxy@0.5.37</code></p>
+        </div>
+      </article>
+
       <article class="cl-entry" id="v0.5.37">
         <div class="cl-meta">
           <a class="cl-ver" href="#v0.5.37">0.5.37</a>
@@ -251,9 +268,8 @@
             <li>Claude Code <code>.mcp.json</code> no longer sends <code>Authorization: Bearer ${SUPERCOMPRESS_API_KEY}</code> — hosts can prompt OAuth instead of a silent empty key.</li>
             <li>Cursor plugin: <code>SUPERCOMPRESS_API_KEY</code> is optional, not required.</li>
             <li>Hosted MCP returns <strong>401 + WWW-Authenticate on <code>initialize</code></strong> (not only tools/call). Query-string <code>?key=</code> auth removed.</li>
-            <li>Safe status line: hosted MCP supports OAuth 2.1 sign-in (PKCE); plugin no-key setup is next. Sunday stays on setup-command installs.</li>
           </ul>
-          <p><a href="/docs/coding-agents">Coding agents</a> · npm <code>supercompress-proxy@0.5.37</code></p>
+          <p><a href="/mcp-oauth">MCP OAuth launch</a> · <a href="/docs/coding-agents">Coding agents</a> · npm <code>supercompress-proxy@0.5.37</code></p>
         </div>
       </article>
 
