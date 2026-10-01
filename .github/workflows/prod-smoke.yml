@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Production HTTP smoke
         env:
           SUPERCOMPRESS_API_KEY: ${{ secrets.SUPERCOMPRESS_API_KEY }}
