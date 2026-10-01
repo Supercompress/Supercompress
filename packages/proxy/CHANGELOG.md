@@ -4,6 +4,13 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.36] — 2026-09-30
+
+- **MCP OAuth 2.1 (PKCE)** on hosted `/api/mcp`: well-known discovery, DCR, authorize → Google dashboard sign-in, token exchange. Access tokens are real `sc_live_…` keys.
+- Hosted MCP returns **401 + WWW-Authenticate** when tools need auth (triggers browser OAuth).
+- Marketplace plugin `mcp.json` is OAuth-first (no required pre-pasted key). CLI device-link unchanged.
+- Claim hygiene: `/benchmarks` is v2 launch suite; Neural vs Compiler split on homepage; 40+ harnesses; evidence-containment language.
+
 ## [0.5.35] — 2026-09-30
 
 - **kept_tokens**: hosted Neural Keep path now returns `kept_tokens` (and `compressed_tokens`) so MCP usage / billing no longer show 0 kept / 100% savings.

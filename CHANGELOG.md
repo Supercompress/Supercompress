@@ -13,19 +13,19 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
-### Added
-- v2 launch page: query-aware 400M engine, coding-agent benchmark (64.1% mean cut, 24/24 evidence, 16,647 → 5,148), API + agent plugin
-- Launch CTAs point at the API key, playground, and agent docs
+## [0.5.36] — 2026-09-30
 
-### Fixed
-- Firebase auth uses trusted project config only (never unverified token `aud`)
-- `SC_AUTH_DEV` fails closed in production
-- Compare demo latency is measured, not random
+### Added
+- Hosted MCP **OAuth 2.1 + PKCE** (`.well-known/oauth-*`, register / authorize / token / approve). Same Google login as CLI device-link.
+- Public launch-benchmark.json + `/benchmarks` rewritten for v2 Neural Keep (390 cases / B5 64.1% / 24/24 / ~5.8s p50) with legacy compiler section.
 
 ### Changed
-- Public roadmap / contributor notes keep released-product scope only
-- Launch promo pricing is $0.10 / 1M after 5M free (`scripts/launch/apply-pricing-10c.sh`)
-- Coding-agent plugin **0.5.32** (`supercompress-proxy` on npm): v2 ~400M Neural Keep, 64.1% / 24/24 B5, hosted MCP, launch promo 5M free then $0.10/1M; 60 harnesses / 25+ native auto MCP
+- Homepage hero + Neural v2 vs Compiler split; harness count standardized to **40+**; README / launch article honesty pass.
+- Coding-agent plugin **0.5.36** (`supercompress-proxy`): OAuth-first hosted MCP.
+
+---
+
+## [Unreleased — archived notes]
 
 
 ## [0.5.23] — 2026-08-15

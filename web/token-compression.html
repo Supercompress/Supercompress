@@ -403,7 +403,7 @@ class CompressionCallback(BaseCallbackHandler):
         return prompts</code></pre>
 
         <div class="callout">
-          <strong>No GPU required.</strong> SuperCompress runs on CPU with ~60ms latency. The compression policy is only a learned query-aware neural policy — smaller than a single vector embedding.
+          <strong>Two paths.</strong> Hosted Neural Keep (~400M) runs on GPU. The separate local compiler path runs on CPU with millisecond-class latency — do not treat them as one engine.
         </div>
       </section>
 

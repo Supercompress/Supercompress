@@ -106,7 +106,7 @@
   Verifier (estimates important context kept)
         ↓
   Compressed evidence prompt → LLM</code></pre>
-        <p>End-to-end ~60ms on a single CPU core. No GPU, no model download at serve time, no extra LLM call.</p>
+        <p><strong>Compiler path:</strong> end-to-end ~ms on a single CPU core, no GPU. <strong>Neural v2 (hosted):</strong> ~400M cross-encoder on GPU — seconds-scale on long dumps. Do not mix latency claims.</p>
 
         <div class="doc-callout doc-callout--tip">
           <span class="doc-callout-label">Key insight</span>
@@ -176,7 +176,7 @@
         </table>
 
         <h2 id="browser-port">Browser &amp; modules</h2>
-        <p>The same engine runs in the browser via <code>compress-engine.js</code> and <code>model.json</code>. The <a href="https://www.supercompress.dev/playground">playground</a> needs no API key — compression stays in-browser. Function-by-function reference: <a href="https://docs.supercompress.dev/compress-engine">Compress engine</a>.</p>
+        <p>The <strong>legacy compiler</strong> also runs in the browser via <code>compress-engine.js</code> and <code>model.json</code> (CPU, millisecond-class). That is <strong>not</strong> the hosted ~400M Neural Keep path. The <a href="https://www.supercompress.dev/arena">Arena</a> and playground demos may use the local compiler for instant preview; production API quality is Neural v2. Function-by-function reference: <a href="https://docs.supercompress.dev/compress-engine">Compress engine</a>.</p>
 
         <div class="doc-callout doc-callout--info">
           <span class="doc-callout-label">Module layout</span>

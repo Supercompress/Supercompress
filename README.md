@@ -23,7 +23,7 @@
 
 <p align="center">
   <a href="https://www.supercompress.dev/dashboard?signup=1">Get API key</a> ·
-  <a href="https://www.supercompress.dev/playground">Playground</a> ·
+  <a href="https://www.supercompress.dev/arena">Arena</a> ·
   <a href="https://www.npmjs.com/package/supercompress-proxy">Install</a> ·
   <a href="https://www.supercompress.dev/benchmarks">Benchmarks</a> ·
   <a href="https://docs.supercompress.dev">Docs</a>
@@ -70,7 +70,16 @@ SuperCompress is a compression layer in front of inference:
 
 The **query is never compressed** — only the surrounding context.
 
-### Two products, one engine
+### Two paths
+
+| | **Neural v2 (recommended)** | **Compiler (fast/local)** |
+|---|---|---|
+| **Engine** | ~400M query-aware cross-encoder | Lightweight local policy |
+| **Runtime** | Hosted GPU | CPU · millisecond-class |
+| **Best for** | Highest-quality keep on agent dumps | Local preprocessing / speed |
+| **Benchmarks** | [Launch / B5](https://www.supercompress.dev/benchmarks) | [Legacy section](https://www.supercompress.dev/benchmarks#legacy-compiler) |
+
+### Two products
 
 | | **Coding-agent plugin** | **API / Python** |
 |---|---|---|
@@ -97,32 +106,27 @@ Private marketing, outreach, and model training stay **out** of this repo (see `
 
 ## Benchmarks & stats
 
-We measure **whether the answer survives**, not vibes.
+We measure **whether required evidence survives** (containment), not downstream LLM completion.
 
-<p align="center">
-  <img src="https://www.supercompress.dev/assets/img/chart-oracle-recall.svg" alt="Oracle recall at fixed 35% budget: SuperCompress 100% vs truncation 24.8%" width="720" />
-</p>
+### Neural v2 launch (hosted ~400M) — B5 coding-agent suite
 
-**Same keep-budget (35% of tokens kept). Who still has the answer?**
-
-| Method | Answer-critical kept |
+| Metric | Result |
 |---|---:|
-| FIFO / truncation | **24.8%** |
-| Summarization | **60.5%** |
-| H2O | **97.9%** |
-| **SuperCompress** | **100%** |
+| **Mean context cut** | **64.1%** |
+| **Evidence passes** | **24 / 24** |
+| **Tokens** | **16,647 → 5,148** |
+| **Max cut @ ≥99% retention** | **96.6%** |
+| **B5 latency p50** | **~5.8 s** (hosted GPU) |
+| **Public cases (full suite)** | **390** |
+| **Downstream LLM eval** | **Not yet run** |
 
-### Headline numbers
+Aggregate mean cut across all 390 cases is ~3.6% — the engine often refuses to over-cut dense needle/QA slices. The 64.1% figure is the coding-agent suite where dumps are noisy.
 
-| Metric | Result | Notes |
-|---|---:|---|
-| **Oracle recall** (fixed budget) | **100%** | Public 8-seed suite vs ~25% truncation |
-| **Compiler-mode savings** | **~62%** avg | Maximize cut while keeping critical lines |
-| **Real / OOD answer retention** | **100%** (66/66) | LongBench + hard haystacks |
-| **Mean token cut** (real suite) | **~67%** | Token-weighted ~74% |
-| **Important lines kept** (compiler) | **100%** | Across bundled long-context presets |
+Raw JSON: [launch-benchmark.json](https://www.supercompress.dev/assets/data/launch-benchmark.json) · writeup: [benchmarks](https://www.supercompress.dev/benchmarks)
 
-Full methodology: **[supercompress.dev/benchmarks](https://www.supercompress.dev/benchmarks)**
+### Legacy compiler (separate product)
+
+CPU / millisecond-class local path. Older held-out compiler numbers (≈58–66% cut, 99.4% gold containment) live under [Legacy/compiler on /benchmarks](https://www.supercompress.dev/benchmarks#legacy-compiler). **Do not mix with Neural v2.**
 
 ---
 
@@ -163,7 +167,7 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
   -d '{"context":"...","query":"What failed?"}'
 ```
 
-Or paste a dump into the **[playground](https://www.supercompress.dev/playground)** — no integration required.
+Or paste a dump into the **[Arena](https://www.supercompress.dev/arena)** — no integration required.
 
 ---
 
@@ -181,7 +185,7 @@ More: [vs truncation](https://www.supercompress.dev/supercompress-vs-truncation)
 ---
 
 <p align="center">
-  <a href="https://www.supercompress.dev/playground"><img src="https://img.shields.io/badge/Try_the_playground-2563EB?style=for-the-badge" alt="Playground" /></a>
+  <a href="https://www.supercompress.dev/arena"><img src="https://img.shields.io/badge/Try_the_Arena-2563EB?style=for-the-badge" alt="Arena" /></a>
   &nbsp;
   <a href="https://www.supercompress.dev/dashboard"><img src="https://img.shields.io/badge/Get_an_API_key-111827?style=for-the-badge" alt="Dashboard" /></a>
   &nbsp;

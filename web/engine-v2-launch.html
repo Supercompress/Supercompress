@@ -188,7 +188,8 @@
     <p class="seo-kicker">Product launch · September 29, 2026 · updated Sep 30</p>
     <p class="launch-brand">Super<em>Compress</em></p>
     <h1>v2 is live</h1>
-    <p class="seo-lead">The hosted <strong>~400M-parameter Neural Keep</strong> engine is live on the API. It reads your whole context against the current query, keeps the original lines that answer it, and cuts the rest. Open weights (MIT): <a href="https://huggingface.co/arjunkshah21/sc-keep-crossencoder-v4-large">arjunkshah21/sc-keep-crossencoder-v4-large</a> on Hugging Face.</p>
+    <p class="seo-lead">Human progress has always been an efficiency story. Bigger context windows answered <em>how much</em> an AI can read. SuperCompress is trying to answer <em>how much it should have to</em>.</p>
+    <p>The hosted <strong>~400M-parameter Neural Keep</strong> engine is live on the API. It reads your whole context against the current query, keeps the original lines that answer it, and cuts the rest. Open weights (MIT): <a href="https://huggingface.co/arjunkshah21/sc-keep-crossencoder-v4-large">arjunkshah21/sc-keep-crossencoder-v4-large</a> on Hugging Face.</p>
     <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> · Founder</p>
 
     <div class="launch-stats" aria-label="Coding-agent benchmark highlights">
@@ -213,6 +214,12 @@
         <span class="sub">per 1M after 5M free</span>
       </div>
     </div>
+
+    <section class="seo-section">
+      <h2>Why v2 is different from v1</h2>
+      <p>v1 was a tiny / lightweight compiler: fast on CPU, millisecond-class, good at aggressive drop with answer-keep gates. v2 is a <strong>~400M query-aware cross-encoder</strong> — Neural Keep — hosted on GPU. It scores every line against <em>this</em> query and keeps original wording.</p>
+      <p>Critically, it knows when <strong>not</strong> to compress. Across the full 390-case public suite the aggregate mean cut is only ~3.6%: on dense needle and LongBench slices it often keeps nearly everything. The headline <strong>64.1%</strong> is the coding-agent (B5) suite, where dumps are noisy and query-aware keep shines. Mixing those numbers with compiler-era ~47ms CPU claims is wrong — they are different engines.</p>
+    </section>
 
     <section class="seo-section">
       <h2>The problem</h2>
@@ -242,7 +249,7 @@ DEBUG retry scheduled</span></pre>
 
     <section class="seo-section seo-proof">
       <h2>Coding-agent benchmark</h2>
-      <p>Held-out coding-agent suite. Same scorer for every case. We measure whether the <strong>required evidence</strong> survives — not whether a downstream chat model finishes a task.</p>
+      <p>Held-out coding-agent suite. Same scorer for every case. We measure whether the <strong>required evidence</strong> survives — not whether a downstream chat model finishes a task. Downstream LLM eval has <strong>not</strong> been run yet.</p>
       <table class="seo-table">
         <thead>
           <tr>
@@ -253,7 +260,7 @@ DEBUG retry scheduled</span></pre>
         <tbody>
           <tr class="best-row">
             <td>Engine</td>
-            <td><strong>~400M Neural Keep</strong> (hosted, live)</td>
+            <td><strong>~400M Neural Keep</strong> (hosted GPU, live)</td>
           </tr>
           <tr class="best-row">
             <td>Mean context cut</td>
@@ -271,9 +278,31 @@ DEBUG retry scheduled</span></pre>
             <td>Max cut @ ≥99% retention</td>
             <td><strong>96.6%</strong></td>
           </tr>
+          <tr>
+            <td>B5 latency p50</td>
+            <td><strong>~5.8 s</strong></td>
+          </tr>
+          <tr>
+            <td>Public suite size</td>
+            <td><strong>390 cases</strong></td>
+          </tr>
         </tbody>
       </table>
       <p>Raw numbers: <a href="/assets/data/launch-benchmark.json">launch-benchmark.json</a> · full writeup on <a href="/benchmarks">benchmarks</a>.</p>
+    </section>
+
+    <section class="seo-section">
+      <h2>How we measured</h2>
+      <p><strong>Evidence containment</strong> in the compressed text (tiktoken cl100k_base). Pass means required lines are still present in original wording. This is stricter than vibes and weaker than a full downstream completion eval — we say so on purpose.</p>
+    </section>
+
+    <section class="seo-section">
+      <h2>Limitations</h2>
+      <ul>
+        <li><strong>Latency:</strong> Neural Keep on GPU is seconds-scale on long dumps (~5.8s B5 p50), not the old compiler’s millisecond path.</li>
+        <li><strong>Downstream eval:</strong> we have not yet published LLM task-success after compression.</li>
+        <li><strong>Workload fit:</strong> strongest on coding-agent / tool-dump noise; conservative when every line could be the needle.</li>
+      </ul>
     </section>
 
     <section class="seo-section">
@@ -293,7 +322,7 @@ DEBUG retry scheduled</span></pre>
       <ol>
         <li><a href="/dashboard?signup=1">Get an API key</a> — compress over HTTPS before the model call.</li>
         <li><a href="https://docs.supercompress.dev/coding-agents">Install the agent plugin</a> — hooks compress tool dumps in your harness.</li>
-        <li><a href="/playground">Try the playground</a> — paste context, see what v2 keeps.</li>
+        <li><a href="/arena">Try the Arena</a> — paste context, see what v2 keeps.</li>
       </ol>
     </section>
 

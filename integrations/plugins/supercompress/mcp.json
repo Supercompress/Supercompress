@@ -2,10 +2,7 @@
   "mcpServers": {
     "supercompress": {
       "type": "http",
-      "url": "https://www.supercompress.dev/api/mcp",
-      "headers": {
-        "Authorization": "Bearer ${SUPERCOMPRESS_API_KEY}"
-      }
+      "url": "https://www.supercompress.dev/api/mcp"
     }
   }
 }
