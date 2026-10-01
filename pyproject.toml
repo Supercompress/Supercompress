@@ -14,7 +14,7 @@ keywords = [
     "ai", "cost-savings", "context-window",
 ]
 authors = [
-    {name = "Arjun Shah", email = "arjunkshah21@gmail.com"},
+    {name = "Arjun Shah", email = "support@supercompress.dev"},
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

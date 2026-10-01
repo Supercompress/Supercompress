@@ -438,7 +438,7 @@ async function weeklyTick(opts = {}) {
         errors: [
           {
             error: `missing_unique_tip:${campaignId}`,
-            fix: "Author byCampaign tip in Supercompress/email-campaigns and sync WEEKLY_TIPS_JSON",
+            fix: "Author a unique byCampaign tip and sync WEEKLY_TIPS_JSON",
           },
         ],
         note: "Refusing to send a recycled Sunday tip. Write a new tip for this ISO week first.",

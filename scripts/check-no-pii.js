@@ -1,19 +1,23 @@
 #!/usr/bin/env node
 /**
- * Fail CI if likely PII / private outreach dumps appear in tracked files.
- * Allowlist: product/support addresses + placeholder examples only.
+ * Fail CI if unexpected emails or private email-ops paths appear in tracked files.
+ *
+ * This is a *repo hygiene* gate for outreach dumps / private ops paths — not a
+ * full secret scanner. Pair with gitleaks + CodeQL in CI for credentials.
+ *
+ * Allowed product addresses: @supercompress.dev and documented placeholders.
  */
 const { execSync } = require("child_process");
 
 const ALLOW = [
-  /arjunkshah21@gmail\.com/i, // public founder support / reply-to
-  /arjunkshah12345@gmail\.com/i, // founder admin allowlist default
+  /@[a-z0-9.-]*supercompress\.dev$/i, // product / support / security aliases
   /you@company\.com/i,
   /user@example\.com/i,
   /example\.com/i,
   /@[a-z0-9-]+\.example\./i, // RFC 2606-style test hosts
   /\b[a-z0-9._%+-]+@x\.com\b/i, // tiny unit-test placeholders
   /\b[a-z0-9._%+-]+@y\.com\b/i,
+  /\ba@b\.com\b/i, // unit-test placeholder
   /noreply@/i,
   /no-reply@/i,
   /jack@greensock\.com/i, // vendored gsap license header
@@ -65,7 +69,10 @@ for (const p of bannedPaths) {
 }
 
 if (hits.length) {
-  console.error("❌ PII / private email ops check failed:\n" + hits.slice(0, 50).join("\n"));
+  console.error(
+    "❌ Private-ops / unexpected-email check failed (not a full secret scan — see gitleaks):\n" +
+      hits.slice(0, 50).join("\n")
+  );
   process.exit(1);
 }
-console.log("✅ No disallowed emails or private email-ops paths in tracked files");
+console.log("✅ No unexpected emails or private email-ops paths in tracked files");

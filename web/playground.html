@@ -257,7 +257,7 @@
         <button type="button" id="save-key">Save key</button>
         <button type="button" id="clear-key">Clear</button>
       </div>
-      <p class="note" style="margin-top:8px">Key stays in this browser only (sessionStorage). Without a key, compression runs locally with the real trained policy.</p>
+      <p class="note" style="margin-top:8px">Key stays in page memory only (not written to sessionStorage). Without a key, compression runs locally with the real trained policy.</p>
 
       <div class="mode-row" style="margin-top:12px">
         <label class="mode-opt"><input type="radio" name="mode" value="compiler" checked /> Compiler local (max savings)</label>
@@ -313,6 +313,12 @@
       "use strict";
 
       const KEY = "sc_playground_api_key";
+      let memoryApiKey = "";
+      try {
+        sessionStorage.removeItem(KEY);
+      } catch (_) {
+        /* ignore */
+      }
       const $ = (id) => document.getElementById(id);
 
       let modelPromise = null;
@@ -379,17 +385,16 @@
         presetRoot.appendChild(btn);
       });
 
-      // API key
+      // API key — page memory only (XSS-safe; never sessionStorage)
       const keyInput = $("api-key");
-      const saved = sessionStorage.getItem(KEY);
-      if (saved) keyInput.value = saved;
+      if (memoryApiKey) keyInput.value = memoryApiKey;
       $("save-key").addEventListener("click", () => {
-        sessionStorage.setItem(KEY, keyInput.value.trim());
-        setStatus("API key saved for this session.", "ok");
+        memoryApiKey = keyInput.value.trim();
+        setStatus(memoryApiKey ? "API key kept in page memory for this tab." : "API key cleared.", "ok");
       });
       $("clear-key").addEventListener("click", () => {
         keyInput.value = "";
-        sessionStorage.removeItem(KEY);
+        memoryApiKey = "";
         setStatus("API key cleared.", null);
       });
 
@@ -413,7 +418,7 @@
 
       async function compressServer(context, query, useApiKey) {
         const headers = { "Content-Type": "application/json" };
-        const apiKey = keyInput.value.trim() || sessionStorage.getItem(KEY) || "";
+        const apiKey = keyInput.value.trim() || memoryApiKey || "";
         if (useApiKey && apiKey) headers["X-API-Key"] = apiKey;
         const body = {
           context,
@@ -448,7 +453,7 @@
           if (m === "compiler") {
             data = await compressCompiler(context, query);
           } else if (m === "api") {
-            const apiKey = keyInput.value.trim() || sessionStorage.getItem(KEY) || "";
+            const apiKey = keyInput.value.trim() || memoryApiKey || "";
             if (!apiKey) throw new Error("Enter and save your API key for Hosted API mode.");
             data = await compressServer(context, query, true);
           } else {

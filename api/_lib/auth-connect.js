@@ -226,7 +226,11 @@ async function listAuthPluginKeys(ownerUid) {
   return out;
 }
 
-/** Deposit linked device secret for CLI/MCP poll (Auth-only). */
+/**
+ * Deposit linked device secret for CLI/MCP poll.
+ * Raw sc_live_… secret is stored in Firestore only. Auth claims hold status
+ * metadata (no live credential duplication).
+ */
 async function putDeviceLink(code, { ownerUid, secret, source = "oauth", agents = [] }) {
   const uid = linkUidFromCode(code);
   const now = new Date().toISOString();
@@ -242,56 +246,89 @@ async function putDeviceLink(code, { ownerUid, secret, source = "oauth", agents 
   await auth().setCustomUserClaims(uid, {
     sc_device_link: true,
     code: codeNorm,
-    owner_uid: ownerUid,
-    secret,
+    // Internal only — never returned on unauthenticated connect polls.
+    _owner_uid: ownerUid,
     source: String(source || "oauth").slice(0, 40),
     agents: Array.isArray(agents) ? agents.slice(0, 20) : [],
     status: "linked",
+    has_secret: true,
     linked_at: now,
     created_at: existing?.customClaims?.created_at || now,
   });
-  try {
-    await admin.firestore().collection("device_links").doc(uid).set(
-      {
-        code: codeNorm,
-        owner_uid: ownerUid,
-        secret,
-        source: String(source || "oauth").slice(0, 40),
-        status: "linked",
-        linked_at: now,
-        created_at: existing?.customClaims?.created_at || now,
-      },
-      { merge: true }
-    );
-  } catch (err) {
-    console.warn("putDeviceLink firestore mirror skipped:", err.message || err);
+
+  if (!initFirebaseAdmin()) {
+    const err = new Error("Device link requires Firestore to store the one-time secret");
+    err.status = 503;
+    throw err;
   }
+  await admin.firestore().collection("device_links").doc(uid).set(
+    {
+      code: codeNorm,
+      owner_uid: ownerUid,
+      secret,
+      source: String(source || "oauth").slice(0, 40),
+      status: "linked",
+      linked_at: now,
+      created_at: existing?.customClaims?.created_at || now,
+      expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    },
+    { merge: true }
+  );
+
   return {
     code: codeNorm,
     status: "linked",
-    owner_uid: ownerUid,
-    secret,
     linked_at: now,
   };
 }
 
+/**
+ * Status for connect polls. Never returns secret or owner_uid.
+ * has_secret tells the CLI when consume will succeed.
+ */
 async function getDeviceLink(code) {
   const uid = linkUidFromCode(code);
+  const codeNorm = String(code || "").trim().toLowerCase();
+
+  if (initFirebaseAdmin()) {
+    try {
+      const snap = await admin.firestore().collection("device_links").doc(uid).get();
+      if (snap.exists) {
+        const data = snap.data() || {};
+        const hasSecret = Boolean(data.secret);
+        return {
+          code: data.code || codeNorm,
+          status: hasSecret ? "linked" : data.status === "consumed" ? "consumed" : "waiting",
+          has_secret: hasSecret,
+          // Intentionally omit secret + owner_uid from status reads.
+          secret: null,
+          owner_uid: null,
+          linked_at: data.linked_at || null,
+          created_at: data.created_at || null,
+        };
+      }
+    } catch (err) {
+      console.warn("getDeviceLink firestore:", err.message || err);
+    }
+  }
+
   const user = await auth().getUser(uid).catch(() => null);
   if (!user) return null;
   const c = user.customClaims || {};
   if (!c.sc_device_link) return null;
+  // Legacy claims may still hold secret until consumed — do not surface it here.
   return {
-    code: c.code || String(code).trim().toLowerCase(),
-    status: c.secret ? "linked" : "pending",
-    owner_uid: c.owner_uid || null,
-    secret: c.secret || null,
+    code: c.code || codeNorm,
+    status: c.has_secret || c.secret ? "linked" : c.status === "consumed" ? "consumed" : "waiting",
+    has_secret: Boolean(c.has_secret || c.secret),
+    secret: null,
+    owner_uid: null,
     linked_at: c.linked_at || null,
     created_at: c.created_at || null,
   };
 }
 
-/** Best-effort cleanup after CLI has consumed the secret. */
+/** Best-effort cleanup of Auth metadata after CLI has consumed the secret. */
 async function clearDeviceLinkSecret(code) {
   const uid = linkUidFromCode(code);
   const user = await auth().getUser(uid).catch(() => null);
@@ -299,69 +336,70 @@ async function clearDeviceLinkSecret(code) {
   const c = { ...(user.customClaims || {}) };
   if (!c.sc_device_link) return;
   delete c.secret;
+  delete c.has_secret;
+  delete c.owner_uid;
   c.status = "consumed";
   c.consumed_at = new Date().toISOString();
   await auth().setCustomUserClaims(uid, c);
 }
 
 /**
- * Atomically take the device-link secret (single-use).
- * Prefers a Firestore transaction; falls back to Auth clear-then-return.
- * Returns { secret, owner_uid, linked_at, created_at } or null if already consumed.
+ * Atomically take the device-link secret (single-use) via Firestore CAS.
+ * Fail closed if Firestore is unavailable — no Auth read→clear→return race.
+ * Returns { secret, linked_at, created_at } or null if already consumed.
+ * Does not return owner_uid to unauthenticated clients.
  */
 async function consumeDeviceLinkSecret(code) {
   const normalized = String(code || "").trim().toLowerCase();
   if (!normalized) return null;
 
-  // Firestore CAS when available
-  try {
-    const { initFirebaseAdmin } = require("./auth");
-    if (initFirebaseAdmin()) {
-      const db = admin.firestore();
-      const ref = db.collection("device_links").doc(linkUidFromCode(normalized));
-      const taken = await db.runTransaction(async (tx) => {
-        const snap = await tx.get(ref);
-        if (!snap.exists) return null;
-        const data = snap.data() || {};
-        if (!data.secret) return null;
-        const out = {
-          secret: data.secret,
-          owner_uid: data.owner_uid || null,
-          linked_at: data.linked_at || null,
-          created_at: data.created_at || null,
-        };
-        tx.set(
-          ref,
-          {
-            ...data,
-            secret: null,
-            status: "consumed",
-            consumed_at: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-        return out;
-      });
-      if (taken) {
-        try { await clearDeviceLinkSecret(normalized); } catch (_) {}
-        return taken;
-      }
-    }
-  } catch (err) {
-    console.warn("consumeDeviceLinkSecret firestore path:", err.message || err);
+  if (!initFirebaseAdmin()) {
+    const err = new Error("Device link consume requires Firestore");
+    err.status = 503;
+    throw err;
   }
 
-  // Auth fallback: read → clear → return (still a small race under Auth-only).
-  const status = await getDeviceLink(normalized);
-  if (!status?.secret) return null;
-  const secret = status.secret;
-  await clearDeviceLinkSecret(normalized);
-  return {
-    secret,
-    owner_uid: status.owner_uid || null,
-    linked_at: status.linked_at || null,
-    created_at: status.created_at || null,
-  };
+  const db = admin.firestore();
+  const ref = db.collection("device_links").doc(linkUidFromCode(normalized));
+  let taken;
+  try {
+    taken = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) return null;
+      const data = snap.data() || {};
+      if (!data.secret) return null;
+      const out = {
+        secret: data.secret,
+        linked_at: data.linked_at || null,
+        created_at: data.created_at || null,
+      };
+      tx.set(
+        ref,
+        {
+          ...data,
+          secret: null,
+          status: "consumed",
+          consumed_at: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      return out;
+    });
+  } catch (err) {
+    console.warn("consumeDeviceLinkSecret firestore:", err.message || err);
+    const fail = new Error("Device link temporarily unavailable. Retry.");
+    fail.status = 503;
+    throw fail;
+  }
+
+  if (taken) {
+    try {
+      await clearDeviceLinkSecret(normalized);
+    } catch (_) {
+      /* best-effort */
+    }
+  }
+  return taken;
 }
 
 module.exports = {

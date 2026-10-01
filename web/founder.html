@@ -1568,18 +1568,21 @@
       if (!convs.length) {
         convList.innerHTML = '<div class="int-empty">No conversions yet. Share your link to start earning.</div>';
       } else {
-        convList.innerHTML = convs.map((c) => `
+        convList.innerHTML = convs.map((c) => {
+          const status = String(c.status || "").replace(/[^a-z0-9_-]/gi, "") || "unknown";
+          return `
           <div class="int-conv-item">
             <span style="display:flex;align-items:center;gap:8px;">
-              <span class="int-conv-user">${c.user_email || "—"}</span>
-              <span class="int-status int-status--${c.status}">${c.status}</span>
+              <span class="int-conv-user">${esc(c.user_email) || "—"}</span>
+              <span class="int-status int-status--${status}">${esc(status)}</span>
             </span>
             <span style="display:flex;align-items:center;gap:12px;">
               <span class="int-conv-amount">40% commission</span>
               <span class="int-conv-date">${fmtDate(c.created_at)}</span>
             </span>
           </div>
-        `).join("");
+        `;
+        }).join("");
       }
     }
 

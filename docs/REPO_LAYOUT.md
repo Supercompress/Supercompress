@@ -22,7 +22,7 @@ scripts/             CI + version checks only (no outreach senders)
 | `outreach/`, `PLAN_*`, `GTM_*`, `SEO_*`, `BACKLINK_*` | Private marketing |
 | `docs/goals/`, `launch/`, `checkpoints/`, `kaggle/` | Private planning / weights |
 | `private/`, `local/`, `*.safetensors`, large `.pt` / `.onnx` | Local R&D / model blobs |
-| `api/_lib/weekly-*.json` | Lives in private email-campaigns repo |
+| `api/_lib/weekly-*.json` | Private email campaign content (env-synced) |
 | `.env*` | Credentials |
 | `games/`, `brand/dither-identity/`, `brand/gauntlet-*` | Local experiments / screenshot dumps |
 | `scripts/scneural/`, `scripts/amcp/`, `scripts/gtm_bench/` | Training / bench scratch |

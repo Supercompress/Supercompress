@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Validate that byCampaign[campaignId] exists and is a complete tip.
- * Usage: node scripts/validate_weekly_tip.js [campaignId]
+ * Usage: SUPERCOMPRESS_EMAIL_CONTENT_DIR=... node scripts/validate_weekly_tip.js [campaignId]
  * Exit 0 if valid, 1 otherwise.
  */
 const fs = require("fs");
@@ -18,26 +18,17 @@ const REQUIRED = [
   "ctaUrl",
 ];
 
-const os = require("os");
-const tipsCandidates = [
-  process.env.SUPERCOMPRESS_EMAIL_CONTENT_DIR
-    ? path.join(process.env.SUPERCOMPRESS_EMAIL_CONTENT_DIR, "weekly-tips.json")
-    : null,
-  path.join(
-    os.homedir(),
-    "agent-bridge",
-    "private",
-    "supercompress-email",
-    "content",
-    "weekly-tips.json"
-  ),
-].filter(Boolean);
-
-let tipsPath = tipsCandidates.find((p) => fs.existsSync(p));
-if (!tipsPath) {
+const contentDir = (process.env.SUPERCOMPRESS_EMAIL_CONTENT_DIR || "").trim();
+if (!contentDir) {
   console.error(
-    "FAIL: weekly-tips.json not found (set SUPERCOMPRESS_EMAIL_CONTENT_DIR or use ~/agent-bridge/private/supercompress-email/content/)"
+    "FAIL: set SUPERCOMPRESS_EMAIL_CONTENT_DIR to the directory containing weekly-tips.json"
   );
+  process.exit(1);
+}
+
+const tipsPath = path.join(contentDir, "weekly-tips.json");
+if (!fs.existsSync(tipsPath)) {
+  console.error(`FAIL: weekly-tips.json not found under ${contentDir}`);
   process.exit(1);
 }
 const campaignId = (process.argv[2] || isoWeekCampaignId()).trim();

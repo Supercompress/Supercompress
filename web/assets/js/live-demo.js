@@ -3,6 +3,13 @@
 
   const API_URL = "https://supercompress.dev/api/v1/compress";
   const KEY_STORE = "sc_live_demo_key";
+  /** In-memory only for the page session — do not persist API keys in sessionStorage. */
+  let memoryApiKey = "";
+  try {
+    sessionStorage.removeItem(KEY_STORE);
+  } catch {
+    /* ignore */
+  }
   const $ = (id) => document.getElementById(id);
 
   function noisyLines(prefix, count, details) {
@@ -279,7 +286,7 @@
       return;
     }
 
-    sessionStorage.setItem(KEY_STORE, apiKey);
+    memoryApiKey = apiKey;
     button.disabled = true;
     button.querySelector("span").textContent = "Calling production API...";
     setApiState("Live request in flight", "running");
@@ -335,7 +342,6 @@
     if ((event.metaKey || event.ctrlKey) && event.key === "Enter") runDemo();
   });
 
-  const savedKey = sessionStorage.getItem(KEY_STORE);
-  if (savedKey) $("api-key").value = savedKey;
+  if (memoryApiKey) $("api-key").value = memoryApiKey;
   renderScenario(activeScenario);
 })();

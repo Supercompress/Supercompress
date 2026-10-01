@@ -74,7 +74,7 @@ BACKLINK_*
 SECURITY_AUDIT_*.md
 ARCHITECTURE.md
 
-# Product email campaign JSON lives in private email-campaigns
+# Product email campaign JSON (synced via WEEKLY_*_JSON env; not in OSS)
 api/_lib/weekly-ship.json
 api/_lib/weekly-tips.json
 

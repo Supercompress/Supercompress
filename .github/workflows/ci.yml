@@ -43,7 +43,10 @@ jobs:
           python examples/integrations/langchain_hook.py >/dev/null
           python examples/demo_compare.py >/dev/null
       - name: Install JS deps
-        run: npm ci --omit=optional --ignore-scripts --no-audit --no-fund
+        run: npm ci --omit=optional --ignore-scripts --no-fund
+      - name: npm audit (high+)
+        run: npm audit --omit=dev --audit-level=high || true
+        # Informational until dependency majors are upgraded; still surfaces findings in CI logs.
       - name: JS syntax smoke
         run: |
           node --check api/demo/compress.js
@@ -66,6 +69,8 @@ jobs:
         run: node api/_lib/credit-amount.test.js
       - name: Coding agent monthly usage unit tests
         run: node api/_lib/coding-agent-usage.test.js
+      - name: Store privacy gates (gist off in prod, no last_query)
+        run: node api/_lib/store-privacy.test.js
       - name: Soft-probe unit tests
         run: node api/_lib/http-soft-probe.test.js
       - name: Firestore skip default
@@ -125,7 +130,7 @@ jobs:
           }
           console.log("native fetch ok");
           NODE
-      - name: No PII / private email ops in tree
+      - name: Repo hygiene (emails + private ops paths)
         run: node scripts/check-no-pii.js
       - name: Version pins
         run: node scripts/check-versions.js

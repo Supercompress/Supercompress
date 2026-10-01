@@ -59,7 +59,6 @@ function normalizeAgentUsage(raw = {}) {
             avg_latency_ms: snap.avg_latency_ms || null,
             last_latency_ms: snap.last_latency_ms || null,
             last_pct: snap.last_pct != null ? snap.last_pct : null,
-            last_query: snap.last_query || null,
             last_source: snap.last_source || null,
             first_seen: snap.first_seen || null,
             last_seen: snap.last_seen || null,
@@ -218,7 +217,6 @@ async function handleConnectDevice(req, res) {
         return json(res, 200, {
           code,
           status: "waiting",
-          owner_uid: null,
           secret: null,
           linked_at: null,
           created_at: null,
@@ -227,36 +225,33 @@ async function handleConnectDevice(req, res) {
 
       const linkedAt = status.linked_at || status.created_at;
       const ageMs = linkedAt ? Date.now() - new Date(linkedAt).getTime() : 0;
-      if (status.secret && ageMs > CONNECT_LINK_TTL_MS) {
+      if (status.has_secret && ageMs > CONNECT_LINK_TTL_MS) {
         try { await clearDeviceLinkSecret(code); } catch (_) { /* best-effort */ }
         return json(res, 410, {
           code,
           status: "expired",
-          owner_uid: null,
           secret: null,
           detail: "Connection code expired. Run connect again.",
         });
       }
 
-      if (!status.secret) {
+      if (!status.has_secret) {
         return json(res, 200, {
           code,
           status: status.status === "consumed" ? "consumed" : "waiting",
-          owner_uid: status.owner_uid || null,
           secret: null,
           linked_at: status.linked_at || null,
           created_at: status.created_at || null,
         });
       }
 
-      // Single-use: atomically consume secret (Firestore CAS when available).
+      // Single-use: atomically consume secret (Firestore CAS). Never return owner_uid.
       const { consumeDeviceLinkSecret } = require("./_lib/auth-connect");
       const taken = await consumeDeviceLinkSecret(code);
       if (!taken?.secret) {
         return json(res, 200, {
           code,
           status: "consumed",
-          owner_uid: status.owner_uid || null,
           secret: null,
           linked_at: status.linked_at || null,
           created_at: status.created_at || null,
@@ -265,7 +260,6 @@ async function handleConnectDevice(req, res) {
       return json(res, 200, {
         code,
         status: "linked",
-        owner_uid: taken.owner_uid || null,
         secret: taken.secret,
         linked_at: taken.linked_at || status.linked_at || null,
         created_at: taken.created_at || status.created_at || null,
