@@ -86,6 +86,11 @@ async function migrateAuthKeyToStore(authUser, secret) {
 
   const id = authUser.uid;
   const migrated = await mutateStore((store) => {
+    // Never resurrect a revoked key from a lingering Auth stub.
+    if (store.keys[id]?.revoked) {
+      if (store.hash_index[c.sc_hash] === id) delete store.hash_index[c.sc_hash];
+      return store.keys[id];
+    }
     if (store.keys[id] && !store.keys[id].revoked) {
       store.hash_index[c.sc_hash] = id;
       return store.keys[id];
@@ -102,7 +107,7 @@ async function migrateAuthKeyToStore(authUser, secret) {
       migrated_from_auth: true,
     };
     store.keys[id] = rec;
-    store.hash_index[c.sc_hash] = id;
+    if (!rec.revoked) store.hash_index[c.sc_hash] = id;
     if (!store.usage[id]) store.usage[id] = {};
     return rec;
   });
@@ -165,6 +170,17 @@ async function listKeys(ownerUid) {
     fresh = await loadStore({ forceRemote: true });
   } catch (_) {
     fresh = store;
+  }
+  // Preserve Auth-only keys when migrate/store writes are unavailable — the
+  // fresh reload would otherwise drop the in-memory Auth fallbacks above.
+  try {
+    const { listAuthPluginKeys } = require("./auth-connect");
+    const authKeys = await listAuthPluginKeys(ownerUid);
+    for (const k of authKeys) {
+      if (!fresh.keys[k.id]) fresh.keys[k.id] = k;
+    }
+  } catch (err) {
+    console.warn("listKeys: Auth plugin list skipped:", err.message);
   }
   const keys = listUserKeys(fresh, ownerUid).map(publicKey);
   let usage = userUsage(fresh, ownerUid);
@@ -325,14 +341,41 @@ async function createKey(ownerUid, name, maxKeys) {
   return createAuthPluginKey(ownerUid, name || "Production", { maxKeys });
 }
 
+function authKeyRecord(ownerUid, authUser) {
+  const c = authUser?.customClaims || {};
+  if (!authUser || authUser.disabled || !c.sc_api_key || c.sc_owner !== ownerUid) return null;
+  return {
+    id: authUser.uid,
+    user_id: ownerUid,
+    name: c.sc_name || "API key",
+    prefix: c.sc_prefix || "",
+    key_hash: c.sc_hash || "",
+    created_at: c.sc_created || authUser.metadata?.creationTime || null,
+    last_used_at: c.sc_last || null,
+    revoked: false,
+    migrated_from_auth: true,
+  };
+}
+
 async function getOwnedKey(ownerUid, keyUid) {
-  const store = await loadStore({ forceRemote: true });
-  let rec = store.keys[keyUid];
+  let rec = null;
+  try {
+    const store = await loadStore({ forceRemote: true });
+    rec = store.keys[keyUid] || null;
+  } catch (err) {
+    console.warn("getOwnedKey: store skipped:", err.message);
+  }
 
   if (!rec) {
     const user = await auth().getUser(keyUid).catch(() => null);
     if (user?.customClaims?.sc_owner === ownerUid && user.customClaims?.sc_api_key) {
-      rec = await migrateAuthKeyToStore(user, null);
+      try {
+        rec = await migrateAuthKeyToStore(user, null);
+      } catch (migErr) {
+        // Firestore/gist unavailable — still allow Auth-backed ownership checks.
+        console.warn("getOwnedKey: Auth migrate skipped:", migErr.message);
+        rec = authKeyRecord(ownerUid, user);
+      }
     }
   }
 
@@ -360,30 +403,53 @@ async function renameKey(ownerUid, keyUid, name) {
 }
 
 async function revokeKey(ownerUid, keyUid) {
-  const existing = await getOwnedKey(ownerUid, keyUid);
-  const revoked = await mutateStore((store) => {
-    const rec = store.keys[keyUid];
-    if (!rec || rec.user_id !== ownerUid) {
-      const err = new Error("Key not found");
-      err.status = 404;
-      throw err;
-    }
-    rec.revoked = true;
-    store.keys[keyUid] = rec;
-    if (rec.key_hash && store.hash_index[rec.key_hash] === keyUid) {
-      delete store.hash_index[rec.key_hash];
-    }
-    return { ...publicKey(rec), revoked: true };
-  });
-
-  // Clean legacy Auth stub if it still exists
-  if (keyUid.startsWith(KEY_UID_PREFIX)) {
+  // Production often runs without Firestore (SUPERCOMPRESS_USE_FIRESTORE unset).
+  // Keys are Auth stubs (`sck_*`) — revoke those first so authenticateKey cannot
+  // keep accepting the secret after a failed store write.
+  let authRevoked = null;
+  if (String(keyUid || "").startsWith(KEY_UID_PREFIX)) {
+    const { revokeAuthPluginKey } = require("./auth-connect");
     try {
-      await auth().deleteUser(keyUid);
-    } catch (_) {}
+      authRevoked = await revokeAuthPluginKey(ownerUid, keyUid);
+    } catch (err) {
+      if (err.status && err.status !== 404) throw err;
+    }
   }
 
-  return revoked || { ...publicKey(existing), revoked: true };
+  let existing = null;
+  try {
+    existing = await getOwnedKey(ownerUid, keyUid);
+  } catch (err) {
+    if (!authRevoked) throw err;
+  }
+
+  let storeRevoked = null;
+  try {
+    storeRevoked = await mutateStore((store) => {
+      const rec = store.keys[keyUid];
+      if (!rec || rec.user_id !== ownerUid) return null;
+      rec.revoked = true;
+      store.keys[keyUid] = rec;
+      if (rec.key_hash && store.hash_index[rec.key_hash] === keyUid) {
+        delete store.hash_index[rec.key_hash];
+      }
+      return { ...publicKey(rec), revoked: true };
+    });
+  } catch (err) {
+    console.warn("revokeKey: store mark skipped:", err.message);
+  }
+
+  if (authRevoked || storeRevoked || existing) {
+    return (
+      storeRevoked ||
+      authRevoked ||
+      (existing ? { ...publicKey(existing), revoked: true } : { id: keyUid, revoked: true })
+    );
+  }
+
+  const err = new Error("Key not found");
+  err.status = 404;
+  throw err;
 }
 
 async function authenticateKey(secret) {
@@ -401,12 +467,19 @@ async function authenticateKey(secret) {
     const c = authUser.customClaims || {};
     try {
       const rec = await migrateAuthKeyToStore(authUser, secret);
+      if (rec?.revoked) {
+        const err = new Error("Invalid API key");
+        err.status = 401;
+        throw err;
+      }
       if (rec && !rec.revoked && verifyApiKey(secret, rec.key_hash || "")) {
         const owner = await auth().getUser(rec.user_id);
         return { user: rec, owner, ownerUid: rec.user_id, keyId: rec.id };
       }
     } catch (err) {
-      // Store unavailable — still authenticate from Auth claims.
+      if (err.status === 401) throw err;
+      // Store unavailable — still authenticate from Auth claims (disabled stubs
+      // already fail findAuthBackedKey after a successful revoke).
       console.warn("authenticateKey: store migrate skipped:", err.message);
       const ownerUid = c.sc_owner;
       if (ownerUid && verifyApiKey(secret, c.sc_hash || "")) {

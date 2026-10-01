@@ -383,7 +383,7 @@ curl -X POST https://supercompress.dev/api/v1/compress \
   -d <span class="str">'{"context":"Your long prompt here...","query":"What should the model answer?"}'</span>
 
 <span class="cm"># Or GET with query params</span>
-curl <span class="str">"https://supercompress.dev/compress?context=...&query=...&api_key=sc_live_your_key"</span></code></pre>
+curl -X POST https://api.supercompress.dev/compress -H <span class="str">"X-API-Key: sc_live_your_key"</span> -H <span class="str">"Content-Type: application/json"</span> -d <span class="str">'{"context":"…","query":"…"}'</span></code></pre>
 
         <h3>Integrate with LangChain</h3>
         <pre><code>from supercompress import Compressor

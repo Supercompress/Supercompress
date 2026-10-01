@@ -348,7 +348,8 @@ async def ready() -> dict[str, Any]:
 def _check_auth(authorization: str | None, x_api_key: str | None) -> None:
     secret = _auth_secret()
     if not secret:
-        return
+        # Fail closed — never leave Neural Keep open to the public internet.
+        raise HTTPException(status_code=503, detail="auth_not_configured")
     token = ""
     if authorization and authorization.lower().startswith("bearer "):
         token = authorization[7:].strip()
