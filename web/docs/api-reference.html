@@ -155,9 +155,12 @@ result = sc.compress(context, query, mode=<span class="str">"precision"</span>)<
 <span class="kw">curl</span> -d <span class="str">"context=...&amp;query=..."</span> <span class="kw">https://supercompress.dev/compress</span> \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span>
 
-<span class="cm"># Option 3: GET with query params (small contexts)</span>
-<span class="kw">curl</span> <span class="str">"https://supercompress.dev/compress?context=...&amp;query=...&amp;api_key=sc_live_YOUR_KEY"</span></code></pre>
-        <p>All three hit the same endpoint and return the identical response. Use whatever fits your workflow.</p>
+<span class="cm"># Prefer header auth — API keys in the URL (?api_key=) are rejected</span>
+<span class="kw">curl</span> -X POST https://api.supercompress.dev/compress \
+  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"context":"…","query":"…"}'</span></code></pre>
+        <p>JSON and form-encoded POST both hit the same endpoint. Put the key in <code>X-API-Key</code> or <code>Authorization: Bearer</code> — never in the query string.</p>
 
         <h3>Parameters</h3>
         <table>

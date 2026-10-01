@@ -174,7 +174,10 @@ Policy: SuperCompress</code></pre>
   -d <span class="str">'{"context":"Your long context here…","query":"What do you want to know?"}'</span>
 
 <span class="cm"># Or GET with query params (small contexts)</span>
-<span class="kw">curl</span> <span class="str">"https://supercompress.dev/compress?context=Your+long+context&query=What+do+you+want&api_key=sc_live_YOUR_KEY"</span></code></pre>
+<span class="kw">curl</span> -X POST https://api.supercompress.dev/compress \
+  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"context":"Your long context","query":"What do you want"}'</span></code></pre>
         <p>All three work. Response:</p>
         <pre><code class="cm">{
   "compressed_text": "…",

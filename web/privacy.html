@@ -192,7 +192,7 @@
       <li>comply with law, enforce our <a href="/terms">Terms of Service</a>, and protect rights, safety, and property; and</li>
       <li>produce aggregated, de-identified statistics (for example overall token-savings trends) that do not identify you.</li>
     </ul>
-    <p>We do <strong>not</strong> sell your personal information. We do not use Customer Content to train third-party foundation models for public release. We do not use your compress payloads to build a public dataset of customer prompts.</p>
+    <p>We do <strong>not</strong> sell your personal information. We do <strong>not</strong> use Customer Content (prompts, context dumps, or compressed outputs) to train or fine-tune the hosted Neural Keep model or any third-party foundation model. We do not use your compress payloads to build a public dataset of customer prompts.</p>
   </section>
 
   <section class="legal-section" id="legal-bases">
@@ -216,8 +216,8 @@
       <tbody>
         <tr>
           <td>Infrastructure</td>
-          <td>Vercel (hosting/compute), Google Firebase / Google Cloud (auth, datastore)</td>
-          <td>Run and store the Services</td>
+          <td>Vercel (hosting/compute), Google Firebase / Google Cloud (auth, datastore), Fly.io (hosted Neural Keep inference)</td>
+          <td>Run and store the Services; run query-aware compression inference</td>
         </tr>
         <tr>
           <td>Payments</td>
@@ -228,6 +228,11 @@
           <td>Email delivery</td>
           <td>Transactional email providers (for example Resend or similar)</td>
           <td>Send account and product email</td>
+        </tr>
+        <tr>
+          <td>Emergency ops backup (disabled in production by default)</td>
+          <td>GitHub Gist (only if explicitly enabled via operator break-glass)</td>
+          <td>Optional non-production / break-glass store fallback — not used for routine production traffic</td>
         </tr>
         <tr>
           <td>Professional advisors</td>

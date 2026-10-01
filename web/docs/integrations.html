@@ -246,7 +246,10 @@ app.post(<span class="str">"/api/chat"</span>, sc.handler, <span class="kw">asyn
   -d <span class="str">'{"context":"Your long context…","query":"Summarize."}'</span>
 
 <span class="cm"># GET (small contexts only)</span>
-<span class="kw">curl</span> <span class="str">"https://supercompress.dev/compress?context=...&query=Summarize.&api_key=sc_live_YOUR_KEY"</span></code></pre>
+<span class="kw">curl</span> -X POST https://api.supercompress.dev/compress \
+  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"context":"…","query":"Summarize."}'</span></code></pre>
 
 
         <h2>Integration files</h2>

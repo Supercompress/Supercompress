@@ -92,8 +92,11 @@
   -H <span class="str">"Content-Type: application/json"</span> \
   -d <span class="str">'{"context":"Your long context here…","query":"What do you want to know?"}'</span>
 
-<span class="cm"># Or GET with query params</span>
-<span class="kw">curl</span> <span class="str">"https://supercompress.dev/compress?context=...&query=...&api_key=sc_live_YOUR_KEY"</span></code></pre>
+<span class="cm"># Prefer header auth — query-string API keys are rejected</span>
+<span class="kw">curl</span> -X POST https://api.supercompress.dev/compress \
+  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"context":"…","query":"…"}'</span></code></pre>
 
         <h3>Python client</h3>
         <pre><code><span class="kw">from</span> supercompress.client <span class="kw">import</span> SuperCompress
@@ -154,7 +157,7 @@ from supercompress import compress_context</code></pre>
 
         <div class="doc-callout doc-callout--info">
           <span class="doc-callout-label">Data & privacy</span>
-          With the local library, context never leaves your machine. The hosted API receives the context you send and returns the compressed version — we don't store prompt content.
+          Local library: context never leaves your machine. Hosted API: we process the context you send to return a compressed result and meter usage. We may retain compressed outputs for ~48h for idempotent retries; when CCR is enabled, removed original blocks are retained for the same window. Compress activity previews are <strong>off by default</strong>. See the <a href="/privacy">Privacy Policy</a> for retention details. We do not use Customer Content to train the hosted Neural Keep model.
         </div>
 
         <div class="doc-footer">
