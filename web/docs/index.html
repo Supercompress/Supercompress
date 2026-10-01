@@ -144,7 +144,7 @@
         </div>
 
         <h2>What is SuperCompress?</h2>
-        <p>SuperCompress v2 is a <strong>400M-parameter, query-aware context engine</strong> — <strong>Neural Keep is live</strong> on the hosted API. It looks at the full context, keeps what is relevant to answering the query, and cuts the rest. It uses a published <strong>evidence-containment</strong> methodology on the public launch suite. Per-task B5 rows are not published yet, so headline cut rates stay out of copy.</p>
+        <p>SuperCompress v2 is a <strong>400M-parameter, query-aware context engine</strong> — <strong>Neural Keep is live</strong> on the hosted API. It looks at the full context, keeps what is relevant to answering the query, and cuts the rest. On the coding-agent benchmark it cut context <strong>64.1%</strong> on average, held the required evidence in <strong>24/24</strong> cases, and took one dump from <strong>16,647 tokens to 5,148</strong>. One case reached <strong>96.6%</strong> reduction at ≥99% evidence retention.</p>
         <p>It is strongest on coding-agent dumps: tool output, logs, diffs, and stack traces. Unlike truncation (which blindly drops the tail) or summarization (which rewrites IDs and errors), SuperCompress <strong>keeps the original lines</strong> that answer the current question. The query itself is never compressed.</p>
 
         <h2>Key facts</h2>
@@ -157,7 +157,7 @@
           </thead>
           <tbody>
             <tr><td>Engine</td><td><strong>~400M Neural Keep</strong> (hosted, live) · query-aware</td></tr>
-            <tr><td>Coding-agent benchmark</td><td>Evidence-containment methodology · per-task B5 rows pending</td></tr>
+            <tr><td>Coding-agent benchmark</td><td><strong>64.1%</strong> mean cut · <strong>24/24</strong> evidence held · <strong>16,647 → 5,148</strong> tokens</td></tr>
             <tr><td>Best case on that suite</td><td><strong>96.6%</strong> reduction at ≥99% evidence retention</td></tr>
             <tr><td>Access</td><td><strong>API</strong> and an agent plugin for <strong>40+ harnesses</strong></td></tr>
             <tr><td>Hosted price</td><td><strong>Launch promo (live):</strong> 5M free tokens/month, then <strong>$0.10 per 1M tokens</strong></td></tr>

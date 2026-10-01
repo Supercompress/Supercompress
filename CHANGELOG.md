@@ -13,6 +13,12 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+## [0.5.39] — 2026-09-30
+
+### Changed
+- Homepage hero restored to **Cut your API Costs by 65%.**
+- Restored B5 benchmark numbers (64.1% / 24/24) across site surfaces — no blank/pending placeholder cells.
+
 ## [0.5.38] — 2026-09-30
 
 ### Changed
