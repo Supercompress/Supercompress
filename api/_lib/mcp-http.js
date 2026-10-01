@@ -17,7 +17,7 @@ const TOOLS = [
   {
     name: "connect_account",
     description:
-      "Get a SuperCompress dashboard link to create or copy an API key (sc_…). Paste the key into the plugin Configure field (SUPERCOMPRESS_API_KEY), then retry compress_context.",
+      "Connect SuperCompress. Preferred: the MCP host completes OAuth (browser Google sign-in) automatically. Fallback: open the dashboard link, copy an sc_ API key into Configure, then retry compress_context.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
@@ -116,19 +116,19 @@ async function handleToolCall(name, args, apiKey) {
     const url = `${CONNECT_BASE}${code}`;
     return toolText(
       [
-        "Open this link to sign in and create/copy an API key:",
+        "SuperCompress uses OAuth for remote MCP — your host should open a browser sign-in automatically.",
+        "If it did not, open this link, sign in, and copy an API key:",
         url,
         "",
-        "Then set SUPERCOMPRESS_API_KEY (sc_…) on the SuperCompress plugin (Plugins → SuperCompress → Configure),",
-        "or tell Grok Bot: Add this MCP server: https://www.supercompress.dev/api/mcp with header Authorization: Bearer sc_…",
-        "Then call compress_context again.",
+        "Then set Authorization: Bearer sc_… on https://www.supercompress.dev/api/mcp",
+        "(or SUPERCOMPRESS_API_KEY on the plugin Configure screen) and call compress_context again.",
       ].join("\n")
     );
   }
 
   if (name === "usage_summary") {
     if (!apiKey) {
-      return toolError("Not connected. Call connect_account, then Configure the plugin with your sc_ API key.");
+      return toolError("Not connected. Complete OAuth sign-in, or call connect_account and set your sc_ API key.");
     }
     try {
       const { response, body } = await httpJson(USAGE_URL, {
@@ -165,7 +165,7 @@ async function handleToolCall(name, args, apiKey) {
   if (!query.trim()) return toolError("query is required (the user's ask — never compressed)");
   if (!apiKey) {
     return toolError(
-      "Not connected. Call connect_account, paste your sc_ API key into the plugin Configure field, then retry."
+      "Not connected. Complete OAuth (browser sign-in) or call connect_account and set Authorization: Bearer sc_…, then retry."
     );
   }
 
@@ -250,7 +250,7 @@ async function dispatchRpc(msg, apiKey) {
         capabilities: { tools: {} },
         serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
         instructions:
-          "Compress bulky context with compress_context(context, query). Never compress the user's ask. Call connect_account if the API key is missing.",
+          "Compress bulky context with compress_context(context, query). Never compress the user's ask. Prefer OAuth sign-in; call connect_account if the host has no token yet.",
       },
     };
   }

@@ -78,7 +78,7 @@
         <div class="ca-stat-row df-reveal" style="--reveal-delay:120ms" aria-label="Highlights">
           <div class="ca-stat"><strong>~64%</strong><span>fewer tokens</span></div>
           <div class="ca-stat"><strong id="ca-npm-downloads">1k+</strong><span>npm downloads / week</span></div>
-          <div class="ca-stat"><strong>60+</strong><span>harnesses catalogued</span></div>
+          <div class="ca-stat"><strong>40+</strong><span>coding-agent harnesses</span></div>
           <div class="ca-stat"><strong>~60ms</strong><span>compress latency</span></div>
         </div>
         <script>
@@ -158,8 +158,8 @@
 <span class="kw">Coding agent</span> ──<span class="op">→</span> <span class="fn">hooks / compress_context</span> ──<span class="op">→</span> <span class="kw">SuperCompress API</span></code></pre>
 
         <div class="doc-callout doc-callout--info">
-          <span class="doc-callout-label">Privacy</span>
-          The MCP server runs on your machine. Context is sent to the SuperCompress compression API so the hosted compiler can process it. Provider API keys never leave your agent — and MCP mode does not require them at all.
+          <span class="doc-callout-label">Auth</span>
+          Laptop <code>setup</code> uses browser device-link (Google). Hosted MCP at <code>/api/mcp</code> uses the same Google login via <strong>OAuth 2.1 + PKCE</strong> — or an <code>sc_</code> API key as fallback. Context is compressed on the SuperCompress API; provider keys never leave your agent.
         </div>
 
         <h2 id="install">Install</h2>
@@ -189,7 +189,7 @@
         </div>
 
         <h2 id="agents">Supported agents</h2>
-        <p>The detector catalog covers <strong>60+</strong> harnesses. About <strong>25+</strong> get a first-class auto MCP plugin from <code>setup</code> / <code>plugin</code> — native config shape per host, not a clunky one-size paste:</p>
+        <p>Works across <strong>40+</strong> coding-agent harnesses. About <strong>25+</strong> get a first-class auto MCP plugin from <code>setup</code> / <code>plugin</code> — native config shape per host, not a clunky one-size paste:</p>
 
         <div class="ca-agent-grid" aria-label="First-class MCP agents">
           <article class="ca-agent"><h3>Cursor</h3><p><code>~/.cursor/mcp.json</code> + hooks + always-on rule.</p><span class="ca-badge">MCP</span></article>

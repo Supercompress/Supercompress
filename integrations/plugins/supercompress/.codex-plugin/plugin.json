@@ -1,6 +1,6 @@
 {
   "name": "supercompress",
-  "version": "0.5.35",
-  "description": "SuperCompress v2 — hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Coding-agent B5: 64.1% mean cut, required evidence in 24/24 cases. Hosted remote MCP at https://www.supercompress.dev/api/mcp.",
+  "version": "0.5.36",
+  "description": "SuperCompress v2 \u2014 hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Coding-agent B5: 64.1% mean cut, required evidence in 24/24 cases. Hosted remote MCP at https://www.supercompress.dev/api/mcp.",
   "skills": "./skills/"
 }

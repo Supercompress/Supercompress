@@ -6,15 +6,15 @@
     "url": "https://www.supercompress.dev"
   },
   "metadata": {
-    "description": "SuperCompress — query-aware context compression for coding agents.",
+    "description": "SuperCompress \u2014 query-aware context compression for coding agents.",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "supercompress",
       "source": "./integrations/plugins/supercompress",
-      "description": "SuperCompress v2 — hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Coding-agent B5: 64.1% mean cut, required evidence in 24/24 cases. Free tier: 5M tokens/month, then $0.10/1M.",
-      "version": "0.5.35",
+      "description": "SuperCompress v2 \u2014 hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Coding-agent B5: 64.1% mean cut, required evidence in 24/24 cases. Free tier: 5M tokens/month, then $0.10/1M.",
+      "version": "0.5.36",
       "author": {
         "name": "SuperCompress"
       },

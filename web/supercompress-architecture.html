@@ -157,7 +157,7 @@
 
       <p>The key design choices:</p>
       <ul>
-        <li><strong>a learned query-aware neural policy</strong> — a tiny feed-forward network that runs on CPU in ~15ms. No GPU needed.</li>
+        <li><strong>Neural Keep (~400M)</strong> — hosted query-aware cross-encoder on GPU (recommended). Separate <strong>compiler</strong> path: tiny feed-forward on CPU in ~ms for local preprocessing.</li>
         <li><strong>Query-aware</strong> — scores each passage against the user's specific question, not just the content type.</li>
         <li><strong>No model download</strong> — the policy is bundled in the pip package (~200KB total).</li>
         <li><strong>Deterministic given inputs</strong> — same context + query always produces the same compression. Predictable and auditable.</li>

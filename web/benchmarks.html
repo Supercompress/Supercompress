@@ -4,12 +4,12 @@
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Context Compression Benchmarks — SuperCompress</title>
-  <meta name="description" content="SuperCompress benchmarks: 100% answer-critical retention vs 25% for truncation at the same token budget. Compiler mode removes everything it can while keeping what matters — verified on real workloads." />
-  <meta property="og:title" content="LLM Context Compression Benchmarks — SuperCompress" />
-  <meta property="og:description" content="Same compression budget, who keeps the answer? SuperCompress: 100% oracle recall. Truncation: 25%. H2O: 98%. CPU-only, neural ranking, ~47ms." />
+  <title>SuperCompress v2 Benchmarks — 390 cases · 64.1% B5 cut · 24/24 evidence</title>
+  <meta name="description" content="SuperCompress v2 launch benchmarks: 390 public cases. Coding-agent (B5): 64.1% mean cut, required evidence in 24/24, 16,647 → 5,148 tokens, ~5.8s B5 p50 on hosted GPU. Evidence containment — not downstream LLM completion. Legacy compiler results labeled separately." />
+  <meta property="og:title" content="SuperCompress v2 Benchmarks — 390 cases · Neural Keep" />
+  <meta property="og:description" content="v2 Neural Keep (~400M, hosted GPU): B5 64.1% mean cut, 24/24 evidence, 16,647 → 5,148, ~5.8s p50. 390 public cases. Downstream LLM eval not yet run." />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://supercompress.dev/benchmarks" />
+  <meta property="og:url" content="https://www.supercompress.dev/benchmarks" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
@@ -17,16 +17,16 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="LLM Context Compression Benchmarks — SuperCompress" />
-  <meta name="twitter:description" content="Same budget, who keeps the answer? SuperCompress 100% oracle recall vs truncation 25%. Compiler mode: remove everything possible, keep everything important." />
+  <meta name="twitter:title" content="SuperCompress v2 Benchmarks — 390 cases" />
+  <meta name="twitter:description" content="B5 coding-agent: 64.1% mean cut, 24/24 evidence, 16,647 → 5,148, ~5.8s p50. Evidence containment metric." />
   <meta name="twitter:site" content="@supercompress" />
-  <meta name="keywords" content="LLM benchmarks, context compression benchmarks, oracle recall, token reduction, LLM efficiency, prompt compression comparison, SuperCompress vs truncation, H2O benchmark, Headroom comparison, rule-based compression, July 2026" />
-  <link rel="canonical" href="https://supercompress.dev/benchmarks" />
+  <meta name="keywords" content="SuperCompress v2 benchmarks, Neural Keep, coding agent compression, evidence containment, 390 cases, B5 benchmark, context compression" />
+  <link rel="canonical" href="https://www.supercompress.dev/benchmarks" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-<link rel="stylesheet" href="/assets/css/supercompress.css?v=106" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=106" />
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
   <style>
     .bench-head { text-align: center; padding: 60px 20px 20px; max-width: 860px; margin: 0 auto; }
@@ -40,7 +40,8 @@
     .bench-stat .value { display:block; font-family: var(--serif); font-size: 2rem; line-height: 1; font-weight: 400; color: var(--text-heading); }
     .bench-stat .sub { display:block; font-size: .84rem; color: var(--text-body); margin-top: 8px; line-height: 1.45; }
     .bench-section { padding: 40px 0; }
-    .bench-section h2 { font-family: var(--serif); font-weight: 300; font-size: 1.6rem; margin-bottom: 20px; }
+    .bench-section h2 { font-family: var(--serif); font-weight: 300; font-size: 1.6rem; margin-bottom: 16px; }
+    .bench-section p { color: var(--text-body); line-height: 1.65; margin-bottom: 12px; }
     .bench-table-wrap { overflow-x: auto; margin: 24px 0; border: 0.5px solid var(--card-border); border-radius: 4px; background: #fff; }
     .bench-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
     .bench-table th { background: #f9f9f6; text-align: left; padding: 14px 16px; font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-body); border-bottom: 0.5px solid var(--card-border); }
@@ -48,19 +49,11 @@
     .bench-table tr:last-child td { border-bottom: none; }
     .bench-table .sc-row { background: var(--feat-blue); }
     .bench-table .sc-row td { font-weight: 600; }
-    .bench-best { display: inline-block; background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
     .bench-meta { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; }
-    .bench-compare-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 22px 0 20px; }
-    .bench-compare-card { border: 0.5px solid var(--card-border); border-radius: 4px; background: #fff; padding: 16px; }
-    .bench-compare-card .eyebrow { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brand); margin-bottom: 8px; }
-    .bench-compare-card strong { display: block; font-size: 1.4rem; line-height: 1; font-family: var(--serif); font-weight: 400; margin-bottom: 8px; }
-    .bench-compare-card p { font-size: 0.86rem; line-height: 1.55; color: var(--text-body); }
-    .bench-chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 32px 0; }
-    @media (max-width: 1000px) { .bench-compare-grid, .bench-stats { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 800px) { .bench-chart-row, .bench-compare-grid, .bench-stats { grid-template-columns: 1fr; } }
-    .bench-chart-card { border: 0.5px solid var(--card-border); border-radius: 4px; background: #fff; padding: 20px; }
-    .bench-chart-card img { width: 100%; height: auto; display: block; }
-    .bench-chart-card figcaption { font-size: 0.82rem; color: var(--text-body); margin-top: 12px; text-align: center; }
+    .bench-callout { border: 0.5px solid var(--card-border); border-radius: 4px; background: #fff; padding: 18px 20px; margin: 20px 0; }
+    .bench-callout strong { color: var(--text-heading); }
+    .bench-legacy { margin-top: 48px; padding-top: 32px; border-top: 0.5px solid var(--card-border); }
+    .bench-legacy .legacy-badge { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
     .bench-faq { max-width: 720px; margin: 40px auto; }
     .bench-faq details { border-bottom: 0.5px solid var(--card-border); padding: 16px 0; }
     .bench-faq summary { font-weight: 600; cursor: pointer; padding: 8px 0; }
@@ -68,19 +61,18 @@
     .bench-faq p { color: var(--text-body); line-height: 1.6; margin-top: 8px; padding-left: 8px; }
     .bench-cta { text-align: center; padding: 60px 20px; }
     .bench-cta h2 { font-family: var(--serif); font-weight: 300; font-size: 1.8rem; }
+    .bench-compare-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 22px 0 20px; }
+    .bench-compare-card { border: 0.5px solid var(--card-border); border-radius: 4px; background: #fff; padding: 16px; }
+    .bench-compare-card .eyebrow { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brand); margin-bottom: 8px; }
+    .bench-compare-card strong { display: block; font-size: 1.25rem; line-height: 1.15; font-family: var(--serif); font-weight: 400; margin-bottom: 8px; }
+    .bench-compare-card p { font-size: 0.86rem; line-height: 1.55; color: var(--text-body); margin: 0; }
+    @media (max-width: 900px) { .bench-stats, .bench-compare-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .bench-stats, .bench-compare-grid { grid-template-columns: 1fr; } }
   </style>
-  <!-- Preconnect hints for faster external resource loading -->
   <link rel="preconnect" href="https://github.com" />
   <link rel="dns-prefetch" href="https://github.com" />
-
-  <link rel="preconnect" href="https://news.ycombinator.com" />
-  <link rel="dns-prefetch" href="https://news.ycombinator.com" />
-  <link rel="preconnect" href="https://twitter.com" />
-  <link rel="dns-prefetch" href="https://twitter.com" />
-  <!-- Vercel Web Analytics -->
   <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
   <script defer src="/_vercel/insights/script.js"></script>
-  <!-- JSON-LD Structured Data -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -89,57 +81,30 @@
       "@type": "ListItem",
       "position": 1,
       "name": "Home",
-      "item": "https://supercompress.dev/"
+      "item": "https://www.supercompress.dev/"
     },{
       "@type": "ListItem",
       "position": 2,
       "name": "Benchmarks",
-      "item": "https://supercompress.dev/benchmarks"
+      "item": "https://www.supercompress.dev/benchmarks"
     }]
   }
   </script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "SuperCompress",
-    "applicationCategory": "DeveloperApplication",
-    "operatingSystem": "Linux, macOS, Windows",
-    "description": "SuperCompress benchmarks: 100% answer-critical retention at a fixed 35% token budget vs truncation at 24.8%. Compiler mode maximizes removal while keeping critical evidence.",
-    "url": "https://supercompress.dev/benchmarks",
-    "sameAs": "https://github.com/Supercompress/Supercompress",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
-    "author": {
-      "@type": "Person",
-      "name": "Arjun Shah"
-    },
-    "license": "https://opensource.org/licenses/MIT"
-  }
-  </script>
-  <!-- Dataset schema for benchmark data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
     "@type": "Dataset",
-    "name": "SuperCompress LLM Context Compression Benchmarks",
-    "description": "Benchmark results for SuperCompress compiler mode plus current public baseline comparisons against Headroom, H2O, FIFO/truncation, summarization, and rule-based heuristics.",
-    "url": "https://supercompress.dev/benchmarks",
-    "keywords": ["LLM compression", "context compression", "oracle recall", "token reduction", "benchmark"],
-    "temporalCoverage": "2026-07-28",
-    "author": {
-      "@type": "Person",
-      "name": "Arjun Shah"
+    "name": "SuperCompress v2 Launch Benchmarks",
+    "description": "390 public cases for SuperCompress v2 Neural Keep (~400M). B5 coding-agent suite: 64.1% mean cut, 24/24 evidence containment, 16,647 → 5,148 tokens, ~5.8s p50 latency on hosted GPU. Downstream LLM eval not yet run.",
+    "url": "https://www.supercompress.dev/benchmarks",
+    "distribution": {
+      "@type": "DataDownload",
+      "encodingFormat": "application/json",
+      "contentUrl": "https://www.supercompress.dev/assets/data/launch-benchmark.json"
     },
-    "variableMeasured": [
-      {"@type": "PropertyValue", "name": "Oracle Recall", "unitText": "%"},
-      {"@type": "PropertyValue", "name": "Entity Recall", "unitText": "%"},
-      {"@type": "PropertyValue", "name": "Latency", "unitText": "ms"},
-      {"@type": "PropertyValue", "name": "Tokens Saved (tokens_saved_pct)", "unitText": "%"}
-    ]
+    "keywords": ["LLM compression", "Neural Keep", "evidence containment", "coding agents"],
+    "temporalCoverage": "2026-09",
+    "author": { "@type": "Person", "name": "Arjun Shah" }
   }
   </script>
   <script type="application/ld+json">
@@ -149,18 +114,26 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "What is oracle recall in LLM context compression?",
+        "name": "What does SuperCompress v2 measure on benchmarks?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Oracle recall measures how many of the lines that contain the answer to a specific question are preserved after compression. 100% oracle recall means every answer-critical line is kept. This is the most important quality metric for context compression."
+          "text": "Evidence containment: whether required answer-critical lines survive compression in their original wording. This is not a downstream LLM completion eval — that suite has not been run yet."
         }
       },
       {
         "@type": "Question",
-        "name": "How does SuperCompress compare to truncation?",
+        "name": "What are the v2 coding-agent (B5) results?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Truncation keeps only the head and tail of the context, dropping the middle. If the answer-critical line sits in the middle, truncation loses it. SuperCompress compiler mode scores semantic blocks against the query, removes low-value context, and reports important context kept."
+          "text": "On the 24-case coding-agent suite: 64.1% mean token cut, required evidence retained in 24/24 cases, 16,647 → 5,148 tokens total, up to 96.6% cut at ≥99% retention, B5 p50 latency about 5.8 seconds on the hosted GPU Neural Keep path."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is Neural v2 the same as the compiler engine?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Neural v2 is a ~400M-parameter query-aware cross-encoder hosted on GPU. The compiler is a separate lightweight local/CPU path with millisecond-class latency. Do not mix their benchmarks."
         }
       },
       {
@@ -168,23 +141,7 @@
         "name": "Does SuperCompress require a GPU?",
         "acceptedAnswer": {
           "@type": "Answer",
-            "text": "No. SuperCompress runs entirely on CPU with about a learned query-aware neural policy and about 46.7ms average latency on the current 8-seed benchmark suite. It requires zero GPU time and zero extra LLM calls."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How many tokens can SuperCompress save?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Compiler mode removes the most tokens it can while preserving answer-critical evidence. On current bundled long-context presets it averages 63.3% token-weighted savings with 100% critical retention — denser literature contexts compress less by design."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Is SuperCompress free?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes. SuperCompress is open source under MIT license. The Python library and browser demo are free. The hosted API includes 5M free tokens per month, then $0.10 per 1M tokens pay-as-you-go."
+          "text": "The hosted v2 Neural Keep path runs on GPU (~5.8s B5 p50). A separate legacy compiler path runs on CPU in milliseconds for fast local preprocessing. They are different products."
         }
       }
     ]
@@ -233,7 +190,7 @@
       <a href="https://docs.supercompress.dev">Docs</a>
       <a href="/dashboard?signup=1">Get API key</a>
       <a href="/dashboard?login=1">Log in</a>
-      <a href="/playground">Playground</a>
+      <a href="/arena">Arena</a>
       <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
     </div>
   </header>
@@ -241,389 +198,210 @@
 <main>
 
     <div class="bench-head">
-        <div class="bench-kicker"><strong>Updated 2026-08-01</strong> · held-out answer containment · live compiler workloads</div>
-        <h1>Keep the answer. Drop the noise.</h1>
-        <p>Most compressors cut tokens. SuperCompress is judged on a harder question: <em>after compression, can the model still answer correctly?</em> On primary held-out suites (real / fresh4 / fresh5), gold answers survive at <strong>99.4%</strong> pooled (180/181) while mean token cut stays <strong>≥55%</strong>. Fresh6 cold mix also clears the answer gate below.</p>
-        <div class="bench-stats" aria-label="Benchmark highlights">
+        <div class="bench-kicker"><strong>v2 launch · Sep 2026</strong> · 390 public cases · evidence containment</div>
+        <h1>Give your AI less.<br>Prove what stayed.</h1>
+        <p>SuperCompress v2 is a <strong>~400M-parameter Neural Keep</strong> engine on the hosted API (GPU). We measure whether <em>required evidence</em> survives compression — not whether a downstream chat model finishes the task. Downstream LLM eval has <strong>not</strong> been run yet.</p>
+        <div class="bench-stats" aria-label="v2 launch benchmark highlights">
           <div class="bench-stat">
-            <span class="label">Held-out answers</span>
-            <span class="value">99.4%</span>
-            <span class="sub">Pooled gold containment on real + fresh4 + fresh5 (seeds 4242 / 9091 / 6161).</span>
+            <span class="label">Public cases</span>
+            <span class="value">390</span>
+            <span class="sub">Launch suite across needles, LongBench slices, multihop, coding agents, scaling.</span>
           </div>
           <div class="bench-stat">
-            <span class="label">Mean cut</span>
-            <span class="value">~58–66%</span>
-            <span class="sub">Token-weighted cut ~62–69% on the same held-out mixes — no restore-to-98% floor.</span>
+            <span class="label">B5 mean cut</span>
+            <span class="value">64.1%</span>
+            <span class="sub">Coding-agent dumps: 16,647 → 5,148 tokens. Max 96.6% at ≥99% retention.</span>
           </div>
           <div class="bench-stat">
-            <span class="label">Oracle suite</span>
-            <span class="value">100%</span>
-            <span class="sub">Fixed 35% budget oracle recall on the public 8-seed suite (vs ~25% truncation).</span>
+            <span class="label">Evidence held</span>
+            <span class="value">24/24</span>
+            <span class="sub">Required evidence lines kept on every coding-agent case.</span>
           </div>
           <div class="bench-stat">
-            <span class="label">Runtime</span>
-            <span class="value">~47ms</span>
-            <span class="sub">v2 hosted path: ~400M Neural Keep. CPU policy path also available. No extra LLM call.</span>
+            <span class="label">B5 latency p50</span>
+            <span class="value">~5.8s</span>
+            <span class="sub">Hosted GPU Neural Keep path — not the millisecond compiler path.</span>
           </div>
         </div>
       </div>
 
       <div class="df-container df-container-narrow">
         <section class="bench-section">
-          <h2>Why these numbers matter</h2>
+          <h2>Two engines — do not mix numbers</h2>
           <div class="bench-compare-grid">
             <article class="bench-compare-card">
-              <span class="eyebrow">For founders &amp; PMs</span>
-              <strong>Lower bills, same answers</strong>
-              <p>You pay for input tokens. Compression only helps if the model still gets the facts it needs. SuperCompress is built to cut waste without cutting the answer.</p>
+              <span class="eyebrow">Recommended · hosted</span>
+              <strong>Neural v2</strong>
+              <p>~400M query-aware cross-encoder. Hosted GPU inference. Highest-quality context selection. These launch numbers.</p>
             </article>
             <article class="bench-compare-card">
-              <span class="eyebrow">For engineers</span>
-              <strong>Oracle recall, not vibes</strong>
-              <p>We measure whether answer-bearing lines survive. Fixed-budget head-to-head: SuperCompress 100%, H2O 97.9%, summarization 60.5%, truncation/FIFO 24.8%.</p>
+              <span class="eyebrow">Fast / local</span>
+              <strong>Compiler</strong>
+              <p>Lightweight local path. CPU. Millisecond-class preprocessing. Legacy results live in the labeled section below — separate product.</p>
             </article>
             <article class="bench-compare-card">
-              <span class="eyebrow">For agents &amp; copilots</span>
-              <strong>Noise dumps are the point</strong>
-              <p>Logs, RAG chunks, chat history, tool output — compiler mode removes everything it can while locking query-critical evidence. Savings scale with how noisy the dump is.</p>
-            </article>
-            <article class="bench-compare-card">
-              <span class="eyebrow">For ops</span>
-              <strong>Deploy without drama</strong>
-              <p>neural ranking, ~47ms on CPU, no GPU queue, no second model call. Drop it in front of OpenAI, Claude, Gemini, or local models.</p>
+              <span class="eyebrow">Metric honesty</span>
+              <strong>Evidence, not answers</strong>
+              <p>We score containment of required lines. Prefer “preserves required evidence” over “same answers” until downstream eval ships.</p>
             </article>
           </div>
         </section>
 
-        <!-- Main comparison table -->
         <section class="bench-section">
-          <h2>Same budget. Who keeps the answer?</h2>
-          <p style="color:var(--text-body);line-height:1.6;margin-bottom:8px">Fair test: every method keeps only 35% of tokens. The only question is whether the answer-critical lines are in that 35%.</p>
+          <h2>Coding-agent suite (B5) — headline</h2>
+          <p>Held-out coding-agent dumps. Same scorer for every method. Tokenizer: tiktoken cl100k_base.</p>
           <div class="bench-table-wrap">
             <table class="bench-table">
               <thead>
                 <tr>
                   <th>Method</th>
-                  <th>Answer-critical kept</th>
-                  <th>What that means</th>
-                  <th>Latency</th>
-                  <th>Footprint</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>FIFO / Truncation</td>
-                  <td>24.8%</td>
-                  <td>Drops the middle — often where the answer lives</td>
-                  <td>~42–46 ms</td>
-                  <td>Rule-based</td>
-                </tr>
-                <tr>
-                  <td>Summarization</td>
-                  <td>60.5%</td>
-                  <td>Rewrites context; can invent or omit details</td>
-                  <td>~48 ms + LLM</td>
-                  <td>Extra model call</td>
-                </tr>
-                <tr>
-                  <td>H2O</td>
-                  <td>97.9%</td>
-                  <td>Strong attention baseline from serving research</td>
-                  <td>~42 ms</td>
-                  <td>Attention-heavy</td>
-                </tr>
-                <tr class="sc-row">
-                  <td><strong>SuperCompress</strong> <span class="bench-best">Best</span></td>
-                  <td><strong>100%</strong></td>
-                  <td><strong>Every answer-critical line kept</strong></td>
-                  <td><strong>~47 ms</strong></td>
-                  <td><strong>neural ranking, CPU</strong></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="bench-meta">8 project seeds, fixed 35% token budget, refreshed from the public suite (July 2026). “Answer-critical kept” = oracle recall. Entity recall on this suite: 72.9% for SuperCompress / H2O / truncation (same kept-entity set under fixed budget).</p>
-        </section>
-
-        <section class="bench-section">
-          <h2>How SuperCompress compares to common alternatives</h2>
-          <div class="bench-table-wrap">
-            <table class="bench-table">
-              <thead>
-                <tr>
-                  <th>Baseline</th>
-                  <th>Query-aware?</th>
-                  <th>Public result / claim</th>
-                  <th>Why teams still pick SuperCompress</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Headroom</td>
-                  <td>Mostly type / tool-output aware</td>
-                  <td>Publicly claims ~15–20% fewer tokens for coding agents</td>
-                  <td>We score directly against the question and report answer-critical retention</td>
-                </tr>
-                <tr>
-                  <td>Rule heuristics / Caveman-style</td>
-                  <td>No</td>
-                  <td>Prompt-dependent shortcuts</td>
-                  <td>Query-aware ranking instead of fixed windows</td>
-                </tr>
-                <tr>
-                  <td>Truncation</td>
-                  <td>No</td>
-                  <td>24.8% critical kept on this suite</td>
-                  <td>Preserves critical lines anywhere in the context, not just head/tail</td>
-                </tr>
-                <tr>
-                  <td>H2O</td>
-                  <td>Yes (attention)</td>
-                  <td>97.9% on this suite</td>
-                  <td>Higher critical retention here, with a tiny CPU policy instead of attention eviction</td>
-                </tr>
-                <tr class="sc-row">
-                  <td><strong>SuperCompress</strong></td>
-                  <td><strong>Yes</strong></td>
-                  <td><strong>100% critical kept</strong></td>
-                  <td><strong>Best quality metric + smallest practical footprint</strong></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="bench-meta">Headroom’s public claim is product marketing on different workloads — included for landscape context, not as an apples-to-apples lab score.</p>
-        </section>
-
-        <!-- Compiler mode section -->
-        <section class="bench-section">
-          <h2>Compiler mode — remove everything you can, keep everything important</h2>
-          <p style="color:var(--text-body);line-height:1.6">No fake “keep 35%” floor. Compiler mode drops non-essential context until only what’s needed for the question remains — then verifies that answer-critical content is still there. Noisy dumps compress hard. Dense coding context compresses less. That’s intentional.</p>
-          <div class="bench-table-wrap">
-            <table class="bench-table">
-              <thead>
-                <tr>
-                  <th>Workload</th>
-                  <th>Original</th>
-                  <th>After</th>
-                  <th>Removed</th>
-                  <th>Savings</th>
-                  <th>Critical kept</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Literature study context</td>
-                  <td>1,454</td>
-                  <td>1,052</td>
-                  <td>402</td>
-                  <td>27.6%</td>
-                  <td>100%</td>
-                </tr>
-                <tr>
-                  <td>Dense coding session</td>
-                  <td>1,020</td>
-                  <td>397</td>
-                  <td>623</td>
-                  <td>61.1%</td>
-                  <td>100%</td>
-                </tr>
-                <tr>
-                  <td>Docs / markdown</td>
-                  <td>1,195</td>
-                  <td>59</td>
-                  <td>1,136</td>
-                  <td>95.1%</td>
-                  <td>100%</td>
-                </tr>
-                <tr>
-                  <td>Agent incident log</td>
-                  <td>1,074</td>
-                  <td>232</td>
-                  <td>842</td>
-                  <td>78.4%</td>
-                  <td>100%</td>
-                </tr>
-                <tr class="sc-row">
-                  <td><strong>Token-weighted average</strong></td>
-                  <td><strong>1,186</strong></td>
-                  <td><strong>435</strong></td>
-                  <td><strong>751</strong></td>
-                  <td><strong>63.3%</strong></td>
-                  <td><strong>100%</strong></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="bench-meta">Measured 2026-08-01 with the live compiler engine on bundled long-context presets. Critical kept = independent answer-critical line retention vs the original text.</p>
-        </section>
-
-        <section class="bench-section">
-          <h2>Held-out answer containment (anti-overfit)</h2>
-          <p style="color:var(--text-body);line-height:1.6;margin-bottom:8px">Separate from the fixed-budget oracle suite: compress real LongBench dumps + brand-new OOD wiki/RFC/README haystacks, then check whether the gold answer string is still present. Gates: ≥98% answer retention, ≥55% mean cut, ≥55% token-weighted cut. No circular restore floor.</p>
-          <div class="bench-table-wrap">
-            <table class="bench-table">
-              <thead>
-                <tr>
-                  <th>Suite</th>
-                  <th>Seed</th>
-                  <th>Answer kept</th>
                   <th>Mean cut</th>
-                  <th>Token-weighted cut</th>
-                  <th>Gates</th>
+                  <th>Evidence pass</th>
+                  <th>Tokens in → out</th>
+                  <th>p50 latency</th>
                 </tr>
               </thead>
               <tbody>
                 <tr class="sc-row">
-                  <td><strong>Real (ood_fresh3 + hotpot/2wiki/multifield/qasper)</strong></td>
-                  <td>4242</td>
-                  <td><strong>98.4%</strong> (61/62)</td>
-                  <td>~57.8%</td>
-                  <td>~64.7%</td>
-                  <td>pass</td>
+                  <td>SuperCompress v2 (Neural Keep)</td>
+                  <td>64.1%</td>
+                  <td>24 / 24</td>
+                  <td>16,647 → 5,148</td>
+                  <td>~5.8 s</td>
                 </tr>
                 <tr>
-                  <td>Fresh4 (ood_fresh4 + musique/trivia/narrative/samsum)</td>
-                  <td>9091</td>
-                  <td><strong>100%</strong> (57/57)</td>
-                  <td>~66.1%</td>
-                  <td>~68.8%</td>
-                  <td>pass</td>
-                </tr>
-                <tr class="sc-row">
-                  <td><strong>Fresh5 (ood_fresh5 + hotpot/2wiki/multifield/qasper)</strong></td>
-                  <td>6161</td>
-                  <td><strong>100%</strong> (62/62)</td>
-                  <td>~57.8%</td>
-                  <td>~61.6%</td>
-                  <td>pass</td>
+                  <td>Headroom 0.36.4</td>
+                  <td>14.8%</td>
+                  <td>18 / 24</td>
+                  <td>16,647 → 14,009</td>
+                  <td>~0.3 s</td>
                 </tr>
                 <tr>
-                  <td>Fresh6 cold (ood_fresh6 hard + musique/trivia/narrative/2wiki)</td>
-                  <td>3377</td>
-                  <td><strong>98.6%</strong> (70/71)</td>
-                  <td>~68.2%</td>
-                  <td>~72.5%</td>
-                  <td>pass</td>
+                  <td>LLMLingua-2</td>
+                  <td>52.7%</td>
+                  <td>12 / 24</td>
+                  <td>16,647 → 8,030</td>
+                  <td>~0.7 s</td>
+                </tr>
+                <tr>
+                  <td>Truncation (keep last ~35%)</td>
+                  <td>64.3%</td>
+                  <td>11 / 24</td>
+                  <td>16,647 → 5,851</td>
+                  <td>&lt;1 ms</td>
+                </tr>
+                <tr>
+                  <td>SuperCompress v1 (compiler)</td>
+                  <td>60.7%</td>
+                  <td>21 / 24</td>
+                  <td>16,647 → 5,918</td>
+                  <td>~10 ms</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p class="bench-meta">Artifacts: <code>web/assets/data/real-benchmark-latest.json</code>, <code>fresh4-benchmark-latest.json</code>, <code>fresh5-benchmark-latest.json</code>, <code>fresh6-benchmark-latest.json</code>. Refreshed 2026-08-01 night. Primary bundle pooled answer 99.4% (180/181), pooled TW cut 65.4%. Fresh6 still has one multi-hop drop (Parkinson) inside the 98% gate.</p>
+          <p class="bench-meta">Raw JSON: <a href="/assets/data/launch-benchmark.json">launch-benchmark.json</a> · writeup: <a href="/engine-v2-launch">v2 launch</a>.</p>
         </section>
 
-        <!-- Charts -->
         <section class="bench-section">
-          <h2>At a glance</h2>
-          <div class="bench-chart-row">
-            <figure class="bench-chart-card">
-              <img src="assets/img/chart-oracle-recall.svg" alt="Critical context retained at 35% budget: SuperCompress 100%, H2O 97.9%, summarization 60.5%, FIFO and truncation 24.8%" loading="lazy" width="920" height="320" />
-              <figcaption>Fixed budget: who still has the answer?</figcaption>
-            </figure>
-            <figure class="bench-chart-card">
-              <img src="assets/img/chart-adaptive-savings.svg" alt="Compiler mode token savings by workload with 100% critical content kept" loading="lazy" width="920" height="320" />
-              <figcaption>Compiler mode: savings follow how noisy the dump is</figcaption>
-            </figure>
+          <h2>Aggregate honesty (all 390 cases)</h2>
+          <div class="bench-callout">
+            <p style="margin:0 0 10px"><strong>Mean cut across the full 390-case mix is ~3.6%.</strong> That is intentional, not a failure. On needle / LongBench / multihop slices the engine often keeps nearly everything when every line could matter — it knows when <em>not</em> to compress. The 64.1% figure is the coding-agent (B5) suite, where dumps are noisy and query-aware keep shines.</p>
+            <p style="margin:0">Max reduction at ≥99% evidence retention: <strong>96.6%</strong>. Aggregate mean quality retention (containment scorer): ~85%. Downstream LLM completion eval: <strong>not run</strong>.</p>
           </div>
         </section>
 
-        <!-- Environmental impact -->
         <section class="bench-section">
-          <h2>Impact when this runs at scale</h2>
-          <p style="color:var(--text-body);line-height:1.6">SuperCompress removes prompt text before inference, so fewer tokens reach the GPU and the provider performs less prefill work. Estimates use documented assumptions (2,500 tok/GPU-s, 150W GPU, an estimated 55% inference-memory share for provider-managed KV state, 0.417 kg CO₂/kWh) and ~800 tokens saved per call.</p>
+          <h2>How we measured</h2>
+          <ul style="color:var(--text-body);line-height:1.7;padding-left:1.2rem">
+            <li><strong>Quality metric:</strong> answer / needle / evidence containment in the compressed text (original wording).</li>
+            <li><strong>Not measured yet:</strong> downstream LLM task success after compression.</li>
+            <li><strong>v2 inference:</strong> query-conditioned cross-encoder (~400M), hosted GPU path for API.</li>
+            <li><strong>Comparators:</strong> Headroom 0.36.4, LLMLingua-2, truncation, and SuperCompress v1 compiler on B5.</li>
+          </ul>
+        </section>
+
+        <section class="bench-section">
+          <h2>Limitations</h2>
+          <ul style="color:var(--text-body);line-height:1.7;padding-left:1.2rem">
+            <li><strong>Latency:</strong> Neural v2 B5 p50 is ~5.8s on the hosted GPU path — not millisecond-class.</li>
+            <li><strong>Downstream eval:</strong> evidence containment ≠ proven answer quality from a chat model.</li>
+            <li><strong>Workload fit:</strong> strongest on coding-agent / tool-dump noise; conservative on dense needle/QA mixes.</li>
+          </ul>
+        </section>
+
+        <section class="bench-section bench-legacy" id="legacy-compiler">
+          <span class="legacy-badge">Legacy · compiler engine benchmarks</span>
+          <h2>Compiler / v1 results (not Neural v2)</h2>
+          <p>These numbers are from the <strong>lightweight compiler</strong> path (CPU, millisecond-class). They are <strong>not</strong> SuperCompress v2 Neural Keep results. Kept here for history and for teams still on the local compiler.</p>
           <div class="bench-table-wrap">
             <table class="bench-table">
               <thead>
                 <tr>
-                  <th>Scale</th>
-                  <th>Tokens avoided</th>
-                  <th>kWh saved</th>
-                  <th>CO₂ avoided</th>
+                  <th>Legacy metric</th>
+                  <th>Result</th>
+                  <th>Notes</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>1,000 calls</td>
-                  <td>~800K</td>
-                  <td>~0.03</td>
-                  <td>~0.01 kg</td>
+                  <td>Held-out gold containment</td>
+                  <td>99.4% (180/181)</td>
+                  <td>Compiler suites real / fresh4 / fresh5 · Aug 2026</td>
                 </tr>
                 <tr>
-                  <td>1M calls</td>
-                  <td>~800M</td>
-                  <td>~29</td>
-                  <td>~12 kg</td>
+                  <td>Mean cut (compiler)</td>
+                  <td>~58–66%</td>
+                  <td>Maximize drop with ≥98% answer-keep gate</td>
                 </tr>
-                <tr class="sc-row">
-                  <td><strong>10M calls</strong></td>
-                  <td><strong>~8B</strong></td>
-                  <td><strong>~290</strong></td>
-                  <td><strong>~120 kg</strong></td>
+                <tr>
+                  <td>Fixed 35% budget oracle recall</td>
+                  <td>100%</td>
+                  <td>Public 8-seed suite vs ~25% truncation</td>
+                </tr>
+                <tr>
+                  <td>Typical latency</td>
+                  <td>~10–47 ms CPU</td>
+                  <td>Local compiler — not the hosted ~400M GPU path</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p class="bench-meta">Methodology: <a href="https://docs.supercompress.dev/environment" target="_blank" rel="noopener">Environment guide</a>. Real savings depend on model and workload.</p>
+          <p class="bench-meta">Older JSON snapshots remain under <code>/assets/data/*-benchmark-latest.json</code>. Prefer <a href="/assets/data/launch-benchmark.json">launch-benchmark.json</a> for v2.</p>
         </section>
 
-        <!-- FAQ -->
-        <section class="bench-section">
-          <h2>Questions people actually ask</h2>
-          <div class="bench-faq">
-            <details open>
-              <summary>What is “answer-critical” / oracle recall?</summary>
-              <p>It’s the share of lines that contain the information needed to answer the question that still appear after compression. 100% means nothing required for a correct answer was deleted. That’s the metric that protects quality.</p>
-            </details>
-            <details>
-              <summary>Why do all methods show ~64% tokens saved in the first table?</summary>
-              <p>Because that test forces the same budget: keep 35% of prompt tokens, drop 64%, so <code>tokens_saved_pct</code> is ~64% for every method. It’s a quality contest, not a savings contest. The interesting number is who still has the answer afterward.</p>
-            </details>
-            <details>
-              <summary>Why do savings vary by workload?</summary>
-              <p>Noisy dumps (logs, markdown chrome, agent traces) compress hard — often 70–95%. Dense literature or tightly relevant coding context keeps more by design. The preset suite averages ~63% token-weighted savings with 100% critical retention.</p>
-            </details>
-            <details>
-              <summary>Is this better than just truncating my prompt?</summary>
-              <p>At the same size budget, truncation kept ~25% of critical lines on our suite. SuperCompress kept 100%. Truncation is fine when the answer is always at the edges. Real agent and RAG dumps put the answer anywhere.</p>
-            </details>
-            <details>
-              <summary>Do I need a GPU?</summary>
-              <p>No. SuperCompress runs on CPU with a learned query-aware neural policy and ~47ms average latency on the suite. Zero GPU time, zero extra LLM calls.</p>
-            </details>
-            <details>
-              <summary>Can I try it on my own traffic?</summary>
-              <p>Yes — use the <a href="/playground">playground</a>, the hosted API, or the coding-agent MCP plugin. You’ll see tokens removed and critical-retention metadata on each call.</p>
-            </details>
-          </div>
-        </section>
+        <div class="bench-faq">
+          <h2 style="font-family:var(--serif);font-weight:300;font-size:1.5rem;margin-bottom:8px">FAQ</h2>
+          <details open>
+            <summary>Why isn’t aggregate mean cut ~64%?</summary>
+            <p>64.1% is the coding-agent (B5) suite. Across all 390 cases many slices are already dense; v2 refuses to over-cut when evidence is everywhere, so the aggregate mean sits near ~3.6%.</p>
+          </details>
+          <details>
+            <summary>Does “24/24” mean same answers from GPT/Claude?</summary>
+            <p>No. It means required evidence lines were present after compression. Downstream completion quality is a separate eval we have not published yet.</p>
+          </details>
+          <details>
+            <summary>GPU or CPU?</summary>
+            <p>Hosted Neural v2 → GPU, seconds-scale on long dumps. Compiler → CPU, milliseconds. Pick the path that matches the product you ship.</p>
+          </details>
+        </div>
+
+        <div class="bench-cta">
+          <h2>Ship with less context</h2>
+          <p style="color:var(--text-body);margin:12px 0 24px">5M free tokens/mo · then $0.10/1M · MIT</p>
+          <p>
+            <a class="btn" href="/dashboard?signup=1">Get API key</a>
+            &nbsp;
+            <a href="/engine-v2-launch">v2 launch →</a>
+            &nbsp;
+            <a href="/arena">Arena →</a>
+          </p>
+        </div>
       </div>
 
-      <!-- CTA -->
-      <section class="bench-cta">
-        <h2>Try SuperCompress on your own context</h2>
-        <p style="color:var(--text-body);margin-top:12px;max-width:500px;margin-left:auto;margin-right:auto">Paste your long prompts and see exactly how much can be removed while keeping what matters.</p>
-        <div style="margin-top:24px">
-          <a href="/playground" class="btn-brand">Open Playground</a>
-          <a href="/dashboard" class="btn-link-muted" style="display:inline-flex;margin-left:16px">Get API Key</a>
-        </div>
-      </section>
-    </main>
-  <!-- Social Share -->
-  <div style="display: flex; justify-content: center; gap: 12px; margin: 40px 0;">
-    <a href="https://twitter.com/intent/tweet?text=SuperCompress%20benchmarks%3A%20100%25%20answer-critical%20retention%20vs%2025%25%20for%20truncation.&url=https://supercompress.dev/benchmarks"
-       target="_blank" rel="noopener"
-       style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #1d9bf0; color: #fff; border-radius: 20px; text-decoration: none; font-size: 13px; font-family: system-ui;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-      Share on X
-    </a>
-    <a href="https://news.ycombinator.com/submitlink?u=https://supercompress.dev/benchmarks&t=SuperCompress%20Benchmarks"
-       target="_blank" rel="noopener"
-       style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #f0652f; color: #fff; border-radius: 20px; text-decoration: none; font-size: 13px; font-family: system-ui;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      Share on HN
-    </a>
-  </div>
+</main>
 
-    <footer class="df-footer">
+<footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
         <div class="df-footer-brand">
@@ -631,7 +409,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Query-aware context compression for AI apps and coding agents.<br />Open source · hosted API · agent plugin.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -644,54 +422,15 @@
               <li><a href="/changelog">Changelog</a></li>
               <li><a href="https://docs.supercompress.dev">Docs</a></li>
               <li><a href="/dashboard?signup=1">Get API key</a></li>
-              <li><a href="/dashboard?login=1">Log in</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Resources</p>
             <ul>
-              <li><a href="/playground">Playground</a></li>
-              <li><a href="/token-compression">Token compression guide</a></li>
-              <li><a href="/benchmarks" aria-current="page">Benchmarks</a></li>
+              <li><a href="/arena">Arena</a></li>
+              <li><a href="/engine-v2-launch">v2 launch</a></li>
               <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
-              <li><a href="/playground">Compare methods</a></li>
-              <li><a href="/research">Research</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">Blog</p>
-            <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
-              <li><a href="/token-compression">Token compression</a></li>
-              <li><a href="/prompt-compression">Prompt compression</a></li>
-              <li><a href="/context-compression">Context compression</a></li>
-              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
-              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
-              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">Documentation</p>
-            <ul>
-              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
-              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
-              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
-              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
-              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">Social</p>
-            <ul>
-              <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
-              <li><a href="https://x.com/arjunkshah21" target="_blank" rel="noopener">X</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">Legal</p>
-            <ul>
-              <li><a href="/terms">Terms of Service</a></li>
-              <li><a href="/privacy">Privacy Policy</a></li>
+              <li><a href="/assets/data/launch-benchmark.json">launch-benchmark.json</a></li>
             </ul>
           </div>
         </div>
@@ -701,22 +440,6 @@
   </footer>
   </div>
 
-  <script src="assets/js/supercompress.js?v=7"></script>
-  <!-- GitHub Stars CTA -->
-  <div style="position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 100;">
-    <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener"
-       style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
-              background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(12px);
-              border: 1px solid rgba(255,255,255,0.1); border-radius: 40px;
-              color: #fff; font-family: system-ui, sans-serif; font-size: 14px;
-              text-decoration: none; font-weight: 500;
-              box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-              transition: all 0.2s ease;">
-      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      Star on GitHub
-      <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 20px; font-size: 12px;">★</span>
-    </a>
-  </div>
   <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>
 </html>

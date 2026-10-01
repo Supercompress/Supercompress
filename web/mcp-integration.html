@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SuperCompress MCP Server: Compress Context from Any MCP-Compatible AI Agent</title>
-  <meta name="description" content="The SuperCompress MCP server brings prompt compression to every MCP-compatible agent — Claude Desktop, Claude Code, Cursor, and more. Compress context without leaving your AI workflow." />
+  <meta name="description" content="SuperCompress MCP: OAuth sign-in for remote hosts, or local setup for laptop agents. Compress context from Claude Desktop, Claude Code, Cursor, and 40+ harnesses." />
   <meta property="og:title" content="SuperCompress MCP Server: Compress Context from Any AI Agent" />
-  <meta property="og:description" content="MCP integration for SuperCompress. Claude Desktop, Claude Code, and Cursor users can compress context directly from the agent using compress, retrieve, and simple_hash tools." />
+  <meta property="og:description" content="MCP for SuperCompress with OAuth 2.1 (PKCE) on the hosted URL, plus local setup for Cursor / Claude Code / Codex." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://supercompress.dev/mcp-integration" />
   <meta property="og:type" content="article" />
@@ -14,7 +14,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="SuperCompress MCP Server: Compress Context from Any AI Agent" />
-  <meta name="twitter:description" content="Compress prompt context from Claude Desktop, Claude Code, or Cursor using the SuperCompress MCP server. No API key needed for local compression." />
+  <meta name="twitter:description" content="Compress prompt context from Claude Desktop, Claude Code, or Cursor via SuperCompress MCP. Hosted Neural Keep API or local compiler — not the same path." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="MCP, Model Context Protocol, MCP server, Claude Desktop MCP, Claude Code MCP, Cursor MCP, AI agent tools, prompt compression MCP, SuperCompress MCP, MCP-compatible agent" />
   <link rel="canonical" href="https://supercompress.dev/mcp-integration" />
@@ -134,7 +134,7 @@
     <p>Running compression through MCP means the agent handles context reduction automatically, without you switching tools or writing glue code:</p>
 
     <ul>
-      <li><strong>No API key needed</strong> — The MCP server runs locally using the same compression engine as the hosted API. All processing happens on your machine.</li>
+      <li><strong>API key for Neural Keep</strong> — The recommended MCP path calls the hosted ~400M Neural Keep API (GPU). A separate local compiler path exists for offline / millisecond preprocessing; it is not the same engine as hosted v2.</li>
       <li><strong>Zero configuration</strong> — Point your MCP client at <code>node /path/to/mcp/server.js</code> and the tools appear immediately.</li>
       <li><strong>Agent-native</strong> — The agent decides when to compress, when to retrieve, and how to use the compressed context. You don't need to tell it what to do.</li>
       <li><strong>CCR works seamlessly</strong> — Compress with mode="ccr", get retrieval markers in the output, retrieve blocks as needed — all within the same conversation.</li>

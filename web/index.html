@@ -4,10 +4,10 @@
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress v2 — Cut LLM API Costs by 64.1% · ~400M Neural Keep</title>
-  <meta name="description" content="SuperCompress v2: ~400M-parameter query-aware Neural Keep on the hosted API. Coding-agent bench 64.1% mean cut, required evidence in 24/24 cases. 5M free tokens/mo then $0.10/1M." />
-  <meta property="og:title" content="SuperCompress v2 — Cut LLM API Costs by 64.1%" />
-  <meta property="og:description" content="~400M Neural Keep engine. 64.1% mean cut. Required evidence in 24/24 cases. 16,647 → 5,148 tokens. 5M free/mo then $0.10/1M." />
+  <title>SuperCompress v2 — Give your AI less. Keep what matters.</title>
+  <meta name="description" content="SuperCompress v2: ~400M-parameter query-aware Neural Keep on the hosted API. Give your AI less. Keep what matters. Coding-agent bench 64.1% mean cut, required evidence in 24/24 cases. 5M free tokens/mo then $0.10/1M." />
+  <meta property="og:title" content="SuperCompress v2 — Give your AI less. Keep what matters." />
+  <meta property="og:description" content="~400M Neural Keep engine. 64.1% less context. Required evidence in 24/24 cases. 16,647 → 5,148 tokens. 5M free/mo then $0.10/1M." />
   <meta property="og:url" content="https://supercompress.dev/" />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="en_US" />
@@ -16,8 +16,8 @@
   <meta property="og:image:width" content="1920" />
   <meta property="og:image:height" content="1080" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="SuperCompress v2 — Cut LLM API Costs by 64.1%" />
-  <meta name="twitter:description" content="~400M query-aware Neural Keep. 64.1% mean cut. 5M free/mo then $0.10/1M. Prompt compression for coding agents." />
+  <meta name="twitter:title" content="SuperCompress v2 — Give your AI less. Keep what matters." />
+  <meta name="twitter:description" content="~400M query-aware Neural Keep. 64.1% less context · 24/24 evidence. 5M free/mo then $0.10/1M." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="prompt compression for AI apps, 400M neural keep, LLM token compression, SuperCompress v2, chatbot cost reduction, RAG context compression, coding agent compression, OpenAI cost reduction" />
   <meta name="ai-purpose" content="SuperCompress v2 is ~400M-parameter query-aware Neural Keep on the hosted API — keeps original answer lines, cuts the rest, before inference." />
@@ -291,15 +291,16 @@
             <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1192250&theme=light&t=1783615733783" alt="SuperCompress on Product Hunt" width="250" height="54" />
           </a>
           <h1 class="hero-title" id="hero-title">
-            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:1">Cut</span> </span>
+            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:1">Give</span> </span>
             <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:2">your</span> </span>
-            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:3">LLM</span> </span>
-            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:4">API</span> </span>
-            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:5">Costs</span> </span>
-            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:6">by</span> </span>
-            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:7">64.1%.</span></span>
+            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:3">AI</span> </span>
+            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:4">less.</span></span>
+            <br />
+            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:5">Keep</span> </span>
+            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:6">what</span> </span>
+            <span><span class="animate-hero-enter-word" style="--enter-delay:100ms;--stagger:7">matters.</span></span>
           </h1>
-          <p class="hero-subtitle animate-hero-enter" style="--enter-delay:660ms;--stagger:0">Built for coding-agent dumps: tool output, logs, diffs, and the one error line that matters. A ~400M-parameter Neural Keep engine scores lines against your question and keeps those lines in the original wording. The question itself is never compressed.</p>
+          <p class="hero-subtitle animate-hero-enter" style="--enter-delay:660ms;--stagger:0">SuperCompress v2 is a ~400M-parameter query-aware compression engine that removes irrelevant context before inference. <strong>64.1% less context · 24/24 evidence passes</strong> on coding-agent dumps. Cost savings follow — they are not the product identity.</p>
           <p class="hero-pricing animate-hero-enter" style="--enter-delay:700ms;--stagger:0">Launch promo · 5M free tokens/mo · then $0.10/1M · no credit card</p>
           <div class="hero-actions animate-hero-enter" style="--enter-delay:740ms;--stagger:0">
             <a class="button button-primary magnetic" href="/dashboard?signup=1&amp;utm_source=homepage&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key <span>→</span></a>
@@ -351,15 +352,14 @@
         <div class="sample-head"><span>EXAMPLE: LONG CONVERSATION</span><span>20,814 TOKENS</span></div>
         <pre><code><span class="muted">const</span> result = <span class="blue">await compress</span>({
   context: conversation,
-  query: <span class="blue">"What failed in the last deploy?"</span>,
-  mode: <span class="blue">"compiler"</span>
+  query: <span class="blue">"What failed in the last deploy?"</span>
 })
-<span class="muted">// → kept answer-critical lines; cut waste</span></code></pre>
+<span class="muted">// → Neural Keep · original evidence lines retained</span></code></pre>
       </div>
       <div class="metric is-lift">
-        <span class="metric-kicker">COMPILER MODE</span>
+        <span class="metric-kicker">NEURAL V2 · HOSTED</span>
         <strong data-count="64">0%+</strong>
-        <h3>Mean Token Cut</h3>
+        <h3>Mean context cut</h3>
         <p>64.1% mean context cut on the coding-agent benchmark. 16,647 tokens to 5,148. Required evidence held in 24/24 cases.</p>
       </div>
       <div class="metric is-lift">
@@ -384,7 +384,7 @@
           <article class="feature-card is-lift">
             <div class="feature-icon">☼</div>
             <h3>Meaning-First Compression</h3>
-            <p>Retains critical information, intent, and structure—so your models stay effective.</p>
+            <p>Keeps required evidence in the original wording—query-aware keep/drop, not a rewrite.</p>
             <div class="card-media">
               <canvas class="dither-canvas" data-dither="compress" aria-hidden="true"></canvas>
             </div>
@@ -400,7 +400,7 @@
           <article class="feature-card is-lift">
             <div class="feature-icon">♢</div>
             <h3>Built for agents</h3>
-            <p>MCP + hooks for Cursor, Claude Code, Codex, and 60+ harnesses. Hosted ~400M Neural Keep on the API.</p>
+            <p>Works across 40+ coding-agent harnesses. Hosted ~400M Neural Keep on the API.</p>
             <div class="card-media">
               <canvas class="dither-canvas" data-dither="private" aria-hidden="true"></canvas>
             </div>
@@ -463,40 +463,67 @@
 
     <section class="container benchmark-section" id="benchmarks">
       <div class="benchmark-copy reveal">
-        <p class="eyebrow">COMPILER MODE · SEMANTIC KEEP/DROP</p>
-        <h2>Cut hard.<br>Keep what answers.</h2>
-        <p>No fixed keep ratio. Score context against the query, remove everything you can, and fail the run if critical retention drops below 98%.</p>
+        <p class="eyebrow">NEURAL V2 · CODING-AGENT BENCHMARK</p>
+        <h2>Cut hard.<br>Keep required evidence.</h2>
+        <p>~400M Neural Keep on hosted GPU. We measure evidence containment — not downstream LLM completion. Compiler numbers live separately on <a href="/benchmarks#legacy-compiler">/benchmarks</a>.</p>
         <a class="button button-secondary magnetic" href="/benchmarks">Full methodology <span>→</span></a>
       </div>
       <div class="benchmark-table" id="benchmark-table">
         <div class="table-row table-head">
-          <span>METHOD</span><span>MEAN TOKEN CUT<br>(HIGHER IS BETTER)</span><span>CRITICAL / ANSWER KEPT<br>(GATE &gt;98%)</span><span>HOW IT WORKS</span>
+          <span>METHOD</span><span>MEAN TOKEN CUT<br>(HIGHER IS BETTER)</span><span>EVIDENCE PASS<br>(B5 · 24 CASES)</span><span>HOW IT WORKS</span>
         </div>
         <div class="table-row featured-row is-row">
-          <span class="model-cell"><img class="mini-logo" src="/assets/img/logo-chevrons.png" alt="" width="16" height="16" /> SuperCompress</span>
-          <span><b>~58–66%</b><i class="bar" data-tone="blue"><i style="--w:66%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>≥98%</b><i class="bar" data-tone="blue"><i style="--w:99%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span>Query-aware compiler · maximize drop</span>
+          <span class="model-cell"><img class="mini-logo" src="/assets/img/logo-chevrons.png" alt="" width="16" height="16" /> SuperCompress v2</span>
+          <span><b>64.1%</b><i class="bar" data-tone="blue"><i style="--w:64%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span><b>24/24</b><i class="bar" data-tone="blue"><i style="--w:100%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span>~400M Neural Keep · hosted GPU</span>
         </div>
         <div class="table-row is-row">
-          <span class="model-cell mono">LLM summarization</span>
-          <span><b>variable</b><i class="bar"><i style="--w:40%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>rewrites</b><i class="bar"><i style="--w:55%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span>Extra model call · can invent / omit</span>
+          <span class="model-cell mono">LLMLingua-2</span>
+          <span><b>52.7%</b><i class="bar"><i style="--w:53%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span><b>12/24</b><i class="bar"><i style="--w:50%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span>Token pruning · can drop evidence</span>
         </div>
         <div class="table-row is-row">
           <span class="model-cell mono">Truncation</span>
-          <span><b>forced</b><i class="bar"><i style="--w:50%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>mid-context risk</b><i class="bar"><i style="--w:28%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span><b>64.3%</b><i class="bar"><i style="--w:64%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span><b>11/24</b><i class="bar"><i style="--w:46%"><canvas aria-hidden="true"></canvas></i></i></span>
           <span>Head/tail only · blind to the ask</span>
         </div>
         <div class="table-row is-row">
-          <span class="model-cell mono">Headroom (public claim)</span>
-          <span><b>~15–20%</b><i class="bar"><i style="--w:20%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>unpublished</b><i class="bar"><i style="--w:18%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span class="model-cell mono">Headroom 0.36.4</span>
+          <span><b>14.8%</b><i class="bar"><i style="--w:15%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span><b>18/24</b><i class="bar"><i style="--w:75%"><canvas aria-hidden="true"></canvas></i></i></span>
           <span>Type / tool-output heuristics</span>
         </div>
-        <p class="table-note">SuperCompress numbers: held-out compiler suites (real / fresh4 / fresh5) — pooled gold answer containment <strong>99.4%</strong> (180/181), mean cut typically <strong>~58–66%</strong>, gates ≥98% answer keep and ≥55% cut. Not a fixed keep budget. Details on <a href="/benchmarks">/benchmarks</a>.</p>
+        <p class="table-note">Neural v2 B5 (coding-agent): <strong>64.1%</strong> mean cut, <strong>24/24</strong> evidence passes, <strong>16,647 → 5,148</strong> tokens, ~5.8s p50 on hosted GPU. Evidence containment — not downstream completion. Details on <a href="/benchmarks">/benchmarks</a>.</p>
+      </div>
+    </section>
+
+    <section class="container" id="engines" style="padding:48px 0 24px">
+      <p class="eyebrow centered">TWO PATHS · DO NOT MIX BENCHMARKS</p>
+      <h2 class="section-heading centered" style="margin-bottom:28px">Neural v2 vs Compiler</h2>
+      <div class="feature-grid" style="grid-template-columns:1fr 1fr;gap:16px">
+        <article class="feature-card is-lift">
+          <p class="eyebrow">RECOMMENDED</p>
+          <h3>Neural v2</h3>
+          <p>~400M query-aware cross-encoder. Hosted GPU inference. Highest-quality context selection for coding-agent dumps, RAG, and long threads.</p>
+          <ul style="margin:12px 0 0;padding-left:1.1rem;color:var(--text-body);line-height:1.55;font-size:0.92rem">
+            <li>64.1% mean B5 cut · 24/24 evidence</li>
+            <li>~5.8s B5 p50 on hosted GPU</li>
+            <li>Default on the hosted API</li>
+          </ul>
+        </article>
+        <article class="feature-card is-lift">
+          <p class="eyebrow">FAST / LOCAL</p>
+          <h3>Compiler</h3>
+          <p>Lightweight local path. CPU. Millisecond-class preprocessing when you need speed over Neural Keep quality.</p>
+          <ul style="margin:12px 0 0;padding-left:1.1rem;color:var(--text-body);line-height:1.55;font-size:0.92rem">
+            <li>Separate legacy benchmarks</li>
+            <li>CPU · ~ms latency</li>
+            <li>Not the ~400M launch engine</li>
+          </ul>
+        </article>
       </div>
     </section>
 
@@ -508,18 +535,16 @@
   -H <span class="terminal-string">"Content-Type: application/json"</span> \
   -d '{
     <span class="terminal-key">"context"</span>: <span class="terminal-string">"$(cat conversation.txt)"</span>,
-    <span class="terminal-key">"query"</span>: <span class="terminal-string">"What failed in the last deploy?"</span>,
-    <span class="terminal-key">"mode"</span>: <span class="terminal-string">"compiler"</span>
+    <span class="terminal-key">"query"</span>: <span class="terminal-string">"What failed in the last deploy?"</span>
   }'</code></pre>
         <div class="terminal-divider"></div>
-        <pre class="terminal-code response-code"><code><span class="terminal-comment">// Response</span>
+        <pre class="terminal-code response-code"><code><span class="terminal-comment">// Response · Neural Keep (hosted)</span>
 {
   <span class="terminal-key">"compressed"</span>: <span class="terminal-string">"..."</span>,
-  <span class="terminal-key">"original_tokens"</span>: <span class="terminal-num">23014</span>,
-  <span class="terminal-key">"compressed_tokens"</span>: <span class="terminal-num">8055</span>,
-  <span class="terminal-key">"tokens_saved_pct"</span>: <span class="terminal-num">62</span>,
-  <span class="terminal-key">"important_kept_pct"</span>: <span class="terminal-num">99</span>,
-  <span class="terminal-key">"policy_name"</span>: <span class="terminal-string">"SuperCompress"</span>
+  <span class="terminal-key">"original_tokens"</span>: <span class="terminal-num">16647</span>,
+  <span class="terminal-key">"compressed_tokens"</span>: <span class="terminal-num">5148</span>,
+  <span class="terminal-key">"tokens_saved_pct"</span>: <span class="terminal-num">64.1</span>,
+  <span class="terminal-key">"engine"</span>: <span class="terminal-string">"neural-keep-v2"</span>
 }</code></pre>
         <div class="neural-visual" aria-hidden="true">
           <canvas class="dither-canvas neural-dither dither-dark" data-dither="flow" aria-hidden="true"></canvas>
@@ -572,7 +597,7 @@
           <div class="install-line"><span class="prompt">$</span><code>npm install -g supercompress-proxy</code><button type="button" class="copy-btn" data-copy="npm install -g supercompress-proxy">Copy</button></div>
           <div class="install-line"><span class="prompt">$</span><code>npx supercompress setup</code></div>
           <ul class="install-checks">
-            <li>✓ Detects 48 integrations</li>
+            <li>✓ Works across 40+ coding-agent harnesses</li>
             <li>✓ MCP plugin installed</li>
             <li>✓ Works with login — no API-key mode</li>
           </ul>
@@ -661,11 +686,11 @@
             <canvas class="dither-canvas use-dither" data-dither="compress" aria-hidden="true"></canvas>
             <div class="use-panel-body">
               <h3>Production Inference</h3>
-              <p>Reduce token usage and latency in live apps while preserving output quality. Run locally on CPU or deploy beside your API gateway.</p>
+              <p>Hosted Neural v2 (~400M, GPU) is the recommended path for quality. A separate compiler path exists for millisecond-class local preprocessing on CPU.</p>
               <ul>
-                <li>5–20ms local compression path</li>
+                <li>Neural v2: hosted GPU · highest-quality keep</li>
+                <li>Compiler: local CPU · millisecond-class path</li>
                 <li>Drop-in before OpenAI, Anthropic, and more</li>
-                <li>Meaning retention built for product workloads</li>
               </ul>
             </div>
           </article>

@@ -1,8 +1,8 @@
 {
   "name": "supercompress",
   "displayName": "SuperCompress",
-  "description": "SuperCompress v2 — hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Coding-agent B5: 64.1% mean cut, required evidence in 24/24 cases. Hosted remote MCP (works in Grok Bot cloud).",
-  "version": "0.5.35",
+  "description": "SuperCompress v2 \u2014 hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Coding-agent B5: 64.1% mean cut, required evidence in 24/24 cases. Hosted remote MCP (works in Grok Bot cloud).",
+  "version": "0.5.36",
   "author": {
     "name": "SuperCompress",
     "email": "team@supercompress.dev"

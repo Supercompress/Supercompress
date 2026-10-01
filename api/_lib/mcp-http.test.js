@@ -33,7 +33,7 @@ async function main() {
 
   const connect = await handleToolCall("connect_account", {}, "");
   assert.match(connect.content[0].text, /supercompress\.dev\/dashboard/);
-  assert.match(connect.content[0].text, /SUPERCOMPRESS_API_KEY|Add this MCP server/);
+  assert.match(connect.content[0].text, /OAuth|API key|Bearer sc_/i);
 
   const noKey = await handleToolCall(
     "compress_context",

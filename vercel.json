@@ -1524,6 +1524,42 @@
       "destination": "/api/account?op=connect-device"
     },
     {
+      "source": "/.well-known/oauth-authorization-server",
+      "destination": "/api/oauth?op=metadata-as"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource",
+      "destination": "/api/oauth?op=metadata-pr"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource/api/mcp",
+      "destination": "/api/oauth?op=metadata-pr"
+    },
+    {
+      "source": "/api/oauth",
+      "destination": "/api/oauth"
+    },
+    {
+      "source": "/api/oauth/authorize",
+      "destination": "/api/oauth?op=authorize"
+    },
+    {
+      "source": "/api/oauth/token",
+      "destination": "/api/oauth?op=token"
+    },
+    {
+      "source": "/api/oauth/register",
+      "destination": "/api/oauth?op=register"
+    },
+    {
+      "source": "/api/oauth/revoke",
+      "destination": "/api/oauth?op=revoke"
+    },
+    {
+      "source": "/api/oauth/approve",
+      "destination": "/api/oauth?op=approve"
+    },
+    {
       "source": "/api/usage",
       "destination": "/api/account?op=usage"
     },

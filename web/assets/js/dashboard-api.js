@@ -808,7 +808,7 @@ function cleanAuthQuery() {
   if (!window.history?.replaceState) return;
   const url = new URL(window.location.href);
   let changed = false;
-  for (const key of ["signup", "mode", "connect"]) {
+  for (const key of ["signup", "mode", "connect", "oauth", "client_id", "redirect_uri", "code_challenge", "code_challenge_method", "state", "resource", "scope", "response_type", "source"]) {
     if (url.searchParams.has(key)) {
       url.searchParams.delete(key);
       changed = true;
@@ -823,6 +823,38 @@ function cleanAuthQuery() {
 function connectCodeFromUrl() {
   const params = new URLSearchParams(window.location.search);
   return (params.get("connect") || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function oauthAuthorizeFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("oauth") !== "1" && params.get("response_type") !== "code") return null;
+  const clientId = (params.get("client_id") || "").trim();
+  const redirectUri = (params.get("redirect_uri") || "").trim();
+  const challenge = (params.get("code_challenge") || "").trim();
+  if (!clientId || !redirectUri || !challenge) return null;
+  return {
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    code_challenge: challenge,
+    code_challenge_method: (params.get("code_challenge_method") || "S256").trim() || "S256",
+    state: params.get("state") || "",
+    resource: params.get("resource") || "https://www.supercompress.dev/api/mcp",
+    scope: params.get("scope") || "mcp",
+    response_type: "code",
+  };
+}
+
+async function completeOauthAuthorize(params) {
+  if (!params?.client_id) return null;
+  const res = await apiFetch("/api/oauth/approve", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+  if (res?.redirect_to) {
+    window.location.href = res.redirect_to;
+    return res;
+  }
+  throw new Error(res?.error_description || res?.detail || "OAuth approve failed");
 }
 
 async function completeDeviceConnect(code) {
@@ -879,8 +911,17 @@ async function enterDashboard(user, { isNewUser = false } = {}) {
     displayName: user.displayName || user.email?.split("@")[0] || "User",
   });
   const connectCode = connectCodeFromUrl();
+  const oauthParams = oauthAuthorizeFromUrl();
   let deviceLinked = false;
-  if (connectCode) {
+  if (oauthParams) {
+    try {
+      await completeOauthAuthorize(oauthParams);
+      return; // browser navigates to client redirect
+    } catch (err) {
+      console.warn("OAuth approve failed", err);
+      setError(err.message || "Could not authorize MCP client — try again.");
+    }
+  } else if (connectCode) {
     for (let attempt = 0; attempt < 3 && !deviceLinked; attempt++) {
       try {
         await completeDeviceConnect(connectCode);
@@ -2289,8 +2330,8 @@ async function initFirebaseAuth() {
       if (authTab === "signin") show(forgot);
       else hide(forgot);
     }
-    // Default dashboard auth copy (plugin OAuth uses applyConnectAuthCopy)
-    if (!connectCodeFromUrl()) {
+    // Default dashboard auth copy (plugin OAuth / device-link use applyConnectAuthCopy)
+    if (!connectCodeFromUrl() && !oauthAuthorizeFromUrl()) {
       const title = $("auth-title");
       const subtitle = $("auth-subtitle");
       const label = document.querySelector(".dash-auth-card .dash-section-label");
@@ -2311,16 +2352,26 @@ async function initFirebaseAuth() {
   };
 
   function applyConnectAuthCopy() {
+    const oauth = oauthAuthorizeFromUrl();
     const code = connectCodeFromUrl();
-    if (!code) return;
+    if (!oauth && !code) return;
     const title = $("auth-title");
     const subtitle = $("auth-subtitle");
     const label = document.querySelector(".dash-auth-card .dash-section-label");
+    if (oauth) {
+      if (label) label.textContent = "Authorize MCP";
+      if (title) title.textContent = "Connect SuperCompress";
+      if (subtitle) {
+        subtitle.textContent =
+          "Sign in with Google to authorize this MCP client. We’ll keep required evidence compression metered to your account.";
+      }
+      return;
+    }
     if (label) label.textContent = "Coding agent plugin";
-    if (title) title.textContent = "Connect your SuperCompress account";
+    if (title) title.textContent = "Link your coding agent";
     if (subtitle) {
       subtitle.textContent =
-        "Sign in to link this device. SuperCompress will create your account key automatically for the plugin.";
+        "Sign in once — we create an API key and finish the CLI/MCP connect automatically.";
     }
   }
 
@@ -2340,7 +2391,7 @@ async function initFirebaseAuth() {
     authParams.get("signup") === "true" ||
     authParams.get("mode") === "signup";
   // Default to signup — login only when explicitly requested (or plugin connect).
-  if (wantLogin && !wantSignup && !connectCodeFromUrl()) {
+  if (wantLogin && !wantSignup && !connectCodeFromUrl() && !oauthAuthorizeFromUrl()) {
     setAuthTab("signin");
   } else {
     setAuthTab("signup");
