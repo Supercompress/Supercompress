@@ -12,7 +12,8 @@
 </p>
 
 <p align="center">
-  <strong>~400M Neural Keep</strong> on the hosted API · coding-agent plugin via MCP
+  <strong>~400M Neural Keep</strong> on the hosted API · coding-agent plugin via MCP<br />
+  <a href="https://huggingface.co/arjunkshah21/sc-keep-crossencoder-v4-large">Open weights (MIT) on Hugging Face</a>
 </p>
 
 <p align="center">
