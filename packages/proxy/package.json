@@ -65,7 +65,7 @@
     "postinstall": "node bin/install.js"
   },
   "dependencies": {
-    "express": "4.22.2"
+    "express": "5.2.1"
   },
   "optionalDependencies": {
     "@opentui/core": "0.5.1"
