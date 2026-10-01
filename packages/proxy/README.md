@@ -89,6 +89,8 @@ Your agent ──→ SuperCompress (hooks / MCP) ──→ smaller context ─�
 | `supercompress` / `tui` | Interactive paper-branded UI (default in a TTY; [Bun](https://bun.sh)) |
 | `supercompress setup` | **Recommended** — link account, detect agents, install MCP + hooks |
 | `supercompress plugin` | Refresh agent integrations anytime |
+| `supercompress connectors` | List clean connector cards (harness + SDK) |
+| `supercompress connector <id>` | One install card (e.g. `connector cursor`) |
 | `supercompress doctor` | Per-harness health matrix (account / MCP / hooks) |
 | `supercompress agents` | 60+ catalog — auto-plugin vs recipe/connect |
 | `supercompress start` / `stop` / `status` | Optional local proxy (`setup --proxy`) |

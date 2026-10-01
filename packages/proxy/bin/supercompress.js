@@ -62,6 +62,8 @@ function printHelp() {
   console.log("  Commands:");
   console.log("  setup          Link account + install MCP/hooks (60+ harnesses, 25+ auto)");
   console.log("  plugin         Refresh MCP/hooks/instructions (no account prompt)");
+  console.log("  connectors     List SuperCompress connectors (harness + SDK)");
+  console.log("  connector      Show one clean install card  (e.g. connector cursor)");
   console.log("  doctor         Clean health matrix — account, MCP, per-harness hooks");
   console.log("  connect        Link this install to your SuperCompress account");
   console.log("  account        Show the connected SuperCompress account");
@@ -83,6 +85,8 @@ function printHelp() {
   console.log("  supercompress setup");
   console.log("  supercompress setup --yes");
   console.log("  supercompress plugin");
+  console.log("  supercompress connectors");
+  console.log("  supercompress connector cursor");
   console.log("  supercompress doctor");
   console.log("  supercompress usage");
 }
@@ -244,6 +248,27 @@ async function main() {
       const { runDoctor } = require("../src/doctor");
       const report = await runDoctor({ CONFIG_DIR, loadConfig, version: VERSION });
       if (!report.linked || !report.mcpOk) process.exit(1);
+      break;
+    }
+
+    case "connectors":
+    case "connector": {
+      const { printConnectorList, printConnectorCard } = require("../src/connectors");
+      const json = process.argv.includes("--json");
+      const id = cmd === "connector" ? process.argv[3] : process.argv[3];
+      // `connectors` lists; `connector <id>` shows one. Also allow `connectors cursor`.
+      if (cmd === "connector" || (id && id !== "--json")) {
+        const q = id && id !== "--json" ? id : process.argv[4];
+        if (!q || q === "--json") {
+          console.log("  Usage: supercompress connector <id>");
+          console.log("  Example: supercompress connector cursor");
+          console.log("  List:    supercompress connectors");
+          process.exit(1);
+        }
+        printConnectorCard(q, { json });
+      } else {
+        printConnectorList({ json });
+      }
       break;
     }
     case "wrap": {

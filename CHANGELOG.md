@@ -25,8 +25,13 @@ Public page: https://www.supercompress.dev/changelog
 ### Changed
 - Public roadmap / contributor notes keep released-product scope only
 - Launch promo pricing is $0.10 / 1M after 5M free (`scripts/launch/apply-pricing-10c.sh`)
-- Coding-agent plugin **0.5.32** (`supercompress-proxy` on npm): v2 ~400M Neural Keep, 64.1% / 24/24 B5, hosted MCP, launch promo 5M free then $0.10/1M; 60 harnesses / 25+ native auto MCP
+- Coding-agent plugin **0.5.34** (`supercompress-proxy` on npm): connectors CLI (`connectors` / `connector <id>`), SSE UTF-8 decode, surrogate-safe chunking, severe-log digit keep; v2 ~400M / 5M free then $0.10/1M
+- **0.5.33**: streaming UTF-8 + unicode chunk safety + severe-log identity keep
 
+## [0.5.32] — 2026-09-30
+
+### Coding agent plugin
+- **`supercompress-proxy@0.5.32`**: v2 ~400M Neural Keep, 64.1% / 24/24 B5, hosted MCP, launch promo 5M free then $0.10/1M; 60 harnesses / 25+ native auto MCP
 
 ## [0.5.23] — 2026-08-15
 

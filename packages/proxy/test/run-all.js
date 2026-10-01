@@ -12,6 +12,7 @@ const suites = [
   ["sse-stream", "test/sse-stream.js"],
   ["agent-plugins", "test/agent-plugins.js"],
   ["harness-writers", "test/harness-writers.js"],
+  ["connectors", "test/connectors.js"],
   ["grok-build", "test/grok-build.js"],
   ["fx-build", "test/fx-build.js"],
   ["uninstall-clean", "test/uninstall-clean.js"],

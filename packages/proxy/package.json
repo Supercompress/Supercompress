@@ -1,9 +1,10 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.32",
-  "description": "SuperCompress v2 for coding agents — ~400M Neural Keep via MCP/hooks across 60+ harnesses. 64.1% mean cut, 24/24 evidence on B5. Launch promo $0.10/1M after 5M free. Benchmarks at supercompress.dev/benchmarks.",
+  "version": "0.5.34",
+  "description": "SuperCompress v2 connectors — clean MCP/SDK plug-ins for 60+ coding harnesses + app SDKs. 64.1% mean cut, 24/24 evidence on B5. Launch promo $0.10/1M after 5M free.",
   "keywords": [
     "supercompress",
+    "connectors",
     "prompt-compression",
     "coding-agents",
     "claude-code",
@@ -42,6 +43,7 @@
     "src/",
     "tui/",
     "agent-plugin/",
+    "connectors/",
     "LICENSE",
     "CHANGELOG.md",
     "README.md"

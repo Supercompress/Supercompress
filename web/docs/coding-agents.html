@@ -63,16 +63,18 @@
 
 
       <div class="docs-content">
-        <p class="doc-kicker df-reveal">Coding agent plugin · v0.5.32</p>
+        <p class="doc-kicker df-reveal">Connectors · v0.5.34</p>
         <h1 class="df-reveal">One install. 50+ harnesses. Fewer tokens.</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Run <code>supercompress setup</code> once. It links your account, detects coding agents, and installs a <strong>clean MCP + hooks plugin</strong> across 50+ harnesses — Cursor, Claude Code, Codex, Goose, Zed, OpenCode, fx, Hermes, OpenClaw, and more. Keep your normal login. Check health anytime with <code>supercompress doctor</code>.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Run <code>supercompress setup</code> once. It links your account and installs a <strong>connector</strong> — clean MCP + hooks — on each harness (Cursor, Claude Code, Codex, Goose, Zed, OpenCode, fx, Hermes, OpenClaw, …). List every card with <code>supercompress connectors</code>. Health: <code>supercompress doctor</code>.</p>
 
         <div class="doc-callout doc-callout--tip">
           <span class="doc-callout-label">Install in 30 seconds</span>
           <pre style="margin:10px 0 0"><code><span class="kw">npm install</span> -g supercompress-proxy
 <span class="kw">supercompress</span> setup
+<span class="kw">supercompress</span> connectors
+<span class="kw">supercompress</span> connector cursor
 <span class="kw">supercompress</span> doctor</code></pre>
-          <p style="margin-top:10px;margin-bottom:0"><code>setup</code> links your account and wires MCP + hooks on every detected host. Re-run <code>supercompress plugin</code> anytime. <code>doctor</code> prints a clean per-agent health matrix.</p>
+          <p style="margin-top:10px;margin-bottom:0"><code>setup</code> links your account and wires MCP + hooks. Each harness is a <strong>connector</strong> — <code>supercompress connector &lt;id&gt;</code> prints a one-page install card. Re-run <code>plugin</code> anytime.</p>
         </div>
 
         <div class="ca-stat-row df-reveal" style="--reveal-delay:120ms" aria-label="Highlights">
@@ -165,7 +167,7 @@
         <h2 id="install">Install</h2>
         <pre><code><span class="kw">npm install</span> -g supercompress-proxy
 <span class="kw">supercompress</span> --version
-<span class="cm"># → 0.5.32</span></code></pre>
+<span class="cm"># → 0.5.34</span></code></pre>
         <p>Or one-shot without a global install:</p>
         <pre><code><span class="kw">npm install</span> supercompress-proxy
 <span class="kw">npm exec</span> supercompress setup</code></pre>

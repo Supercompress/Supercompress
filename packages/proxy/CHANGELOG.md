@@ -4,6 +4,16 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.34] — 2026-09-30
+
+- **Connectors**: `supercompress connectors` / `supercompress connector <id>` — clean per-harness + SDK install cards. Ship `connectors/` with the npm package.
+
+## [0.5.33] — 2026-09-30
+
+- **SSE UTF-8**: decode streams with `StringDecoder` / streaming `TextDecoder` so multi-byte characters split across TCP chunks are not corrupted.
+- **Unicode chunking**: `chunkText` never splits UTF-16 surrogate pairs (emoji / non-BMP stay intact).
+- **Severe-log dedup**: WARN/ERROR/FATAL lines keep digit identity (order ids, ports, amounts) instead of collapsing via digit-blind fingerprints.
+
 ## [0.5.32] — 2026-09-30
 
 - **v2 live**: hosted ~400M Neural Keep (query-aware). Coding-agent B5: **64.1%** mean cut, **24/24** evidence, 16,647 → 5,148 tokens.

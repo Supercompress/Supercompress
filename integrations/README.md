@@ -1,6 +1,13 @@
-# SuperCompress API Plugin Integrations
+# SuperCompress connectors (app / SDK)
 
-Ready-to-use integration plugins for popular AI frameworks. These let you drop prompt compression into your existing LLM pipeline in minutes — reducing token costs by 64% with zero code changes to your application logic.
+Clean drop-in connectors for popular AI frameworks. Same product surface as coding-agent harness connectors (`supercompress connector <id>`), but for app SDKs.
+
+```bash
+supercompress connectors          # includes vercel-ai-sdk, openai-python, …
+supercompress connector vercel-ai-sdk
+```
+
+These let you drop prompt compression into your existing LLM pipeline in minutes — reducing token costs by ~64% with minimal changes to application logic.
 
 ## Coding-agent marketplaces
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "supercompress",
-  "version": "0.5.32",
-  "description": "Query-aware context compression for any coding agent — one setup, MCP + hooks, cut ~64% of input tokens without losing the answer.",
+  "version": "0.5.34",
+  "description": "SuperCompress connectors — query-aware context compression for any coding agent. One setup, MCP + hooks, cut ~64% of input tokens without losing the answer.",
   "homepage": "https://www.supercompress.dev",
   "license": "MIT"
 }
