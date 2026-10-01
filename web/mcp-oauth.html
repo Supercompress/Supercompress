@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SuperCompress MCP now has OAuth — one URL, Google sign-in</title>
+  <meta name="description" content="Add https://www.supercompress.dev/api/mcp to any OAuth-capable MCP client, sign in with Google, and compress coding-agent dumps with hosted ~400M Neural Keep. No API key to paste." />
+  <meta property="og:title" content="SuperCompress MCP now has OAuth" />
+  <meta property="og:description" content="One URL. Google sign-in. Hosted ~400M Neural Keep for coding agents — no key to copy, no env var to set." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/mcp-oauth" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:title" content="SuperCompress MCP now has OAuth" />
+  <meta name="twitter:description" content="One URL. Google sign-in. Hosted ~400M Neural Keep for coding agents." />
+  <meta name="twitter:site" content="@supercompress" />
+  <link rel="canonical" href="https://www.supercompress.dev/mcp-oauth" />
+  <meta property="article:published_time" content="2026-10-01T00:00:00-07:00" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=113" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=2" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "SuperCompress MCP now has OAuth",
+    "description": "Add the hosted MCP URL, sign in with Google, and compress coding-agent dumps with Neural Keep — no API key paste.",
+    "author": {"@type": "Organization", "name": "SuperCompress"},
+    "datePublished": "2026-10-01",
+    "publisher": {"@type": "Organization", "name": "SuperCompress"},
+    "mainEntityOfPage": {"@type": "WebPage", "@id": "https://www.supercompress.dev/mcp-oauth"}
+  }
+  </script>
+</head>
+<body>
+<header class="df-header">
+    <div class="df-header-blur" aria-hidden="true"></div>
+    <div class="df-header-inner">
+      <a href="/" class="df-logo-desktop">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="df-header-end">
+        <nav class="df-nav-pill" aria-label="Main">
+          <a href="/benchmarks">Benchmarks</a>
+          <a href="/#agents">Agents</a>
+          <a href="/blog">Blog</a>
+          <a href="/changelog">Changelog</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
+        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+        <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
+      </div>
+      <div class="df-mobile-bar">
+        <a href="/" class="df-logo-mobile">
+          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+          <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+        </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+        <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    <div class="df-mobile-nav" id="df-mobile-nav">
+      <a href="/benchmarks">Benchmarks</a>
+      <a href="/#agents">Agents</a>
+      <a href="/blog">Blog</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
+      <a href="/playground">Playground</a>
+      <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+  <div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page">
+    <p class="seo-kicker">New · MCP</p>
+    <div class="seo-tags">
+      <span class="seo-tag seo-tag--accent">New</span>
+      <span class="seo-tag">OAuth</span>
+      <span class="seo-tag">MCP</span>
+    </div>
+    <h1>SuperCompress MCP now has OAuth</h1>
+    <p class="seo-lead">One URL. Sign in with Google when your client asks. No API key to dig out of the dashboard, no env var to paste, no restart ritual just to try compression.</p>
+    <p class="seo-author">October 1, 2026 · Launch note</p>
+
+<nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+  <a href="/mcp-integration">MCP overview</a>
+  <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a>
+  <a href="/engine-v2-launch">v2 launch</a>
+  <a href="/benchmarks">Benchmarks</a>
+  <a href="/changelog">Changelog</a>
+  <a href="/blog">Blog</a>
+</nav>
+
+    <div class="article-prose">
+      <p>Until now, connecting SuperCompress to your coding agent meant digging an API key out of the dashboard, finding the right config file, pasting it in, and restarting. That is way too much friction just to try a tool.</p>
+
+      <p>Now it is one URL. Add <code>https://www.supercompress.dev/api/mcp</code> to any MCP client that supports OAuth, sign in with Google when it asks, and you are connected. No key to copy, no env var to set.</p>
+
+      <h2>Why it matters</h2>
+      <p>The logs, diffs, and huge file reads your agent pulls in go through our hosted ~400M Neural Keep model before they hit the context window. It keeps the lines that actually answer the question, in their original wording, and drops the noise. Your agent stays sharp and your sessions last longer.</p>
+
+      <h2>Claude Code</h2>
+      <p>Two commands:</p>
+      <pre>/plugin marketplace add Supercompress/Supercompress
+/plugin install supercompress@supercompress</pre>
+
+      <h2>Prefer a terminal?</h2>
+      <pre>npm i -g supercompress-proxy &amp;&amp; supercompress setup</pre>
+      <p><code>supercompress setup</code> finds the coding agents on your machine and wires them all up.</p>
+
+      <h2>Hosted MCP URL</h2>
+      <pre>https://www.supercompress.dev/api/mcp</pre>
+      <p>OAuth 2.1 + PKCE. Same Google account path as CLI device-link. Clients that speak OAuth get a browser sign-in prompt on connect.</p>
+
+      <p><a class="button button-primary" href="https://docs.supercompress.dev/coding-agents">Coding agents docs →</a>
+      <a class="button button-secondary" href="/changelog">Changelog</a></p>
+
+      <p style="margin-top:28px;color:var(--muted)">Tell me what breaks. I am reading every reply. — Arjun</p>
+    </div>
+</main>
+<script src="/assets/js/landing-chrome.js?v=12" defer></script>
+</body>
+</html>

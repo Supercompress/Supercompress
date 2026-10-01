@@ -13,6 +13,12 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+## [MCP OAuth launch] — 2026-10-01
+
+### Added
+- Public launch note at `/mcp-oauth`: one hosted MCP URL + Google OAuth sign-in for coding agents.
+- Blog featured card + changelog entry; `/mcp-integration` setup rewritten OAuth-first.
+
 ## [0.5.39] — 2026-09-30
 
 ### Changed
