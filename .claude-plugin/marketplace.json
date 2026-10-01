@@ -13,8 +13,8 @@
     {
       "name": "supercompress",
       "source": "./integrations/plugins/supercompress",
-      "description": "Compress tool dumps, logs, diffs, and pasted files before they burn tokens. 64% mean context reduction, 24/24 evidence-retention passes on the B5 coding-agent benchmark. Links to your SuperCompress account (free tier: 5M tokens/month, then $0.10/1M).",
-      "version": "0.5.28",
+      "description": "SuperCompress v2 — hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Coding-agent B5: 64.1% mean cut, required evidence in 24/24 cases. Free tier: 5M tokens/month, then $0.10/1M.",
+      "version": "0.5.35",
       "author": {
         "name": "SuperCompress"
       },

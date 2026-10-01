@@ -1,7 +1,7 @@
 {
   "name": "supercompress",
-  "version": "0.5.32",
-  "description": "Query-aware context compression for coding agents and Grok Bot. Compress tool dumps, logs, diffs, and pasted files before they burn tokens \u2014 64% mean context reduction with 24/24 evidence-retention passes on the B5 coding-agent benchmark. Hosted remote MCP at https://www.supercompress.dev/api/mcp.",
+  "version": "0.5.35",
+  "description": "SuperCompress v2 — hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Coding-agent B5: 64.1% mean cut, required evidence in 24/24 cases. MCP: https://www.supercompress.dev/api/mcp",
   "author": {
     "name": "SuperCompress",
     "email": "team@supercompress.dev",

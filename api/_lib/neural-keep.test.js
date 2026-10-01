@@ -179,5 +179,14 @@ describe("engine prefers neural-keep when SC_NEURAL_KEEP_URL is set", () => {
     assert.equal(fetched, true);
     assert.equal(result.mode, "neural-keep");
     assert.match(result.compressed_text, /ERROR db timeout/);
+    assert.ok(
+      result.kept_tokens != null && result.kept_tokens > 0,
+      `neural-keep must return kept_tokens (got ${result.kept_tokens})`
+    );
+    assert.equal(
+      result.kept_tokens,
+      result.compressed_tokens,
+      "kept_tokens and compressed_tokens must stay in sync"
+    );
   });
 });

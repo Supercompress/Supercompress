@@ -411,6 +411,11 @@ module.exports = async (req, res) => {
     }
 
     const result = await (ccr ? compressCCR(context, query) : compressAdaptive(context, query));
+    // Neural Keep historically returned only compressed_tokens — normalize so
+    // billing / response / meters never see undefined kept_tokens.
+    if (result && result.kept_tokens == null && result.compressed_tokens != null) {
+      result.kept_tokens = result.compressed_tokens;
+    }
     const latencyMs = Math.max(0, Date.now() - compressStarted);
 
     const remainingMs = () => HARD_BUDGET_MS - (Date.now() - requestStarted);
@@ -502,11 +507,15 @@ module.exports = async (req, res) => {
       ? wrapCompressedForCache(rawText, query).wrapped
       : rawText;
 
+    const keptTokens =
+      result.kept_tokens ?? result.compressed_tokens ?? result.tokens_out ?? 0;
+    const originalTokens = result.original_tokens ?? 0;
     const responseBody = {
       compressed_text: finalText,
-      original_tokens: result.original_tokens,
-      kept_tokens: result.kept_tokens,
-      tokens_saved: result.tokens_saved ?? Math.max(0, result.original_tokens - result.kept_tokens),
+      original_tokens: originalTokens,
+      kept_tokens: keptTokens,
+      tokens_saved:
+        result.tokens_saved ?? Math.max(0, originalTokens - keptTokens),
       tokens_saved_pct: Math.round((result.tokens_saved_pct ?? result.kv_savings_pct ?? 0) * 100) / 100,
       // deprecated alias — same value as tokens_saved_pct
       kv_savings_pct: Math.round((result.tokens_saved_pct ?? result.kv_savings_pct ?? 0) * 100) / 100,
@@ -567,14 +576,14 @@ module.exports = async (req, res) => {
         const { appendCompressLog } = require("../_lib/compress-log");
         const tokensSaved = Math.max(
           0,
-          result.tokens_saved ?? Math.max(0, (result.original_tokens || 0) - (result.kept_tokens || 0))
+          result.tokens_saved ?? Math.max(0, (result.original_tokens || 0) - (keptTokens || 0))
         );
         await withTimeout(appendCompressLog(authenticated.ownerUid, {
           query,
           original_preview: context,
           compressed_preview: finalText,
           tokens_in: result.original_tokens,
-          tokens_out: result.kept_tokens,
+          tokens_out: keptTokens,
           tokens_saved: tokensSaved,
           tokens_saved_pct: result.tokens_saved_pct ?? result.kv_savings_pct,
           coding_agent: coding_agent || null,
@@ -592,10 +601,10 @@ module.exports = async (req, res) => {
     if (coding_agent && remainingMs() > 2000) {
       try {
         const { trackCodingAgentUsage } = require("../_lib/store");
-        const tokensSaved = Math.max(0, (result.original_tokens || 0) - (result.kept_tokens || 0));
+        const tokensSaved = Math.max(0, (result.original_tokens || 0) - (keptTokens || 0));
         await withTimeout(trackCodingAgentUsage(authenticated.ownerUid, coding_agent, {
           original_tokens: result.original_tokens,
-          kept_tokens: result.kept_tokens,
+          kept_tokens: keptTokens,
           tokens_saved: tokensSaved,
           latency_ms: latencyMs,
           query,
