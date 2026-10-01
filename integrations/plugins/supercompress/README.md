@@ -16,20 +16,22 @@ Re-run `supercompress plugin` anytime. Keep your normal Cursor / Claude / Codex 
 
 ## Marketplace / cloud (Grok Bot, Cursor Cloud)
 
+**No MCP OAuth yet.** The hosted URL alone does not open a sign-in prompt.
+
 This plugin tree uses the **hosted** Streamable HTTP MCP (no local `npx`):
 
 `https://www.supercompress.dev/api/mcp`
 
-1. Add the SuperCompress plugin (marketplace or this folder).
-2. Set `SUPERCOMPRESS_API_KEY` (`sc_…` from [dashboard](https://www.supercompress.dev/dashboard)).
+1. Prefer laptop install: `npm i -g supercompress-proxy && supercompress setup` (browser link + key saved).
+2. Or add the SuperCompress plugin (marketplace / this folder) **and** set `SUPERCOMPRESS_API_KEY` (`sc_…` from [dashboard](https://www.supercompress.dev/dashboard)).
 3. Call `compress_context` on large dumps.
 
 ```
-# Claude Code
+# Claude Code (still needs SUPERCOMPRESS_API_KEY configured after install)
 /plugin marketplace add Supercompress/Supercompress
 /plugin install supercompress@supercompress
 
-# Codex
+# Codex (same — configure the API key)
 codex plugin marketplace add Supercompress/Supercompress
 codex plugin add supercompress@supercompress
 ```

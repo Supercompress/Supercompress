@@ -4,18 +4,25 @@ SuperCompress is a **library** — wire it anywhere you build LLM prompts from l
 
 ## Agent marketplaces (one-command install)
 
-The SuperCompress plugin (MCP tools + skill, with browser account linking) is published for all three major coding agents from this repo:
+**Preferred (works today — browser sign-in, key saved for you):**
+
+```bash
+npm install -g supercompress-proxy && supercompress setup
+```
+
+MCP OAuth is **not** live yet. Hosted `/api/mcp` only accepts an `sc_…` API key (`Authorization` / `X-API-Key`). Root `/.well-known/oauth-*` returns 404. Installing a marketplace plugin without configuring `SUPERCOMPRESS_API_KEY` looks “connected” but never prompts to sign in.
 
 | Agent | Install |
 |-------|---------|
-| **Grok Bot** | Plugins → search SuperCompress → Configure with `sc_…` API key. Or chat: `Add this MCP server: https://www.supercompress.dev/api/mcp` |
-| **Claude Code** | `/plugin marketplace add Supercompress/Supercompress` then `/plugin install supercompress@supercompress` |
-| **Codex** | `codex plugin marketplace add Supercompress/Supercompress` then `codex plugin add supercompress@supercompress` |
-| **Cursor** | [Cursor Marketplace](https://cursor.com/marketplace) → search "SuperCompress" |
+| **Laptop agents (Cursor / Claude Code / Codex / …)** | `npm i -g supercompress-proxy && supercompress setup` |
+| **Grok Bot / cloud MCP** | Add hosted MCP `https://www.supercompress.dev/api/mcp` **and** set `SUPERCOMPRESS_API_KEY` (`sc_…` from the dashboard). Chat-only “Add this MCP server: …” without a key will not authenticate. |
+| **Claude Code marketplace** | `/plugin marketplace add Supercompress/Supercompress` then `/plugin install supercompress@supercompress` — then Configure `SUPERCOMPRESS_API_KEY`, or prefer `supercompress setup` on the laptop |
+| **Codex marketplace** | `codex plugin marketplace add Supercompress/Supercompress` then `codex plugin add supercompress@supercompress` — same key requirement |
+| **Cursor** | [Cursor Marketplace](https://cursor.com/marketplace) → search "SuperCompress" — Configure API key, or use `supercompress setup` |
 
-Grok Bot needs the **hosted** MCP (`https://www.supercompress.dev/api/mcp`) — local `npx` stdio is not reachable from the Bot's cloud computer. The Cursor/marketplace plugin pack points at that URL.
+Grok Bot needs the **hosted** MCP (`https://www.supercompress.dev/api/mcp`) — local `npx` stdio is not reachable from the Bot's cloud computer. The Cursor/marketplace plugin pack points at that URL **and** requires `SUPERCOMPRESS_API_KEY`.
 
-The plugin exposes `compress_context`, `connect_account` (dashboard link / API key), and `usage_summary`. Source: [`integrations/plugins/supercompress/`](../integrations/plugins/supercompress/).
+The plugin exposes `compress_context`, `connect_account` (dashboard link / API key paste — not browser OAuth), and `usage_summary`. Source: [`integrations/plugins/supercompress/`](../integrations/plugins/supercompress/).
 
 ## Quick patterns
 
