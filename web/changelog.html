@@ -299,7 +299,6 @@
         <div class="cl-body">
           <h3>API / dashboard</h3>
           <ul>
-            <li><strong>Power-user email</strong> — branded congrats when someone <em>newly</em> crosses 1M tokens (once ever; existing 1M+ accounts are not emailed).</li>
             <li><strong>Analytics panel</strong> inside the API dashboard — live token savings, requests, coding-agent share, and key breakdown from your signed-in <code>/api/keys</code> meter (dither charts). <code>/analytics</code> stays on <code>/dashboard?panel=analytics</code>.</li>
             <li>Fix Analytics chart paint (Bayer wells, layout-ready draw). No demo/fake flash in production.</li>
             <li><strong>Fingerprint-bound Idempotency-Key</strong> — reuse with a different compress payload returns <code>409 idempotency_conflict</code> (blocks free recompress / billing bypass).</li>
