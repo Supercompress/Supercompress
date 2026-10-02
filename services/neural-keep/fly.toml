@@ -1,6 +1,7 @@
-# Fly.io app for SuperCompress Neural Keep cross-encoder.
-# Create once: fly apps create sc-neural-keep
-# Volume for weights: fly volumes create neural_weights --region sjc --size 10
+# Fly.io app for SuperCompress Neural Keep.
+# Product path: v4-large (~395.8M ModernBERT-large) fp32 — int8 collapses keep scores.
+# Do NOT deploy the base-distill (~150M) as the live product model — users saw ~1–20% cuts.
+# Cost knobs: shared-2xCPU, batch=12, threads=2, max_lines/max_length caps (not quant).
 
 app = "sc-neural-keep"
 primary_region = "sjc"
@@ -9,29 +10,32 @@ primary_region = "sjc"
   dockerfile = "Dockerfile"
 
 [env]
-  SC_NEURAL_DIR = "/data/model"
+  SC_NEURAL_DIR = "/app/model"
   SC_NEURAL_DEVICE = "cpu"
   SC_NEURAL_LAZY_LOAD = "0"
   SC_ARENA = "0"
-  OMP_NUM_THREADS = "4"
-  MKL_NUM_THREADS = "4"
-  OPENBLAS_NUM_THREADS = "4"
-  TORCH_NUM_THREADS = "4"
-  SC_NEURAL_INFER_TIMEOUT_S = "90"
-  SC_NEURAL_BATCH = "32"
-  SC_NEURAL_MAX_LINES = "128"
+  OMP_NUM_THREADS = "2"
+  MKL_NUM_THREADS = "2"
+  OPENBLAS_NUM_THREADS = "2"
+  TORCH_NUM_THREADS = "2"
+  SC_NEURAL_INFER_TIMEOUT_S = "120"
+  # More lines than distill's 96 — agent dumps need real scoring, not head/tail only.
+  SC_NEURAL_BATCH = "16"
+  SC_NEURAL_MAX_LINES = "256"
   SC_NEURAL_MAX_LENGTH = "128"
   SC_NEURAL_CHECKPOINT = "sc-keep-crossencoder-v4-large"
   SC_NEURAL_EXPECTED_BYTES = "1583351632"
   SC_NEURAL_EXPECTED_PARAMS_M = "395.83"
-  SC_NEURAL_BUSY_WAIT_S = "0"
+  # Calibrated for v4-large fp32 (~60–90% cuts on agent dumps; keeps Root cause/Fix hint).
+  SC_NEURAL_THRESHOLD = "0.42"
+  SC_NEURAL_BUSY_WAIT_S = "12"
   SC_NEURAL_TIMEOUT_EXITS = "0"
+  # int8 destroys ModernBERT-large probs — leave off.
+  SC_NEURAL_QUANTIZE = "0"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  # Stay warm — cold-loading ~400M on shared CPU is what caused 502 storms.
-  # Cost: one shared-cpu-4x 8GB machine on the existing Fly credit.
   auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
@@ -39,26 +43,11 @@ primary_region = "sjc"
 
   [http_service.concurrency]
     type = "requests"
-    # App serializes compress (inflight=1). Keep plenty of headroom for
-    # /health+/ready + client retries — low caps made health 503 under load.
-    hard_limit = 32
-    soft_limit = 16
+    hard_limit = 12
+    soft_limit = 6
 
+# Large + int8 on shared CPU: plan caps shared VMs at 4096 MiB.
 [[vm]]
-  memory = "8gb"
+  memory = "4096mb"
   cpu_kind = "shared"
-  cpus = 4
-
-[mounts]
-  source = "neural_weights"
-  destination = "/data/model"
-
-# TCP liveness — does NOT run Python/torch. HTTP /health used to time out while
-# the GIL was held during inference → Fly marked the machine critical → 502s.
-[checks]
-  [checks.alive]
-    type = "tcp"
-    port = 8080
-    interval = "15s"
-    timeout = "2s"
-    grace_period = "120s"
+  cpus = 2

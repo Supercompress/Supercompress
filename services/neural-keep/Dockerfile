@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Real RTK (Rust Token Killer) binary for the Compression Arena comparator.
-# Pre-built musl binary from rtk-ai/rtk releases; arch-aware.
 RUN set -eux; \
     arch="$(uname -m)"; \
     case "$arch" in \
@@ -25,27 +24,32 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY inference.py server.py ./
+# Product weights: sc-keep-crossencoder-v4-large (~395.8M). Bake locally before fly deploy
+# (dir is gitignored). Do not ship the base-distill as the live product model.
+COPY model/ /app/model/
 
-ENV SC_NEURAL_DIR=/data/model
+ENV SC_NEURAL_DIR=/app/model
 ENV PYTHONUNBUFFERED=1
-ENV OMP_NUM_THREADS=4
-ENV MKL_NUM_THREADS=4
-ENV OPENBLAS_NUM_THREADS=4
-ENV TORCH_NUM_THREADS=4
+ENV OMP_NUM_THREADS=2
+ENV MKL_NUM_THREADS=2
+ENV OPENBLAS_NUM_THREADS=2
+ENV TORCH_NUM_THREADS=2
 ENV SC_ARENA=0
-ENV SC_NEURAL_BATCH=32
-ENV SC_NEURAL_MAX_LINES=128
+ENV SC_NEURAL_BATCH=16
+ENV SC_NEURAL_MAX_LINES=256
 ENV SC_NEURAL_MAX_LENGTH=128
-ENV SC_NEURAL_INFER_TIMEOUT_S=90
+ENV SC_NEURAL_INFER_TIMEOUT_S=120
+# int8 collapses ModernBERT-large keep probs — leave off (cost via batch/threads).
+ENV SC_NEURAL_QUANTIZE=0
+ENV SC_NEURAL_THRESHOLD=0.42
+ENV SC_NEURAL_CHECKPOINT=sc-keep-crossencoder-v4-large
+ENV SC_NEURAL_EXPECTED_BYTES=1583351632
+ENV SC_NEURAL_EXPECTED_PARAMS_M=395.83
 
 EXPOSE 8080
 
-# Container-local HTTP health (Docker only). Fly uses TCP checks in fly.toml.
-HEALTHCHECK --interval=30s --timeout=3s --start-period=180s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=120s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)" || exit 1
 
-# Single worker — model is ~1.5G + runtime; multi-worker OOMs the 8GB VM.
-# High limit-concurrency: app serializes compress itself. A low uvicorn cap
-# (was 4) made /health 503 under API retry storms ("Exceeded concurrency limit").
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080", \
      "--workers", "1", "--limit-concurrency", "64", "--timeout-keep-alive", "75"]
