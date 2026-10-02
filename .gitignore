@@ -123,3 +123,6 @@ games/
 
 # npm pack artifacts
 *.tgz
+
+# Baked Neural Keep weights (local deploy only — never commit)
+services/neural-keep/model/

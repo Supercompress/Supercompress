@@ -42,11 +42,26 @@ def _query_drop_penalty(query: str, line: str) -> float:
 
 
 def _expand_incident_tails(lines: list[str], kept: list[bool], probs: list[float]) -> None:
+    """Force-keep answer-critical markers and expand short incident neighborhoods."""
+    critical_markers = (
+        "Root cause:",
+        "Fix hint:",
+        "AssertionError:",
+        "Mitigation:",
+        "Recommendation:",
+        "Action:",
+    )
     tail_markers = (
         "Action:", "DSMB", "Mitigation:", "Fix hint:", "Recommendation:",
         "Broker:", "AssertionError:", "ETA delayed",
     )
-    head_markers = ("pytest failed:", "INCIDENT:", "Shipping:", "Sentry:", "Root cause:")
+    head_markers = ("pytest failed:", "INCIDENT:", "Shipping:", "Sentry:", "Root cause:", "FAIL ")
+    # Always keep critical diagnostic lines regardless of score — dropping them
+    # is worse than a few extra tokens.
+    for i, ln in enumerate(lines):
+        head = ln.strip()
+        if any(head.startswith(m) for m in critical_markers):
+            kept[i] = True
     for i in range(len(lines)):
         if not kept[i]:
             continue
@@ -104,13 +119,16 @@ def _env_flag(name: str, default: bool = False) -> bool:
 
 
 def _maybe_quantize_dynamic(model, device: str):
-    """Dynamic int8 Linear quant on CPU (Fly/Linux). Same weights, lower RAM + faster matmuls.
+    """Optional dynamic int8 Linear quant on CPU.
 
-    macOS often has NoQEngine — we no-op there. Set SC_NEURAL_QUANTIZE=0 to disable.
+    Default OFF: int8 collapses ModernBERT-large keep probs (Root cause / Fix hint
+    drop below threshold → ~first-line junk keeps). Opt in with SC_NEURAL_QUANTIZE=1
+    only after score-calibration checks. Cost knobs without quant: batch, threads,
+    max_lines, max_length.
     """
     import os
 
-    if device != "cpu" or not _env_flag("SC_NEURAL_QUANTIZE", default=True):
+    if device != "cpu" or not _env_flag("SC_NEURAL_QUANTIZE", default=False):
         return model, False
     try:
         import torch
@@ -283,7 +301,11 @@ class NeuralKeepModel:
         _expand_incident_tails(lines, kept, probs)
         out_lines = [ln for ln, k in zip(lines, kept) if k]
         if not out_lines:
-            out_lines = lines[:3]
+            # Prefer highest-scoring lines — head-of-file is often noise headers.
+            ranked = sorted(range(len(lines)), key=lambda i: probs[i], reverse=True)
+            k = max(3, min(8, len(lines)))
+            pick = sorted(ranked[:k])  # preserve document order
+            out_lines = [lines[i] for i in pick]
 
         compressed = "\n".join(out_lines)
         tin = rough_tokens(context)
