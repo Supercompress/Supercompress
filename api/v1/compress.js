@@ -538,6 +538,11 @@ module.exports = async (req, res) => {
       coding_agent: coding_agent || null,
       source: inferredSource,
       request_id: requestId,
+      checkpoint: result.checkpoint || null,
+      params_m: result.params_m ?? null,
+      threshold: result.threshold ?? null,
+      neural_keep_fallback: result.neural_keep_fallback === true,
+      fallback_reason: result.fallback_reason || null,
     };
 
     // Billing is fail-closed: never return compressed text without a durable charge/quota write.
@@ -613,6 +618,21 @@ module.exports = async (req, res) => {
       } catch (err) {
         console.warn("Failed to track coding agent usage:", err.message);
       }
+    }
+
+    // Optional control-plane hooks (flags default OFF). Additive fields only.
+    try {
+      const { maybeAttachControlPlane } = require("../_lib/cp-hooks");
+      maybeAttachControlPlane(responseBody, {
+        key_id: authenticated?.user?.prefix || authenticated?.user?.id,
+        org_id: authenticated?.ownerUid,
+        agent_id: coding_agent || null,
+        idempotency_key: requestId,
+        latency_ms: latencyMs,
+        strategy: responseBody.mode === "compiler" ? "compiler" : undefined,
+      });
+    } catch (err) {
+      console.warn("cp-hooks skipped:", err.message || err);
     }
 
     res.setHeader("Idempotency-Key", requestId);
