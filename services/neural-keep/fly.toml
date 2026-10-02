@@ -1,6 +1,7 @@
 # Fly.io app for SuperCompress Neural Keep.
-# Product path: v4-large (~395.8M ModernBERT-large) + int8 dynamic quant for cost.
+# Product path: v4-large (~395.8M ModernBERT-large) fp32 — int8 collapses keep scores.
 # Do NOT deploy the base-distill (~150M) as the live product model — users saw ~1–20% cuts.
+# Cost knobs: shared-2xCPU, batch=12, threads=2, max_lines/max_length caps (not quant).
 
 app = "sc-neural-keep"
 primary_region = "sjc"
@@ -25,12 +26,12 @@ primary_region = "sjc"
   SC_NEURAL_CHECKPOINT = "sc-keep-crossencoder-v4-large"
   SC_NEURAL_EXPECTED_BYTES = "1583351632"
   SC_NEURAL_EXPECTED_PARAMS_M = "395.83"
-  # 0.12 kept almost everything in prod; 0.42 targets real cuts with v4-large.
+  # Calibrated for v4-large fp32 (~60–90% cuts on agent dumps; keeps Root cause/Fix hint).
   SC_NEURAL_THRESHOLD = "0.42"
   SC_NEURAL_BUSY_WAIT_S = "12"
   SC_NEURAL_TIMEOUT_EXITS = "0"
-  # Keep inference cost down without shrinking the model.
-  SC_NEURAL_QUANTIZE = "1"
+  # int8 destroys ModernBERT-large probs — leave off.
+  SC_NEURAL_QUANTIZE = "0"
 
 [http_service]
   internal_port = 8080
@@ -45,8 +46,8 @@ primary_region = "sjc"
     hard_limit = 12
     soft_limit = 6
 
-# Large + int8 needs headroom (was thrashing / timing out at 2–4GB on distill path).
+# Large + int8 on shared CPU: plan caps shared VMs at 4096 MiB.
 [[vm]]
-  memory = "8192mb"
+  memory = "4096mb"
   cpu_kind = "shared"
   cpus = 2
