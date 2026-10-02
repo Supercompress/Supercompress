@@ -1504,6 +1504,14 @@
       "destination": "/api/v1/compress"
     },
     {
+      "source": "/v1/chat/completions",
+      "destination": "/api/v1/chat-completions"
+    },
+    {
+      "source": "/api/v1/chat/completions",
+      "destination": "/api/v1/chat-completions"
+    },
+    {
       "source": "/retrieve",
       "destination": "/api/retrieve"
     },
@@ -1847,6 +1855,10 @@
     "api/v1/compress.js": {
       "maxDuration": 180,
       "includeFiles": "web/assets/**"
+    },
+    "api/v1/chat-completions.js": {
+      "maxDuration": 300,
+      "includeFiles": "{web/assets/**,services/gateway/**,packages/control-plane/**}"
     },
     "api/**/*.js": {
       "maxDuration": 30,
