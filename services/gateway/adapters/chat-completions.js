@@ -71,6 +71,9 @@ function toChatCompletions(normalizedResponse = {}) {
   if (normalizedResponse.compression) {
     resp.sc_compression_trace = normalizedResponse.compression;
   }
+  if (normalizedResponse.economics) {
+    resp.sc_economics = normalizedResponse.economics;
+  }
   if (normalizedResponse.request_id) {
     resp.sc_request_id = normalizedResponse.request_id;
   }

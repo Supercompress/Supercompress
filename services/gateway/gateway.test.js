@@ -415,7 +415,9 @@ describe("wired gateway flag gating", () => {
     );
     assert.equal(ctx.aborted, false);
     assert.ok(ctx.openai.sc_compression_trace);
+    assert.ok(ctx.openai.sc_economics);
     assert.ok(ctx.compression);
+    assert.ok(ctx.economics);
   });
 
   it("trace off omits sc_compression_trace from OpenAI-shaped response", async () => {

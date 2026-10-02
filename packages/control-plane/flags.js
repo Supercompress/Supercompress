@@ -19,6 +19,8 @@ function flags() {
     gateway: flagOn("SC_CP_GATEWAY"),
     route: flagOn("SC_CP_ROUTE"),
     enterprise: flagOn("SC_CP_ENTERPRISE"),
+    /** Unadvertised ops/insights surface */
+    ops: flagOn("SC_CP_OPS"),
   };
 }
 

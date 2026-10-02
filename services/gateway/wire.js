@@ -30,6 +30,7 @@ const {
   defaultCatalog,
   normalizeCatalog,
 } = require("../../packages/control-plane");
+const { computeRouteEconomics, attachEconomicsToTrace } = require("../../packages/control-plane/economics");
 
 function loadEnterpriseAdmit() {
   try {
@@ -260,6 +261,23 @@ function createWiredGateway(options = {}) {
     },
     async route(ctx) {
       if (ctx.aborted) return ctx;
+
+      const retained = Number(ctx.compression?.retained_tokens) || 0;
+      const original = Number(ctx.compression?.original_tokens) || retained;
+
+      // Always compute compress→route economics (moat proof), even if routing is passthrough.
+      const economics = computeRouteEconomics({
+        original_tokens: original,
+        retained_tokens: retained,
+        requested_model: ctx.normalized?.model,
+        policy,
+        catalog: catalog.models,
+        health,
+        require_capabilities: ctx.require_capabilities || policy.routing?.require_capabilities,
+        max_usd_per_request: ctx.estimated_max_usd ?? policy.max_usd_per_request,
+      });
+      ctx.economics = economics;
+
       if (!enableRouting) {
         ctx.model_routed = ctx.normalized?.model || "stub-model";
         ctx.route_decision = {
@@ -268,18 +286,30 @@ function createWiredGateway(options = {}) {
           strategy: "passthrough",
           reason: "route_flag_off",
           allow: true,
-          retained_tokens: ctx.compression?.retained_tokens ?? 0,
+          retained_tokens: retained,
           fallback_chain: [ctx.model_routed],
           fallback_index: 0,
           max_retries: 0,
           eligibility: [],
         };
+        if (ctx.compression) {
+          ctx.compression = attachEconomicsToTrace(
+            {
+              ...ctx.compression,
+              meta: {
+                ...(ctx.compression.meta || {}),
+                route_reason: "route_flag_off",
+                route_strategy: "passthrough",
+              },
+            },
+            economics
+          );
+        }
         ledgerWrite("transition", ctx.request_id, "routed", { model_routed: ctx.model_routed });
         return ctx;
       }
 
       // Post-compress retained size — never pre-compress estimate.
-      const retained = Number(ctx.compression?.retained_tokens) || 0;
       const decision = selectRoute({
         requested_model: ctx.normalized?.model,
         retained_tokens: retained,
@@ -292,15 +322,18 @@ function createWiredGateway(options = {}) {
       ctx.route_decision = decision;
 
       if (ctx.compression) {
-        ctx.compression = {
-          ...ctx.compression,
-          model_eligibility: decision.eligibility.filter((e) => e.fit).map((e) => e.model),
-          meta: {
-            ...(ctx.compression.meta || {}),
-            route_reason: decision.reason,
-            route_strategy: decision.strategy,
+        ctx.compression = attachEconomicsToTrace(
+          {
+            ...ctx.compression,
+            model_eligibility: decision.eligibility.filter((e) => e.fit).map((e) => e.model),
+            meta: {
+              ...(ctx.compression.meta || {}),
+              route_reason: decision.reason,
+              route_strategy: decision.strategy,
+            },
           },
-        };
+          economics
+        );
       }
 
       if (!decision.allow || !decision.model) {
@@ -515,10 +548,17 @@ function createWiredGateway(options = {}) {
         output: ctx.provider_result?.output || { content: "" },
         usage: ctx.provider_result?.usage,
         compression: enableTrace ? ctx.compression : undefined,
+        economics: enableTrace ? ctx.economics : undefined,
         request_id: enableLedger ? ctx.request_id : undefined,
       };
       ctx.response = response;
       ctx.openai = toChatCompletions(response);
+      if (enableTrace && ctx.economics) {
+        ctx.openai.sc_economics = ctx.economics;
+      }
+      if (enableTrace && ctx.compression) {
+        ctx.openai.sc_compression_trace = ctx.compression;
+      }
       ctx.actual_usd = actual;
       ledgerWrite("finalize", ctx.request_id, {
         actual_usd: actual,

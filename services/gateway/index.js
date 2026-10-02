@@ -12,6 +12,7 @@ const {
 } = require("./providers");
 const { flags } = require("../../packages/control-plane");
 const http = require("./http");
+const ops = require("./ops");
 
 /**
  * Unadvertised gateway entry. Enable with SC_CP_GATEWAY=1 at the process edge.
@@ -36,4 +37,7 @@ module.exports = {
   isGatewayEnabled,
   writeOpenAiSse: http.writeOpenAiSse,
   getProcessGateway: http.getProcessGateway,
+  isOpsEnabled: ops.isOpsEnabled,
+  getOpsInsights: ops.getOpsInsights,
+  getOpsOtel: ops.getOpsOtel,
 };

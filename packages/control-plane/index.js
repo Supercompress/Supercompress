@@ -30,7 +30,11 @@ const {
   assertReservationStore,
 } = require("./durable");
 const { createPostgresDurableStore, SCHEMA_SQL } = require("./pg-store");
+const { createPostgresLedgerStore, LEDGER_SCHEMA_SQL } = require("./pg-ledger");
 const { createStoreFromEnv } = require("./store-from-env");
+const { computeRouteEconomics, attachEconomicsToTrace } = require("./economics");
+const { recordToOtelSpan, exportOtelBundle } = require("./otel");
+const { buildOpsInsights, buildOpsOtelExport } = require("./insights");
 const { withDirLock } = require("./file-lock");
 
 module.exports = {
@@ -54,11 +58,19 @@ module.exports = {
   assertReservationStore,
   createPostgresDurableStore,
   SCHEMA_SQL,
+  createPostgresLedgerStore,
+  LEDGER_SCHEMA_SQL,
   createStoreFromEnv,
   withDirLock,
   summarizeRequests,
   evaluateAlerts,
   summarizeEvalComparison,
+  computeRouteEconomics,
+  attachEconomicsToTrace,
+  recordToOtelSpan,
+  exportOtelBundle,
+  buildOpsInsights,
+  buildOpsOtelExport,
   selectRoute,
   nextFallback,
   isRetryableProviderError,

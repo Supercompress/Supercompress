@@ -21,6 +21,7 @@ describe("control-plane flags", () => {
     delete process.env.SC_CP_GATEWAY;
     delete process.env.SC_CP_ROUTE;
     delete process.env.SC_CP_ENTERPRISE;
+    delete process.env.SC_CP_OPS;
     const f = flags();
     assert.equal(f.ledger, false);
     assert.equal(f.trace, false);
@@ -28,6 +29,7 @@ describe("control-plane flags", () => {
     assert.equal(f.gateway, false);
     assert.equal(f.route, false);
     assert.equal(f.enterprise, false);
+    assert.equal(f.ops, false);
   });
 
   it("flagOn accepts common truthy values", () => {

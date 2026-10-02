@@ -1,15 +1,16 @@
 "use strict";
 
 /**
- * Postgres-backed durable money store (optional) + memory ledger.
+ * Postgres-backed durable money store + SQL request ledger.
  *
  * Enable with SC_CP_DATABASE_URL=postgres://...
  * Requires the `pg` package at runtime (optional peer).
  * Money ops use SELECT … FOR UPDATE so multi-worker deploys cannot oversubscribe.
- * Ledger stays in-process memory (request rows); swap later if needed.
+ * Ledger upserts into sc_cp_ledger (sync API + async flush).
  */
 
 const { createMemoryDurableStore, assertDurableStore } = require("./durable-store");
+const { createPostgresLedgerStore, LEDGER_SCHEMA_SQL } = require("./pg-ledger");
 
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS sc_cp_wallets (
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS sc_cp_reservations (
   reconciled_at TIMESTAMPTZ,
   released_at TIMESTAMPTZ
 );
+${LEDGER_SCHEMA_SQL}
 `;
 
 function newResId() {
@@ -67,6 +69,7 @@ function createPostgresDurableStore(options = {}) {
   let lastError = null;
   const defaultBalance = options.defaultBalance ?? 0;
   const mem = createMemoryDurableStore({ defaultBalance });
+  let ledger = null;
 
   async function getPool() {
     if (pool) return pool;
@@ -87,11 +90,22 @@ function createPostgresDurableStore(options = {}) {
     return pool;
   }
 
+  function getLedger() {
+    if (!ledger) {
+      ledger = createPostgresLedgerStore({ getPool });
+    }
+    return ledger;
+  }
+
   async function migrate() {
     const p = await getPool();
     await p.query(SCHEMA_SQL);
     ready = true;
     lastError = null;
+    const lg = getLedger();
+    if (typeof lg.hydrate === "function") {
+      await lg.hydrate().catch(() => {});
+    }
   }
 
   async function ping() {
@@ -99,7 +113,7 @@ function createPostgresDurableStore(options = {}) {
       if (!ready) await migrate();
       const p = await getPool();
       await p.query("SELECT 1");
-      return { ok: true, backend: "postgres" };
+      return { ok: true, backend: "postgres", ledger: "sql" };
     } catch (err) {
       lastError = String(err.message || err);
       return { ok: false, backend: "postgres", reason: lastError };
@@ -325,11 +339,15 @@ function createPostgresDurableStore(options = {}) {
 
   const store = {
     backend: "postgres",
-    ledger: mem.ledger,
+    get ledger() {
+      return getLedger();
+    },
     money,
     ping,
     migrate,
     SCHEMA_SQL,
+    /** @deprecated memory-only fallback for tests that never migrate */
+    _memoryLedger: mem.ledger,
   };
   assertDurableStore(store);
   return store;
@@ -338,4 +356,5 @@ function createPostgresDurableStore(options = {}) {
 module.exports = {
   createPostgresDurableStore,
   SCHEMA_SQL,
+  LEDGER_SCHEMA_SQL,
 };
