@@ -37,6 +37,7 @@ const { recordToOtelSpan, exportOtelBundle } = require("./otel");
 const { buildOpsInsights, buildOpsOtelExport } = require("./insights");
 const { createRateLimitStore, rateLimitKey } = require("./rate-limit");
 const { createHealthTracker } = require("./health-tracker");
+const { sumDaySpendUsd, startOfUtcDay } = require("./spend");
 const { withDirLock } = require("./file-lock");
 
 module.exports = {
@@ -76,6 +77,8 @@ module.exports = {
   createRateLimitStore,
   rateLimitKey,
   createHealthTracker,
+  sumDaySpendUsd,
+  startOfUtcDay,
   selectRoute,
   nextFallback,
   isRetryableProviderError,

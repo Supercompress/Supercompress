@@ -177,6 +177,20 @@ function createWiredGateway(options = {}) {
       const estimated =
         ctx.estimated_max_usd != null ? Number(ctx.estimated_max_usd) : policy.max_usd_per_request || 1;
 
+      // Day spend from ledger (UTC) — closes the LiteLLM budget gap without Auth claims.
+      if (
+        ctx.day_spend_usd == null &&
+        enableLedger &&
+        policy.max_usd_per_day != null &&
+        typeof ledger.list === "function"
+      ) {
+        const { sumDaySpendUsd } = require("../../packages/control-plane/spend");
+        ctx.day_spend_usd = sumDaySpendUsd(ledger.list({}), {
+          org_id: ctx.auth?.org_id,
+          key_id: ctx.auth?.key_id,
+        });
+      }
+
       // RPM/TPM sliding window — reject with 429 before other admission reasons.
       const rlKey = rateLimitKey(ctx.auth || {});
       const promptTokEst = Math.ceil(String(ctx.context || "").length / 4) || 0;
