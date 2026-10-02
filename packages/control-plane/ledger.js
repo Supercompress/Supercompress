@@ -37,6 +37,12 @@ function createLedgerStore(options = {}) {
     return rec ? { ...rec, meta: { ...(rec.meta || {}) } } : null;
   }
 
+  function getByIdempotency(key) {
+    if (!key) return null;
+    const id = byIdempotency.get(String(key));
+    return id ? get(id) : null;
+  }
+
   function create(input = {}) {
     const idem = input.idempotency_key ? String(input.idempotency_key) : null;
     if (idem && byIdempotency.has(idem)) {
@@ -153,6 +159,7 @@ function createLedgerStore(options = {}) {
     transition,
     finalize,
     get,
+    getByIdempotency,
     list,
     clear,
     LIFECYCLE,

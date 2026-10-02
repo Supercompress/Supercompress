@@ -331,6 +331,11 @@ function createPostgresLedgerStore(options = {}) {
     transition,
     finalize,
     get: (id) => snapshot(id),
+    getByIdempotency: (key) => {
+      if (!key) return null;
+      const id = byIdem.get(String(key));
+      return id ? snapshot(id) : null;
+    },
     list,
     clear,
     LIFECYCLE,

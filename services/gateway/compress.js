@@ -50,17 +50,84 @@ function applyCompressedToMessages(normalized, compressedContext, ask) {
   return { ...normalized, messages: next };
 }
 
-function heuristicCompress(context, _ask) {
-  const original = estimateTokens(context);
-  const keptRatio = 0.4;
-  const compressed = String(context).slice(0, Math.ceil(String(context).length * keptRatio));
-  const kept = Math.max(1, Math.ceil(original * keptRatio));
-  // Local heuristic is labeled "compiler" (deterministic keep) — never "unknown" in live path.
+function heuristicCompress(context, ask) {
+  const text = String(context || "");
+  const original = estimateTokens(text);
+  if (!text) {
+    return {
+      compressed_text: "",
+      original_tokens: 0,
+      kept_tokens: 0,
+      tokens_saved: 0,
+      engine: "compiler",
+      strategy: "compiler",
+    };
+  }
+
+  // Line-aware keep: head + ask-overlapping lines + tail. Beats naive 40% slice.
+  // If the blob has no newlines, chunk by words so we can still shrink.
+  let lines = text.split(/\r?\n/);
+  if (lines.length <= 1 && text.length > 120) {
+    const words = text.split(/\s+/);
+    const chunk = [];
+    let buf = [];
+    for (const w of words) {
+      buf.push(w);
+      if (buf.join(" ").length >= 48) {
+        chunk.push(buf.join(" "));
+        buf = [];
+      }
+    }
+    if (buf.length) chunk.push(buf.join(" "));
+    lines = chunk.length ? chunk : lines;
+  }
+  const askTerms = String(ask || "")
+    .toLowerCase()
+    .split(/[^a-z0-9_\-]{2,}/i)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 4)
+    .slice(0, 12);
+
+  const scored = lines.map((line, idx) => {
+    const lower = line.toLowerCase();
+    let score = 0;
+    if (idx < 3) score += 3;
+    if (idx >= lines.length - 3) score += 2;
+    for (const t of askTerms) {
+      if (t && lower.includes(t)) score += 4;
+    }
+    if (/error|exception|fail|root.?cause|fix|todo|must|required/i.test(line)) score += 2;
+    if (line.trim().length === 0) score -= 1;
+    return { line, idx, score };
+  });
+
+  const targetChars = Math.max(
+    80,
+    Math.ceil(text.length * 0.35)
+  );
+  const picked = new Set();
+  // Always keep head/tail anchors
+  for (let i = 0; i < Math.min(2, lines.length); i++) picked.add(i);
+  for (let i = Math.max(0, lines.length - 2); i < lines.length; i++) picked.add(i);
+
+  const byScore = [...scored].sort((a, b) => b.score - a.score || a.idx - b.idx);
+  let chars = [...picked].reduce((s, i) => s + (lines[i]?.length || 0) + 1, 0);
+  for (const row of byScore) {
+    if (picked.has(row.idx)) continue;
+    if (chars >= targetChars && picked.size >= 4) break;
+    if (row.score <= 0 && chars >= targetChars * 0.7) continue;
+    picked.add(row.idx);
+    chars += row.line.length + 1;
+  }
+
+  const ordered = [...picked].sort((a, b) => a - b);
+  const compressed = ordered.map((i) => lines[i]).join("\n");
+  const kept = Math.max(1, estimateTokens(compressed));
   return {
     compressed_text: compressed,
     original_tokens: original,
-    kept_tokens: kept,
-    tokens_saved: Math.max(0, original - kept),
+    kept_tokens: Math.min(kept, original),
+    tokens_saved: Math.max(0, original - Math.min(kept, original)),
     engine: "compiler",
     strategy: "compiler",
   };

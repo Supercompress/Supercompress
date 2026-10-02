@@ -14,6 +14,10 @@ const DEFAULT_CATALOG = [
     output_usd_per_mtok: 0.6,
     capabilities: ["chat", "tools"],
     health: "up",
+    weight: 3,
+    latency_ms_p50: 450,
+    tier: 1,
+    tags: ["cheap", "fast"],
   },
   {
     id: "gpt-4o",
@@ -23,6 +27,10 @@ const DEFAULT_CATALOG = [
     output_usd_per_mtok: 10,
     capabilities: ["chat", "tools", "vision"],
     health: "up",
+    weight: 2,
+    latency_ms_p50: 900,
+    tier: 3,
+    tags: ["flagship", "vision"],
   },
   {
     id: "claude-sonnet-4",
@@ -32,6 +40,10 @@ const DEFAULT_CATALOG = [
     output_usd_per_mtok: 15,
     capabilities: ["chat", "tools"],
     health: "up",
+    weight: 2,
+    latency_ms_p50: 1100,
+    tier: 3,
+    tags: ["flagship"],
   },
   {
     id: "claude-haiku-3.5",
@@ -41,6 +53,10 @@ const DEFAULT_CATALOG = [
     output_usd_per_mtok: 4,
     capabilities: ["chat", "tools"],
     health: "up",
+    weight: 2,
+    latency_ms_p50: 500,
+    tier: 1,
+    tags: ["cheap", "fast"],
   },
   {
     id: "stub-model",
@@ -50,6 +66,10 @@ const DEFAULT_CATALOG = [
     output_usd_per_mtok: 0.01,
     capabilities: ["chat"],
     health: "up",
+    weight: 1,
+    latency_ms_p50: 20,
+    tier: 0,
+    tags: ["stub"],
   },
 ];
 
@@ -69,6 +89,14 @@ function normalizeModelEntry(raw = {}) {
     output_usd_per_mtok: Math.max(0, Number(raw.output_usd_per_mtok) || 0),
     capabilities: Array.isArray(raw.capabilities) ? raw.capabilities.map(String) : ["chat"],
     health,
+    /** Soft routing weight (weighted strategy). Default 1. */
+    weight: Math.max(0, Number(raw.weight) || 1),
+    /** p50 latency hint in ms (latency_prefer strategy). */
+    latency_ms_p50:
+      raw.latency_ms_p50 != null ? Math.max(0, Number(raw.latency_ms_p50) || 0) : 800,
+    /** 0=edge … 3=flagship. Optional max_tier gate. */
+    tier: raw.tier != null ? Math.max(0, Number(raw.tier) || 0) : 1,
+    tags: Array.isArray(raw.tags) ? raw.tags.map(String) : [],
   };
 }
 

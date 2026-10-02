@@ -31,6 +31,8 @@ const {
   normalizeCatalog,
 } = require("../../packages/control-plane");
 const { computeRouteEconomics, attachEconomicsToTrace } = require("../../packages/control-plane/economics");
+const { createRateLimitStore, rateLimitKey } = require("../../packages/control-plane/rate-limit");
+const { createHealthTracker } = require("../../packages/control-plane/health-tracker");
 
 function loadEnterpriseAdmit() {
   try {
@@ -88,7 +90,22 @@ function createWiredGateway(options = {}) {
   const catalog = options.catalog
     ? normalizeCatalog(options.catalog)
     : defaultCatalog();
-  const health = options.health || {};
+  const staticHealth = options.health || {};
+  const rateLimits =
+    options.rateLimits ||
+    createRateLimitStore({
+      windowMs: options.rateLimitWindowMs,
+      clock: options.clock,
+    });
+  const healthTracker =
+    options.healthTracker ||
+    createHealthTracker({
+      failureThreshold: options.healthFailureThreshold,
+      successThreshold: options.healthSuccessThreshold,
+      cooldownMs: options.healthCooldownMs,
+      clock: options.clock,
+    });
+  const enforceRateLimit = options.enforceRateLimit !== false;
 
   const compressFn =
     options.compress ||
@@ -159,6 +176,29 @@ function createWiredGateway(options = {}) {
 
       const estimated =
         ctx.estimated_max_usd != null ? Number(ctx.estimated_max_usd) : policy.max_usd_per_request || 1;
+
+      // RPM/TPM sliding window — reject with 429 before other admission reasons.
+      const rlKey = rateLimitKey(ctx.auth || {});
+      const promptTokEst = Math.ceil(String(ctx.context || "").length / 4) || 0;
+      if (enforceRateLimit && (policy.rpm != null || policy.tpm != null)) {
+        const rlCheck = rateLimits.check(rlKey, policy);
+        ctx.rpm_used = rlCheck.rpm_used;
+        ctx.tpm_used = rlCheck.tpm_used;
+        if (!rlCheck.allow) {
+          ctx.aborted = true;
+          ctx.error = {
+            class: "rejected",
+            message: rlCheck.reasons.filter((r) => r !== "ok").join(",") || "rate_limited",
+            status: 429,
+          };
+          return ctx;
+        }
+      } else {
+        const snap = rateLimits.snapshot(rlKey);
+        ctx.rpm_used = ctx.rpm_used ?? snap.rpm_used;
+        ctx.tpm_used = ctx.tpm_used ?? snap.tpm_used;
+      }
+
       ctx.admission = evaluateAdmission(policy, {
         model: ctx.normalized?.model,
         estimated_usd: estimated,
@@ -169,18 +209,65 @@ function createWiredGateway(options = {}) {
       ctx.estimated_max_usd = ctx.admission.estimated_max_usd ?? estimated;
       if (!ctx.admission.allow) {
         ctx.aborted = true;
-        ctx.error = { class: "rejected", message: ctx.admission.reasons.join(",") };
+        const rateHit = ctx.admission.reasons.some(
+          (r) => r === "rpm_exceeded" || r === "tpm_exceeded"
+        );
+        ctx.error = {
+          class: "rejected",
+          message: ctx.admission.reasons.join(","),
+          status: rateHit ? 429 : undefined,
+        };
         if (ctx.request_id) {
           ledgerWrite("finalize", ctx.request_id, {
             error_class: "rejected",
             error_message: ctx.error.message,
           });
         }
+        return ctx;
+      }
+
+      if (enforceRateLimit && (policy.rpm != null || policy.tpm != null)) {
+        const rl = rateLimits.consume(rlKey, policy, promptTokEst);
+        ctx.rate_limit = rl;
+        ctx.rpm_used = rl.rpm_used;
+        ctx.tpm_used = rl.tpm_used;
+        if (!rl.allow) {
+          ctx.aborted = true;
+          ctx.error = {
+            class: "rejected",
+            message: rl.reasons.filter((r) => r !== "ok").join(",") || "rate_limited",
+            status: 429,
+          };
+          return ctx;
+        }
       }
       return ctx;
     },
     async reservation(ctx) {
       if (ctx.aborted) return ctx;
+
+      // Idempotent replay before money — avoid re-holding a reconciled reservation.
+      const idemEarly =
+        ctx.normalized?.metadata?.idempotency_key || ctx.idempotency_key || null;
+      if (
+        enableLedger &&
+        idemEarly &&
+        typeof ledger.getByIdempotency === "function"
+      ) {
+        const prev = ledger.getByIdempotency(idemEarly);
+        if (prev?.status === "finalized" && prev.meta?.cached_openai && !prev.error_class) {
+          ctx.request_id = prev.id;
+          ctx.openai = prev.meta.cached_openai;
+          ctx.compression = prev.compression || undefined;
+          ctx.economics = prev.meta?.economics;
+          ctx.model_routed = prev.model_routed;
+          ctx.actual_usd = prev.actual_usd;
+          ctx.idempotent_replay = true;
+          ctx._skip_to_finalize = true;
+          return ctx;
+        }
+      }
+
       if (!enforceReserve) return ctx;
       try {
         await assertMoneyStoreHealthy(durableStore || money);
@@ -208,6 +295,7 @@ function createWiredGateway(options = {}) {
       return ctx;
     },
     async ledger(ctx) {
+      if (ctx.idempotent_replay) return ctx;
       if (!enableLedger) {
         if (!ctx.request_id) ctx.request_id = ephemeralRequestId();
         return ctx;
@@ -228,21 +316,50 @@ function createWiredGateway(options = {}) {
         return ctx;
       }
       if (ctx.aborted) return ctx;
+      const idem = ctx.normalized?.metadata?.idempotency_key || ctx.idempotency_key;
       const rec = ledger.create({
         org_id: ctx.auth?.org_id,
         key_id: ctx.auth?.key_id,
         agent_id: ctx.auth?.agent_id,
-        idempotency_key: ctx.normalized?.metadata?.idempotency_key || ctx.idempotency_key,
+        idempotency_key: idem,
         model_requested: ctx.normalized?.model,
         reservation_id: ctx.reservation?.id,
         reserved_usd: ctx.reservation?.amount_usd,
       });
       ctx.request_id = rec.id;
-      ledgerWrite("transition", rec.id, ctx.reservation ? "reserved" : "admitted");
+      // Idempotent replay — LiteLLM caches by key; we replay finalized OpenAI shape.
+      if (
+        rec.status === "finalized" &&
+        rec.meta?.cached_openai &&
+        !rec.error_class
+      ) {
+        ctx.openai = rec.meta.cached_openai;
+        ctx.compression = rec.compression || ctx.compression;
+        ctx.economics = rec.meta?.economics || ctx.economics;
+        ctx.model_routed = rec.model_routed;
+        ctx.actual_usd = rec.actual_usd;
+        ctx.idempotent_replay = true;
+        ctx.aborted = false;
+        // Skip remaining stages via short-circuit flag consumed in compress+
+        ctx._skip_to_finalize = true;
+        return ctx;
+      }
+      if (rec.status === "finalized" && rec.error_class) {
+        // Prior failure with same idempotency — surface same rejection
+        ctx.aborted = true;
+        ctx.error = {
+          class: rec.error_class,
+          message: rec.error_message || rec.error_class,
+        };
+        return ctx;
+      }
+      if (rec.status === "created") {
+        ledgerWrite("transition", rec.id, ctx.reservation ? "reserved" : "admitted");
+      }
       return ctx;
     },
     async compress(ctx) {
-      if (ctx.aborted) return ctx;
+      if (ctx.aborted || ctx._skip_to_finalize || ctx.idempotent_replay) return ctx;
       const scCompress = ctx.normalized?.metadata?.sc_compress;
       const wantCompress = scCompress !== false && policy.compress_default !== false;
       if (!wantCompress) {
@@ -260,10 +377,11 @@ function createWiredGateway(options = {}) {
       return ctx;
     },
     async route(ctx) {
-      if (ctx.aborted) return ctx;
+      if (ctx.aborted || ctx._skip_to_finalize || ctx.idempotent_replay) return ctx;
 
       const retained = Number(ctx.compression?.retained_tokens) || 0;
       const original = Number(ctx.compression?.original_tokens) || retained;
+      const liveHealth = { ...staticHealth, ...healthTracker.healthMap() };
 
       // Always compute compress→route economics (moat proof), even if routing is passthrough.
       const economics = computeRouteEconomics({
@@ -272,7 +390,7 @@ function createWiredGateway(options = {}) {
         requested_model: ctx.normalized?.model,
         policy,
         catalog: catalog.models,
-        health,
+        health: liveHealth,
         require_capabilities: ctx.require_capabilities || policy.routing?.require_capabilities,
         max_usd_per_request: ctx.estimated_max_usd ?? policy.max_usd_per_request,
       });
@@ -315,7 +433,7 @@ function createWiredGateway(options = {}) {
         retained_tokens: retained,
         policy,
         catalog: catalog.models,
-        health,
+        health: liveHealth,
         require_capabilities: ctx.require_capabilities || policy.routing?.require_capabilities,
         max_usd_per_request: ctx.estimated_max_usd ?? policy.max_usd_per_request,
       });
@@ -354,6 +472,41 @@ function createWiredGateway(options = {}) {
         return ctx;
       }
 
+      // Post-compress spend gate — abort before provider if routed est exceeds reservation/cap.
+      const postUsd = Number(decision.estimated_usd);
+      const cap =
+        ctx.reservation?.amount_usd != null
+          ? Number(ctx.reservation.amount_usd)
+          : ctx.estimated_max_usd != null
+            ? Number(ctx.estimated_max_usd)
+            : policy.max_usd_per_request;
+      if (
+        Number.isFinite(postUsd) &&
+        cap != null &&
+        Number.isFinite(Number(cap)) &&
+        postUsd > Number(cap) + 1e-9
+      ) {
+        ctx.aborted = true;
+        ctx.error = {
+          class: "rejected",
+          message: `post_compress_usd:${postUsd}>${cap}`,
+        };
+        if (ctx.reservation?.id) {
+          try {
+            await money.release(ctx.reservation.id);
+          } catch (_) {
+            /* ignore */
+          }
+        }
+        ledgerWrite("finalize", ctx.request_id, {
+          error_class: "rejected",
+          error_message: ctx.error.message,
+          compression: ctx.compression,
+          model_routed: decision.model,
+        });
+        return ctx;
+      }
+
       ctx.model_routed = decision.model;
       ledgerWrite("transition", ctx.request_id, "routed", {
         model_routed: ctx.model_routed,
@@ -362,7 +515,7 @@ function createWiredGateway(options = {}) {
       return ctx;
     },
     async provider(ctx) {
-      if (ctx.aborted) return ctx;
+      if (ctx.aborted || ctx.idempotent_replay || ctx._skip_to_finalize) return ctx;
       const decision = ctx.route_decision;
       const maxAttempts =
         enableRouting && decision?.fallback_chain?.length
@@ -380,7 +533,9 @@ function createWiredGateway(options = {}) {
         }
 
         const providerName =
-          step?.provider || catalog.get?.(ctx.model_routed)?.provider || "unknown";
+          step?.provider ||
+          catalog.get?.(ctx.model_routed)?.provider ||
+          "unknown";
 
         ledgerWrite("transition", ctx.request_id, "attempted", {
           provider: providerName,
@@ -391,10 +546,12 @@ function createWiredGateway(options = {}) {
         try {
           ctx = (await providerFn(ctx)) || ctx;
           ctx.provider_name = ctx.provider_result?.provider || providerName;
+          if (ctx.model_routed) healthTracker.recordSuccess(ctx.model_routed);
           lastErr = null;
           break;
         } catch (err) {
           lastErr = err;
+          if (ctx.model_routed) healthTracker.recordFailure(ctx.model_routed);
           const retryable = enableRouting && isRetryableProviderError(err);
           if (!retryable || attempt >= maxAttempts - 1) {
             ctx.aborted = true;
@@ -420,7 +577,7 @@ function createWiredGateway(options = {}) {
       return ctx;
     },
     async stream(ctx) {
-      if (ctx.aborted) return ctx;
+      if (ctx.aborted || ctx.idempotent_replay || ctx._skip_to_finalize) return ctx;
       const wantStream = ctx.normalized?.stream === true;
       const upstream = ctx.provider_result?.stream;
       if (
@@ -469,6 +626,9 @@ function createWiredGateway(options = {}) {
       return ctx;
     },
     async finalize(ctx) {
+      if (ctx.idempotent_replay && ctx.openai) {
+        return ctx;
+      }
       if (
         deferStreamFinalize &&
         ctx.normalized?.stream &&
@@ -566,6 +726,10 @@ function createWiredGateway(options = {}) {
         model_routed: ctx.model_routed,
         provider: providerName,
         compression: ctx.compression,
+        meta: {
+          cached_openai: ctx.openai,
+          economics: ctx.economics,
+        },
       });
       if (typeof ledger.flush === "function") {
         try {
@@ -609,6 +773,8 @@ function createWiredGateway(options = {}) {
     ledger,
     money,
     catalog,
+    rateLimits,
+    healthTracker,
     STAGE_ORDER,
   };
 }

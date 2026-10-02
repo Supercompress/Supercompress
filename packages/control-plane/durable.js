@@ -122,6 +122,8 @@ function createDurableLedgerStore(options = {}) {
       return rec;
     },
     get: (id) => mem.get(id),
+    getByIdempotency: (key) =>
+      typeof mem.getByIdempotency === "function" ? mem.getByIdempotency(key) : null,
     list: (filter) => mem.list(filter),
     clear() {
       mem.clear();

@@ -32,6 +32,11 @@ function normalizePolicy(raw = {}) {
               raw.routing.output_tokens_reserve != null
                 ? Number(raw.routing.output_tokens_reserve)
                 : undefined,
+            max_tier: raw.routing.max_tier != null ? Number(raw.routing.max_tier) : undefined,
+            degraded_penalty_usd:
+              raw.routing.degraded_penalty_usd != null
+                ? Number(raw.routing.degraded_penalty_usd)
+                : undefined,
           }
         : undefined,
   };

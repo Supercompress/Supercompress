@@ -35,6 +35,8 @@ const { createStoreFromEnv } = require("./store-from-env");
 const { computeRouteEconomics, attachEconomicsToTrace } = require("./economics");
 const { recordToOtelSpan, exportOtelBundle } = require("./otel");
 const { buildOpsInsights, buildOpsOtelExport } = require("./insights");
+const { createRateLimitStore, rateLimitKey } = require("./rate-limit");
+const { createHealthTracker } = require("./health-tracker");
 const { withDirLock } = require("./file-lock");
 
 module.exports = {
@@ -71,6 +73,9 @@ module.exports = {
   exportOtelBundle,
   buildOpsInsights,
   buildOpsOtelExport,
+  createRateLimitStore,
+  rateLimitKey,
+  createHealthTracker,
   selectRoute,
   nextFallback,
   isRetryableProviderError,

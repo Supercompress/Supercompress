@@ -555,3 +555,98 @@ describe("wired gateway flag gating", () => {
     assert.equal(ctx.error.message, "money_store_unavailable");
   });
 });
+
+describe("wired gateway phase 8 hardening", () => {
+  it("enforces RPM via sliding window", async () => {
+    const gw = createWiredGateway({
+      ...CP_ON,
+      seedBalance: 50,
+      estimated_max_usd: 1,
+      enableRouting: false,
+      walletId: "wallet_rpm_test",
+      neuralKeep: async () => null,
+      policy: { version: 1, rpm: 1, compress_default: true },
+    });
+    const body = {
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: "hi" }],
+    };
+    const auth = { key_id: "k-rpm-unique", org_id: "o-rpm" };
+    const a = await gw.handleChatCompletions(
+      { ...body, idempotency_key: "rpm-a" },
+      auth
+    );
+    const b = await gw.handleChatCompletions(
+      { ...body, idempotency_key: "rpm-b" },
+      auth
+    );
+    assert.equal(a.aborted, false);
+    assert.equal(b.aborted, true);
+    assert.match(b.error.message, /rpm_exceeded/);
+    assert.equal(b.error.status, 429);
+  });
+
+  it("replays finalized openai response for same idempotency key", async () => {
+    const gw = createWiredGateway({
+      ...CP_ON,
+      seedBalance: 50,
+      estimated_max_usd: 1,
+      enableTrace: true,
+      enableRouting: true,
+      neuralKeep: async () => null,
+    });
+    const body = {
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "ctx ".repeat(20) },
+        { role: "user", content: "hello" },
+      ],
+      idempotency_key: "replay-1",
+    };
+    const first = await gw.handleChatCompletions(body, { key_id: "k1", org_id: "o1" });
+    assert.equal(first.aborted, false);
+    assert.ok(first.openai);
+    const second = await gw.handleChatCompletions(body, { key_id: "k1", org_id: "o1" });
+    assert.equal(second.idempotent_replay, true);
+    assert.equal(second.openai.id, first.openai.id);
+    assert.deepEqual(
+      second.openai.choices[0].message,
+      first.openai.choices[0].message
+    );
+  });
+
+  it("circuit breaker marks model down and routes around it", async () => {
+    const { createHealthTracker } = require("../../packages/control-plane");
+    const ht = createHealthTracker({ failureThreshold: 2, cooldownMs: 60_000 });
+    ht.recordFailure("gpt-4o-mini");
+    ht.recordFailure("gpt-4o-mini");
+    assert.equal(ht.healthMap()["gpt-4o-mini"], "down");
+
+    const gw = createWiredGateway({
+      ...CP_ON,
+      seedBalance: 50,
+      estimated_max_usd: 2,
+      enableRouting: true,
+      healthTracker: ht,
+      neuralKeep: async () => null,
+      policy: {
+        version: 1,
+        allow_models: ["gpt-4o-mini", "claude-haiku-3.5"],
+        routing: { strategy: "cheapest_fit", output_tokens_reserve: 100 },
+      },
+    });
+    const ctx = await gw.handleChatCompletions(
+      {
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "x".repeat(40) },
+          { role: "user", content: "hi" },
+        ],
+        idempotency_key: "cb-1",
+      },
+      { key_id: "k1" }
+    );
+    assert.equal(ctx.aborted, false);
+    assert.equal(ctx.model_routed, "claude-haiku-3.5");
+  });
+});

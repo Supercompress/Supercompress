@@ -1,14 +1,22 @@
 "use strict";
 
 /**
- * Phase 3 — post-compress deterministic router.
- * Config over cleverness. No ML. Uses retained token sizes from Compression Trace.
+ * Phase 3+ — post-compress deterministic router.
+ * Config over cleverness. No ML. Routes on retained token sizes from Compression Trace.
+ *
+ * Strategies beat naive proxies: cheapest_fit / prefer_order / fixed / latency_prefer / weighted.
  */
 
 const { normalizeCatalog, defaultCatalog } = require("./catalog");
 const { normalizePolicy } = require("./policy");
 
-const STRATEGIES = new Set(["cheapest_fit", "prefer_order", "fixed"]);
+const STRATEGIES = new Set([
+  "cheapest_fit",
+  "prefer_order",
+  "fixed",
+  "latency_prefer",
+  "weighted",
+]);
 
 function normalizeRouting(raw = {}) {
   const strategy = STRATEGIES.has(raw.strategy) ? raw.strategy : "cheapest_fit";
@@ -20,8 +28,11 @@ function normalizeRouting(raw = {}) {
     require_capabilities: Array.isArray(raw.require_capabilities)
       ? raw.require_capabilities.map(String)
       : [],
-    // reserved tokens for completion so context fit isn't razor-edge
     output_tokens_reserve: Math.max(0, Number(raw.output_tokens_reserve) || 500),
+    /** Prefer models at or below this tier when set (0=edge … 3=flagship). */
+    max_tier: raw.max_tier != null ? Number(raw.max_tier) : undefined,
+    /** Soft penalty USD added when health is degraded (cheapest_fit / weighted). */
+    degraded_penalty_usd: Math.max(0, Number(raw.degraded_penalty_usd) || 0.01),
   };
 }
 
@@ -61,6 +72,14 @@ function evaluateEligibility(model, opts = {}) {
   } else if (health === "degraded") {
     reasons.push("health_degraded");
   }
+  if (
+    opts.max_tier != null &&
+    Number.isFinite(Number(opts.max_tier)) &&
+    Number(model.tier) > Number(opts.max_tier)
+  ) {
+    fit = false;
+    reasons.push(`tier_exceeded:${model.tier}>${opts.max_tier}`);
+  }
   const est = estimateRequestUsd(model, retained, opts.output_tokens_est ?? reserve);
   if (
     opts.max_usd_per_request != null &&
@@ -78,6 +97,10 @@ function evaluateEligibility(model, opts = {}) {
     estimated_usd: est,
     health,
     max_context_tokens: model.max_context_tokens,
+    latency_ms_p50: model.latency_ms_p50,
+    weight: model.weight,
+    tier: model.tier,
+    provider: model.provider,
   };
 }
 
@@ -109,8 +132,16 @@ function buildCandidateOrder({ requested_model, policy, routing, catalog }) {
     ordered = [...prefer, requested, ...fallbacks, ...catalog.models.map((m) => m.id)].filter(
       Boolean
     );
+  } else if (routing.strategy === "cheapest_fit" || routing.strategy === "latency_prefer") {
+    // Sort strategies: consider full allowlisted catalog; requested is not privileged.
+    ordered = [...prefer, ...fallbacks, requested, ...catalog.models.map((m) => m.id)].filter(
+      Boolean
+    );
+  } else if (routing.strategy === "weighted") {
+    ordered = [...prefer, requested, ...fallbacks, ...catalog.models.map((m) => m.id)].filter(
+      Boolean
+    );
   } else {
-    // cheapest_fit: still consider requested first, then prefer, then rest of catalog
     ordered = [requested, ...prefer, ...fallbacks, ...catalog.models.map((m) => m.id)].filter(
       Boolean
     );
@@ -122,6 +153,24 @@ function buildCandidateOrder({ requested_model, policy, routing, catalog }) {
     if (allow?.length && !allow.includes(id)) return false;
     return catalog.get(id) != null;
   });
+}
+
+function scoreCheapest(entry, routing) {
+  let usd = entry.elig.estimated_usd;
+  if (entry.elig.health === "degraded") usd += routing.degraded_penalty_usd;
+  return usd;
+}
+
+function pickWeighted(viable, candidates) {
+  // Deterministic weighted pick: highest weight, then cheapest, then candidate order.
+  const sorted = [...viable].sort((a, b) => {
+    const dw = (b.model.weight || 1) - (a.model.weight || 1);
+    if (dw !== 0) return dw;
+    const du = a.elig.estimated_usd - b.elig.estimated_usd;
+    if (du !== 0) return du;
+    return candidates.indexOf(a.id) - candidates.indexOf(b.id);
+  });
+  return sorted[0];
 }
 
 /**
@@ -147,7 +196,8 @@ function selectRoute(input = {}) {
     input.max_usd_per_request != null
       ? Number(input.max_usd_per_request)
       : policy.max_usd_per_request;
-  const outEst = input.output_tokens_est != null ? Number(input.output_tokens_est) : routing.output_tokens_reserve;
+  const outEst =
+    input.output_tokens_est != null ? Number(input.output_tokens_est) : routing.output_tokens_reserve;
 
   const candidates = buildCandidateOrder({
     requested_model: input.requested_model,
@@ -167,6 +217,7 @@ function selectRoute(input = {}) {
       output_tokens_reserve: routing.output_tokens_reserve,
       output_tokens_est: outEst,
       health_override: healthMap[id],
+      max_tier: routing.max_tier,
     });
     eligibility.push(elig);
     if (elig.fit) viable.push({ id, elig, model });
@@ -177,13 +228,26 @@ function selectRoute(input = {}) {
   if (viable.length) {
     if (routing.strategy === "cheapest_fit") {
       viable.sort((a, b) => {
-        const d = a.elig.estimated_usd - b.elig.estimated_usd;
+        const d = scoreCheapest(a, routing) - scoreCheapest(b, routing);
         if (d !== 0) return d;
-        // stable: earlier in candidate order wins
         return candidates.indexOf(a.id) - candidates.indexOf(b.id);
       });
       chosen = viable[0];
       reason = "cheapest_fit";
+    } else if (routing.strategy === "latency_prefer") {
+      viable.sort((a, b) => {
+        const la = Number(a.model.latency_ms_p50) || 1e9;
+        const lb = Number(b.model.latency_ms_p50) || 1e9;
+        if (la !== lb) return la - lb;
+        const d = scoreCheapest(a, routing) - scoreCheapest(b, routing);
+        if (d !== 0) return d;
+        return candidates.indexOf(a.id) - candidates.indexOf(b.id);
+      });
+      chosen = viable[0];
+      reason = "latency_prefer";
+    } else if (routing.strategy === "weighted") {
+      chosen = pickWeighted(viable, candidates);
+      reason = "weighted";
     } else {
       // prefer_order / fixed: first viable in candidate order
       chosen = viable[0];
@@ -194,7 +258,14 @@ function selectRoute(input = {}) {
     }
   }
 
-  const fallback_chain = viable.map((v) => v.id);
+  // Fallback chain: primary then remaining viable sorted by cheapest (good retry order)
+  const rest = viable
+    .filter((v) => !chosen || v.id !== chosen.id)
+    .sort((a, b) => scoreCheapest(a, routing) - scoreCheapest(b, routing));
+  const fallback_chain = chosen
+    ? [chosen.id, ...rest.map((v) => v.id)]
+    : viable.map((v) => v.id);
+
   const decision = {
     model: chosen ? chosen.id : null,
     provider: chosen ? chosen.model.provider : null,
@@ -231,9 +302,12 @@ function nextFallback(decision, attemptIndex) {
   if (idx >= decision.fallback_chain.length) return null;
   if (idx > decision.max_retries) return null;
   const model = decision.fallback_chain[idx];
+  const elig = (decision.eligibility || []).find((e) => e.model === model);
   return {
     ...decision,
     model,
+    provider: elig?.provider || decision.provider,
+    estimated_usd: elig?.estimated_usd ?? decision.estimated_usd,
     fallback_index: idx,
     reason: idx === 0 ? decision.reason : `fallback_${idx}`,
   };
@@ -253,7 +327,9 @@ function isRetryableProviderError(err) {
     code.includes("timeout") ||
     code.includes("unavailable") ||
     code.includes("5xx") ||
-    code.includes("econnreset")
+    code.includes("econnreset") ||
+    code.includes("econnrefused") ||
+    code.includes("etimedout")
   );
 }
 
@@ -267,4 +343,5 @@ module.exports = {
   isRetryableProviderError,
   defaultCatalog,
   normalizeCatalog,
+  STRATEGIES,
 };
