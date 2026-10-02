@@ -208,13 +208,10 @@ def _pool_worker_info() -> dict[str, Any]:
 def _ensure_pool() -> ProcessPoolExecutor:
     global _pool, _model_loaded_flag, _loaded_at, _load_error, _worker_quantized, _pool_booting
     with _pool_lock:
-        # Only reuse a pool that actually finished warmup. A failed warmup used to
-        # leave a dead ProcessPoolExecutor around forever (OOM → "terminated
-        # abruptly"), so every later /ready and /v1/compress kept 503'ing.
         if _pool is not None and _model_loaded_flag:
             return _pool
         if _pool_booting:
-            # Another thread is already loading — caller should 503 model_loading.
+            # Soft signal — callers map this to 503 model_loading (no traceback spam).
             raise RuntimeError("model_loading")
         if _pool is not None and not _model_loaded_flag:
             try:
@@ -231,23 +228,33 @@ def _ensure_pool() -> ProcessPoolExecutor:
         )
         pool = _pool
 
-    # Wait OUTSIDE the lock so /health and concurrent callers aren't stalled.
-    # Warmup used to run a full compress under the lock (~60–90s on fp32 large)
-    # and made the service look permanently "model_loading".
+    # Wait OUTSIDE the lock so /health stays responsive.
     try:
+        # worker_info forces initializer to finish; mark ready before optional warmup.
         info = pool.submit(_pool_worker_info).result(timeout=300)
-        _worker_quantized = bool(info.get("quantized"))
-        # Tiny forward to JIT / page-in weights without scoring a real dump.
-        pool.submit(_pool_compress, "ready", "ready", None).result(timeout=180)
-        _model_loaded_flag = True
-        _loaded_at = time.time()
-        _load_error = None
+        with _pool_lock:
+            # A concurrent kill may have discarded this pool — don't resurrect a corpse.
+            if _pool is not pool:
+                raise RuntimeError("pool_replaced_during_boot")
+            _worker_quantized = bool(info.get("quantized"))
+            _model_loaded_flag = True
+            _loaded_at = time.time()
+            _load_error = None
+        try:
+            pool.submit(_pool_compress, "ready", "ready", None).result(timeout=120)
+        except Exception as warm_err:
+            # Model is loaded; warmup miss is non-fatal (first real request pays JIT).
+            print(f"[neural-keep] warmup compress skipped: {warm_err}", flush=True)
+        print(
+            f"[neural-keep] pool ready quantized={_worker_quantized}",
+            flush=True,
+        )
         return pool
     except Exception as e:
         _load_error = str(e)
         _model_loaded_flag = False
         _worker_quantized = None
-        print(f"[neural-keep] worker warmup failed: {e}", flush=True)
+        print(f"[neural-keep] worker boot failed: {e}", flush=True)
         with _pool_lock:
             try:
                 pool.shutdown(wait=False, cancel_futures=True)
@@ -261,7 +268,7 @@ def _ensure_pool() -> ProcessPoolExecutor:
 
 
 def _kill_pool(reason: str) -> None:
-    global _pool, _model_loaded_flag, _worker_quantized
+    global _pool, _model_loaded_flag, _worker_quantized, _loaded_at
     print(f"[neural-keep] killing inference pool: {reason}", flush=True)
     with _pool_lock:
         if _pool is not None:
@@ -272,6 +279,25 @@ def _kill_pool(reason: str) -> None:
             _pool = None
             _model_loaded_flag = False
             _worker_quantized = None
+            _loaded_at = None
+
+
+def _schedule_pool_respawn(reason: str) -> None:
+    """Single-flight respawn after kill — avoid nk-boot exception storms."""
+
+    def _boot_safe() -> None:
+        try:
+            _ensure_pool()
+        except RuntimeError as e:
+            if str(e) == "model_loading":
+                return
+            print(f"[neural-keep] respawn ({reason}): {e}", flush=True)
+        except Exception as e:
+            print(f"[neural-keep] respawn ({reason}): {e}", flush=True)
+
+    if _pool_booting or _model_loaded_flag:
+        return
+    threading.Thread(target=_boot_safe, name="nk-respawn", daemon=True).start()
 
 
 def _schedule_process_exit(reason: str, code: int = 75) -> None:
@@ -334,6 +360,9 @@ def startup() -> None:
     def _boot() -> None:
         try:
             _ensure_pool()
+        except RuntimeError as e:
+            if str(e) != "model_loading":
+                print(f"[neural-keep] boot pool failed: {e}", flush=True)
         except Exception as e:
             print(f"[neural-keep] boot pool failed: {e}", flush=True)
 
@@ -387,13 +416,7 @@ async def health() -> dict[str, Any]:
 async def ready() -> dict[str, Any]:
     if not _model_loaded_flag:
         if not _pool_booting:
-            def _boot_safe() -> None:
-                try:
-                    _ensure_pool()
-                except Exception as e:
-                    print(f"[neural-keep] ready-boot: {e}", flush=True)
-
-            threading.Thread(target=_boot_safe, name="nk-boot", daemon=True).start()
+            _schedule_pool_respawn("ready")
         raise HTTPException(
             status_code=503,
             detail={"ready": False, "reason": _load_error or "model_loading"},
@@ -474,7 +497,7 @@ def _run_compress_in_pool(context: str, query: str, threshold: float | None) -> 
         if _TIMEOUT_EXITS:
             _schedule_process_exit("inference_timeout")
         else:
-            threading.Thread(target=_ensure_pool, name="nk-respawn", daemon=True).start()
+            _schedule_pool_respawn("inference_timeout")
         raise TimeoutError("inference_timeout") from e
 
 
@@ -491,7 +514,7 @@ async def compress(
     if _exit_scheduled:
         raise HTTPException(status_code=503, detail="restarting", headers={"Retry-After": "15"})
     if not _model_loaded_flag:
-        threading.Thread(target=_ensure_pool, name="nk-boot", daemon=True).start()
+        _schedule_pool_respawn("compress")
         raise HTTPException(
             status_code=503,
             detail="model_loading",
