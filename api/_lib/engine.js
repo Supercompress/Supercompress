@@ -115,6 +115,12 @@ async function compressAdaptive(context, query) {
   });
   // Always stamp an explicit mode so callers never see an ambiguous fallback.
   if (local && !local.mode) local.mode = "compiler";
+  // If Neural Keep was configured but unavailable, surface that — silent compiler
+  // cuts (often ~10–20%) were being mistaken for Neural Keep quality.
+  if (local && neuralKeepEnabled()) {
+    local.neural_keep_fallback = true;
+    local.fallback_reason = local.fallback_reason || "neural_keep_unavailable";
+  }
   return local;
 }
 

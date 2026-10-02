@@ -44,7 +44,23 @@ describe("neural-keep client", () => {
     assert.equal(mod.neuralKeepEnabled(), false);
   });
 
+  it("skips neural for tiny contexts under SC_NEURAL_KEEP_MIN_TOKENS", async () => {
+    process.env.SC_NEURAL_KEEP_MIN_TOKENS = "80";
+    let called = false;
+    mockFetch(async () => {
+      called = true;
+      return { ok: true, status: 200, json: async () => ({ compressed_text: "x" }) };
+    });
+    const mod = require("./neural-keep");
+    const tiny = Array(20).fill("word").join(" ");
+    const out = await mod.compressViaNeuralKeep(tiny, "q");
+    assert.equal(out, null);
+    assert.equal(called, false);
+    assert.equal(mod.belowNeuralMinTokens(tiny), true);
+  });
+
   it("posts context/query and maps response", async () => {
+    process.env.SC_NEURAL_KEEP_MIN_TOKENS = "0";
     let seenUrl = "";
     let seenBody = null;
     let seenAuth = "";
@@ -87,6 +103,7 @@ describe("neural-keep client", () => {
   });
 
   it("retries once on 503 busy then succeeds", async () => {
+    process.env.SC_NEURAL_KEEP_MIN_TOKENS = "0";
     let n = 0;
     mockFetch(async () => {
       n += 1;
@@ -121,6 +138,7 @@ describe("neural-keep client", () => {
   });
 
   it("returns null after exhausted 503 retries", async () => {
+    process.env.SC_NEURAL_KEEP_MIN_TOKENS = "0";
     let n = 0;
     mockFetch(async () => {
       n += 1;
@@ -135,7 +153,8 @@ describe("neural-keep client", () => {
     const mod = require("./neural-keep");
     const out = await mod.compressViaNeuralKeep("ctx", "q");
     assert.equal(out, null);
-    assert.ok(n >= 6);
+    // maxAttempts=2 (+ optional ready probe). Do not storm past 2 compress POSTs.
+    assert.ok(n >= 2 && n <= 4);
   });
 });
 
@@ -153,6 +172,7 @@ describe("engine prefers neural-keep when SC_NEURAL_KEEP_URL is set", () => {
   it("compressAdaptive uses neural-keep remote when enabled", async () => {
     process.env.SC_NEURAL_KEEP_URL = "https://neural.example.test";
     process.env.SC_NEURAL_KEEP = "1";
+    process.env.SC_NEURAL_KEEP_MIN_TOKENS = "0";
     let fetched = false;
     mockFetch(async () => {
       fetched = true;
