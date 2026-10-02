@@ -229,33 +229,35 @@ def _ensure_pool() -> ProcessPoolExecutor:
             max_workers=1,
             initializer=_pool_init,
         )
-        # Warm the worker so first user request isn't a cold load.
-        fut = _pool.submit(_pool_compress, "warmup", "warmup", None)
-        try:
-            fut.result(timeout=300)
-            _model_loaded_flag = True
-            _loaded_at = time.time()
-            _load_error = None
+        pool = _pool
+
+    # Wait OUTSIDE the lock so /health and concurrent callers aren't stalled.
+    # Warmup used to run a full compress under the lock (~60–90s on fp32 large)
+    # and made the service look permanently "model_loading".
+    try:
+        info = pool.submit(_pool_worker_info).result(timeout=300)
+        _worker_quantized = bool(info.get("quantized"))
+        # Tiny forward to JIT / page-in weights without scoring a real dump.
+        pool.submit(_pool_compress, "ready", "ready", None).result(timeout=180)
+        _model_loaded_flag = True
+        _loaded_at = time.time()
+        _load_error = None
+        return pool
+    except Exception as e:
+        _load_error = str(e)
+        _model_loaded_flag = False
+        _worker_quantized = None
+        print(f"[neural-keep] worker warmup failed: {e}", flush=True)
+        with _pool_lock:
             try:
-                info = _pool.submit(_pool_worker_info).result(timeout=30)
-                _worker_quantized = bool(info.get("quantized"))
-            except Exception:
-                _worker_quantized = None
-            return _pool
-        except Exception as e:
-            _load_error = str(e)
-            _model_loaded_flag = False
-            _worker_quantized = None
-            print(f"[neural-keep] worker warmup failed: {e}", flush=True)
-            # Drop the dead pool so the next call retries cleanly.
-            try:
-                _pool.shutdown(wait=False, cancel_futures=True)
+                pool.shutdown(wait=False, cancel_futures=True)
             except Exception:
                 pass
-            _pool = None
-            raise
-        finally:
-            _pool_booting = False
+            if _pool is pool:
+                _pool = None
+        raise
+    finally:
+        _pool_booting = False
 
 
 def _kill_pool(reason: str) -> None:
@@ -399,6 +401,13 @@ async def ready() -> dict[str, Any]:
         )
     if _exit_scheduled:
         raise HTTPException(status_code=503, detail={"ready": False, "reason": "restarting"})
+    # Serial worker: advertise busy so clients back off instead of stampeding.
+    if _inflight >= 1:
+        raise HTTPException(
+            status_code=503,
+            detail={"ready": False, "reason": "busy", "inflight": _inflight},
+            headers={"Retry-After": "3"},
+        )
     return {"ready": True, "model_loaded": True, "loaded_at": _loaded_at}
 
 
