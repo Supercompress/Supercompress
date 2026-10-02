@@ -1528,6 +1528,14 @@
       "destination": "/api/v1/ops?export=otel"
     },
     {
+      "source": "/v1/ops/console",
+      "destination": "/api/v1/ops-console"
+    },
+    {
+      "source": "/api/v1/ops/console",
+      "destination": "/api/v1/ops-console"
+    },
+    {
       "source": "/retrieve",
       "destination": "/api/retrieve"
     },
@@ -1879,6 +1887,10 @@
     "api/v1/ops.js": {
       "maxDuration": 30,
       "includeFiles": "{web/assets/**,services/gateway/**,packages/control-plane/**}"
+    },
+    "api/v1/ops-console.js": {
+      "maxDuration": 10,
+      "includeFiles": "{services/gateway/ops-ui/**}"
     },
     "api/**/*.js": {
       "maxDuration": 30,
