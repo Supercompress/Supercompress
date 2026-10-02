@@ -1,9 +1,11 @@
 /**
- * GET /api/v1/ops/insights  (also /v1/ops/insights)
- * GET /api/v1/ops/otel      (also /v1/ops/otel)
+ * GET /api/v1/ops  (rewrites: /v1/ops/insights, /v1/ops/otel?export=otel)
  *
  * UNADVERTISED control-plane ops. Returns 404 unless SC_CP_OPS=1.
  * No asks/prompts in payloads — Compression Trace sizes + spend only.
+ *
+ * Vercel rewrites collapse path to /api/v1/ops, so OTel is selected via
+ * `?export=otel` (see vercel.json). Path suffixes still work for direct hits.
  */
 "use strict";
 
@@ -11,7 +13,12 @@ const { json, clientIp, checkRateLimit } = require("../_lib/http");
 const { bearerToken } = require("../_lib/auth");
 const { KEY_PREFIX } = require("../_lib/keys");
 const { authenticateKey } = require("../_lib/firebase-key-store");
-const { isOpsEnabled, getOpsInsights, getOpsOtel } = require("../../services/gateway/ops");
+const {
+  isOpsEnabled,
+  getOpsInsights,
+  getOpsOtel,
+  resolveOpsSurface,
+} = require("../../services/gateway/ops");
 
 module.exports = async function opsEdge(req, res) {
   if (req.method === "OPTIONS") {
@@ -55,11 +62,11 @@ module.exports = async function opsEdge(req, res) {
   }
 
   const url = new URL(req.url || "/", "http://localhost");
-  const path = url.pathname.replace(/\/+$/, "") || "/";
+  const surface = resolveOpsSurface(req.url || "/", req.headers || {});
   const orgId = owner.orgId || owner.uid || owner.owner_uid;
   const budget = url.searchParams.get("budget_usd");
 
-  if (path.endsWith("/otel") || path.includes("/ops/otel")) {
+  if (surface === "otel") {
     const bundle = getOpsOtel({ org_id: orgId });
     return json(res, 200, bundle);
   }

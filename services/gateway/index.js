@@ -40,4 +40,5 @@ module.exports = {
   isOpsEnabled: ops.isOpsEnabled,
   getOpsInsights: ops.getOpsInsights,
   getOpsOtel: ops.getOpsOtel,
+  resolveOpsSurface: ops.resolveOpsSurface,
 };

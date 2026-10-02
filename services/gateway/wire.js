@@ -567,6 +567,13 @@ function createWiredGateway(options = {}) {
         provider: providerName,
         compression: ctx.compression,
       });
+      if (typeof ledger.flush === "function") {
+        try {
+          await ledger.flush();
+        } catch (_) {
+          /* best-effort durable ledger flush */
+        }
+      }
       return ctx;
     },
   };

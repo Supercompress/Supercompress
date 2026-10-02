@@ -17,11 +17,47 @@ function isOpsEnabled() {
 }
 
 /**
- * Build insights from the process gateway ledger (in-memory / durable).
+ * Resolve insights vs otel after Vercel rewrite collapse.
+ * Prefer ?export=otel; also accept /otel path suffixes and x-matched-path.
+ */
+function resolveOpsSurface(urlOrPath = "/", headers = {}) {
+  const raw = String(urlOrPath || "/");
+  let exportParam = "";
+  let pathname = raw;
+  try {
+    const u = new URL(raw, "http://localhost");
+    exportParam = String(u.searchParams.get("export") || "").toLowerCase();
+    pathname = u.pathname;
+  } catch {
+    const q = raw.indexOf("?");
+    if (q >= 0) {
+      pathname = raw.slice(0, q);
+      const params = new URLSearchParams(raw.slice(q + 1));
+      exportParam = String(params.get("export") || "").toLowerCase();
+    }
+  }
+  const matched = String(
+    headers["x-matched-path"] || headers["x-vercel-matched-path"] || ""
+  ).toLowerCase();
+  const hay = `${pathname} ${matched}`.toLowerCase();
+  if (exportParam === "otel" || hay.includes("/otel")) return "otel";
+  return "insights";
+}
+
+function ledgerRecords(opts = {}) {
+  if (opts.ledger && typeof opts.ledger.list === "function") {
+    return opts.ledger.list({});
+  }
+  if (Array.isArray(opts.records)) return opts.records;
+  const gw = getProcessGateway(opts.gatewayOptions || {});
+  return typeof gw.ledger?.list === "function" ? gw.ledger.list({}) : [];
+}
+
+/**
+ * Build insights from ledger (injectable) or process gateway singleton.
  */
 function getOpsInsights(opts = {}) {
-  const gw = getProcessGateway(opts.gatewayOptions || {});
-  const records = typeof gw.ledger?.list === "function" ? gw.ledger.list({}) : [];
+  const records = ledgerRecords(opts);
   return buildOpsInsights(records, {
     org_id: opts.org_id,
     budget_usd: opts.budget_usd,
@@ -29,8 +65,7 @@ function getOpsInsights(opts = {}) {
 }
 
 function getOpsOtel(opts = {}) {
-  const gw = getProcessGateway(opts.gatewayOptions || {});
-  const records = typeof gw.ledger?.list === "function" ? gw.ledger.list({}) : [];
+  const records = ledgerRecords(opts);
   return buildOpsOtelExport(records, {
     org_id: opts.org_id,
     serviceName: opts.serviceName || "supercompress-control-plane",
@@ -39,6 +74,7 @@ function getOpsOtel(opts = {}) {
 
 module.exports = {
   isOpsEnabled,
+  resolveOpsSurface,
   getOpsInsights,
   getOpsOtel,
 };

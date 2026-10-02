@@ -401,6 +401,7 @@ describe("wired gateway flag gating", () => {
       enableTrace: undefined,
       seedBalance: 20,
       estimated_max_usd: 1,
+      neuralKeep: async () => null,
     });
     const ctx = await gw.handleChatCompletions(
       {
@@ -418,6 +419,73 @@ describe("wired gateway flag gating", () => {
     assert.ok(ctx.openai.sc_economics);
     assert.ok(ctx.compression);
     assert.ok(ctx.economics);
+  });
+
+  it("compress-then-route economics unlocks cheaper model", async () => {
+    const gw = createWiredGateway({
+      ...CP_ON,
+      enableTrace: true,
+      enableRouting: true,
+      seedBalance: 50,
+      estimated_max_usd: 5,
+      neuralKeep: async () => null,
+      // Force retained size small enough for tiny; original would need huge
+      compress: async (ctx) => {
+        ctx.compression = {
+          original_tokens: 50_000,
+          retained_tokens: 4_000,
+          ratio: 0.08,
+          strategy: "compiler",
+          unit: "tokens",
+          model_eligibility: [],
+        };
+        ctx.compressed_messages = ctx.normalized?.messages || [];
+        return ctx;
+      },
+      catalog: [
+        {
+          id: "tiny",
+          provider: "stub",
+          max_context_tokens: 8_000,
+          input_usd_per_mtok: 0.1,
+          output_usd_per_mtok: 0.1,
+          capabilities: ["chat"],
+          health: "up",
+        },
+        {
+          id: "huge",
+          provider: "stub",
+          max_context_tokens: 200_000,
+          input_usd_per_mtok: 5,
+          output_usd_per_mtok: 5,
+          capabilities: ["chat"],
+          health: "up",
+        },
+      ],
+      policy: {
+        version: 1,
+        compress_default: true,
+        routing: { strategy: "cheapest_fit", output_tokens_reserve: 500 },
+      },
+    });
+    const ctx = await gw.handleChatCompletions(
+      {
+        model: "huge",
+        messages: [
+          { role: "system", content: "x".repeat(100) },
+          { role: "user", content: "CONTEXT:\nkeep\n\nREQUEST: hi" },
+        ],
+        idempotency_key: "econ-unlock",
+      },
+      { key_id: "k1", org_id: "o1" }
+    );
+    assert.equal(ctx.aborted, false);
+    assert.equal(ctx.model_routed, "tiny");
+    assert.equal(ctx.economics.model_changed, true);
+    assert.equal(ctx.economics.without_compress.model, "huge");
+    assert.equal(ctx.economics.with_compress.model, "tiny");
+    assert.ok(ctx.economics.dollars_saved_est > 0);
+    assert.ok(ctx.openai.sc_economics.dollars_saved_est > 0);
   });
 
   it("trace off omits sc_compression_trace from OpenAI-shaped response", async () => {
