@@ -43,7 +43,7 @@
     "mainEntity": [
       { "@type": "Question", "name": "Is SuperCompress always better than Headroom?", "acceptedAnswer": { "@type": "Answer", "text": "Not always. Headroom's proxy mode and MCP integration make it easier to add to existing applications without code changes. SuperCompress requires adding a library import or API call. However, in terms of compression quality, deployment footprint, and latency at scale, SuperCompress has clear architectural advantages." } },
       { "@type": "Question", "name": "Can I use SuperCompress with other compression methods?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. SuperCompress's query-aware scoring complements other methods. For example, you can apply SuperCompress before a sliding window as a safety net, or use MMR for candidate selection and SuperCompress for final compression." } },
-      { "@type": "Question", "name": "Which method has the lowest latency?", "acceptedAnswer": { "@type": "Answer", "text": "Sliding window has zero latency. SuperCompress adds ~15ms. Top-K and MMR add ~20-50ms. Headroom adds ~100ms plus cold-start warmup. HyDE and Self-RAG add 500ms+ due to additional LLM calls." } }
+      { "@type": "Question", "name": "Which method has the lowest latency?", "acceptedAnswer": { "@type": "Answer", "text": "Sliding window has zero latency. SuperCompress is a single hosted API call with no extra LLM call. Top-K and MMR add ~20-50ms. Headroom adds ~100ms plus cold-start warmup. HyDE and Self-RAG add 500ms+ due to additional LLM calls." } }
     ]
   }</script>
   <script type="application/ld+json">{
@@ -172,9 +172,9 @@
           <td>SuperCompress</td>
           <td>Learned policy (neural ranking)</td>
           <td>Yes</td>
-          <td>~200KB</td>
-          <td>~15ms</td>
-          <td>~64%</td>
+          <td>Hosted API</td>
+          <td>One API call, no extra LLM call</td>
+          <td>See <a href="/benchmarks">benchmarks</a></td>
         </tr>
         <tr>
           <td><a href="/supercompress-vs-headroom">Headroom</a></td>
@@ -256,7 +256,7 @@
       <div class="comparison-card">
         <h3><a href="/supercompress-vs-hyde">SuperCompress vs HyDE</a></h3>
         <p>HyDE generates a hypothetical answer before retrieving. It adds an entire LLM call to the critical path, making it expensive for high-throughput systems.</p>
-        <span class="tag tag-sc">~15ms, no extra LLM call</span>
+        <span class="tag tag-sc">No extra LLM call</span>
         <span class="tag">2x+ LLM cost</span>
       </div>
       <div class="comparison-card">
@@ -280,8 +280,8 @@
         <li><strong>a learned query-aware neural policy</strong> — more focused on query relevance than the next closest ML-based approach. Installs in milliseconds, not minutes.</li>
         <li><strong>True query-awareness</strong> — Scores every line against the user's actual question, not just content type. A line about account settings is kept when the user asks about billing, dropped when they ask about features.</li>
         <li><strong>Query-aware by default</strong> — scores context against the question instead of only classifying content type.</li>
-        <li><strong>Serverless-ready</strong> — ~60ms cold start, ~200KB install size. Fits comfortably in AWS Lambda, Cloudflare Workers, and Vercel Edge Functions.</li>
-        <li><strong>Hosted API + local library</strong> — Use the hosted API (free tier available) for zero-infrastructure setup, or the local library for latency-sensitive workloads.</li>
+        <li><strong>Serverless-ready</strong> — nothing to warm up or install beyond a client; call the hosted API from AWS Lambda, Cloudflare Workers, and Vercel Edge Functions.</li>
+        <li><strong>Hosted API</strong> — zero-infrastructure setup with a free tier; the ~400M-parameter Neural Keep model runs on the service, not your machines.</li>
         <li><strong>97.5% oracle recall</strong> — The compressed prompt produces answers virtually identical to the full-prompt response, even when evaluated against the "oracle" test of whether any dropped content was actually needed.</li>
       </ul>
     </div>
@@ -316,7 +316,7 @@
       </details>
       <details>
         <summary>Which method has the lowest latency?</summary>
-        <p>Sliding window has zero latency (simple array slice). SuperCompress adds ~15ms. Top-K/MMR add ~20-50ms. Headroom adds ~100ms + cold-start warmup. HyDE and Self-RAG add 500ms+ because they involve additional LLM calls.</p>
+        <p>Sliding window has zero latency (simple array slice). SuperCompress is a single hosted API call with no extra LLM call. Top-K/MMR add ~20-50ms. Headroom adds ~100ms + cold-start warmup. HyDE and Self-RAG add 500ms+ because they involve additional LLM calls.</p>
       </details>
     </div>
 
@@ -399,7 +399,7 @@
           </div>
         </div>
       </div>
-      <p class="df-footer-copy">© SuperCompress · MIT License · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+      <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>

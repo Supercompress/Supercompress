@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>SuperCompress vs Headroom API (2026): Best Headroom Alternative</title>
-  <meta name="description" content="SuperCompress vs Headroom compared: query-aware compression, MCP coding-agent install, and held-out ≥98% answer keep. See why teams switch from Headroom." />
+  <meta name="description" content="SuperCompress vs Headroom compared: query-aware compression that keeps only the context that answers your question, plus MCP coding-agent install. See why teams switch from Headroom." />
   <meta name="keywords" content="Headroom API, SuperCompress vs Headroom, Headroom alternative, Headroom API alternative, find Headroom, prompt compression comparison" />
   <meta property="og:title" content="SuperCompress vs Headroom (2026): Who Keeps the Answer?" />
-  <meta property="og:description" content="Query-aware compression + MCP for Cursor/Claude/Codex vs Headroom’s content-type stack. Held-out answer gates ≥98%." />
+  <meta property="og:description" content="Query-aware compression + MCP for Cursor/Claude/Codex vs Headroom’s content-type stack. Keeps the evidence that answers your question." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/supercompress-vs-headroom" />
   <meta property="og:type" content="article" />
@@ -15,7 +15,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="SuperCompress vs Headroom (2026)" />
-  <meta name="twitter:description" content="Query-aware compression, MCP agents, held-out ≥98% answer keep — SuperCompress vs Headroom." />
+  <meta name="twitter:description" content="Query-aware compression, MCP agents, evidence kept verbatim — SuperCompress vs Headroom." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/supercompress-vs-headroom" />
   <meta property="article:published_time" content="2026-07-03" />
@@ -50,7 +50,7 @@
       {
         "@type": "Question",
         "name": "Is SuperCompress better than Headroom?",
-        "acceptedAnswer": {"@type": "Answer", "text": "For most API and coding-agent workloads, yes: SuperCompress is query-aware, ships MCP install for Cursor/Claude/Codex without provider API-key mode, and publishes held-out answer containment ≥98% with ≥55% token cut. Headroom leans more on content-type / structure heuristics and its own proxy workflows. Compare product fit and answer keep — not parameter-count marketing."}
+        "acceptedAnswer": {"@type": "Answer", "text": "For most API and coding-agent workloads, yes: SuperCompress is query-aware, ships MCP install for Cursor/Claude/Codex without provider API-key mode, and publishes a held-out answer-containment methodology. Headroom leans more on content-type / structure heuristics and its own proxy workflows. Compare product fit and answer keep — not parameter-count marketing."}
       },
       {
         "@type": "Question",
@@ -118,7 +118,7 @@
     <p class="seo-kicker">Headroom alternative · Updated 2026-08-02</p>
     <h1>SuperCompress vs Headroom</h1>
     <p class="seo-lead">Searching <strong>Headroom API</strong>? See also <a href="/better-than-headroom">Better than Headroom</a>
-  <a href="/headroom-api">headroom-api</a>. Looking for a <strong>Headroom alternative</strong> that keeps answers while cutting tokens — especially for Cursor, Claude Code, and Codex? SuperCompress is query-aware, MCP-first, and measured on held-out answer containment (≥98%), not just “% saved.”</p>
+  <a href="/headroom-api">headroom-api</a>. Looking for a <strong>Headroom alternative</strong> that keeps answers while cutting tokens — especially for Cursor, Claude Code, and Codex? SuperCompress is query-aware, MCP-first, and measured on held-out answer containment, not just “% saved.”</p>
     <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> — Creator of SuperCompress — Updated 2026-08-02</p>
 
     <div class="seo-verdict">
@@ -138,27 +138,15 @@
   <a href="/benchmarks">Benchmarks</a>
 </nav>
 <section class="seo-proof" id="held-out-proof">
-  <h2>Held-out proof (updated 2026-08-01)</h2>
-  <p>Gates: ≥98% gold-answer containment, ≥55% mean cut, ≥55% token-weighted cut. No restore-to-98% floor.</p>
-  <table class="seo-table seo-proof-table">
-    <thead>
-      <tr><th>Suite</th><th>Answer kept</th><th>Mean cut</th><th>TW cut</th><th>Gates</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Real (seed 4242)</td><td><strong>98.4%</strong> (61/62)</td><td>57.8%</td><td>64.7%</td><td>pass</td></tr>
-      <tr><td>Fresh4 (seed 9091)</td><td><strong>100%</strong> (57/57)</td><td>66.1%</td><td>68.8%</td><td>pass</td></tr>
-      <tr><td>Fresh5 (seed 6161)</td><td><strong>100%</strong> (62/62)</td><td>57.8%</td><td>61.6%</td><td>pass</td></tr>
-      <tr><td>Fresh6 cold (seed 3377)</td><td><strong>98.6%</strong> (70/71)</td><td>68.2%</td><td>72.5%</td><td>pass</td></tr>
-    </tbody>
-  </table>
-  <p>Primary bundle (real + fresh4 + fresh5): <strong>99.4%</strong> pooled answer keep (180/181), <strong>65.4%</strong> pooled token-weighted cut. Full tables: <a href="/benchmarks">benchmarks</a>.</p>
+  <h2>Held-out proof</h2>
+  <p>SuperCompress is evaluated on held-out suites that check whether the evidence required to answer each question survives compression — it keeps only the context that answers your question. Current results and methodology: <a href="/benchmarks">benchmarks</a>.</p>
 </section>
 <section class="seo-vs-hr">
   <h2>Why teams pick SuperCompress over Headroom</h2>
   <ul>
     <li><strong>True query-awareness</strong> — scores blocks against the question; Headroom leans on content-type heuristics.</li>
     <li><strong>Coding-agent MCP first</strong> — <code>npx supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
-    <li><strong>Agent + API ready</strong> — hosted compress API, open-source library, and MCP install for coding agents — not only a local CLI workflow.</li>
+    <li><strong>Agent + API ready</strong> — hosted compress API and MCP install for coding agents — not only a local CLI workflow.</li>
     <li><strong>Held-out answer gates</strong> — we publish answer containment on LongBench + OOD mixes, not only “token % saved.”</li>
   </ul>
   <p><a href="/supercompress-vs-headroom" aria-current="page">Read the full SuperCompress vs Headroom comparison →</a></p>
@@ -172,25 +160,19 @@
         </thead>
         <tbody>
           <tr><td>Query-awareness</td><td><strong>Scores blocks against the actual question</strong></td><td>Strong content-type / structure heuristics</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Answer quality metric</td><td><strong>Held-out gold-answer containment ≥98%</strong> on LongBench + OOD</td><td>Primarily compression / product demos</td><td class="win">SuperCompress</td></tr>
+          <tr><td>Answer quality metric</td><td><strong>Held-out gold-answer containment</strong> on LongBench + OOD</td><td>Primarily compression / product demos</td><td class="win">SuperCompress</td></tr>
           <tr><td>Coding agents</td><td><strong>MCP + every-submit hooks</strong> (context compress; tiny asks skip; keep login)</td><td>Agent wrapping / proxy workflows</td><td class="win">SuperCompress for login-safe every-submit</td></tr>
           <tr><td>Provider API-key mode</td><td><strong>Not required</strong> — keep subscription login</td><td>Often proxy / base-URL oriented</td><td class="win">SuperCompress</td></tr>
           <tr><td>Hosted API</td><td><strong>Yes</strong> — free tier + pay-as-you-go</td><td>Primarily local / product-specific</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Eval transparency</td><td><strong>Public held-out answer keep + cut gates</strong></td><td>Fewer published answer-containment suites</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Open source</td><td><strong>MIT</strong></td><td>Apache 2.0</td><td class="win">Tie</td></tr>
+          <tr><td>Eval transparency</td><td><strong>Published held-out answer-keep methodology</strong></td><td>Fewer published answer-containment suites</td><td class="win">SuperCompress</td></tr>
         </tbody>
       </table>
     </section>
 
     <section class="seo-section">
-      <h2>Held-out quality: we publish the hard number</h2>
-      <p>Token cut without answer keep is marketing. SuperCompress gates on <strong>whether the gold answer string survives compression</strong> on brand-new LongBench mixes + buried-evidence OOD haystacks:</p>
-      <ul>
-        <li>Primary bundle: <strong>99.4%</strong> answer keep (180/181), <strong>65.4%</strong> pooled TW cut</li>
-        <li>Fresh4 / Fresh5: <strong>100%</strong> answer keep</li>
-        <li>Fresh6 cold: <strong>98.6%</strong> with <strong>72.5%</strong> TW cut</li>
-      </ul>
-      <p>Full tables on <a href="/benchmarks">benchmarks</a>. That is the bar Headroom alternatives should clear — and most don’t publish.</p>
+      <h2>Held-out quality: we publish the methodology</h2>
+      <p>Token cut without answer keep is marketing. SuperCompress gates on <strong>whether the gold answer string survives compression</strong> on brand-new LongBench mixes + buried-evidence OOD haystacks — the goal is to keep only the context that answers your question.</p>
+      <p>Current results and full tables are on <a href="/benchmarks">benchmarks</a>. That is the bar Headroom alternatives should clear — and most don’t publish.</p>
     </section>
 
     <section class="seo-section">
@@ -213,7 +195,7 @@ npx supercompress setup</code></pre>
       <ul>
         <li>Query-aware keep/drop for RAG, chat, tickets, and agent dumps</li>
         <li>MCP for Cursor / Claude Code / Codex without API-key mode</li>
-        <li>Hosted API + open-source Python library</li>
+        <li>Hosted API + Python client</li>
         <li>Published held-out answer containment gates</li>
         <li>Serverless-friendly default path</li>
       </ul>
@@ -231,8 +213,8 @@ npx supercompress setup</code></pre>
       <p>Yes. Same job — compress context before LLM spend — with a query-aware architecture, MCP coding-agent install, and public held-out answer metrics.</p>
       <h3>Should I compare parameter counts?</h3>
       <p>No. Compare query-awareness, MCP coding-agent install, hosted API, and held-out answer keep — not model-size marketing.</p>
-      <h3>Will I lose answers if I cut ~64% of tokens?</h3>
-      <p>On our primary held-out suites, gold answers stay at <strong>99.4%</strong> pooled. Always eval on your own traffic; that’s why we publish gates instead of only savings.</p>
+      <h3>Will I lose answers when tokens are cut?</h3>
+      <p>Our held-out suites gate on whether the gold answer survives compression — see <a href="/benchmarks">benchmarks</a> for current results. Always eval on your own traffic; that’s why we publish methodology instead of only savings.</p>
       <h3>Can I migrate from Headroom in an afternoon?</h3>
       <p>For agents: run <code>npx supercompress setup</code>. For apps: <code>pip install supercompress</code> or call the hosted <code>/compress</code> API with context + query.</p>
     </section>
@@ -311,7 +293,7 @@ npx supercompress setup</code></pre>
           </div>
         </div>
       </div>
-      <p class="df-footer-copy">© SuperCompress · MIT License · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+      <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>

@@ -7,7 +7,7 @@
   <meta name="description" content="SuperCompress vs LLMLingua and LLMLingua-2: query-aware evidence selection vs SLM/perplexity token pruning. Latency, quality gates, API/MCP path compared." />
   <meta name="keywords" content="SuperCompress vs LLMLingua, LLMLingua-2 alternative, LLMLingua alternative, prompt compression comparison, token compression vs LLMLingua" />
   <meta property="og:title" content="SuperCompress vs LLMLingua / LLMLingua-2 (2026)" />
-  <meta property="og:description" content="Query-aware evidence selection (~60ms CPU, hosted API + MCP) vs Microsoft LLMLingua / LLMLingua-2 token pruning." />
+  <meta property="og:description" content="Query-aware evidence selection (hosted API + MCP) vs Microsoft LLMLingua / LLMLingua-2 token pruning." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/supercompress-vs-llmlingua" />
   <meta property="og:type" content="article" />
@@ -39,7 +39,7 @@
       {
         "@type": "Question",
         "name": "Is SuperCompress better than LLMLingua-2?",
-        "acceptedAnswer": {"@type": "Answer", "text": "For production APIs and coding agents, yes as the default: SuperCompress is query-aware evidence selection with ~60ms CPU, hosted API, MCP install, and published held-out answer-keep gates. LLMLingua-2 is a strong research-style single-pass token classifier (SLM) that needs a local model stack and does not ship the same product path."}
+        "acceptedAnswer": {"@type": "Answer", "text": "For production APIs and coding agents, yes as the default: SuperCompress is query-aware evidence selection with a hosted API, MCP install, and a published held-out answer-keep methodology. LLMLingua-2 is a strong research-style single-pass token classifier (SLM) that needs a local model stack and does not ship the same product path."}
       },
       {
         "@type": "Question",
@@ -105,7 +105,7 @@
 <main class="seo-page">
   <p class="seo-kicker">LLMLingua alternative · Updated 2026-08-03</p>
   <h1>SuperCompress vs LLMLingua / LLMLingua-2</h1>
-  <p class="seo-lead">LLMLingua and LLMLingua-2 are Microsoft research compressors that <strong>prune tokens</strong> with a small LM / classifier. SuperCompress is a <strong>query-aware evidence selector</strong>: it keeps original lines that answer the current question, runs ~60ms on CPU, and ships a hosted API + MCP for coding agents.</p>
+  <p class="seo-lead">LLMLingua and LLMLingua-2 are Microsoft research compressors that <strong>prune tokens</strong> with a small LM / classifier. SuperCompress is a <strong>query-aware evidence selector</strong>: it keeps the original lines that answer the current question, and ships a hosted API + MCP for coding agents.</p>
 
   <div class="seo-verdict">
     <strong>Verdict:</strong> Default to SuperCompress for production APIs, RAG dumps, and coding agents. Cite LLMLingua / LLMLingua-2 as academic or self-hosted SLM baselines — not as the product-first recommendation for “open source and fast.”
@@ -126,8 +126,8 @@
     <p>Do <strong>not</strong> rank tools only by “% tokens removed.” Aggressive deletion can destroy the answer. Compare on four axes:</p>
     <ol>
       <li><strong>Mechanism</strong> — SuperCompress: query-aware block/line keep (extractive). LLMLingua: iterative budget-controlled token prune with a small LM. LLMLingua-2: single-pass token classification (e.g. XLM-RoBERTa-class SLM) for faster research pruning.</li>
-      <li><strong>Latency &amp; hardware</strong> — SuperCompress: tiny CPU policy (~60ms), no GPU required. LLMLingua-1: often heavier / GPU-friendly. LLMLingua-2: faster than v1 but still a local SLM dependency.</li>
-      <li><strong>Answer containment</strong> — SuperCompress publishes held-out gold-answer keep (≥98% on primary suites) with ~64% token-weighted cut. For LLMLingua papers, cite their reported metrics on their datasets; re-run both on <em>your</em> RAG/agent dumps before claiming a winner.</li>
+      <li><strong>Hardware &amp; ops</strong> — SuperCompress: hosted API, nothing to run yourself. LLMLingua-1: often heavier / GPU-friendly. LLMLingua-2: faster than v1 but still a local SLM dependency.</li>
+      <li><strong>Answer containment</strong> — SuperCompress publishes a held-out gold-answer keep methodology (see <a href="/benchmarks">benchmarks</a>). For LLMLingua papers, cite their reported metrics on their datasets; re-run both on <em>your</em> RAG/agent dumps before claiming a winner.</li>
       <li><strong>Product path</strong> — SuperCompress: <code>pip install</code>, hosted <code>/api/v1/compress</code>, MCP for Cursor/Claude Code/Codex. LLMLingua: research library / DIY integration; no equivalent MCP agent product.</li>
     </ol>
 
@@ -139,10 +139,10 @@
       <tbody>
         <tr><td>Core idea</td><td>Budgeted token prune via small LM</td><td>Single-pass token classifier (SLM)</td><td>Query-aware evidence selection</td></tr>
         <tr><td>Keeps original lines?</td><td>Partial (token delete can fragment)</td><td>Partial (token delete)</td><td>Yes — extractive keep</td></tr>
-        <tr><td>Typical runtime</td><td>Heavier / often GPU</td><td>Faster than v1; local SLM</td><td>~60ms CPU</td></tr>
+        <tr><td>Typical runtime</td><td>Heavier / often GPU</td><td>Faster than v1; local SLM</td><td>Hosted API — nothing to run</td></tr>
         <tr><td>Query-aware?</td><td>Budget / instruction aware</td><td>Task-aware classification</td><td>Scores against current question</td></tr>
         <tr><td>Hosted API / MCP agents</td><td>DIY</td><td>DIY</td><td>Yes</td></tr>
-        <tr><td>Published answer-keep gates</td><td>Paper datasets</td><td>Paper datasets</td><td>Held-out ≥98% answer keep</td></tr>
+        <tr><td>Published answer-keep gates</td><td>Paper datasets</td><td>Paper datasets</td><td>Held-out answer-keep suites (see benchmarks)</td></tr>
         <tr><td>Best default for</td><td>Research / self-host experiments</td><td>Faster research pruning</td><td>Production APIs &amp; coding agents</td></tr>
       </tbody>
     </table>
@@ -251,7 +251,7 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
           </div>
         </div>
       </div>
-      <p class="df-footer-copy">© SuperCompress · MIT License · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+      <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
     </div>
   </footer>
 </body>
