@@ -6,7 +6,7 @@
   <title>Coding Agents — SuperCompress Documentation</title>
   <meta name="description" content="Install SuperCompress once. Auto-detect Cursor, Claude Code, Codex, FreeBuff, OpenCode, and more — then compress large context through MCP without provider API-key mode." />
   <meta property="og:title" content="Coding Agents — SuperCompress Documentation" />
-  <meta property="og:description" content="One install. Auto-detect your agents. MCP plugin for subscription/login flows. ~64% fewer tokens." />
+  <meta property="og:description" content="One install. Auto-detect your agents. MCP plugin for subscription/login flows. Query-aware context compression that keeps only the context that answers your question." />
   <meta property="og:url" content="https://docs.supercompress.dev/coding-agents" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SuperCompress" />
@@ -63,9 +63,9 @@
 
 
       <div class="docs-content">
-        <p class="doc-kicker df-reveal">Coding agent plugin · v0.5.32</p>
-        <h1 class="df-reveal">One install. 50+ harnesses. Fewer tokens.</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Run <code>supercompress setup</code> once. It links your account, detects coding agents, and installs a <strong>clean MCP + hooks plugin</strong> across 50+ harnesses — Cursor, Claude Code, Codex, Goose, Zed, OpenCode, fx, Hermes, OpenClaw, and more. Keep your normal login. Check health anytime with <code>supercompress doctor</code>.</p>
+        <p class="doc-kicker df-reveal">Coding agent plugin · v0.5.38</p>
+        <h1 class="df-reveal">One install. 40+ harnesses. Fewer tokens.</h1>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Run <code>supercompress setup</code> once. It links your account, detects coding agents, and installs a <strong>clean MCP + hooks plugin</strong> across 40+ harnesses — Cursor, Claude Code, Codex, Goose, Zed, OpenCode, fx, Hermes, OpenClaw, and more. Keep your normal login. Check health anytime with <code>supercompress doctor</code>.</p>
 
         <div class="doc-callout doc-callout--tip">
           <span class="doc-callout-label">Install in 30 seconds</span>
@@ -76,10 +76,10 @@
         </div>
 
         <div class="ca-stat-row df-reveal" style="--reveal-delay:120ms" aria-label="Highlights">
-          <div class="ca-stat"><strong>~64%</strong><span>fewer tokens</span></div>
+          <div class="ca-stat"><strong>query-aware</strong><span>keeps the context that answers your question</span></div>
           <div class="ca-stat"><strong id="ca-npm-downloads">1k+</strong><span>npm downloads / week</span></div>
           <div class="ca-stat"><strong>40+</strong><span>coding-agent harnesses</span></div>
-          <div class="ca-stat"><strong>~60ms</strong><span>compress latency</span></div>
+          <div class="ca-stat"><strong>extractive</strong><span>original lines kept verbatim</span></div>
         </div>
         <script>
           (function () {
@@ -165,7 +165,7 @@
         <h2 id="install">Install</h2>
         <pre><code><span class="kw">npm install</span> -g supercompress-proxy
 <span class="kw">supercompress</span> --version
-<span class="cm"># → 0.5.32</span></code></pre>
+<span class="cm"># → 0.5.38</span></code></pre>
         <p>Or one-shot without a global install:</p>
         <pre><code><span class="kw">npm install</span> supercompress-proxy
 <span class="kw">npm exec</span> supercompress setup</code></pre>
