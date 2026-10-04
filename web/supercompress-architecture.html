@@ -12,10 +12,10 @@
 <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SuperCompress Architecture — How Query-Aware Prompt Compression Works | SuperCompress</title>
-  <meta name="description" content="Deep dive into SuperCompress's architecture: the query-aware neural query-aware scoring policy, segment-then-score pipeline, compiler mode with verifier, and how it achieves 64% token reduction with 97% oracle recall." />
+  <meta name="description" content="Deep dive into SuperCompress's architecture: the query-aware scoring policy, segment-then-score pipeline, compiler mode with verifier, and how extractive selection keeps original answer lines." />
   <meta name="robots" content="index, follow" />
   <meta property="og:title" content="SuperCompress Architecture — How Query-Aware Prompt Compression Works" />
-  <meta property="og:description" content="How a query-aware neural CPU policy achieves 64% token reduction with 97% oracle recall. Full architecture breakdown: segmentation, scoring, compilation, and verification." />
+  <meta property="og:description" content="How a query-aware neural CPU policy keeps original answer lines and drops junk. Full architecture breakdown: segmentation, scoring, compilation, and verification." />
   <meta property="og:url" content="https://supercompress.dev/supercompress-architecture" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
@@ -128,7 +128,7 @@
 <div class="container">
     <h1>SuperCompress Architecture</h1>
     <p class="meta">Last updated July 3, 2026 · 10 min read</p>
-    <p class="subtitle">How query-aware compression removes ~64% of prompt tokens before inference while preserving answer-critical evidence — a technical deep dive.</p>
+    <p class="subtitle">How query-aware compression keeps original answer-critical lines and drops junk before inference — a technical deep dive. Measure original_tokens / kept_tokens on your traffic.</p>
 
     <div class="toc">
       <h2>Contents</h2>
@@ -157,13 +157,13 @@
 
       <p>The key design choices:</p>
       <ul>
-        <li><strong>Neural Keep (~400M)</strong> — hosted query-aware cross-encoder on Fly CPU today (recommended). Separate <strong>compiler</strong> path: tiny feed-forward on CPU in ~ms for local preprocessing.</li>
+        <li><strong>Neural Keep</strong> — hosted query-aware cross-encoder on Fly CPU today (recommended). Separate <strong>compiler</strong> path: tiny feed-forward on CPU for local preprocessing.</li>
         <li><strong>Query-aware</strong> — scores each passage against the user's specific question, not just the content type.</li>
         <li><strong>No model download</strong> — the policy is bundled in the pip package (~200KB total).</li>
         <li><strong>Deterministic given inputs</strong> — same context + query always produces the same compression. Predictable and auditable.</li>
       </ul>
 
-      <p>The system is designed for <a href="/serverless-prompt-compression">serverless deployment</a> — cold start is ~60ms, making it suitable for AWS Lambda, Cloudflare Workers, and Vercel Edge Functions.</p>
+      <p>The system is designed for <a href="/serverless-prompt-compression">serverless deployment</a> — the local compiler path is a small CPU preprocess suitable for AWS Lambda, Cloudflare Workers, and Vercel Edge Functions. Do not treat a single latency figure as product-wide.</p>
     </section>
 
     <section id="pipeline">
@@ -259,7 +259,7 @@
         <li><strong>Reports verification risk</strong> — the compiler flags segments where dropping them carries uncertainty, producing a risk score alongside the compressed output</li>
       </ol>
 
-      <p>On the bundled long-context presets, compiler mode achieves <strong>82.5% average token savings</strong> with low-risk verification — compared to ~64% for the basic scoring policy alone.</p>
+      <p>Compiler mode adds a second pass (dedupe, tool-noise strip, dependency keep) and reports verification risk alongside the compressed output. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
     </section>
 
     <section id="verifier">

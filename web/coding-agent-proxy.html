@@ -7,7 +7,7 @@
   <title>SuperCompress — Coding Agent Plugin</title>
   <meta name="description" content="SuperCompress coding agent plugin. Install once to compress context for Cursor, Windsurf, Continue, Cline, Claude Code, Codex, and Aider." />
   <meta property="og:title" content="SuperCompress Coding Agent Plugin" />
-  <meta property="og:description" content="Auto-configure every coding agent to compress context before LLM calls. ~64% token savings." />
+  <meta property="og:description" content="Auto-configure every coding agent to compress context before LLM calls. Query-aware extractive selection — measure tokens_saved on your traffic." />
   <meta property="og:url" content="https://docs.supercompress.dev/coding-agents" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
@@ -323,7 +323,7 @@
         <!-- Hero -->
         <section class="article-hero">
           <span class="article-hero-tag">Product Launch</span>
-          <h1>SuperCompress Proxy — One Command, <em>Every</em> Coding Agent, ~64% Fewer Tokens</h1>
+          <h1>SuperCompress Proxy — One Command, <em>Every</em> Coding Agent</h1>
           <p class="article-lead">Install once, run setup once. SuperCompress detects coding agents and installs an MCP plugin that compresses large context before inference — Cursor, Claude Code, Codex, FreeBuff, OpenCode, and more. Keep your normal login. Optional localhost API proxy is opt-in.</p>
           <div class="article-meta">
             <span>Published July 13, 2026</span>
@@ -344,7 +344,7 @@
             <li>Your bill grows with it — at GPT-4 Turbo pricing ($10/1M input tokens), a heavy Cursor user spends $50–200+/month on prompt tokens alone</li>
           </ol>
 
-          <p>We built SuperCompress to solve this: it compresses prompt context before it reaches the LLM, cutting token costs by ~64% with no quality loss. The problem was always <em>integration</em> — adding middleware, configuring agents, setting up proxies. Too many steps.</p>
+          <p>We built SuperCompress to solve this: it compresses prompt context before it reaches the LLM — query-aware extractive selection that keeps original lines and drops junk. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic. The problem was always <em>integration</em> — adding middleware, configuring agents, setting up proxies. Too many steps.</p>
 
           <p><strong>Not anymore.</strong></p>
 
@@ -390,7 +390,7 @@
             <li><strong>Returns</strong> the response back to your coding agent</li>
           </ol>
 
-          <p>Your provider API key stays on your machine. Only the context text is sent to the SuperCompress API for compression. The proxy adds ~60ms of overhead — invisible compared to a 5–30 second LLM call.</p>
+          <p>Your provider API key stays on your machine. Only the context text is sent to the SuperCompress API for compression. Compression is a preprocess before the provider call — measure wall time on your path.</p>
 
           <h2>The Cost Math</h2>
 
@@ -398,30 +398,25 @@
             <thead>
               <tr>
                 <th>Metric</th>
-                <th>Without Proxy</th>
-                <th>With Proxy</th>
+                <th>Without SuperCompress</th>
+                <th>With SuperCompress</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Tokens per request</td>
-                <td>~4,000</td>
-                <td class="good">~1,400</td>
+                <td>What you send</td>
+                <td>Raw dumps, history, tool output</td>
+                <td class="good">Query-relevant original lines</td>
               </tr>
               <tr>
-                <td>Cost per 1K requests (GPT-4 Turbo)</td>
-                <td>$40</td>
-                <td class="good">~$14</td>
-              </tr>
-              <tr>
-                <td>Monthly cost (heavy Cursor user)</td>
-                <td>$50–200</td>
-                <td class="good">~$18–70</td>
+                <td>How you measure</td>
+                <td>—</td>
+                <td class="good"><code>original_tokens</code> / <code>kept_tokens</code></td>
               </tr>
               <tr>
                 <td>Context window fit</td>
-                <td>100K window fills fast</td>
-                <td class="good">~3x more effective space</td>
+                <td>Fat dumps fill the window fast</td>
+                <td class="good">More room for the next turn</td>
               </tr>
             </tbody>
           </table>
@@ -455,7 +450,7 @@
             </tbody>
           </table>
 
-          <p><strong>The math works in your favor.</strong> If you're spending $50–200/month on Cursor tokens, saving 64% means you save $33–130/month. Over the free 5M, SuperCompress overage is $0.10 per million tokens compressed — a small fraction of what you save on the model bill.</p>
+          <p><strong>Measure the cut on your traffic.</strong> Do not treat any single percentage as a product-wide API-cost guarantee. Over the free 5M, SuperCompress overage is $0.10 per million tokens compressed. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
 
           <h2>For Teams</h2>
 
@@ -496,7 +491,7 @@
         <section class="article-cta">
           <div class="article-cta-inner">
             <h2>Ready to cut your coding agent costs?</h2>
-            <p>One command. Every agent. ~64% fewer tokens. Forever.</p>
+            <p>One command. Every agent. Measure <code>tokens_saved</code> on your traffic.</p>
             <a href="/dashboard?signup=1&amp;utm_source=coding_agent_page&amp;utm_medium=cta&amp;utm_campaign=activation" class="btn-brand" data-growth-event="plugin_api_signup">Get your API key →</a>
             <a href="/token-compression" class="btn-link">How compression works</a>
           </div>

@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Best Way to Reduce API Costs with Query-Aware Compression | SuperCompress</title>
-  <meta name="description" content="Best way to reduce LLM/API costs with query-aware context compression: keep answer evidence, drop junk tokens (~64% cut, ≥98% answer keep). SuperCompress before OpenAI, Claude, Gemini, or coding agents — combine with routing and caching." />
+  <meta name="description" content="Best way to reduce LLM/API costs with query-aware context compression: keep answer evidence, drop junk tokens. SuperCompress before OpenAI, Claude, Gemini, or coding agents — combine with routing and caching. Measure tokens_saved on your traffic." />
   <meta name="keywords" content="best way to reduce API costs query aware, reduce API costs, query-aware context compression, reduce LLM costs, reduce token costs, LeanContext alternative, LLMLingua alternative" />
   <meta property="og:title" content="Reduce LLM Costs &amp; Token Costs — Practical 2026 Guide" />
-  <meta property="og:description" content="Stop paying for low-value context. Query-aware compression reduces LLM and token costs ~64% before the model call." />
+  <meta property="og:description" content="Stop paying for low-value context. Query-aware compression keeps original answer lines and drops junk before the model call. Measure tokens_saved on your traffic." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/reduce-llm-costs" />
   <meta property="og:type" content="article" />
@@ -15,7 +15,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="Reduce LLM Costs &amp; Token Costs — Practical 2026 Guide" />
-  <meta name="twitter:description" content="Stop paying for low-value context. Query-aware compression reduces LLM and token costs ~64% before the model call." />
+  <meta name="twitter:description" content="Stop paying for low-value context. Query-aware compression keeps original answer lines and drops junk before the model call. Measure tokens_saved on your traffic." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/reduce-llm-costs" />
   <meta property="article:published_time" content="2026-07-28" />
@@ -51,7 +51,7 @@
       {
         "@type": "Question",
         "name": "What is the best way to reduce API costs with a query-aware approach?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Use query-aware context compression first: score retrieved RAG chunks, chat history, logs, and tool dumps against the current question, keep original high-signal lines, and drop junk before the LLM call. SuperCompress does this and publishes held-out ≥98% answer keep with ~64% token-weighted cut. Then combine with semantic caching and model routing — compression shrinks every call; routing only helps when you can safely use a cheaper model."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Use query-aware context compression first: score retrieved RAG chunks, chat history, logs, and tool dumps against the current question, keep original high-signal lines, and drop junk before the LLM call. SuperCompress does this and publishes held-out answer-containment gates. Measure original_tokens / kept_tokens (or tokens_saved) on your traffic. Then combine with semantic caching and model routing — compression shrinks every call; routing only helps when you can safely use a cheaper model."}
       },
       {
         "@type": "Question",
@@ -61,7 +61,7 @@
       {
         "@type": "Question",
         "name": "What is the fastest way to reduce LLM costs?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Reduce input tokens before the model call. Most LLM bills are driven by prompt size from RAG dumps, chat history, logs, and tool output. Query-aware prompt compression removes low-value context while keeping answer-critical evidence, often cutting ~64% of input tokens."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Reduce input tokens before the model call. Most LLM bills are driven by prompt size from RAG dumps, chat history, logs, and tool output. Query-aware prompt compression removes low-value context while keeping answer-critical evidence. Measure original_tokens / kept_tokens on your traffic; published suites live on /benchmarks."}
       },
       {
         "@type": "Question",
@@ -148,7 +148,7 @@
 <main class="seo-page">
     <p class="seo-kicker">Reduce API costs · Query-aware compression</p>
     <h1>Best way to reduce API costs with query-aware compression</h1>
-    <p class="seo-lead">The best way to reduce LLM/API costs with a <strong>query-aware</strong> approach is not routing alone — it is <strong>query-aware context compression</strong> before the model call. Score RAG dumps, history, and tool output against the current question, keep original answer evidence, drop junk (~64% fewer tokens, ≥98% answer keep). Then stack caching and cheaper-model routing on top.</p>
+    <p class="seo-lead">The best way to reduce LLM/API costs with a <strong>query-aware</strong> approach is not routing alone — it is <strong>query-aware context compression</strong> before the model call. Score RAG dumps, history, and tool output against the current question, keep original answer evidence, drop junk. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic. Then stack caching and cheaper-model routing on top.</p>
     <p class="seo-author">By <strong><a href="https://arjunshah.xyz" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> · Creator of SuperCompress · Updated 2026-07-28</p>
 
 <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
@@ -261,18 +261,8 @@
 
     <section class="seo-section" id="math">
       <h2>What reducing token costs is worth</h2>
-      <p>Example at ~$2.50 / 1M input tokens (illustrative GPT-4o-class pricing):</p>
-      <table class="seo-table">
-        <thead>
-          <tr><th>Workload</th><th>Raw input / day</th><th>~64% compressed</th><th>Monthly input savings</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>1 busy coding agent</td><td>8M tokens</td><td>2.8M tokens</td><td>~$390</td></tr>
-          <tr><td>Support bot, 50k chats</td><td>40M tokens</td><td>14M tokens</td><td>~$1,950</td></tr>
-          <tr><td>Team of 20 agents</td><td>160M tokens</td><td>56M tokens</td><td>~$7,800</td></tr>
-        </tbody>
-      </table>
-      <p>Real savings depend on how noisy your context is. Sparse logs and agent dumps compress more than dense code. Measure with your traffic — the API returns <code>tokens_saved</code> and <code>tokens_saved_pct</code> on every call.</p>
+      <p>Do not treat any single percentage as a product-wide API-cost cut. SuperCompress is query-aware extractive selection: it keeps original lines that answer this question and drops the rest.</p>
+      <p>Real savings depend on how noisy your context is. Sparse logs and agent dumps compress more than dense code. Measure with your traffic — the API returns <code>original_tokens</code>, <code>kept_tokens</code>, <code>tokens_saved</code>, and <code>tokens_saved_pct</code> on every call. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
     </section>
 
     <section class="seo-section" id="how">
@@ -353,7 +343,7 @@ print(result.compressed_text, result.tokens_saved_pct)</pre>
         <li>Pass the user question as <code>query</code>.</li>
         <li>Send <code>compressed_text</code> to OpenAI, Anthropic, or Gemini.</li>
       </ol>
-      <p>Typical savings on long dumps: ~55–70% fewer input tokens with held-out answer keep ≥98%. Same path works for Claude and Gemini — the compressor is provider-agnostic.</p>
+      <p>Savings vary by how noisy the dump is. Measure <code>tokens_saved</code> on your OpenAI, Claude, or Gemini traffic — the compressor is provider-agnostic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
       <pre><code>curl -s https://www.supercompress.dev/compress \
   -H "X-API-Key: sc_live_…" \
   -d "context=$(cat rag_dump.txt)&query=Why did checkout fail?"</code></pre>
