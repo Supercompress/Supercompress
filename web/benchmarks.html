@@ -5,9 +5,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SuperCompress v2 Benchmarks — 390 cases · 64.1% B5 cut · 24/24 evidence</title>
-  <meta name="description" content="SuperCompress v2 launch benchmarks: 390 public cases. Coding-agent (B5): 64.1% mean cut, required evidence in 24/24, 16,647 → 5,148 tokens, ~5.8s B5 p50 on hosted GPU. Evidence containment — not downstream LLM completion. Legacy compiler results labeled separately." />
+  <meta name="description" content="SuperCompress v2 launch benchmarks: 390 public cases. Coding-agent (B5): 64.1% mean cut, required evidence in 24/24, 16,647 → 5,148 tokens, ~5.8s B5 p50 on hosted Fly CPU. Evidence containment — not downstream LLM completion. Legacy compiler results labeled separately." />
   <meta property="og:title" content="SuperCompress v2 Benchmarks — 390 cases · Neural Keep" />
-  <meta property="og:description" content="v2 Neural Keep (~400M, hosted GPU): B5 64.1% mean cut, 24/24 evidence, 16,647 → 5,148, ~5.8s p50. 390 public cases. Downstream LLM eval not yet run." />
+  <meta property="og:description" content="v2 Neural Keep (~400M, hosted Fly CPU): B5 64.1% mean cut, 24/24 evidence, 16,647 → 5,148, ~5.8s p50. 390 public cases. Downstream LLM eval not yet run." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://www.supercompress.dev/benchmarks" />
   <meta property="og:locale" content="en_US" />
@@ -95,7 +95,7 @@
     "@context": "https://schema.org",
     "@type": "Dataset",
     "name": "SuperCompress v2 Launch Benchmarks",
-    "description": "390 public cases for SuperCompress v2 Neural Keep (~400M). B5 coding-agent suite: 64.1% mean cut, 24/24 evidence containment, 16,647 → 5,148 tokens, ~5.8s p50 latency on hosted GPU. Downstream LLM eval not yet run.",
+    "description": "390 public cases for SuperCompress v2 Neural Keep (~400M). B5 coding-agent suite: 64.1% mean cut, 24/24 evidence containment, 16,647 → 5,148 tokens, ~5.8s p50 latency on hosted Fly CPU. Downstream LLM eval not yet run.",
     "url": "https://www.supercompress.dev/benchmarks",
     "distribution": {
       "@type": "DataDownload",
@@ -125,7 +125,7 @@
         "name": "What are the v2 coding-agent (B5) results?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "On the 24-case coding-agent suite: 64.1% mean token cut, required evidence retained in 24/24 cases, 16,647 → 5,148 tokens total, up to 96.6% cut at ≥99% retention, B5 p50 latency about 5.8 seconds on the hosted GPU Neural Keep path."
+          "text": "On the 24-case coding-agent suite: 64.1% mean token cut, required evidence retained in 24/24 cases, 16,647 → 5,148 tokens total, up to 96.6% cut at ≥99% retention, B5 p50 latency about 5.8 seconds on the hosted Fly CPU Neural Keep path."
         }
       },
       {
@@ -133,7 +133,7 @@
         "name": "Is Neural v2 the same as the compiler engine?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. Neural v2 is a ~400M-parameter query-aware cross-encoder hosted on GPU. The compiler is a separate lightweight local/CPU path with millisecond-class latency. Do not mix their benchmarks."
+          "text": "No. Neural v2 is a ~400M-parameter query-aware cross-encoder hosted on Fly CPU. The compiler is a separate lightweight local/CPU path with millisecond-class latency. Do not mix their benchmarks."
         }
       },
       {
@@ -141,7 +141,7 @@
         "name": "Does SuperCompress require a GPU?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "The hosted v2 Neural Keep path runs on GPU (~5.8s B5 p50). A separate legacy compiler path runs on CPU in milliseconds for fast local preprocessing. They are different products."
+          "text": "The hosted v2 Neural Keep path runs on Fly CPU (~5.8s B5 p50). A separate legacy compiler path runs on CPU in milliseconds for fast local preprocessing. They are different products."
         }
       }
     ]
@@ -199,8 +199,8 @@
 
     <div class="bench-head">
         <div class="bench-kicker"><strong>v2 launch · Sep 2026</strong> · 390 public cases · evidence containment</div>
-        <h1>Cut your API costs by 65%.<br>Prove what stayed.</h1>
-        <p>SuperCompress v2 is a <strong>~400M-parameter Neural Keep</strong> engine on the hosted API (GPU). We measure whether <em>required evidence</em> survives compression — not whether a downstream chat model finishes the task. Downstream LLM eval has <strong>not</strong> been run yet.</p>
+        <h1>Cut coding-agent context 64.1% on B5.<br>Prove what stayed.</h1>
+        <p>SuperCompress v2 is a <strong>~400M-parameter Neural Keep</strong> engine on the hosted API (Fly CPU today). We measure whether <em>required evidence</em> survives compression — not whether a downstream chat model finishes the task. Downstream LLM eval has <strong>not</strong> been run yet.</p>
         <div class="bench-stats" aria-label="v2 launch benchmark highlights">
           <div class="bench-stat">
             <span class="label">Public cases</span>
@@ -220,7 +220,7 @@
           <div class="bench-stat">
             <span class="label">B5 latency p50</span>
             <span class="value">~5.8s</span>
-            <span class="sub">Hosted GPU Neural Keep path — not the millisecond compiler path.</span>
+            <span class="sub">Hosted Fly CPU Neural Keep path — not the millisecond compiler path.</span>
           </div>
         </div>
       </div>
@@ -232,7 +232,7 @@
             <article class="bench-compare-card">
               <span class="eyebrow">Recommended · hosted</span>
               <strong>Neural v2</strong>
-              <p>~400M query-aware cross-encoder. Hosted GPU inference. Highest-quality context selection. These launch numbers.</p>
+              <p>~400M query-aware cross-encoder. Hosted Fly CPU inference. Highest-quality context selection. These launch numbers.</p>
             </article>
             <article class="bench-compare-card">
               <span class="eyebrow">Fast / local</span>
@@ -316,7 +316,7 @@
           <ul style="color:var(--text-body);line-height:1.7;padding-left:1.2rem">
             <li><strong>Quality metric:</strong> answer / needle / evidence containment in the compressed text (original wording).</li>
             <li><strong>Not measured yet:</strong> downstream LLM task success after compression.</li>
-            <li><strong>v2 inference:</strong> query-conditioned cross-encoder (~400M), hosted GPU path for API.</li>
+            <li><strong>v2 inference:</strong> query-conditioned cross-encoder (~400M), hosted Fly CPU path for API.</li>
             <li><strong>Comparators:</strong> Headroom 0.36.4, LLMLingua-2, truncation, and SuperCompress v1 compiler on B5.</li>
           </ul>
         </section>
@@ -324,7 +324,7 @@
         <section class="bench-section">
           <h2>Limitations</h2>
           <ul style="color:var(--text-body);line-height:1.7;padding-left:1.2rem">
-            <li><strong>Latency:</strong> Neural v2 B5 p50 is ~5.8s on the hosted GPU path — not millisecond-class.</li>
+            <li><strong>Latency:</strong> Neural v2 B5 p50 is ~5.8s on the hosted Fly CPU path — not millisecond-class.</li>
             <li><strong>Downstream eval:</strong> evidence containment ≠ proven answer quality from a chat model.</li>
             <li><strong>Workload fit:</strong> strongest on coding-agent / tool-dump noise; conservative on dense needle/QA mixes.</li>
           </ul>
@@ -362,7 +362,7 @@
                 <tr>
                   <td>Typical latency</td>
                   <td>~10–47 ms CPU</td>
-                  <td>Local compiler — not the hosted ~400M GPU path</td>
+                  <td>Local compiler — not the hosted ~400M Fly CPU path</td>
                 </tr>
               </tbody>
             </table>
@@ -382,7 +382,7 @@
           </details>
           <details>
             <summary>GPU or CPU?</summary>
-            <p>Hosted Neural v2 → GPU, seconds-scale on long dumps. Compiler → CPU, milliseconds. Pick the path that matches the product you ship.</p>
+            <p>Hosted Neural v2 → Fly CPU today (seconds-scale on long dumps). Compiler → CPU, milliseconds. Pick the path that matches the product you ship.</p>
           </details>
         </div>
 

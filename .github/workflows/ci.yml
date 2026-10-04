@@ -45,7 +45,7 @@ jobs:
       - name: Install JS deps
         run: npm ci --omit=optional --ignore-scripts --no-fund
       - name: npm audit (high+)
-        run: npm audit --omit=dev --audit-level=high || true
+        run: npm audit --omit=dev --audit-level=high
         # Informational until dependency majors are upgraded; still surfaces findings in CI logs.
       - name: JS syntax smoke
         run: |
@@ -134,6 +134,9 @@ jobs:
         run: node scripts/check-no-pii.js
       - name: Version pins
         run: node scripts/check-versions.js
+
+      - name: Benchmark quality gates (committed artifacts)
+        run: node scripts/check-benchmark-gates.js
       - name: Static stylesheet path guard
         run: npm run check:stylesheet-paths
       - name: API host redirect guard (no catch-all /compress 308)

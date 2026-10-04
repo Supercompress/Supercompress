@@ -145,7 +145,7 @@ Reversible compression: removed blocks are replaced with retrieval markers. The 
 ```bash
 # Request compression with CCR
 curl -X POST https://supercompress.dev/api/v1/compress \
-  -H "X-API-Key: sc_live_YOUR_KEY" \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"context": "long text…", "query": "What matters?", "ccr": true}'
 

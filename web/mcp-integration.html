@@ -134,7 +134,7 @@
     <p>Running compression through MCP means the agent handles context reduction automatically, without you switching tools or writing glue code:</p>
 
     <ul>
-      <li><strong>API key for Neural Keep</strong> — The recommended MCP path calls the hosted ~400M Neural Keep API (GPU). A separate local compiler path exists for offline / millisecond preprocessing; it is not the same engine as hosted v2.</li>
+      <li><strong>API key for Neural Keep</strong> — The recommended MCP path calls the hosted ~400M Neural Keep API (Fly CPU). A separate local compiler path exists for offline / millisecond preprocessing; it is not the same engine as hosted v2.</li>
       <li><strong>Zero configuration</strong> — Point your MCP client at <code>node /path/to/mcp/server.js</code> and the tools appear immediately.</li>
       <li><strong>Agent-native</strong> — The agent decides when to compress, when to retrieve, and how to use the compressed context. You don't need to tell it what to do.</li>
       <li><strong>CCR works seamlessly</strong> — Compress with mode="ccr", get retrieval markers in the output, retrieve blocks as needed — all within the same conversation.</li>

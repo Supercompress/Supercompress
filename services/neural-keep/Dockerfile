@@ -15,7 +15,8 @@ RUN set -eux; \
       aarch64) asset="rtk-aarch64-unknown-linux-gnu.tar.gz" ;; \
       *) echo "unsupported arch $arch" && exit 1 ;; \
     esac; \
-    curl -fsSL -o /tmp/rtk.tar.gz "https://github.com/rtk-ai/rtk/releases/latest/download/$asset"; \
+    # Pin release (not floating /latest) for reproducible builds — audit #19
+    curl -fsSL -o /tmp/rtk.tar.gz "https://github.com/rtk-ai/rtk/releases/download/v0.51.0/$asset"; \
     tar -xzf /tmp/rtk.tar.gz -C /usr/local/bin; \
     chmod +x /usr/local/bin/rtk; \
     rm /tmp/rtk.tar.gz; \

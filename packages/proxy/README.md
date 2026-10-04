@@ -2,7 +2,7 @@
 
 **SuperCompress v2 — cut ~64% of LLM input tokens for coding agents, without losing the answer.**
 
-~400M Neural Keep on the SuperCompress API scores bulky context (files, logs, tool dumps, pastes) against the current question and drops the rest. Your ask stays intact. This package wires Cursor / Claude Code / Codex / 60+ harnesses into that API via MCP + hooks.
+~400M Neural Keep on the SuperCompress API scores bulky context (files, logs, tool dumps, pastes) against the current question and drops the rest. Your ask stays intact. This package wires Cursor / Claude Code / Codex / 40+ harnesses into that API via MCP + hooks.
 
 [Website](https://www.supercompress.dev) · [Benchmarks](https://www.supercompress.dev/benchmarks) · [Playground](https://www.supercompress.dev/playground) · [Docs](https://docs.supercompress.dev/coding-agents)
 
@@ -20,7 +20,7 @@ Requires Node.js 18+.
 
 ## Quick start (recommended)
 
-One command links your account and **auto-adds MCP + hooks** across **60+ harnesses** (25+ get a native auto MCP plugin — Cursor, Claude Code, Codex, Goose, Zed, OpenCode, fx, Hermes, OpenClaw, Grok, Gemini, Windsurf, Continue, and more):
+One command links your account and **auto-adds MCP + hooks** across **40+ harnesses** (25+ get a native auto MCP plugin — Cursor, Claude Code, Codex, Goose, Zed, OpenCode, fx, Hermes, OpenClaw, Grok, Gemini, Windsurf, Continue, and more):
 
 ```bash
 supercompress setup
@@ -90,7 +90,7 @@ Your agent ──→ SuperCompress (hooks / MCP) ──→ smaller context ─�
 | `supercompress setup` | **Recommended** — link account, detect agents, install MCP + hooks |
 | `supercompress plugin` | Refresh agent integrations anytime |
 | `supercompress doctor` | Per-harness health matrix (account / MCP / hooks) |
-| `supercompress agents` | 60+ catalog — auto-plugin vs recipe/connect |
+| `supercompress agents` | 40+ catalog — auto-plugin vs recipe/connect |
 | `supercompress start` / `stop` / `status` | Optional local proxy (`setup --proxy`) |
 | `supercompress usage` | Plan, quota, savings (`--json` ok) |
 | `supercompress uninstall` | Remove configs under `~/.supercompress` |
