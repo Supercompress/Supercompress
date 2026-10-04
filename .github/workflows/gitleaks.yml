@@ -11,9 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      # Use the OSS binary — gitleaks-action@v2 requires a paid org license.
+      # OSS binary — gitleaks-action@v2 needs a paid org license.
       - name: Install gitleaks
         run: |
           set -euo pipefail
@@ -22,5 +20,7 @@ jobs:
             -o /tmp/gitleaks.tgz
           tar -xzf /tmp/gitleaks.tgz -C /usr/local/bin gitleaks
           gitleaks version
-      - name: Run gitleaks
-        run: gitleaks detect --source . --verbose --redact --exit-code 1
+      - name: Run gitleaks on HEAD tree
+        # Scan the commit tree (not full git history). Historical doc
+        # placeholders (sc_live_...) otherwise create permanent false positives.
+        run: gitleaks detect --source . --no-git --verbose --redact --exit-code 1

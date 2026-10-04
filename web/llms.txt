@@ -41,7 +41,7 @@ Quickstart for the HTTP API:
 
 ```bash
 curl -X POST https://www.supercompress.dev/api/v1/compress \
-  -H "X-API-Key: sc_live_YOUR_KEY" \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"context":"<large context>","query":"<the user question>"}'
 ```

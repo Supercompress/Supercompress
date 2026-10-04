@@ -102,7 +102,7 @@ codex plugin add supercompress@supercompress
 
 ### API key header (clients without OAuth)
 
-The MCP endpoint also accepts an `sc_live_` key in either `Authorization: Bearer sc_live_...` or `X-API-Key: sc_live_...`. Query-string keys (`?key=`) are not accepted. Example for Claude Code:
+The MCP endpoint also accepts an `sc_live_` key in either `Authorization: Bearer sc_live_...` or `X-API-Key: $SUPERCOMPRESS_API_KEY`. Query-string keys (`?key=`) are not accepted. Example for Claude Code:
 
 ```bash
 claude mcp add --transport http supercompress https://www.supercompress.dev/api/mcp \
@@ -155,7 +155,7 @@ Base URL: `https://www.supercompress.dev`. Get a key at https://www.supercompres
 
 ### Authentication
 
-Header-only. Send `X-API-Key: sc_live_...`, or `Authorization: Bearer sc_live_...`. Keys in the query string are rejected, and a request without a valid key returns `401 {"detail":"Missing or invalid API key"}`. Treat keys as secrets and rotate them from the dashboard if one is exposed.
+Header-only. Send `X-API-Key: $SUPERCOMPRESS_API_KEY`, or `Authorization: Bearer sc_live_...`. Keys in the query string are rejected, and a request without a valid key returns `401 {"detail":"Missing or invalid API key"}`. Treat keys as secrets and rotate them from the dashboard if one is exposed.
 
 ### Endpoints
 
@@ -172,7 +172,7 @@ Header-only. Send `X-API-Key: sc_live_...`, or `Authorization: Bearer sc_live_..
 
 ```bash
 curl -X POST https://www.supercompress.dev/api/v1/compress \
-  -H "X-API-Key: sc_live_YOUR_KEY" \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"context":"<large context>","query":"<the user question>"}'
 ```

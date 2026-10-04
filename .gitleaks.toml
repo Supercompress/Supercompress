@@ -1,0 +1,4 @@
+title = "SuperCompress"
+# Uses default rules via CLI (no custom rule set). Docs should use
+# $SUPERCOMPRESS_API_KEY in curl samples — never sc_live_... placeholders
+# that trip curl-auth-header.
