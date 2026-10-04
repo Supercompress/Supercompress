@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prompt Compression That Keeps Evidence (Not Summaries) | SuperCompress</title>
-  <meta name="description" content="Prompt compression (smart context compression) removes low-value context before an LLM call. Query-aware selection cuts token spend ~64% without summarization rewrite risk." />
+  <meta name="description" content="Prompt compression (smart context compression) removes low-value context before an LLM call. Query-aware selection keeps original evidence without summarization rewrite risk. Measure tokens_saved on your traffic." />
   <meta property="og:title" content="Prompt Compression for LLMs: Cut Tokens Without Losing Answers" />
   <meta property="og:description" content="Prompt compression removes low-value context before an LLM call. Learn how query-aware compression cuts token spend, latency, and noise without relying on summaries." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
@@ -59,12 +59,12 @@
       {
         "@type": "Question",
         "name": "How much can prompt compression save?",
-        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress averages 82.5% savings on bundled long-context presets."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Savings depend on how noisy the dump is. Measure original_tokens / kept_tokens (or tokens_saved) on your traffic. Published suites live on /benchmarks."}
       },
       {
         "@type": "Question",
         "name": "Does prompt compression add latency?",
-        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress adds ~60ms on CPU, often compensated by reduced GPU prefill time."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Compression is a preprocess before the LLM call. Hosted Neural Keep runs on CPU; a separate local compiler path exists for millisecond-class preprocessing. Measure wall time on your path — do not treat a single latency figure as product-wide."}
       }
     ]
   }
@@ -173,7 +173,7 @@ print(f"Removed {result.tokens_removed} tokens")</code></pre>
         <h2>Prompt compression vs summarization</h2>
         <table class="seo-table"><thead><tr><th>Factor</th><th>Prompt Compression</th><th>Summarization</th></tr></thead><tbody>
 <tr><td>Method</td><td>Selects original lines</td><td>Rewrites with LLM</td></tr>
-<tr><td>Extra cost</td><td>~60ms CPU</td><td>Full LLM call</td></tr>
+<tr><td>Extra cost</td><td>CPU preprocess (no extra LLM)</td><td>Full LLM call</td></tr>
 <tr><td>Oracle recall</td><td>100%</td><td>~61%</td></tr>
 </tbody></table>
       </section>    <section class="seo-section">
@@ -190,9 +190,9 @@ print(f"Removed {result.tokens_removed} tokens")</code></pre>
             <h3>Is prompt compression the same as summarization?</h3>
       <p>No. Summarization rewrites the prompt using another LLM call, changing wording and potentially losing facts. Query-aware compression selects original lines that matter for the current question.</p>
       <h3>How much can prompt compression save?</h3>
-      <p>SuperCompress averages 82.5% savings on bundled long-context presets.</p>
+      <p>Savings depend on how noisy the dump is. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
       <h3>Does prompt compression add latency?</h3>
-      <p>SuperCompress adds ~60ms on CPU, often compensated by reduced GPU prefill time.</p>
+      <p>Compression is a preprocess before the LLM call. Hosted Neural Keep runs on CPU; a separate local compiler path exists for millisecond-class preprocessing. Measure wall time on your path.</p>
     </section>
         </main>
 <footer class="df-footer">

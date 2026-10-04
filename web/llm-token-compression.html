@@ -115,7 +115,7 @@
       </section>    <section class="seo-section">
         <h2>Token compression methods compared</h2>
         <table class="seo-table"><thead><tr><th>Method</th><th>Oracle Recall</th><th>Latency</th><th>Extra Cost</th></tr></thead><tbody>
-<tr><td>SuperCompress</td><td>100%</td><td>~60ms CPU</td><td>None</td></tr>
+<tr><td>SuperCompress</td><td>100%</td><td>CPU preprocess</td><td>None</td></tr>
 <tr><td>Summarization</td><td>61%</td><td>~63ms + LLM call</td><td>Full LLM cost</td></tr>
 <tr><td>Truncation (FIFO)</td><td>25%</td><td>~57ms</td><td>None</td></tr>
 </tbody></table>

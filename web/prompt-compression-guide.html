@@ -12,7 +12,7 @@
 <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prompt Compression Guide — The Complete Resource (2026) | SuperCompress</title>
-  <meta name="description" content="Comprehensive guide to LLM prompt compression. Learn how to reduce token costs by ~64% without sacrificing quality. Compare methods, frameworks, and best practices for production." />
+  <meta name="description" content="Comprehensive guide to LLM prompt compression. Learn how query-aware extractive selection keeps original evidence and drops junk. Compare methods, frameworks, and best practices for production." />
   <meta name="robots" content="index, follow" />
   <meta property="og:title" content="Prompt Compression Guide — The Complete Resource (2026)" />
   <meta property="og:description" content="Learn everything about prompt compression for LLMs: methods, comparisons, benchmarks, framework integration, and production best practices from the authors of SuperCompress." />
@@ -26,7 +26,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="Prompt Compression Guide — The Complete Resource (2026)" />
-  <meta name="twitter:description" content="Reduce LLM token costs by ~64%. A complete guide to prompt compression methods, benchmarks, and production deployment." />
+  <meta name="twitter:description" content="A complete guide to prompt compression methods, benchmarks, and production deployment. Measure tokens_saved on your traffic." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="twitter:creator" content="@supercompress" />
   <link rel="canonical" href="https://supercompress.dev/prompt-compression-guide" />
@@ -51,8 +51,8 @@
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
-      { "@type": "Question", "name": "What is prompt compression?", "acceptedAnswer": { "@type": "Answer", "text": "Prompt compression reduces the size of LLM prompts by removing redundant or low-value content while preserving the information needed for accurate responses. It typically achieves 60–70% token reduction with minimal quality loss." } },
-      { "@type": "Question", "name": "How much does prompt compression save?", "acceptedAnswer": { "@type": "Answer", "text": "SuperCompress achieves ~64% average token reduction with 97%+ oracle recall — meaning answers are virtually identical to the full-prompt response. At GPT-4 Turbo pricing, this translates to roughly 3x cost savings on prompt tokens." } },
+      { "@type": "Question", "name": "What is prompt compression?", "acceptedAnswer": { "@type": "Answer", "text": "Prompt compression reduces the size of LLM prompts by removing redundant or low-value content while preserving the information needed for accurate responses. SuperCompress is query-aware extractive selection: keep original lines that answer this question, drop junk." } },
+      { "@type": "Question", "name": "How much does prompt compression save?", "acceptedAnswer": { "@type": "Answer", "text": "Savings depend on how noisy the dump is. Measure original_tokens / kept_tokens (or tokens_saved) on your traffic. Published suites live on /benchmarks — they are not a product-wide API-cost guarantee." } },
       { "@type": "Question", "name": "Does prompt compression work with any LLM?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Prompt compression is model-agnostic — it preprocesses the prompt before sending it to any LLM. It works with GPT-4, Claude, Gemini, Llama, Mistral, and any other model. No fine-tuning or model changes needed." } },
       { "@type": "Question", "name": "Should I use the API or the local library?", "acceptedAnswer": { "@type": "Answer", "text": "Use the local library for latency-sensitive applications or when you want zero external dependencies. Use the hosted API when you want the fastest results without managing infrastructure — it adds ~5ms overhead and includes automatic scaling and rate limiting." } },
       { "@type": "Question", "name": "Is prompt compression better than caching?", "acceptedAnswer": { "@type": "Answer", "text": "They solve different problems. Caching skips the LLM call entirely when identical prompts appear. Compression reduces the cost of every call. For most production systems, the best approach is both: cache identical prompts, compress everything else." } }
@@ -240,10 +240,10 @@
         <tbody>
           <tr>
             <td>Token savings</td>
-            <td>% of tokens removed</td>
-            <td><strong>~64%</strong></td>
-            <td>50% (fixed)</td>
-            <td>60–80%</td>
+            <td>Measure on your traffic</td>
+            <td><strong>original / kept tokens</strong></td>
+            <td>fixed keep-ratio</td>
+            <td>rewrite budget</td>
           </tr>
           <tr>
             <td>Answer quality</td>
@@ -316,7 +316,7 @@
           <tr>
             <td>Serverless (Lambda)</td>
             <td><code>pip install supercompress</code></td>
-            <td>~60ms</td>
+            <td>pip package</td>
             <td><a href="/deploy-compression-aws-lambda">AWS Lambda →</a></td>
           </tr>
           <tr>
@@ -372,7 +372,7 @@
       <p>Yes. Prompt compression is model-agnostic — it preprocesses the text before sending it to the LLM. We've tested with GPT-4, GPT-4 Turbo, Claude 3.5 Sonnet, Claude Haiku, Gemini Pro, Llama 3, Mistral, and many more. No fine-tuning or model changes needed.</p>
 
       <h3>Does compression affect response quality?</h3>
-      <p>SuperCompress achieves 96.3% answer quality and 97.5% oracle recall at ~64% compression. For most production use cases, the difference in response quality is imperceptible while token costs are cut by roughly 3x.</p>
+      <p>SuperCompress keeps original answer-critical lines instead of rewriting them. Measure <code>original_tokens</code> / <code>kept_tokens</code> and answer quality on your eval set. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
 
       <h3>Should I use the API or the local library?</h3>
       <p>Use the local library (<code>pip install supercompress</code>) for latency-sensitive applications, high-throughput systems, or when you want zero external dependencies. Use the hosted API when you want the fastest results without managing infrastructure — it adds ~5ms overhead and includes automatic scaling, rate limiting, and usage analytics.</p>
