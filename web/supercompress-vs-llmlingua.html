@@ -58,8 +58,9 @@
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
   <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
   <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -102,7 +103,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
   <p class="seo-kicker">LLMLingua alternative · Updated 2026-08-03</p>
   <h1>SuperCompress vs LLMLingua / LLMLingua-2</h1>
   <p class="seo-lead">LLMLingua and LLMLingua-2 are Microsoft research compressors that <strong>prune tokens</strong> with a small LM / classifier. SuperCompress is a <strong>query-aware evidence selector</strong>: it keeps original lines that answer the current question, runs ~60ms on CPU, and ships a hosted API + MCP for coding agents.</p>
@@ -254,5 +255,6 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
       <p class="df-footer-copy">© SuperCompress · MIT License · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
     </div>
   </footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

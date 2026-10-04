@@ -69,8 +69,9 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -113,7 +114,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
     <p class="seo-kicker">Prompt compression guide</p>
     <h1>Prompt compression that keeps the answer</h1>
     <p class="seo-lead">Prompt compression is the practical way to reduce oversized LLM requests before they hit an expensive model. Also called <strong>smart context compression</strong> when the same query-aware policy runs on retrieved dumps, agent memory, or RAG chunks. SuperCompress scores context against the current question and keeps the lines most likely to matter.</p>
@@ -272,5 +273,6 @@ print(f"Removed {result.tokens_removed} tokens")</code></pre>
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

@@ -59,8 +59,9 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -103,7 +104,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
     <p class="seo-kicker">Best practices</p>
     <h1>When to use prompt compression</h1>
     <p class="seo-lead">Prompt compression is not always the right answer. Here is a decision framework to help you determine when to compress and when to skip.</p>
@@ -211,5 +212,6 @@
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

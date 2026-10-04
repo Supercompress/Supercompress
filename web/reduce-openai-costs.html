@@ -59,8 +59,9 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -103,7 +104,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
     <p class="seo-kicker">OpenAI cost reduction guide</p>
     <h1>Reduce OpenAI costs before the API call</h1>
     <p class="seo-lead">The fastest way to reduce OpenAI spend is to stop sending tokens the model does not need. SuperCompress compiles long context around the current question before the API call.</p>
@@ -204,5 +205,6 @@
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

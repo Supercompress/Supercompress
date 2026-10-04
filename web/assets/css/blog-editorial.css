@@ -1,0 +1,106 @@
+/* Shared editorial system. Only loaded by the journal and released articles. */
+@font-face{font-family:Platypi;src:url('/assets/fonts/platypi-latin.woff2') format('woff2');font-style:normal;font-weight:300 800;font-display:swap}
+@font-face{font-family:Platypi;src:url('/assets/fonts/platypi-latin-italic.woff2') format('woff2');font-style:italic;font-weight:300 800;font-display:swap}
+@font-face{font-family:Geist;src:url('/assets/fonts/Geist-Regular.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:Geist;src:url('/assets/fonts/Geist-Medium.woff2') format('woff2');font-style:normal;font-weight:500;font-display:swap}
+@font-face{font-family:Geist;src:url('/assets/fonts/Geist-Bold.woff2') format('woff2');font-style:normal;font-weight:700;font-display:swap}
+body[data-editorial]{--serif:Platypi,Georgia,serif;--sans:Geist,system-ui,sans-serif;--brand:#0566ff;--paper:#fbfbf8;--ink:#20231f;--muted:#62665f;--line:#d9ddd4;background:var(--paper)!important;color:var(--ink);font-family:var(--sans)!important;margin:0;-webkit-font-smoothing:antialiased}
+[data-editorial] *,[data-editorial] *::before,[data-editorial] *::after{box-sizing:border-box}
+[data-editorial] [hidden]{display:none!important}
+[data-editorial] a{color:inherit;text-underline-offset:.22em}
+[data-editorial] :focus-visible{outline:2px solid var(--brand);outline-offset:5px}
+[data-editorial] ::selection{background:#dce9ff;color:#153263}
+.journal{max-width:1200px;margin:auto;padding:0 40px}
+.journal-nav,.journal-footer{max-width:1200px;margin:auto;padding:28px 40px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.journal-nav{border-bottom:1px solid var(--line)}
+.journal-nav nav,.journal-footer nav{display:flex;gap:28px;font-size:14px;align-items:center}
+.journal-nav a,.journal-footer a{text-decoration:none}
+.journal-brand{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:700;letter-spacing:-.6px}
+.journal-brand img{object-fit:contain}
+.journal-nav [aria-current]{color:var(--brand)}
+.journal-skip{position:fixed;top:-100px;left:16px;z-index:999;background:var(--paper);padding:12px}
+.journal-skip:focus{top:12px}
+.journal-hero{display:grid;grid-template-columns:1.2fr 1fr;align-items:center;gap:24px;padding:76px 0 66px}
+.journal-label{font-size:11px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;line-height:1.6;color:var(--brand);margin:0 0 20px}
+.journal h1,.journal h2,.journal-card h2{font-family:var(--serif);font-weight:400;letter-spacing:-.045em;text-wrap:balance}
+.journal h1{font-size:clamp(48px,6vw,78px);line-height:1.12;margin:0 0 28px}
+.journal h1 em{color:var(--brand);font-weight:400}
+.journal-hero p:not(.journal-label){max-width:440px;font-size:17px;line-height:1.75;color:var(--muted)}
+.journal-art{display:block;width:100%;height:auto;max-height:370px;object-fit:contain;mix-blend-mode:multiply}
+.journal-library-heading{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--ink);padding:24px 0;gap:20px}
+.journal-library-heading h2{font-size:28px;margin:0}
+.journal-library-heading p{font-size:13px;color:var(--muted)}
+.journal-search{display:flex;align-items:end;gap:24px;margin:0 0 32px}
+.journal-search label{display:grid;gap:8px;font-size:12px;font-weight:500}
+.journal-search label:first-child{flex:1}
+.journal-search input,.journal-search select{font:400 15px var(--sans);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:0;padding:12px;min-height:46px;width:100%}
+.journal-search button{background:transparent;border:0;border-bottom:1px solid var(--line);padding:12px 0;font:400 13px var(--sans);cursor:pointer;min-height:46px}
+.journal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:36px}
+.journal-card{position:relative;border-top:1px solid var(--line);padding:28px 0 32px;min-width:0;display:flex;flex-direction:column;align-items:start}
+.journal-card h2{font-size:27px;line-height:1.3;margin:0 0 16px}
+.journal-card h2 a{text-decoration:none}
+.journal-card h2 a::after{content:'';position:absolute;inset:0}
+.journal-card:has(a:focus-visible){outline:2px solid var(--brand);outline-offset:8px}
+.journal-card:hover h2 a{color:var(--brand)}
+.journal-card .journal-label{margin-bottom:16px}
+.journal-description{font-size:14px;line-height:1.75;color:var(--muted);margin:0 0 24px;overflow-wrap:anywhere}
+.journal-read{font-size:12px;color:var(--brand);margin-top:auto}
+.journal-feature{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;column-gap:80px;padding:38px 0 44px;border-color:var(--brand)}
+.journal-feature .journal-label{grid-column:1/-1}
+.journal-feature h2{font-size:clamp(30px,4vw,46px);grid-row:2/4}
+.journal-feature .journal-description{font-size:16px}
+.journal-endnote{margin:64px 0 0;padding:48px 0 64px;border-top:1px solid var(--ink)}
+.journal-endnote h2{font-size:clamp(32px,4vw,48px);margin:0 0 20px}
+.journal-endnote p:not(.journal-label){color:var(--muted);line-height:1.7}
+.journal-endnote a{color:var(--brand);font-size:14px}
+.journal-footer{border-top:1px solid var(--line);padding-top:32px;padding-bottom:40px;font-size:12px}
+.journal-footer p{color:var(--muted)}
+.journal-empty{padding:40px 0;color:var(--muted)}
+/* A single reading measure, including the three former .container pages. */
+body[data-editorial="article"]::before{display:none!important}
+body[data-editorial="article"] [data-article-content]{width:calc(100% - 48px)!important;max-width:780px!important;margin:0 auto!important;padding:64px 0 88px!important;font-family:var(--sans)!important;font-size:17px;line-height:1.8;color:var(--ink);text-align:left!important;overflow-wrap:anywhere}
+[data-editorial="article"] .df-main-wrap{background:transparent!important;padding:0!important;max-width:none!important}
+[data-article-content] :is(.article-prose,.article-body,.guide-body,.article-header,.article-hero,.article-toc,.article-cta){max-width:none!important;padding-left:0!important;padding-right:0!important;margin-left:0!important;margin-right:0!important}
+body[data-editorial] [data-article-content] :is(h1,h2,h3,h4,h5,h6){font-family:var(--serif)!important;color:var(--ink)!important;font-weight:400!important;letter-spacing:-.035em!important;line-height:1.3!important;text-align:left!important;text-wrap:balance;scroll-margin-top:110px}
+body[data-editorial] [data-article-content] h1{font-size:clamp(38px,5.5vw,62px)!important;line-height:1.14!important;margin:16px 0 28px!important;max-width:none!important}
+body[data-editorial] [data-article-content] h2{font-size:clamp(27px,3.5vw,36px)!important;margin:48px 0 18px!important}
+body[data-editorial] [data-article-content] h3{font-size:25px!important;margin:32px 0 14px!important}
+body[data-editorial] [data-article-content] :is(h4,h5,h6){font-size:21px!important;margin:24px 0 12px!important}
+body[data-editorial] [data-article-content] :is(p,li,dd){font-family:var(--sans)!important;font-size:17px;line-height:1.8;color:var(--ink)}
+body[data-editorial] [data-article-content] p{margin-top:0;margin-bottom:22px}
+body[data-editorial] [data-article-content] :is(.seo-lead,.subtitle,.article-subtitle){font-size:20px!important;line-height:1.65!important;color:var(--muted)!important;max-width:none!important;text-align:left!important}
+body[data-editorial] [data-article-content] :is(.seo-author,.meta,.article-meta){font-size:13px!important;color:var(--muted)!important;text-align:left!important}
+body[data-editorial] [data-article-content] :is(.seo-kicker,.kicker){font-family:var(--sans)!important;font-size:11px!important;letter-spacing:.12em;color:var(--brand)!important;text-transform:uppercase}
+body[data-editorial] [data-article-content] :is(strong,b){font-weight:700!important;color:inherit}
+body[data-editorial] [data-article-content] :is(em,i){font-style:italic!important}
+[data-article-content] a:not(.button):not(.btn){color:var(--brand);text-decoration:underline;text-decoration-thickness:1px}
+[data-article-content] :is(ul,ol){padding-left:1.5em;margin:18px 0 26px}
+[data-article-content] li{padding-left:.15em;margin-bottom:8px}
+[data-article-content] li::marker{color:var(--brand)}
+[data-article-content] blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:2px solid var(--brand);font-style:italic;color:var(--muted)}
+[data-article-content] :is(img,video,svg){max-width:100%;height:auto}
+[data-article-content] figure{margin:36px 0}
+[data-article-content] figcaption{font:400 13px/1.6 var(--sans);color:var(--muted);margin-top:12px}
+body[data-editorial] [data-article-content] pre{background:#f0f2ed!important;border:1px solid var(--line)!important;border-radius:2px!important;color:#25302c!important;overflow-x:auto!important;white-space:pre!important;max-width:100%;padding:24px!important;margin:24px 0!important;font:400 13px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace!important;tab-size:2}
+[data-article-content] code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.85em;background:#edf0e9;padding:.15em .35em;border-radius:2px;overflow-wrap:anywhere}
+body[data-editorial] [data-article-content] pre code{font:inherit!important;color:inherit!important;background:transparent!important;padding:0!important;white-space:pre!important;overflow-wrap:normal}
+[data-article-content] .editorial-code{position:relative;min-width:0}
+body[data-editorial] [data-article-content] .editorial-code pre{padding-top:52px!important}
+.editorial-copy{position:absolute;right:10px;top:10px;padding:6px 10px;border:1px solid var(--line);border-radius:2px;background:var(--paper);color:var(--ink);font:400 12px var(--sans);cursor:pointer}
+[data-article-content] table{width:100%;border-collapse:collapse;font-size:14px;margin:24px 0;display:block;overflow-x:auto}
+body[data-editorial] [data-article-content] :is(th,td){padding:14px;border-bottom:1px solid var(--line);text-align:left;min-width:110px;font-family:var(--sans);font-size:14px;line-height:1.6}
+[data-article-content] th{background:#f0f2ed;font-weight:700}
+[data-article-content] :is(.toc,.guide-toc,.editorial-toc){border:1px solid var(--line);background:transparent;border-radius:0;padding:24px;margin:32px 0;font-size:14px}
+.editorial-toc summary{cursor:pointer;font-weight:500;font-size:14px}
+body[data-editorial] [data-article-content] .editorial-toc li{font-size:14px;margin:6px 0}
+.editorial-toc ol{margin-bottom:0}
+.editorial-back{font-size:12px;letter-spacing:.03em;display:inline-block;margin-bottom:24px}
+[data-article-content] :is(.seo-section,section){scroll-margin-top:110px}
+[data-article-content] :is(.seo-cta,.cta-box,.article-cta-inner){background:#eef3eb!important;border:1px solid var(--line)!important;border-radius:0!important;padding:28px!important;text-align:left!important}
+[data-article-content] :is(.method-grid,.article-fact-grid,.launch-stats){grid-template-columns:repeat(2,minmax(0,1fr))}
+[data-article-content] hr{border:0;border-top:1px solid var(--line);margin:40px 0}
+[data-article-content] mark{background:#fff0b3;color:var(--ink)}
+[data-article-content] :is(kbd,samp){font-family:ui-monospace,monospace;font-size:.85em}
+@media(max-width:800px){.journal{padding:0 24px}.journal-nav,.journal-footer{padding-left:24px;padding-right:24px}.journal-hero{padding:48px 0;grid-template-columns:1.4fr 1fr}.journal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px}.journal-feature{column-gap:32px}.journal-footer{flex-wrap:wrap}.journal-footer p{display:none}}
+@media(max-width:540px){.journal-nav{align-items:flex-start;gap:16px;flex-direction:column;padding-top:20px;padding-bottom:20px}.journal-nav nav{width:100%;justify-content:space-between;gap:12px}.journal-hero{grid-template-columns:1fr;padding:40px 0 32px;gap:0}.journal-art{max-height:180px;margin-top:16px}.journal h1{font-size:48px}.journal-grid{grid-template-columns:1fr}.journal-feature{display:flex}.journal-search{flex-wrap:wrap;gap:16px}.journal-search label:first-child{flex-basis:100%}.journal-search label:nth-child(2){flex:1}.journal-card h2{font-size:29px}.journal-feature h2{font-size:36px}.journal-endnote{margin-top:32px}.journal-footer{gap:20px}.journal-footer nav{gap:20px}body[data-editorial="article"] [data-article-content]{padding-top:32px!important;font-size:16px}body[data-editorial] [data-article-content] :is(p,li,dd){font-size:16px}[data-article-content] :is(.method-grid,.article-fact-grid,.launch-stats){grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){[data-editorial] *,[data-editorial] *::before,[data-editorial] *::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}

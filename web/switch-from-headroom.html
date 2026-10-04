@@ -71,8 +71,9 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
   <div class="df-header-blur" aria-hidden="true"></div>
   <div class="df-header-inner">
@@ -92,7 +93,7 @@
   </div>
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
   <p class="seo-kicker">Headroom migration · Updated 2026-08-20</p>
   <h1>Switch from Headroom to SuperCompress</h1>
   <p class="seo-lead">Migrating from Headroom? SuperCompress is query-aware context compression for agents and APIs — MCP install, hosted compress API, and published B5 benchmark results: 64.1% mean cut with 24/24 evidence-retention passes.</p>
@@ -132,5 +133,6 @@
     <a href="/playground">Try playground →</a>
   </p>
 </main>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

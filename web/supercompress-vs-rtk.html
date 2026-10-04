@@ -65,8 +65,9 @@
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
   <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
   <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -90,7 +91,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
   <p class="seo-kicker">RTK alternative · Updated 2026-08-20</p>
   <h1>SuperCompress vs RTK (Rust Token Killer)</h1>
   <p class="seo-lead">Searching for an <strong>RTK alternative</strong>? <a href="https://github.com/rtk-ai/rtk" rel="noopener" target="_blank">RTK</a> is a Rust CLI that intercepts <strong>shell command output</strong> and filters it before the agent reads it. <strong>SuperCompress</strong> compresses <em>any</em> context against the current query — Read/Grep dumps, RAG, chat, JSON, and shell — via MCP/API, with published answer-keep gates.</p>
@@ -207,5 +208,6 @@ pip install supercompress</code></pre>
       <p class="df-footer-copy">© SuperCompress · MIT License · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
     </div>
   </footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>
