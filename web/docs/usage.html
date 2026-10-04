@@ -113,7 +113,7 @@ out = sc.compress(context, question)
         </div>
 
         <h2 id="local-library">Local Python library</h2>
-        <p>Run SuperCompress entirely on-device. The library bundles the trained policy (a learned query-aware neural policy, ~200KB) — no model downloads, no GPU, no external dependencies.</p>
+        <p>Run SuperCompress entirely on-device. The local library path runs the on-device compiler (not hosted Neural Keep). No Neural Keep weight download, no GPU required. Hosted v2 still sends context to the SuperCompress API when you use the agent plugin / API key.</p>
 
         <h3>Install</h3>
         <pre><code><span class="kw">pip</span> install supercompress</code></pre>

@@ -5,10 +5,12 @@
  * Exposes compress, retrieve, and simple_hash as tools for MCP-compatible
  * agents (Claude Desktop, Claude Code, Cursor, etc.).
  *
- * Uses the same local compression engine as the Vercel API — no API key
- * needed for local compression. Retrieval checks the in-memory CCR cache
- * first, then optionally falls back to the hosted API if
- * SUPERCOMPRESS_API_KEY is set.
+ * LEGACY local MCP entrypoint — runs the local *compiler* engine only
+ * (no hosted Neural Keep). No API key needed for local compress.
+ * Coding agents should prefer `packages/proxy` / `npx supercompress setup`,
+ * which uses the hosted API (context leaves the machine; account required).
+ * Retrieval checks the in-memory CCR cache first, then optionally falls
+ * back to the hosted API if SUPERCOMPRESS_API_KEY is set.
  *
  * Usage:
  *   node mcp/server.js

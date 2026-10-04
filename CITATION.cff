@@ -8,7 +8,7 @@ authors:
     orcid: ""
     affiliation: "SuperCompress"
 repository-code: "https://github.com/Supercompress/Supercompress"
-abstract: "SuperCompress is a learned context compression engine for LLMs. It uses a ~5K-parameter query-aware policy to remove wasted tokens before inference, cutting ~65% of prompt tokens while preserving answer-critical evidence."
+abstract: "SuperCompress is a query-aware context compression engine for LLMs. Hosted Neural Keep is a ~400M-parameter cross-encoder; the OSS tree also ships a local compiler path. Evaluation emphasizes evidence containment. Do not cite private checkpoint filesystem paths."
 keywords:
   - prompt compression
   - token compression
@@ -16,7 +16,7 @@ keywords:
   - context compression
   - AI cost reduction
 license: MIT
-version: "0.5.0"
+version: "0.5.37"
 date-released: "2026-06-29"
 url: "https://supercompress.dev"
 preferred-citation:

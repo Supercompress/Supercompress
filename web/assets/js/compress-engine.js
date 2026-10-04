@@ -3562,7 +3562,10 @@
     // Soft safety only: one pass to re-include dropped evidence lines that still
     // exist in the preprocessor output. Do NOT loop until a retention target —
     // that makes important_kept_pct circular / hardcoded.
-    let critical = measureCriticalRetention(original, compressed, q);
+    // Honest quality signal: measure BEFORE soft-restore so risk / important_kept_pct
+    // reflect what the compressor actually chose to drop (issue #199).
+    let criticalPreRestore = measureCriticalRetention(original, compressed, q);
+    let critical = criticalPreRestore;
     if (critical.critical_lines_dropped && critical.critical_lines_dropped.length) {
       let restored = false;
       // Exact-trim index for O(1) restore; fall back to short linear scan only for fuzzy.
@@ -3624,12 +3627,19 @@
       : [];
 
     const verifier = compiler ? { ...compiler.verifier } : null;
+    // Prefer pre-restore retention for reported risk (post-restore is repair, not compressor truth).
     const reportedImportant =
-      critical.important_kept_pct != null ? critical.important_kept_pct : quality;
+      criticalPreRestore.important_kept_pct != null
+        ? criticalPreRestore.important_kept_pct
+        : critical.important_kept_pct != null
+          ? critical.important_kept_pct
+          : quality;
     if (verifier) {
       verifier.important_kept_pct = reportedImportant;
-      verifier.critical_lines_total = critical.critical_lines_total;
-      verifier.critical_lines_kept = critical.critical_lines_kept;
+      verifier.important_kept_pct_after_repair =
+        critical.important_kept_pct != null ? critical.important_kept_pct : reportedImportant;
+      verifier.critical_lines_total = criticalPreRestore.critical_lines_total;
+      verifier.critical_lines_kept = criticalPreRestore.critical_lines_kept;
       let risk = "low";
       if (verifier.entity_recall < 0.98 || reportedImportant < 0.98 || verifier.keyword_recall < 0.7) risk = "medium";
       if (verifier.entity_recall < 0.85 || reportedImportant < 0.9) risk = "high";

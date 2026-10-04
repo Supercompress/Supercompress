@@ -218,7 +218,7 @@
 
     <section class="seo-section">
       <h2>Why v2 is different from v1</h2>
-      <p>v1 was a tiny / lightweight compiler: fast on CPU, millisecond-class, good at aggressive drop with answer-keep gates. v2 is a <strong>~400M query-aware cross-encoder</strong> — Neural Keep — hosted on GPU. It scores every line against <em>this</em> query and keeps original wording.</p>
+      <p>v1 was a tiny / lightweight compiler: fast on CPU, millisecond-class, good at aggressive drop with answer-keep gates. v2 is a <strong>~400M query-aware cross-encoder</strong> — Neural Keep — hosted on Fly (CPU today). It scores every line against <em>this</em> query and keeps original wording.</p>
       <p>Critically, it knows when <strong>not</strong> to compress. Across the full 390-case public suite the aggregate mean cut is only ~3.6%: on dense needle and LongBench slices it often keeps nearly everything. The headline <strong>64.1%</strong> is the coding-agent (B5) suite, where dumps are noisy and query-aware keep shines. Mixing those numbers with compiler-era ~47ms CPU claims is wrong — they are different engines.</p>
     </section>
 
@@ -261,7 +261,7 @@ DEBUG retry scheduled</span></pre>
         <tbody>
           <tr class="best-row">
             <td>Engine</td>
-            <td><strong>~400M Neural Keep</strong> (hosted GPU, live)</td>
+            <td><strong>~400M Neural Keep</strong> (hosted Fly CPU, live)</td>
           </tr>
           <tr class="best-row">
             <td>Mean context cut</td>
@@ -300,7 +300,7 @@ DEBUG retry scheduled</span></pre>
     <section class="seo-section">
       <h2>Limitations</h2>
       <ul>
-        <li><strong>Latency:</strong> Neural Keep on GPU is seconds-scale on long dumps (~5.8s B5 p50), not the old compiler’s millisecond path.</li>
+        <li><strong>Latency:</strong> Neural Keep on Fly CPU is seconds-scale on long dumps (~5.8s B5 p50), not the old compiler’s millisecond path.</li>
         <li><strong>Downstream eval:</strong> we have not yet published LLM task-success after compression.</li>
         <li><strong>Workload fit:</strong> strongest on coding-agent / tool-dump noise; conservative when every line could be the needle.</li>
       </ul>

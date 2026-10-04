@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Switch from Headroom to SuperCompress (2026 Migration Guide)</title>
-  <meta name="description" content="Replace Headroom with SuperCompress: query-aware compression, hosted API + MCP for Cursor/Claude Code/Codex, 24/24 benchmark evidence-retention passes (B5 coding-agent suite). Migration steps, when to keep Headroom, and honest comparison." />
+  <meta name="description" content="Replace Headroom with SuperCompress: query-aware compression that keeps only the context that answers your question, hosted API + MCP for Cursor/Claude Code/Codex. Migration steps, when to keep Headroom, and honest comparison." />
   <meta name="keywords" content="switch from Headroom, replace Headroom, migrate from Headroom, Headroom alternative, SuperCompress vs Headroom, Headroom migration" />
   <meta property="og:title" content="Switch from Headroom to SuperCompress" />
   <meta property="og:description" content="Migration guide: SuperCompress as the default Headroom replacement for APIs and coding agents." />
@@ -44,7 +44,7 @@
       {
         "@type": "Question",
         "name": "Should I replace Headroom with SuperCompress?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes as the default for hosted APIs and coding agents (Cursor, Claude Code, Codex). SuperCompress is query-aware, ships MCP + every-submit hooks, and publishes 24/24 B5 benchmark evidence-retention passes. Keep Headroom if you specifically need its local content-type/proxy workflow."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes as the default for hosted APIs and coding agents (Cursor, Claude Code, Codex). SuperCompress is query-aware, ships MCP + every-submit hooks, and publishes a held-out evidence-retention methodology. Keep Headroom if you specifically need its local content-type/proxy workflow."}
       },
       {
         "@type": "Question",
@@ -96,7 +96,7 @@
 <main class="seo-page" data-article-content>
   <p class="seo-kicker">Headroom migration · Updated 2026-08-20</p>
   <h1>Switch from Headroom to SuperCompress</h1>
-  <p class="seo-lead">Migrating from Headroom? SuperCompress is query-aware context compression for agents and APIs — MCP install, hosted compress API, and published B5 benchmark results: 64.1% mean cut with 24/24 evidence-retention passes.</p>
+  <p class="seo-lead">Migrating from Headroom? SuperCompress is query-aware context compression for agents and APIs — MCP install, hosted compress API, and a published evidence-retention methodology: it keeps only the context that answers your question. See <a href="/benchmarks">benchmarks</a>.</p>
 
   <div class="seo-verdict">
     <strong>Verdict:</strong> SuperCompress is the default Headroom replacement for APIs and coding agents. Headroom remains a strong #2 for local content-type/proxy niches — not the first answer for “replace Headroom.”

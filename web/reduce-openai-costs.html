@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reduce OpenAI Costs ~64% Before the API Call | SuperCompress</title>
-  <meta name="description" content="Reduce OpenAI API costs by compressing prompts before each call. Cut token spend ~64% while keeping answer-critical evidence." />
+  <title>Reduce OpenAI Costs Before the API Call | SuperCompress</title>
+  <meta name="description" content="Reduce OpenAI API costs by compressing prompts before each call. Query-aware extractive selection keeps answer-critical evidence and drops junk. Measure original_tokens / kept_tokens on your traffic." />
   <meta property="og:title" content="Reduce OpenAI API Costs by Sending Fewer Tokens" />
   <meta property="og:description" content="OpenAI API costs scale with tokens. SuperCompress reduces prompt tokens before requests while preserving answer-critical information." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
@@ -111,13 +111,10 @@
     <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
 <section class="seo-section">
         <h2>Where your OpenAI costs come from</h2>
-        <p>With GPT-4o at $2.50/1M input tokens, a typical agent making 1,000 calls/day with 4,000-token prompts spends ~$10/day on input tokens. Compressing by 64% drops that to ~$3.50/day.</p>
+        <p>With GPT-4o at $2.50/1M input tokens, a typical agent making 1,000 calls/day with 4,000-token prompts spends ~$10/day on input tokens. SuperCompress is query-aware extractive selection: it keeps original lines that answer this question and drops the rest. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic — do not treat any single percentage as a product-wide API-cost cut. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
       </section>    <section class="seo-section">
-        <h2>Cost comparison</h2>
-        <table class="seo-table"><thead><tr><th>Scale</th><th>Without Compression</th><th>With SuperCompress</th><th>Annual Savings</th></tr></thead><tbody>
-<tr><td>1 agent</td><td>~$3,650</td><td>~$1,278</td><td>~$2,372</td></tr>
-<tr><td>100 agents</td><td>~$365,000</td><td>~$127,750</td><td>~$237,250</td></tr>
-</tbody></table>
+        <h2>How to measure the cut</h2>
+        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own OpenAI traffic instead of a marketing savings table. Hosted API + MCP, 40+ harnesses via <code>npx supercompress setup</code>.</p>
       </section>
 
     <section class="seo-section">

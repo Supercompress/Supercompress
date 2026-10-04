@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reduce Gemini API Costs ~64% With Prompt Compression | SuperCompress</title>
-  <meta name="description" content="Cut Google Gemini API token spend ~64% with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API." />
+  <title>Reduce Gemini API Costs With Prompt Compression | SuperCompress</title>
+  <meta name="description" content="Cut Google Gemini API token spend with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API. Measure original_tokens / kept_tokens on your traffic." />
   <meta property="og:title" content="Cut Gemini Token Spend Without Losing Answers" />
-  <meta property="og:description" content="Cut Google Gemini API token spend ~64% with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API." />
+  <meta property="og:description" content="Cut Google Gemini API token spend with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/reduce-gemini-costs" />
   <meta property="og:type" content="article" />
@@ -14,7 +14,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="Cut Gemini Token Spend Without Losing Answers" />
-  <meta name="twitter:description" content="Cut Google Gemini API token spend ~64% with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API." />
+  <meta name="twitter:description" content="Cut Google Gemini API token spend with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/reduce-gemini-costs" />
   <meta property="article:published_time" content="2026-09-05" />
@@ -33,7 +33,7 @@
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "Cut Gemini Token Spend Without Losing Answers",
-    "description": "Cut Google Gemini API token spend ~64% with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API.",
+    "description": "Cut Google Gemini API token spend with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API.",
     "datePublished": "2026-09-05",
     "dateModified": "2026-09-05",
     "author": {"@type": "Person", "name": "Arjun Shah", "url": "https://www.arjunshah.xyz/", "sameAs": ["https://www.arjunshah.xyz/", "https://www.linkedin.com/in/arjunkshah", "https://x.com/arjunkshah21"]},
@@ -111,13 +111,10 @@
     <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-09-05</p>
 <section class="seo-section">
         <h2>Where your Gemini costs come from</h2>
-        <p>A typical agent making 1,000 calls/day with 4,000-token prompts burns real Google Gemini budget on filler context. Compressing by ~64% drops input spend by the same ratio while keeping answer-critical evidence.</p>
+        <p>A typical agent making 1,000 calls/day with 4,000-token prompts burns real Google Gemini budget on filler context. SuperCompress is query-aware extractive selection: it keeps original lines that answer this question and drops the rest. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
       </section>    <section class="seo-section">
-        <h2>Cost comparison</h2>
-        <table class="seo-table"><thead><tr><th>Scale</th><th>Without Compression</th><th>With SuperCompress</th><th>Annual Savings</th></tr></thead><tbody>
-<tr><td>1 agent</td><td>~$3,650</td><td>~$1,278</td><td>~$2,372</td></tr>
-<tr><td>100 agents</td><td>~$365,000</td><td>~$127,750</td><td>~$237,250</td></tr>
-</tbody></table>
+        <h2>How to measure the cut</h2>
+        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own Gemini traffic instead of a marketing savings table. Hosted API + MCP, 40+ harnesses via <code>npx supercompress setup</code>.</p>
       </section>
 
     

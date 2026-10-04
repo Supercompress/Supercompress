@@ -221,13 +221,18 @@ function anthropicSSE(eventType, data) {
   return `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-async function forwardAnthropic(model, compressed, system, extraParams, res, authHeader, apiKeyHeader) {
+async function forwardAnthropic(model, compressed, system, extraParams, res, authHeader, apiKeyHeader, incomingHeaders = {}) {
   const apiKey = extractProviderKey(authHeader, apiKeyHeader);
   if (!apiKey) {
     throw new Error(
       "No provider API key found in Authorization header. Login-only subscription sessions are not supported by this local proxy; use the provider's API-key mode."
     );
   }
+  const hdr = incomingHeaders || {};
+  const pick = (name) => {
+    const v = hdr[name] || hdr[name.toLowerCase()];
+    return typeof v === "string" && v.trim() ? v.trim() : "";
+  };
 
   const isStream = extraParams.stream === true || extraParams.stream === "true";
   const compressedMessages = compressed.messages || [];
@@ -254,13 +259,18 @@ async function forwardAnthropic(model, compressed, system, extraParams, res, aut
   };
   if (systemContent) body.system = systemContent;
 
+  const anthropicHeaders = {
+    "Content-Type": "application/json",
+    "x-api-key": apiKey,
+    // Prefer caller version; fall back to a known-stable default.
+    "anthropic-version": pick("anthropic-version") || "2023-06-01",
+  };
+  const beta = pick("anthropic-beta");
+  if (beta) anthropicHeaders["anthropic-beta"] = beta;
+
   const apiResponse = await fetch(`${ANTHROPIC_BASE}/v1/messages`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
+    headers: anthropicHeaders,
     body: JSON.stringify(body),
   });
 

@@ -1,7 +1,9 @@
 (function () {
   "use strict";
 
-  const API_URL = "https://supercompress.dev/api/v1/compress";
+  // Same-origin relative URL: calling the apex host from www triggered a CORS
+  // preflight that hit a 308 redirect and failed. Works on any deploy host.
+  const API_URL = "/api/v1/compress";
   const KEY_STORE = "sc_live_demo_key";
   /** In-memory only for the page session — do not persist API keys in sessionStorage. */
   let memoryApiKey = "";

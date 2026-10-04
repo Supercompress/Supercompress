@@ -96,10 +96,10 @@ app.get("/health", (req, res) => {
 });
 
 // ── List models ──
+// Honest catalog: ids only. Do NOT invent context_window / tool / reasoning
+// capabilities — clients may branch on those fields (audit finding #13).
 app.get("/v1/models", (req, res) => {
   const models = [
-      { id: "gpt-5.4-mini", object: "model", created: 1700000000, owned_by: "openai" },
-      { id: "gpt-5.4", object: "model", created: 1700000000, owned_by: "openai" },
       { id: "gpt-4o", object: "model", created: 1700000000, owned_by: "openai" },
       { id: "gpt-4o-mini", object: "model", created: 1700000000, owned_by: "openai" },
       { id: "gpt-4-turbo", object: "model", created: 1700000000, owned_by: "openai" },
@@ -109,44 +109,14 @@ app.get("/v1/models", (req, res) => {
       { id: "claude-3-haiku-20240307", object: "model", created: 1700000000, owned_by: "anthropic" },
       { id: "claude-3-opus-20240229", object: "model", created: 1700000000, owned_by: "anthropic" },
   ];
-  // OpenAI clients expect `data`; Codex's model manager expects richer `models` records.
+  // Codex also reads `models`; keep slug/display only — no fabricated capabilities.
   const codexModels = models.map((model) => ({
     slug: model.id,
     display_name: model.id,
-    description: "OpenAI-compatible model through SuperCompress",
-    context_window: 200000,
-    max_output_tokens: 32768,
-    supports_reasoning_summaries: true,
-    supported_reasoning_levels: [
-      { effort: "minimal", description: "Fast responses with lighter reasoning" },
-      { effort: "low", description: "Quick responses with limited reasoning" },
-      { effort: "medium", description: "Balances speed and reasoning depth for everyday tasks" },
-      { effort: "high", description: "More reasoning for difficult problems" },
-      { effort: "xhigh", description: "Maximum reasoning depth for the hardest problems" },
-    ],
-    default_reasoning_level: "medium",
-    default_reasoning_effort: "medium",
-    input_modalities: ["text"],
-    supports_parallel_tool_calls: true,
-    shell_type: "shell_command",
+    description: "Routed through SuperCompress proxy — capability fields omitted (ask the provider).",
     visibility: "list",
     supported_in_api: true,
     priority: 1,
-    base_instructions: "",
-    model_messages: null,
-    upgrade: null,
-    support_verbosity: false,
-    default_verbosity: null,
-    apply_patch_tool_type: "freeform",
-    web_search_tool_type: "text_and_image",
-    supports_image_detail_original: true,
-    truncation_policy: { mode: "tokens", limit: 10000 },
-    tool_mode: "code_mode_only",
-    use_responses_lite: false,
-    include_skills_usage_instructions: false,
-    auto_review_model_override: null,
-    reasoning_summary_format: "experimental",
-    experimental_supported_tools: [],
   }));
   res.json({ object: "list", data: models, models: codexModels });
 });
@@ -307,7 +277,8 @@ app.post("/v1/messages", async (req, res) => {
       rest,
       res,
       req.headers.authorization,
-      req.headers["x-api-key"]
+      req.headers["x-api-key"],
+      req.headers
     );
 
     const totalMs = Date.now() - startTime;

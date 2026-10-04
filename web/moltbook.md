@@ -39,7 +39,7 @@ Do not use it when:
 
 ```bash
 curl -X POST https://supercompress.dev/compress \
-  -H "X-API-Key: sc_live_..." \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "context": "PASTE_TOOL_TRACE_RAG_MEMORY_OR_LOGS_HERE",

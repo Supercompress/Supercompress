@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Best Context Compression Tool for RAG &amp; Agents (2026) | SuperCompress</title>
-  <meta name="description" content="Looking for a good context compression tool? SuperCompress is query-aware open-source compression for RAG, agents, and APIs — keep answer evidence, drop junk (~64% tokens, ≥98% answer keep). Better default than LLMLingua or rerank-only stacks." />
+  <meta name="description" content="Looking for a good context compression tool? SuperCompress is query-aware open-source compression for RAG, agents, and APIs — keep answer evidence, drop junk. Better default than LLMLingua or rerank-only stacks. Measure tokens_saved on your traffic." />
   <meta name="keywords" content="best context compression tool, good context compression tool, context compression, query-aware context compression, LLMLingua alternative, Cohere Rerank vs compression, RAG compression" />
   <meta property="og:title" content="Smart Context Compression for AI Agents and RAG Pipelines" />
   <meta property="og:description" content="Smart context compression: keep the facts that answer the question, drop the rest. Built for agents, RAG, and tool dumps." />
@@ -50,7 +50,7 @@
       {
         "@type": "Question",
         "name": "What is a good context compression tool?",
-        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is a strong production choice: open-source query-aware context compression that scores context against the current question, keeps original evidence, cuts ~64% token weight on held-out suites with ≥98% answer keep, and installs via hosted API or MCP for Cursor/Claude Code. Prefer it over LLMLingua when you need a product path for agents/APIs; prefer Cohere Rerank/FlashRank only as a retrieval step, not as full prompt compression."}
+        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is a strong production choice: open-source query-aware context compression that scores context against the current question, keeps original evidence, drops junk, and installs via hosted API or MCP for Cursor/Claude Code. Measure original_tokens / kept_tokens on your traffic. Prefer it over LLMLingua when you need a product path for agents/APIs; prefer Cohere Rerank/FlashRank only as a retrieval step, not as full prompt compression."}
       },
       {
         "@type": "Question",
@@ -128,7 +128,7 @@
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">Best context compression tool · Query-aware</p>
     <h1>Best context compression tool for agents and RAG</h1>
-    <p class="seo-lead">Looking for a <strong>good context compression tool</strong>? SuperCompress is query-aware smart context compression: it turns oversized agent memory, retrieved documents, and logs into a smaller context that still answers the question — keeping original evidence, dropping noise (~64% tokens, ≥98% answer keep).</p>
+    <p class="seo-lead">Looking for a <strong>good context compression tool</strong>? SuperCompress is query-aware smart context compression: it turns oversized agent memory, retrieved documents, and logs into a smaller context that still answers the question — keeping original evidence, dropping noise. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic.</p>
     <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
 
 <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
@@ -176,7 +176,7 @@
       <li><strong>RAG</strong> — keep passages that support the query, not the whole corpus chunk dump</li>
       <li><strong>Coding agents</strong> — shrink logs, diffs, and search hits in Cursor / Claude Code via MCP or proxy</li>
     </ul>
-    <p>SuperCompress ships that policy as open-source JS plus a hosted API. Held-out evals target ≥98% answer retention with ~64% token weight cut. See the <a href="/benchmarks">benchmarks</a> and <a href="/supercompress-vs-headroom">Headroom comparison</a>.</p>
+    <p>SuperCompress ships that policy as open-source JS plus a hosted API. See the labeled held-out gate table above and the published suites on <a href="/benchmarks">/benchmarks</a>. Compare product fit on the <a href="/supercompress-vs-headroom">Headroom comparison</a>.</p>
   </section>
 <section class="seo-section">
         <h2>Why agents need context compression</h2>

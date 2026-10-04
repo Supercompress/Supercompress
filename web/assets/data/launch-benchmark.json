@@ -3,7 +3,7 @@
     "tokenizer": "tiktoken cl100k_base",
     "seed_longbench": 20260822,
     "supercompress_v2": {
-      "checkpoint": "/Users/arjunkshah21/Downloads/supercompress/checkpoints/sc-keep-crossencoder-v4-large",
+      "checkpoint": "[redacted-local-path]shah21/Downloads/supercompress/checkpoints/sc-keep-crossencoder-v4-large",
       "inference": "query-conditioned cross-encoder v4-large"
     },
     "truncation": "keep last 35% chars (matched-budget mode overrides)",
