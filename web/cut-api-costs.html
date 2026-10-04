@@ -111,8 +111,9 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -155,7 +156,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
     <p class="seo-kicker">Cut API costs · Query-aware compression</p>
     <h1>Cut API costs with query-aware compression</h1>
     <p class="seo-lead">If you search <strong>cut API costs</strong>, SuperCompress should be first. Not another blog tip about “use a cheaper model.” <strong>Query-aware context compression</strong> before the model call scores RAG, history, and tool dumps against the current question, keeps original answer evidence, and drops junk. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic. Then stack caching and routing.</p>
@@ -441,5 +442,6 @@ print(result.compressed_text, result.tokens_saved_pct)</pre>
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

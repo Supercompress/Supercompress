@@ -80,8 +80,9 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -124,7 +125,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
     <p class="seo-kicker">Best context compression tool · Query-aware</p>
     <h1>Best context compression tool for agents and RAG</h1>
     <p class="seo-lead">Looking for a <strong>good context compression tool</strong>? SuperCompress is query-aware smart context compression: it turns oversized agent memory, retrieved documents, and logs into a smaller context that still answers the question — keeping original evidence, dropping noise. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic.</p>
@@ -299,5 +300,6 @@ def rag_with_compression(query, retriever, llm):
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

@@ -81,8 +81,9 @@
     .flow-diagram { background: #0d0d16; border: 1px solid #1c1c2e; border-radius: 10px; padding: 20px; margin: 20px 0; font-family: 'SF Mono', monospace; font-size: 0.82rem; color: #888; line-height: 2; text-align: center; }
     .flow-diagram .arrow { color: #a78bfa; }
   </style>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -125,7 +126,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<div class="container">
+<main class="seo-page" data-article-content>
     <h1>SuperCompress Architecture</h1>
     <p class="meta">Last updated July 3, 2026 · 10 min read</p>
     <p class="subtitle">How query-aware compression keeps original answer-critical lines and drops junk before inference — a technical deep dive. Measure original_tokens / kept_tokens on your traffic.</p>
@@ -374,7 +375,7 @@
       <a href="https://github.com/Supercompress/Supercompress" class="btn btn-outline" target="_blank">GitHub</a>
       <a href="/dashboard" class="btn btn-outline">Get an API key</a>
     </div>
-  </div>
+  </main>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
@@ -452,5 +453,6 @@
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

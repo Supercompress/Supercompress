@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>SuperCompress Control Plane — Ops</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Platypi:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <h1 class="brand">Super<em>Compress</em> Control Plane</h1>
+      <span class="badge" title="Not for public channels">Confidential · private ops</span>
+    </header>
+
+    <section class="hero">
+      <div>
+        <h2 id="headline">Compress first. Route on what’s left.</h2>
+        <p class="lede" id="lede">
+          LiteLLM routes the request the client sent. We route after keep — and prove the dollar delta.
+        </p>
+      </div>
+      <aside class="delta" aria-live="polite">
+        <div class="label">Dollars avoided (est.)</div>
+        <div class="amount" id="dollars">$—</div>
+        <div class="sub" id="delta-sub">Load demo or live insights to see the moat.</div>
+      </aside>
+    </section>
+
+    <section class="controls" aria-label="Data source">
+      <div>
+        <label for="base">API base</label>
+        <input id="base" type="url" value="https://api.supercompress.dev" autocomplete="off" />
+      </div>
+      <div>
+        <label for="key">API key (live)</label>
+        <input id="key" type="password" placeholder="sc_…" autocomplete="off" />
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn-ghost active" id="btn-demo">Demo</button>
+        <button type="button" class="btn-primary" id="btn-live">Load live</button>
+        <button type="button" class="btn-ghost" id="btn-otel">OTel JSON</button>
+      </div>
+    </section>
+    <p class="status-line" id="status" data-tone="">Ready — demo mode available offline.</p>
+    <p class="vs-strip" id="vs-strip" hidden></p>
+
+    <section class="moat" aria-label="Routing comparison">
+      <article class="panel litellm">
+        <div class="eyebrow">LiteLLM-class gateways</div>
+        <h3>Route on the raw ask</h3>
+        <p>Context size = whatever the client posted. No keep stage. No unlock when a smaller model would fit after compression.</p>
+        <div class="token-bar" id="bar-litellm"></div>
+      </article>
+      <article class="panel sc">
+        <div class="eyebrow">SuperCompress</div>
+        <h3>Route on retained tokens</h3>
+        <p>Neural Keep / compiler shrink context first. Router sees the kept size — cheaper models unlock, spend drops, Trace proves it.</p>
+        <div class="token-bar" id="bar-sc"></div>
+      </article>
+    </section>
+
+    <section class="metrics" aria-label="Summary metrics">
+      <div class="metric"><div class="k">Requests</div><div class="v" id="m-req">—</div></div>
+      <div class="metric"><div class="k">Model changes</div><div class="v" id="m-chg">—</div></div>
+      <div class="metric"><div class="k">Unlocks</div><div class="v" id="m-unl">—</div></div>
+      <div class="metric"><div class="k">Keep ratio</div><div class="v" id="m-ratio">—</div></div>
+    </section>
+
+    <section class="unlocks">
+      <h3 class="section-title">Context unlocks</h3>
+      <div class="unlock-list" id="unlocks"></div>
+    </section>
+
+    <section class="alerts">
+      <h3 class="section-title">Alerts</h3>
+      <div id="alerts"></div>
+    </section>
+
+    <section class="table-wrap">
+      <h3 class="section-title">Recent traced requests</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Request</th>
+            <th>Agent</th>
+            <th>Tokens</th>
+            <th>Routed</th>
+            <th>$ avoided</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+
+    <footer class="foot">
+      Flags default OFF. Enable <code>SC_CP_OPS=1</code> + <code>SC_CP_TRACE=1</code> for live data.
+      Never paste prompts here. Do not publish screenshots until launch clear.
+    </footer>
+  </div>
+
+  <script src="./app.js" type="module"></script>
+</body>
+</html>

@@ -46,8 +46,9 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -90,7 +91,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
     <p class="seo-kicker">Integration guide</p>
     <h1>Compress Firecrawl results before they hit your LLM.</h1>
     <p class="seo-lead">Firecrawl is useful because it turns pages into model-ready content. The problem is that model-ready content can still be huge. SuperCompress runs between Firecrawl and the model, keeping query-relevant evidence while removing scraped noise.</p>
@@ -228,5 +229,6 @@ print(compressed.stats)</code></pre>
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

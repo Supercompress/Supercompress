@@ -59,8 +59,9 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -103,7 +104,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
     <p class="seo-kicker">Technical guide</p>
     <h1>How prompt compression works</h1>
     <p class="seo-lead">SuperCompress uses a learned policy of a learned query-aware neural policy — tiny compared to the LLMs it optimizes for. Here is how it works under the hood.</p>
@@ -211,5 +212,6 @@
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

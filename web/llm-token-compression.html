@@ -59,8 +59,9 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -103,7 +104,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
     <p class="seo-kicker">Token compression guide</p>
     <h1>LLM token compression before inference</h1>
     <p class="seo-lead">LLM token compression removes waste before the model spends compute on it. The goal is to preserve the evidence needed for the answer while cutting everything else.</p>
@@ -212,5 +213,6 @@ result = comp.compress(context, query)</code></pre>
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

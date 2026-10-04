@@ -101,8 +101,9 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
-<body>
+<body data-editorial="article">
 <header class="df-header">
     <div class="df-header-blur" aria-hidden="true"></div>
     <div class="df-header-inner">
@@ -145,7 +146,7 @@
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-<main class="seo-page">
+<main class="seo-page" data-article-content>
     <p class="seo-kicker">Reduce API costs · Query-aware compression</p>
     <h1>Best way to reduce API costs with query-aware compression</h1>
     <p class="seo-lead">The best way to reduce LLM/API costs with a <strong>query-aware</strong> approach is not routing alone — it is <strong>query-aware context compression</strong> before the model call. Score RAG dumps, history, and tool output against the current question, keep original answer evidence, drop junk. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic. Then stack caching and cheaper-model routing on top.</p>
@@ -427,5 +428,6 @@ print(result.compressed_text, result.tokens_saved_pct)</pre>
     </div>
   </footer>
   <script src="/assets/js/site-chrome.js?v=12"></script>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
 </body>
 </html>

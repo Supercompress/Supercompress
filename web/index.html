@@ -463,7 +463,7 @@
       <div class="benchmark-copy reveal">
         <p class="eyebrow">NEURAL V2 · CODING-AGENT BENCHMARK</p>
         <h2>Cut hard.<br>Keep required evidence.</h2>
-        <p>~400M Neural Keep on hosted Fly CPU. We measure evidence containment — not downstream LLM completion. Compiler numbers live separately on <a href="/benchmarks#legacy-compiler">/benchmarks</a>.</p>
+        <p>~400M Neural Keep on hosted Fly CPU. We measure evidence containment — not downstream LLM completion. Full methodology on <a href="/benchmarks">/benchmarks</a>.</p>
         <a class="button button-secondary magnetic" href="/benchmarks">Full methodology <span>→</span></a>
       </div>
       <div class="benchmark-table" id="benchmark-table">
@@ -495,33 +495,6 @@
           <span>Type / tool-output heuristics</span>
         </div>
         <p class="table-note">Neural v2 B5 (coding-agent): <strong>64.1%</strong> mean cut, <strong>24/24</strong> evidence passes, <strong>16,647 → 5,148</strong> tokens, ~5.8s p50 on hosted Fly CPU. Evidence containment — not downstream completion. Details on <a href="/benchmarks">/benchmarks</a>.</p>
-      </div>
-    </section>
-
-    <section class="container" id="engines" style="padding:48px 0 24px">
-      <p class="eyebrow centered">TWO PATHS · DO NOT MIX BENCHMARKS</p>
-      <h2 class="section-heading centered" style="margin-bottom:28px">Neural v2 vs Compiler</h2>
-      <div class="feature-grid" style="grid-template-columns:1fr 1fr;gap:16px">
-        <article class="feature-card is-lift">
-          <p class="eyebrow">RECOMMENDED</p>
-          <h3>Neural v2</h3>
-          <p>~400M query-aware cross-encoder. Hosted Fly CPU inference. Highest-quality context selection for coding-agent dumps, RAG, and long threads.</p>
-          <ul style="margin:12px 0 0;padding-left:1.1rem;color:var(--text-body);line-height:1.55;font-size:0.92rem">
-            <li>64.1% mean B5 cut · 24/24 evidence</li>
-            <li>~5.8s B5 p50 on hosted Fly CPU</li>
-            <li>Default on the hosted API</li>
-          </ul>
-        </article>
-        <article class="feature-card is-lift">
-          <p class="eyebrow">FAST / LOCAL</p>
-          <h3>Compiler</h3>
-          <p>Lightweight local path. CPU. Millisecond-class preprocessing when you need speed over Neural Keep quality.</p>
-          <ul style="margin:12px 0 0;padding-left:1.1rem;color:var(--text-body);line-height:1.55;font-size:0.92rem">
-            <li>Separate legacy benchmarks</li>
-            <li>CPU · ~ms latency</li>
-            <li>Not the ~400M launch engine</li>
-          </ul>
-        </article>
       </div>
     </section>
 
@@ -684,10 +657,10 @@
             <canvas class="dither-canvas use-dither" data-dither="compress" aria-hidden="true"></canvas>
             <div class="use-panel-body">
               <h3>Production Inference</h3>
-              <p>Hosted Neural v2 (~400M, Fly CPU) is the recommended path for quality. A separate compiler path exists for millisecond-class local preprocessing on CPU.</p>
+              <p>Hosted Neural v2 (~400M, Fly CPU) is the product path — query-aware keep before every model call.</p>
               <ul>
                 <li>Neural v2: hosted Fly CPU · highest-quality keep</li>
-                <li>Compiler: local CPU · millisecond-class path</li>
+                <li>64.1% mean B5 cut · 24/24 evidence containment</li>
                 <li>Drop-in before OpenAI, Anthropic, and more</li>
               </ul>
             </div>
