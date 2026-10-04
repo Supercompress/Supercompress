@@ -1,5 +1,8 @@
 # Repository layout
 
+
+> **Note (2026-10):** `scripts/` currently also holds benchmarking / training / deploy helpers used by maintainers. The “CI + version checks only” line below is aspirational — treat training weights and private ops as out of OSS publish, but do not assume `scripts/` is empty of bench tooling.
+
 Keep the public tree **product-only**. Marketing ops, outreach dumps, training weights, and private email copy do **not** belong here.
 
 ```
@@ -11,7 +14,7 @@ docs/                Longer-form docs that are OK public
 examples/            Small usage examples
 integrations/        Third-party snippets
 mcp/                 MCP packaging helpers
-scripts/             CI + version checks only (no outreach senders)
+scripts/             CI, version checks, and maintainer bench/deploy helpers (no outreach senders / private weights)
 .github/             Actions, issue templates, funding
 ```
 

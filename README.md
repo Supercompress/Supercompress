@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>Query-aware context compression for AI applications and coding agents.</strong><br />
-  Cut your API costs by 65%.
+  Cut coding-agent context ~64% in our B5 benchmark.
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>Cut API costs by ~65%</strong> · <strong>64.1%</strong> mean context cut · <strong>24/24</strong> evidence passes · up to <strong>96.6%</strong> @ ≥99% retention<br />
+  <strong>64.1%</strong> mean context cut on B5 (24 coding-agent cases) · <strong>24/24</strong> evidence passes · up to <strong>96.6%</strong> @ ≥99% retention<br />
   <em>(B5 coding-agent suite · evidence containment metric — not downstream LLM completion)</em>
 </p>
 
@@ -75,7 +75,7 @@ The **query is never compressed** — only the surrounding context.
 | | **Neural v2 (recommended)** | **Compiler (fast/local)** |
 |---|---|---|
 | **Engine** | ~400M query-aware cross-encoder | Lightweight local policy |
-| **Runtime** | Hosted GPU | CPU · millisecond-class |
+| **Runtime** | Hosted Fly CPU (Neural Keep) | Local CPU · millisecond-class |
 | **Best for** | Highest-quality keep on agent dumps | Local preprocessing / speed |
 | **Benchmarks** | [Launch / B5](https://www.supercompress.dev/benchmarks) | [Legacy section](https://www.supercompress.dev/benchmarks#legacy-compiler) |
 
@@ -83,7 +83,7 @@ The **query is never compressed** — only the surrounding context.
 
 | | **Coding-agent plugin** | **API / Python** |
 |---|---|---|
-| **For** | Cursor, Claude Code, Codex, and 40+ agents | Apps, RAG, agents, backends |
+| **For** | Cursor, Claude Code, Codex, and 40+ agent harnesses | Apps, RAG, agents, backends |
 | **Install** | `npm i -g supercompress-proxy && npx supercompress setup` | `pip install supercompress` |
 | **What you get** | MCP `compress_context` on big dumps | Compress before every model call |
 | **Login** | Keep your normal agent login | API key from the [dashboard](https://www.supercompress.dev/dashboard) |
@@ -116,7 +116,7 @@ We measure **whether required evidence survives** (containment), not downstream 
 | **Evidence passes** | **24 / 24** |
 | **Tokens** | **16,647 → 5,148** |
 | **Max cut @ ≥99% retention** | **96.6%** |
-| **B5 latency p50** | **~5.8 s** (hosted GPU) |
+| **B5 latency p50** | **~5.8 s** (hosted Neural Keep on Fly CPU) |
 | **Public cases (full suite)** | **390** |
 | **Downstream LLM eval** | **Not yet run** |
 
