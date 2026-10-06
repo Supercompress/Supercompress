@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>MCP Tool Output Compression: Compress MCP Tool Results | SuperCompress</title>
+  <meta name="description" content="Reduce MCP token usage by compressing MCP tool results against the current question. SuperCompress keeps the original lines that answer it, drops the rest, and reports original_tokens and kept_tokens." />
+  <meta name="keywords" content="MCP tool output compression, compress MCP tool results, reduce MCP token usage, MCP token usage, MCP context bloat, compress_context, compressmcp alternative, Bifrost Code Mode alternative" />
+  <meta property="og:title" content="MCP tool output compression with SuperCompress" />
+  <meta property="og:description" content="Send a bulky MCP tool result plus the current question. SuperCompress keeps the original lines that answer it and drops the rest, without rewriting anything." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/mcp-tool-output-compression" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Compress MCP tool results before the model reads them" />
+  <meta name="twitter:description" content="Query-aware, extractive compression for MCP tool output. Every response reports original_tokens and kept_tokens." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/mcp-tool-output-compression" />
+  <meta property="article:published_time" content="2026-10-06T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-06" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "MCP tool output compression: compress MCP tool results before the model reads them",
+    "description": "How to reduce MCP token usage by compressing MCP tool results against the current question with SuperCompress, a hosted, extractive, query-aware compressor.",
+    "datePublished": "2026-10-06",
+    "dateModified": "2026-10-06",
+    "author": {"@type": "Person", "name": "Arjun Shah"},
+    "publisher": {"@type": "Organization", "name": "SuperCompress"},
+    "mainEntityOfPage": {"@type": "WebPage", "@id": "https://www.supercompress.dev/mcp-tool-output-compression"}
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is MCP tool output compression?",
+        "acceptedAnswer": {"@type": "Answer", "text": "It means shrinking what an MCP tool returns (JSON payloads, logs, file reads, search results) before the model reads it. SuperCompress does this against the question the agent is working on: it keeps the original lines that answer that question and drops the rest."}
+      },
+      {
+        "@type": "Question",
+        "name": "Does SuperCompress rewrite or summarize MCP tool results?",
+        "acceptedAnswer": {"@type": "Answer", "text": "No. SuperCompress is extractive. The lines it returns are copied from the original tool output, never rewritten or summarized, so IDs, paths, error messages and code come through as they were."}
+      },
+      {
+        "@type": "Question",
+        "name": "How do I see how many tokens SuperCompress removed from a tool result?",
+        "acceptedAnswer": {"@type": "Answer", "text": "Every compress response reports original_tokens and kept_tokens, so you measure the result on your own traffic. The usage_summary MCP tool shows totals for your account."}
+      },
+      {
+        "@type": "Question",
+        "name": "How is this different from compressmcp or Bifrost Code Mode?",
+        "acceptedAnswer": {"@type": "Answer", "text": "compressmcp abbreviates JSON keys in large MCP responses and keeps every value. Bifrost Code Mode hides many MCP tool definitions behind four meta-tools and runs tool calls in a sandbox. SuperCompress works on the content of a tool result and chooses which original lines to keep based on the current question, so it can sit alongside either approach."}
+      },
+      {
+        "@type": "Question",
+        "name": "How much does SuperCompress cost?",
+        "acceptedAnswer": {"@type": "Answer", "text": "5M tokens per month free, then $0.10 per 1M original tokens."}
+      }
+    ]
+  }
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">MCP · Updated 2026-10-06</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">MCP</span>
+    <span class="seo-tag">Tool output</span>
+    <span class="seo-tag">Token usage</span>
+  </div>
+  <h1>MCP tool output compression: keep the lines that answer the question</h1>
+  <p class="seo-lead">MCP tools return whatever the server sends back: full JSON objects, long logs, whole files, pages of search hits. All of it lands in the model's context, and it is paid for again on every turn it stays there. SuperCompress compresses MCP tool results against the question your agent is working on, so the model reads the lines that answer it instead of the whole dump.</p>
+  <p class="seo-author">October 6, 2026 · Guide</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a>
+    <a href="https://docs.supercompress.dev/api-reference">API reference</a>
+    <a href="/playground">Playground</a>
+    <a href="/supercompress-vs-rtk">vs RTK</a>
+    <a href="/supercompress-vs-headroom">vs Headroom</a>
+    <a href="/changelog">Changelog</a>
+  </nav>
+
+  <div class="article-prose">
+    <div class="seo-verdict">
+      <strong>In short:</strong> send SuperCompress the tool result plus the current question. It keeps the original lines that answer that question and drops the rest. It never rewrites or summarizes, and every response reports <code>original_tokens</code> and <code>kept_tokens</code>.
+    </div>
+
+    <h2 id="why-mcp-token-usage-grows">Why MCP token usage grows</h2>
+    <p>Most MCP servers wrap an API and pass its response straight through. A single call can return dozens of records with every field filled in, a full build log, or an entire file when the agent needed one function. The model has to read all of it to find the part that matters, and the tool result keeps riding along in the conversation on later turns.</p>
+    <ul>
+      <li><strong>API wrappers</strong> return complete objects: nested metadata, URLs, timestamps and fields nobody asked about.</li>
+      <li><strong>Logs and CI output</strong> bury one failing line under thousands of passing ones.</li>
+      <li><strong>File reads and search tools</strong> return whole files or long hit lists when the question is about one symbol.</li>
+    </ul>
+
+    <h2 id="how-it-works">How SuperCompress compresses MCP tool results</h2>
+    <p>SuperCompress is hosted, extractive and query-aware.</p>
+    <ol>
+      <li><strong>You send two things:</strong> the tool output as <code>context</code>, and the current question or task as <code>query</code>. The query is never compressed.</li>
+      <li><strong>It picks lines, it does not write them.</strong> SuperCompress keeps the original lines from the tool output that answer that question and drops the rest. Nothing is paraphrased, so IDs, paths, error messages and code stay exactly as the tool returned them.</li>
+      <li><strong>You see the result.</strong> Every response reports <code>original_tokens</code> and <code>kept_tokens</code>, so the saving is measured on your own traffic, call by call.</li>
+    </ol>
+
+    <h2 id="coding-agents">Set it up in your coding agent</h2>
+    <p>One command finds the coding agents on your machine and adds the SuperCompress MCP server and hooks to each of them:</p>
+    <pre><code>npx -y supercompress-ai setup</code></pre>
+    <p>Your agent then has three MCP tools:</p>
+    <table class="seo-table">
+      <thead>
+        <tr><th>Tool</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>compress_context</code></td><td>Takes a bulky <code>context</code> (tool output, logs, diffs, files) and the user's <code>query</code>, and returns the kept lines with <code>original_tokens</code> and <code>kept_tokens</code>.</td></tr>
+        <tr><td><code>connect_account</code></td><td>Links the agent to your SuperCompress account.</td></tr>
+        <tr><td><code>usage_summary</code></td><td>Shows token totals and quota for the connected account.</td></tr>
+      </tbody>
+    </table>
+    <p>Run <code>supercompress doctor</code> at any time to check what is wired up. The full harness list is in the <a href="https://docs.supercompress.dev/coding-agents">coding agents guide</a>.</p>
+
+    <h2 id="hosted-endpoint">Building your own MCP host or agent</h2>
+    <p>If you run the agent loop yourself, compress each large tool result before you append it to the messages you send to the model. The hosted MCP endpoint is:</p>
+    <pre><code>https://www.supercompress.dev/api/mcp</code></pre>
+    <p>Or call the HTTP API directly with an API key from the <a href="/dashboard?signup=1">dashboard</a>:</p>
+    <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
+  -H "X-API-Key: sc_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"context": "&lt;the MCP tool result&gt;", "query": "&lt;what the agent is trying to answer&gt;"}'</code></pre>
+    <p>Request fields and response fields are in the <a href="https://docs.supercompress.dev/api-reference">API reference</a>.</p>
+
+    <h2 id="compared">How it compares to other ways to reduce MCP token usage</h2>
+    <p>There are two separate costs in an MCP setup: the tool definitions the model sees on every turn, and the tool results that come back from each call. Different tools go after different parts.</p>
+    <table class="seo-table">
+      <thead>
+        <tr><th>Approach</th><th>What it changes</th><th>How it decides what to keep</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>SuperCompress</strong></td><td>The content of a tool result (or any large context)</td><td>Against the current question: keeps the original lines that answer it and drops the rest</td></tr>
+        <tr><td><strong>compressmcp</strong></td><td>Large JSON tool responses in Claude Code</td><td>Keeps every value and abbreviates repeated JSON keys, with a key dictionary the model reads to decode them</td></tr>
+        <tr><td><strong>Bifrost Code Mode</strong></td><td>Tool definitions and multi-step tool workflows across many MCP servers</td><td>Exposes four meta-tools; the model writes Python (Starlark) that runs the tool calls in a sandbox and returns only the final result</td></tr>
+      </tbody>
+    </table>
+    <p>These approaches do not exclude each other. Code Mode shrinks the tool catalog, key abbreviation shrinks JSON structure, and SuperCompress decides which parts of a result are worth reading for the question at hand.</p>
+
+    <h2 id="when-to-use">When it helps, and when to skip it</h2>
+    <ul>
+      <li><strong>Good fit:</strong> large, mixed tool results where only part of the output matters for the current question, such as logs, search hits, file reads and API responses with many records.</li>
+      <li><strong>Skip it:</strong> small results, or results the agent must see in full, such as a file it is about to edit line by line.</li>
+    </ul>
+
+    <h2 id="pricing">Pricing</h2>
+    <p>5M tokens per month free, then $0.10 per 1M original tokens.</p>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>Does SuperCompress rewrite or summarize tool results?</h3>
+    <p>No. It is extractive. Every line it returns is copied from the original tool output.</p>
+    <h3>What do I send besides the tool output?</h3>
+    <p>The current question or task. SuperCompress uses it to decide which lines to keep, and it never compresses the question itself.</p>
+    <h3>How do I check what was removed?</h3>
+    <p>Each response includes <code>original_tokens</code> and <code>kept_tokens</code>. For account totals, call the <code>usage_summary</code> MCP tool.</p>
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Product</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+            <li><a href="/playground">Playground</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+            <li><a href="/dashboard?signup=1">Get API key</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Legal</p>
+          <ul>
+            <li><a href="/terms">Terms of Service</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>
