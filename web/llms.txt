@@ -52,6 +52,7 @@ Notes for assistants: pass only the bulky material as `context` and the user's a
 
 - [Coding agents guide](https://docs.supercompress.dev/coding-agents): Install `supercompress-proxy`, run `setup` and `doctor`, the supported harness list, MCP tools and uninstall.
 - [MCP integration](https://www.supercompress.dev/mcp-integration): Remote MCP setup for Claude Code, Claude Desktop, Cursor and other Streamable HTTP hosts.
+- [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression): Compress MCP tool results against the current question. Keeps the original lines that answer it, drops the rest, and reports `original_tokens` and `kept_tokens`. Covers `compress_context`, `connect_account` and `usage_summary`.
 - [Quickstart](https://docs.supercompress.dev/quickstart): Get an API key and make your first compress call with curl or the Python client.
 - [Dashboard](https://www.supercompress.dev/dashboard): Sign in, create `sc_live_` API keys and see per-agent usage.
 
