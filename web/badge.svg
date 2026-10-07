@@ -1,13 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="180" height="28" viewBox="0 0 180 28">
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="28" viewBox="0 0 180 28" role="img" aria-label="Compressed by SuperCompress">
+  <title>Compressed by SuperCompress</title>
   <defs>
     <linearGradient id="b" x1="0" y1="0" x2="100%" y2="0">
       <stop offset="0%" stop-color="#1d4ed8"/>
       <stop offset="100%" stop-color="#2563eb"/>
     </linearGradient>
+    <clipPath id="m"><rect width="532" height="618"/></clipPath>
   </defs>
   <rect width="180" height="28" rx="4" fill="url(#b)"/>
   <rect x="0" y="0" width="26" height="28" rx="4" fill="#1a3fbf"/>
-  <image href="/assets/img/logo-chevrons.png" x="1" y="1" width="24" height="26" preserveAspectRatio="xMidYMid meet" />
-  <text x="32" y="16" fill="#fff" font-family="system-ui,-apple-system,sans-serif" font-size="10" font-weight="500" letter-spacing="0.3">COMPRESSED BY </text>
-  <text x="32" y="24" fill="#fff" font-family="Georgia,serif" font-size="11" font-weight="bold" letter-spacing="0.2">Super<text fill="#93c5fd" font-style="italic">Compress</text></text>
+  <svg x="4" y="4" width="18" height="20" viewBox="0 0 532 618" preserveAspectRatio="xMidYMid meet">
+    <g clip-path="url(#m)">
+      <polygon points="-434,-609 266,91 966,-609 966,-518 266,182 -434,-518" fill="#ffffff"/>
+      <polygon points="-434,-430 266,270 966,-430 966,-343 266,357 -434,-343" fill="#ffffff"/>
+      <polygon points="-434,-257 266,443 966,-257 966,-166 266,534 -434,-166" fill="#93c5fd"/>
+      <polygon points="-434,-166 266,534 966,-166 966,-80 266,620 -434,-80" fill="#ffffff"/>
+      <polygon points="-434,-14 266,686 966,-14 966,700 266,1400 -434,700" fill="#ffffff"/>
+    </g>
+  </svg>
+  <text x="32" y="12.5" fill="#fff" font-family="system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="8" font-weight="500" letter-spacing="0.6">COMPRESSED BY</text>
+  <text x="32" y="23" fill="#fff" font-family="Georgia,'Times New Roman',serif" font-size="11" font-weight="bold" letter-spacing="0.2">Super<tspan fill="#93c5fd" font-style="italic">Compress</tspan></text>
 </svg>
