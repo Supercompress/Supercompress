@@ -1,23 +1,23 @@
 # SuperCompress
 
-> SuperCompress is hosted context compression for coding agents and LLM apps. You send a large context (tool output, logs, diffs, file reads, retrieved documents, chat history) together with the user's question. The hosted ~400M-parameter Neural Keep model returns only the lines that matter for that question, copied verbatim. It is extractive, not a summarizer, so error messages, IDs, paths and code come through unchanged.
+> SuperCompress is hosted context compression for coding agents and LLM apps. You send a large context (tool output, logs, diffs, file reads, retrieved documents, chat history) together with the user's question. The hosted Neural Keep model keeps the original lines that answer that question, copied verbatim, and drops the rest. It is extractive, not a summarizer, so error messages, IDs, paths and code come through unchanged.
 
 This file collects the SuperCompress documentation for the hosted service in one place so an assistant can answer setup and API questions without crawling the site. The short index is at https://www.supercompress.dev/llms.txt. Canonical site: https://www.supercompress.dev/. Docs: https://docs.supercompress.dev/. Source: https://github.com/Supercompress/Supercompress.
 
 ## Overview
 
-SuperCompress runs before your model call. It reads the whole context against the current question, keeps the original lines that help answer it, and drops the rest. What you get back is a shorter prompt made of lines from your own input, not rewritten text.
+SuperCompress runs before your model call. It scores the context against the current question, keeps the original lines that help answer it, and drops the rest. What you get back is a shorter prompt made of lines from your own input, not rewritten text.
 
 What it is not:
 
-- Not an LLM or chat model. The ~400M Neural Keep model is a compressor (a query-aware cross-encoder that scores lines), not a generator.
+- Not an LLM or chat model. Neural Keep is a compressor (a query-aware cross-encoder that scores lines), not a generator.
 - Not a gateway, router or cache. It works alongside those tools and with any provider (OpenAI, Anthropic, Google, open models), because its output is plain text.
 - Not a summarizer. It never paraphrases kept lines. The query you send is never compressed.
 
 Ways to use it (all on the hosted service):
 
-1. Hosted MCP server at https://www.supercompress.dev/api/mcp, with OAuth 2.1 sign-in or an API key header.
-2. The `supercompress-proxy` CLI (`npm i -g supercompress-proxy && supercompress setup`), which links your account and installs MCP plus hooks into 40+ coding-agent harnesses.
+1. The `supercompress-proxy` CLI (`npx -y supercompress-ai setup`, or `npm i -g supercompress-proxy && supercompress setup`), which links your account in the browser and installs MCP plus hooks into 40+ coding-agent harnesses.
+2. Hosted MCP server at https://www.supercompress.dev/api/mcp, with an API key header.
 3. The HTTP API at `POST https://www.supercompress.dev/api/v1/compress`, with header-only API key auth.
 
 The hosted API includes a free allowance of 5M tokens per month (Terms of Service, section 7). Current pricing: https://www.supercompress.dev/pricing.
@@ -61,15 +61,16 @@ Server URL (Streamable HTTP transport):
 https://www.supercompress.dev/api/mcp
 ```
 
-### OAuth sign-in (recommended)
+For coding agents on your own machine, the simplest path is `npx -y supercompress-ai setup` (see the terminal CLI quickstart below). It links your account in the browser and writes the MCP config for you.
 
-Add the URL to an MCP client that supports OAuth. On connect, the server answers `initialize` with `401` and a `WWW-Authenticate` header. The header points to the protected-resource metadata, and the client then runs the standard MCP authorization flow:
+### API key header
 
-- Protected resource metadata (RFC 9728): https://www.supercompress.dev/.well-known/oauth-protected-resource
-- Authorization server metadata (RFC 8414): https://www.supercompress.dev/.well-known/oauth-authorization-server
-- Flow: OAuth 2.1 authorization code with PKCE (S256 only), dynamic client registration, public clients (`token_endpoint_auth_method: none`), refresh tokens and token revocation.
-- Scopes: `mcp`, `compress`.
-- Sign-in uses the same Google account as the SuperCompress dashboard. No API key is needed in the client config.
+The MCP endpoint accepts an `sc_live_` key from the dashboard in either `Authorization: Bearer sc_live_...` or `X-API-Key: $SUPERCOMPRESS_API_KEY`. Query-string keys (`?key=`) are not accepted. Example for Claude Code:
+
+```bash
+claude mcp add --transport http supercompress https://www.supercompress.dev/api/mcp \
+  --header "Authorization: Bearer sc_live_YOUR_KEY"
+```
 
 Generic JSON config for hosts that read `mcpServers`:
 
@@ -78,7 +79,8 @@ Generic JSON config for hosts that read `mcpServers`:
   "mcpServers": {
     "supercompress": {
       "type": "http",
-      "url": "https://www.supercompress.dev/api/mcp"
+      "url": "https://www.supercompress.dev/api/mcp",
+      "headers": { "Authorization": "Bearer sc_live_YOUR_KEY" }
     }
   }
 }
@@ -91,7 +93,7 @@ Generic JSON config for hosts that read `mcpServers`:
 /plugin install supercompress@supercompress
 ```
 
-The plugin registers the hosted MCP server with no key header, so Claude Code prompts you to sign in.
+The plugin registers the hosted MCP server. If Claude Code reports that it is not connected, call the `connect_account` tool or add the API key header shown above.
 
 ### Codex plugin
 
@@ -100,21 +102,12 @@ codex plugin marketplace add Supercompress/Supercompress
 codex plugin add supercompress@supercompress
 ```
 
-### API key header (clients without OAuth)
-
-The MCP endpoint also accepts an `sc_live_` key in either `Authorization: Bearer sc_live_...` or `X-API-Key: $SUPERCOMPRESS_API_KEY`. Query-string keys (`?key=`) are not accepted. Example for Claude Code:
-
-```bash
-claude mcp add --transport http supercompress https://www.supercompress.dev/api/mcp \
-  --header "Authorization: Bearer sc_live_YOUR_KEY"
-```
-
 ### MCP tools
 
 | Tool | Arguments | What it does |
 | --- | --- | --- |
 | `compress_context` | `context` (string, required): the bulky dump, never the user's ask. `query` (string, required): the user's ask, never compressed, guides what to keep. `session_id` (string, optional): attribution. | Compresses tool dumps, logs, diffs and files against the query and returns a shorter digest that keeps the answer evidence, plus savings stats. |
-| `connect_account` | none | Connects SuperCompress. Preferred: the host completes OAuth automatically. Fallback: open the dashboard, create an `sc_` key and add it to the host config. |
+| `connect_account` | none | Connects SuperCompress. Returns a dashboard link where you sign in, create an `sc_` key and add it to the host config. |
 | `usage_summary` | none | Returns token savings and quota for the connected account. |
 
 A GET request to https://www.supercompress.dev/api/mcp returns server metadata: name, version, transport, protocol version, auth methods and tool names.
@@ -126,7 +119,7 @@ npm i -g supercompress-proxy && supercompress setup
 supercompress doctor
 ```
 
-- `supercompress setup` opens the browser to link your SuperCompress account (Google sign-in device link), detects the coding agents installed on the machine, and writes a native MCP config plus hooks for each one. You keep your normal agent login, and provider API keys stay with your agent.
+- `supercompress setup` opens the browser to link your SuperCompress account (a browser device link), detects the coding agents installed on the machine, and writes a native MCP config plus hooks for each one. You keep your normal agent login, and provider API keys stay with your agent.
 - `supercompress doctor` prints a per-agent health matrix.
 - `supercompress agents` lists the detected harnesses.
 - `supercompress mcp-check` verifies that the MCP server responds.
@@ -269,7 +262,6 @@ Summary of https://www.supercompress.dev/privacy:
 
 - Report vulnerabilities privately by email to security@supercompress.dev. Do not open public issues. Policy: https://github.com/Supercompress/Supercompress/blob/main/SECURITY.md
 - API keys are only accepted in headers, never in URLs. Rotate keys from the dashboard if one leaks.
-- MCP OAuth uses PKCE (S256) and short-lived authorization codes, and tokens can be revoked.
 
 ## Benchmarks
 
@@ -279,10 +271,9 @@ The benchmarks page (https://www.supercompress.dev/benchmarks) publishes the v2 
 
 Full notes: https://www.supercompress.dev/changelog and https://github.com/Supercompress/Supercompress/releases
 
-- MCP OAuth: the hosted MCP server supports OAuth 2.1 with PKCE, so clients that support OAuth can connect with one URL and Google sign-in (launch note: https://www.supercompress.dev/mcp-oauth).
-- Plugin 0.5.37: the Claude Code plugin no longer sends an empty API key header, the Cursor plugin key is optional, `initialize` returns `401` with `WWW-Authenticate` so hosts prompt sign-in on connect, and `?key=` query-string auth was removed.
-- Plugin 0.5.36: server-side OAuth endpoints and discovery metadata, plus a rewritten benchmarks page.
-- v2: the hosted ~400M Neural Keep engine is live on the compress API (launch note: https://www.supercompress.dev/engine-v2-launch).
+- Plugin 0.5.37: the Claude Code plugin no longer sends an empty API key header, the Cursor plugin key is optional, unauthenticated `initialize` returns `401`, and `?key=` query-string auth was removed.
+- Plugin 0.5.36: server-side auth endpoints, plus a rewritten benchmarks page.
+- v2: the hosted Neural Keep engine is the default on the compress API.
 
 ## Links
 
@@ -291,7 +282,6 @@ Full notes: https://www.supercompress.dev/changelog and https://github.com/Super
 - Coding agents guide: https://docs.supercompress.dev/coding-agents
 - Quickstart: https://docs.supercompress.dev/quickstart
 - API reference: https://docs.supercompress.dev/api-reference
-- MCP OAuth launch note: https://www.supercompress.dev/mcp-oauth
 - MCP integration: https://www.supercompress.dev/mcp-integration
 - Benchmarks: https://www.supercompress.dev/benchmarks
 - Changelog: https://www.supercompress.dev/changelog
