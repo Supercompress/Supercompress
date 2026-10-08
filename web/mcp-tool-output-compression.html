@@ -146,7 +146,7 @@
 
     <h2 id="coding-agents">Set it up in your coding agent</h2>
     <p>One command finds the coding agents on your machine and adds the SuperCompress MCP server and hooks to each of them:</p>
-    <pre><code>npx -y supercompress-ai setup</code></pre>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
     <p>Your agent then has three MCP tools:</p>
     <table class="seo-table">
       <thead>
@@ -158,7 +158,7 @@
         <tr><td><code>usage_summary</code></td><td>Shows token totals and quota for the connected account.</td></tr>
       </tbody>
     </table>
-    <p>Run <code>npx -y supercompress-ai doctor</code> at any time to check what is wired up. The full harness list is in the <a href="https://docs.supercompress.dev/coding-agents">coding agents guide</a>.</p>
+    <p>Run <code>supercompress doctor</code> at any time to check what is wired up. The full harness list is in the <a href="https://docs.supercompress.dev/coding-agents">coding agents guide</a>.</p>
 
     <h2 id="hosted-endpoint">Building your own MCP host or agent</h2>
     <p>If you run the agent loop yourself, compress each large tool result before you append it to the messages you send to the model. The hosted MCP endpoint is:</p>

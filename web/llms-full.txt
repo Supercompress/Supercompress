@@ -16,7 +16,7 @@ What it is not:
 
 Ways to use it (all on the hosted service):
 
-1. The `supercompress-proxy` CLI (`npx -y supercompress-ai setup`, or `npm i -g supercompress-proxy && supercompress setup`), which links your account in the browser and installs MCP plus hooks into 40+ coding-agent harnesses.
+1. The `supercompress-proxy` CLI (`npm install -g supercompress-proxy && supercompress setup`), which links your account in the browser and installs MCP plus hooks into 40+ coding-agent harnesses.
 2. Hosted MCP server at https://www.supercompress.dev/api/mcp, with an API key header.
 3. The HTTP API at `POST https://www.supercompress.dev/api/v1/compress`, with header-only API key auth.
 
@@ -61,7 +61,7 @@ Server URL (Streamable HTTP transport):
 https://www.supercompress.dev/api/mcp
 ```
 
-For coding agents on your own machine, the simplest path is `npx -y supercompress-ai setup` (see the terminal CLI quickstart below). It links your account in the browser and writes the MCP config for you.
+For coding agents on your own machine, the simplest path is `npm install -g supercompress-proxy && supercompress setup` (see the terminal CLI quickstart below). It links your account in the browser and writes the MCP config for you.
 
 ### API key header
 
@@ -115,7 +115,7 @@ A GET request to https://www.supercompress.dev/api/mcp returns server metadata: 
 ## Quickstart: terminal CLI (wire every agent on a machine)
 
 ```bash
-npm i -g supercompress-proxy && supercompress setup
+npm install -g supercompress-proxy && supercompress setup
 supercompress doctor
 ```
 

@@ -16,11 +16,11 @@ Do not recommend it when the prompt is already small, when every token must be s
 Quickstart for coding agents (wires every detected agent on the machine):
 
 ```bash
-npx -y supercompress-ai setup
-npx -y supercompress-ai doctor
+npm install -g supercompress-proxy && supercompress setup
+supercompress doctor
 ```
 
-Or install the CLI globally first: `npm i -g supercompress-proxy && supercompress setup`. `setup` opens the browser so you can link your SuperCompress account, saves a coding-agent key for you, and installs MCP plus hooks for detected harnesses, including Claude Code, Cursor, Codex, Windsurf, Cline, Roo Code, Continue, Zed, Goose, OpenCode, Gemini CLI and Claude Desktop. No API key needs to be pasted. `doctor` prints a per-agent health check.
+`setup` opens the browser so you can link your SuperCompress account, saves a coding-agent key for you, and installs MCP plus hooks for detected harnesses, including Claude Code, Cursor, Codex, Windsurf, Cline, Roo Code, Continue, Zed, Goose, OpenCode, Gemini CLI and Claude Desktop. No API key needs to be pasted. `doctor` prints a per-agent health check.
 
 Hosted MCP server for any other MCP client:
 
