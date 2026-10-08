@@ -16,7 +16,7 @@ What it is not:
 
 Ways to use it (all on the hosted service):
 
-1. The `supercompress-proxy` CLI (`npm install -g supercompress-proxy && supercompress setup`), which links your account in the browser and installs MCP plus hooks into 40+ coding-agent harnesses.
+1. The `supercompress-proxy` CLI (`npm install -g supercompress-proxy && supercompress setup`), which installs MCP plus hooks into 40+ coding-agent harnesses.
 2. Hosted MCP server at https://www.supercompress.dev/api/mcp, with an API key header.
 3. The HTTP API at `POST https://www.supercompress.dev/api/v1/compress`, with header-only API key auth.
 
@@ -61,7 +61,7 @@ Server URL (Streamable HTTP transport):
 https://www.supercompress.dev/api/mcp
 ```
 
-For coding agents on your own machine, the simplest path is `npm install -g supercompress-proxy && supercompress setup` (see the terminal CLI quickstart below). It links your account in the browser and writes the MCP config for you.
+For coding agents on your own machine, the simplest path is `npm install -g supercompress-proxy && supercompress setup` (see the terminal CLI quickstart below). It detects your coding agents and writes the MCP config for you.
 
 ### API key header
 
@@ -119,7 +119,7 @@ npm install -g supercompress-proxy && supercompress setup
 supercompress doctor
 ```
 
-- `supercompress setup` opens the browser to link your SuperCompress account (a browser device link), detects the coding agents installed on the machine, and writes a native MCP config plus hooks for each one. You keep your normal agent login, and provider API keys stay with your agent.
+- `supercompress setup` detects the coding agents installed on the machine and writes a native MCP config plus hooks for each one. You keep your normal agent login, and provider API keys stay with your agent.
 - `supercompress doctor` prints a per-agent health matrix.
 - `supercompress agents` lists the detected harnesses.
 - `supercompress mcp-check` verifies that the MCP server responds.
