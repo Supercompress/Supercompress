@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Reduce Cursor Token Usage: Compress Tool Output in Cursor | SuperCompress</title>
+  <meta name="description" content="Where Cursor tokens go (long agent threads, tool output, attached files, rules and MCP tools) and how to cut them: better habits, plus SuperCompress, which keeps the lines that answer the current question." />
+  <meta name="keywords" content="reduce Cursor token usage, Cursor token usage, Cursor tokens, Cursor context too long, compress context in Cursor, Cursor MCP compression, SuperCompress Cursor" />
+  <meta property="og:title" content="Reduce Cursor token usage with SuperCompress" />
+  <meta property="og:description" content="Cursor agent threads fill up with tool output. SuperCompress keeps the original lines that answer the current question and drops the rest." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/reduce-cursor-token-usage" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Reduce Cursor token usage" />
+  <meta name="twitter:description" content="Where Cursor tokens go, and how to keep only the lines your agent needs." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/reduce-cursor-token-usage" />
+  <meta property="article:published_time" content="2026-10-08T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-08" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Reduce Cursor token usage: keep the lines your agent needs",
+  "description": "Where Cursor tokens go (long agent threads, tool output, attached files, rules and MCP tools) and how to cut them: better habits, plus SuperCompress, which keeps the lines that answer the current question.",
+  "datePublished": "2026-10-08",
+  "dateModified": "2026-10-08",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/reduce-cursor-token-usage"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Install SuperCompress in Cursor",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "name": "Install the CLI and run setup",
+      "text": "Run npm install -g supercompress-proxy && supercompress setup in a terminal. Setup detects Cursor and writes its MCP server, rule and hooks."
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Restart Cursor",
+      "text": "Restart Cursor so it loads the new MCP server and hooks."
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Check the install",
+      "text": "Run supercompress doctor to see a per-agent health check."
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why is my Cursor token usage so high?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Agent threads send the conversation back to the model on every turn, and that conversation fills up with tool output: file reads, shell and test output, search results and MCP tool results. Attached files, always-on rules and enabled MCP servers add more on every request."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress change how I sign in to Cursor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. You keep your normal Cursor login and models. SuperCompress adds an MCP server, an always-on rule and hooks to Cursor; it does not route Cursor's model traffic through a proxy."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress rewrite or summarize what Cursor reads?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I see what was removed?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Every compress response reports original_tokens and kept_tokens. The usage_summary MCP tool shows totals for your account."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I undo the Cursor setup?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Run supercompress uninstall. Setup only adds its own entries to Cursor's mcp.json and hooks.json, and uninstall removes only those, so unrelated hooks and servers stay as they were."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does SuperCompress cost?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "5M tokens per month free, then $0.10 per 1M original tokens."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Cursor · Updated 2026-10-08</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">Cursor</span>
+    <span class="seo-tag">Token usage</span>
+    <span class="seo-tag">MCP</span>
+  </div>
+  <h1>Reduce Cursor token usage: keep the lines your agent needs</h1>
+  <p class="seo-lead">A long Cursor agent thread sends the conversation back to the model on every turn, and most of that conversation is tool output: file reads, shell and test logs, search hits and MCP results. Here is where Cursor tokens go, the habits that cut them for free, and how SuperCompress keeps only the lines that answer the question your agent is working on.</p>
+  <p class="seo-author">October 8, 2026 · Guide</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a>
+    <a href="/mcp-tool-output-compression">MCP tool output compression</a>
+    <a href="/playground">Playground</a>
+    <a href="/supercompress-vs-rtk">vs RTK</a>
+    <a href="/supercompress-vs-headroom">vs Headroom</a>
+    <a href="/changelog">Changelog</a>
+  </nav>
+
+  <div class="article-prose">
+    <div class="seo-verdict">
+      <strong>In short:</strong> keep each chat to one task, attach only the files you need, and trim rules and MCP servers you don't use. Then run <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> so your agent can compress bulky tool output against your current question. SuperCompress keeps the original lines that answer it, drops the rest, and reports <code>original_tokens</code> and <code>kept_tokens</code> on every call.
+    </div>
+
+    <h2 id="where-cursor-tokens-go">Where Cursor tokens go</h2>
+    <p>Every agent turn in Cursor carries more than your message. The model also reads:</p>
+    <ul>
+      <li><strong>The thread so far.</strong> Earlier messages and every tool result that is still in the conversation go back to the model on the next turn.</li>
+      <li><strong>Tool output.</strong> A file read returns the whole file, a shell command returns the whole log, and a search returns every hit, even when the question is about one function or one failing test.</li>
+      <li><strong>Attachments and retrieval.</strong> Files you attach and code the agent pulls in from the codebase.</li>
+      <li><strong>Always-on rules and MCP tools.</strong> Rules marked to always apply, and the definitions of every enabled MCP server.</li>
+    </ul>
+
+    <h2 id="habits">Habits that cut Cursor token usage for free</h2>
+    <ol>
+      <li><strong>One task per chat.</strong> Start a new chat when you switch to unrelated work, so old tool output stops riding along.</li>
+      <li><strong>Attach the files you mean.</strong> Point the agent at specific files instead of broad codebase searches when you already know where the change goes.</li>
+      <li><strong>Ignore what the agent never needs.</strong> Add build output, vendored code, lockfiles and generated files to <code>.cursorignore</code>.</li>
+      <li><strong>Trim always-on rules.</strong> Keep rules short, and scope the long ones to the files they apply to.</li>
+      <li><strong>Turn off MCP servers you are not using.</strong> Each enabled server adds its tool definitions to the request.</li>
+    </ol>
+    <p>These habits shrink what goes in. They don't help when the agent genuinely needs to run a test suite or read a large file and only a few lines of the output matter. That is the part SuperCompress handles.</p>
+
+    <h2 id="how-supercompress-helps">How SuperCompress reduces Cursor token usage</h2>
+    <p>SuperCompress is hosted, extractive and query-aware. It takes a large block of context plus the current question, keeps the original lines that answer that question, and drops the rest. It never rewrites or summarizes, so file paths, error messages and code stay exactly as they were. The question itself is never compressed.</p>
+    <p>When <code>supercompress setup</code> detects Cursor, it adds three things:</p>
+    <table class="seo-table">
+      <thead>
+        <tr><th>What</th><th>Where</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>MCP server</strong></td><td><code>~/.cursor/mcp.json</code></td><td>Gives the agent the <code>compress_context</code>, <code>connect_account</code> and <code>usage_summary</code> tools.</td></tr>
+        <tr><td><strong>Always-on rule</strong></td><td><code>~/.cursor/rules/supercompress.mdc</code></td><td>Tells the agent to compress bulky context (tool dumps, pasted files, long logs) with <code>compress_context</code>, using your request as the query, and never to compress the request itself.</td></tr>
+        <tr><td><strong>Hooks</strong></td><td><code>~/.cursor/hooks.json</code> and <code>~/.cursor/hooks/supercompress/</code></td><td>After large Read, Shell, Grep, search and MCP tool calls, the hook compresses the new output, keeping errors, stack traces and the files and symbols it names, and hands the agent the kept lines alongside it.</td></tr>
+      </tbody>
+    </table>
+    <p>Setup merges its entries into Cursor's existing <code>mcp.json</code> and <code>hooks.json</code>, so your other servers and hooks stay as they were. You keep your normal Cursor login and models.</p>
+
+    <h2 id="install">Install in Cursor</h2>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <p>Restart Cursor so it loads the new MCP server and hooks. Then check what is wired up:</p>
+    <pre><code>supercompress doctor</code></pre>
+    <p><code>doctor</code> shows the account, the MCP server and the hooks for each agent it finds. Run <code>supercompress uninstall</code> to remove the SuperCompress entries again. The full harness list is in the <a href="https://docs.supercompress.dev/coding-agents">coding agents guide</a>.</p>
+
+    <h2 id="measure">Measure it on your own work</h2>
+    <p>Every compress response reports <code>original_tokens</code> and <code>kept_tokens</code>, so you see the saving call by call on your own repo instead of trusting a headline number. The <code>usage_summary</code> MCP tool shows totals for your account. For the full picture in Cursor, compare your usage over a normal week with and without it.</p>
+
+    <h2 id="compared">Other ways to cut Cursor tokens</h2>
+    <ul>
+      <li><strong>Local proxies</strong> such as Headroom's <code>wrap cursor</code> start a proxy and have you point Cursor's model settings at it. SuperCompress works through MCP, a rule and hooks instead, so Cursor keeps talking to its own models.</li>
+      <li><strong>Command filters</strong> such as RTK rewrite shell commands so their output is shorter before the agent reads it. They work on known command formats; SuperCompress works on any text and decides what to keep from your current question. See <a href="/supercompress-vs-rtk">SuperCompress vs RTK</a>.</li>
+      <li><strong>MCP-specific tools</strong> go after tool definitions or JSON structure. See <a href="/mcp-tool-output-compression">MCP tool output compression</a> for how those compare.</li>
+    </ul>
+    <p>These approaches can be combined. The habits above shrink what goes in, and SuperCompress decides which parts of what comes back are worth reading.</p>
+
+    <h2 id="when-to-skip">When to skip it</h2>
+    <ul>
+      <li>Short chats with small tool results. There is little to drop.</li>
+      <li>Files the agent is about to edit line by line. It needs those in full.</li>
+    </ul>
+
+    <h2 id="pricing">Pricing</h2>
+    <p>5M tokens per month free, then $0.10 per 1M original tokens.</p>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>Why is my Cursor token usage so high?</h3>
+    <p>Agent threads send the conversation back to the model on every turn, and that conversation fills up with tool output: file reads, shell and test output, search results and MCP tool results. Attached files, always-on rules and enabled MCP servers add more on every request.</p>
+    <h3>Does SuperCompress change how I sign in to Cursor?</h3>
+    <p>No. You keep your normal Cursor login and models. SuperCompress adds an MCP server, an always-on rule and hooks to Cursor; it does not route Cursor's model traffic through a proxy.</p>
+    <h3>Does SuperCompress rewrite or summarize what Cursor reads?</h3>
+    <p>No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.</p>
+    <h3>How do I see what was removed?</h3>
+    <p>Every compress response reports <code>original_tokens</code> and <code>kept_tokens</code>. The <code>usage_summary</code> MCP tool shows totals for your account.</p>
+    <h3>How do I undo the Cursor setup?</h3>
+    <p>Run <code>supercompress uninstall</code>. Setup only adds its own entries to Cursor's <code>mcp.json</code> and <code>hooks.json</code>, and uninstall removes only those, so unrelated hooks and servers stay as they were.</p>
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Product</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+            <li><a href="/playground">Playground</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+            <li><a href="/dashboard?signup=1">Get API key</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Legal</p>
+          <ul>
+            <li><a href="/terms">Terms of Service</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>
