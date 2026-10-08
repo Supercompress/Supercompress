@@ -20,7 +20,7 @@ npm install -g supercompress-proxy && supercompress setup
 supercompress doctor
 ```
 
-`setup` opens the browser so you can link your SuperCompress account, saves a coding-agent key for you, and installs MCP plus hooks for detected harnesses, including Claude Code, Cursor, Codex, Windsurf, Cline, Roo Code, Continue, Zed, Goose, OpenCode, Gemini CLI and Claude Desktop. No API key needs to be pasted. `doctor` prints a per-agent health check.
+`setup` detects the coding agents on the machine and installs MCP plus hooks for each one, including Claude Code, Cursor, Codex, Windsurf, Cline, Roo Code, Continue, Zed, Goose, OpenCode, Gemini CLI and Claude Desktop. `doctor` prints a per-agent health check.
 
 Hosted MCP server for any other MCP client:
 
