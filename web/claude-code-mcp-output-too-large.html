@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Claude Code MCP Tool Output Too Large: Fixes | SuperCompress</title>
+  <meta name="description" content="What to do when an MCP tool response in Claude Code is too large: MAX_MCP_OUTPUT_TOKENS, filtering and paging at the server, and compressing the result against the current question." />
+  <meta name="keywords" content="MCP tool output too large, MAX_MCP_OUTPUT_TOKENS, Claude Code MCP output limit, MCP response exceeds maximum tokens, large MCP results Claude Code" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Claude Code MCP tool output too large: what to do" />
+  <meta property="og:description" content="What to do when an MCP tool response in Claude Code is too large: MAX_MCP_OUTPUT_TOKENS, filtering and paging at the server, and compressing the result against the current question." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/claude-code-mcp-output-too-large" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Claude Code MCP tool output too large: what to do" />
+  <meta name="twitter:description" content="What to do when an MCP tool response in Claude Code is too large: MAX_MCP_OUTPUT_TOKENS, filtering and paging at the server, and compressing the result against the current question." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/claude-code-mcp-output-too-large" />
+  <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-09" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Claude Code MCP tool output too large: what to do",
+  "description": "What to do when an MCP tool response in Claude Code is too large: MAX_MCP_OUTPUT_TOKENS, filtering and paging at the server, and compressing the result against the current question.",
+  "datePublished": "2026-10-09",
+  "dateModified": "2026-10-09",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.supercompress.dev/assets/img/icon-chevron-192.png"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/claude-code-mcp-output-too-large"
+  },
+  "about": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Claude Code"
+    },
+    {
+      "@type": "Thing",
+      "name": "Model Context Protocol"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Blog",
+      "item": "https://www.supercompress.dev/blog"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Coding agent guides",
+      "item": "https://www.supercompress.dev/coding-agent-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "MCP output too large",
+      "item": "https://www.supercompress.dev/claude-code-mcp-output-too-large"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What does MAX_MCP_OUTPUT_TOKENS do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It sets how many tokens of an MCP tool result Claude Code will accept. Raising it lets larger results through, and those results stay in the session for later turns."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I just raise MAX_MCP_OUTPUT_TOKENS?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Only when the agent really needs the whole result. If it needs a few lines, filtering at the server or compressing the result against the question keeps the context smaller."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress change the MCP server I am calling?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It works on the result text. Your MCP servers keep working as before."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Claude Code · MCP · Updated 2026-10-09</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">Claude Code</span>
+    <span class="seo-tag">MCP</span>
+    <span class="seo-tag">Troubleshooting</span>
+  </div>
+  <h1>Claude Code MCP tool output too large: what to do</h1>
+  <p class="seo-lead">Claude Code warns when an MCP tool returns a very large result and caps how much of it is passed to the model. Raising the cap makes the warning go away but puts the whole result in context. Here are the options, from the setting to fixes that shrink the result itself.</p>
+  <p class="seo-author">October 9, 2026 · Troubleshooting</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="/coding-agent-token-usage">All coding agents</a>
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="/mcp-token-reduction">MCP token reduction</a>
+    <a href="/mcp-tool-output-compression">MCP tool output compression</a>
+    <a href="/claude-code-context-limit">Claude Code context limit</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+
+  <div class="article-prose">
+    <div class="seo-verdict">
+      <strong>In short:</strong> raise <code>MAX_MCP_OUTPUT_TOKENS</code> only when the whole result really matters. Otherwise ask the server for less (filters, fields, pages), or compress the result against the current question with SuperCompress so Claude keeps the lines that answer it.
+    </div>
+
+    <h2 id="why">Why it happens</h2>
+    <p>MCP servers often return everything they have: a whole issue thread, a full page of search results, a large JSON document or a complete log. Claude Code shows a warning for large MCP results and limits how many tokens of a result it accepts. The <code>MAX_MCP_OUTPUT_TOKENS</code> environment variable changes that limit.</p>
+
+    <h2 id="options">Your options</h2>
+    <table class="seo-table">
+      <thead><tr><th>Option</th><th>How</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Raise the limit</strong></td><td><code>MAX_MCP_OUTPUT_TOKENS=50000 claude</code></td><td>The whole result goes into context and stays there for later turns.</td></tr>
+        <tr><td><strong>Ask for less</strong></td><td>Use the server's filters, field selection, page size or search parameters.</td><td>Only works when the server supports it and you know what to ask for.</td></tr>
+        <tr><td><strong>Truncate</strong></td><td>A proxy or wrapper that cuts results at a fixed size.</td><td>Blind: the line you need may be past the cut.</td></tr>
+        <tr><td><strong>Compress against the question</strong></td><td>SuperCompress <code>compress_context</code> with the bulky result as <code>context</code> and your ask as <code>query</code>.</td><td>Keeps the original lines that answer the question and drops the rest; reports <code>original_tokens</code> and <code>kept_tokens</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="how-supercompress-works">How SuperCompress works</h2>
+    <p>SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. Our Neural Keep model scores the lines against that question, keeps the original lines that answer it, and drops the rest. It never rewrites or summarizes, so file paths, error messages, IDs and code come back exactly as they were. The question itself is never compressed.</p>
+    <p>Every compress call reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see what was dropped on your own work instead of trusting a headline number. The <code>usage_summary</code> MCP tool shows totals per agent for your account.</p>
+
+    <h2 id="install">Install</h2>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <p>Setup links your SuperCompress account in the browser, detects the coding agents on the machine and wires each one. Restart the agent so it loads the new MCP server. Then check what is wired up:</p>
+    <pre><code>supercompress doctor</code></pre>
+    <p><code>doctor</code> prints a per-agent health check. <code>supercompress uninstall</code> removes only the entries SuperCompress added. Setup backs up each config file before it edits it.</p>
+
+    <p>For how this compares with schema trimming, code mode and other MCP approaches, see <a href="/mcp-token-reduction">MCP token reduction</a> and <a href="/mcp-tool-output-compression">MCP tool output compression</a>.</p>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>What does MAX_MCP_OUTPUT_TOKENS do?</h3>
+    <p>It sets how many tokens of an MCP tool result Claude Code will accept. Raising it lets larger results through, and those results stay in the session for later turns.</p>
+    <h3>Should I just raise MAX_MCP_OUTPUT_TOKENS?</h3>
+    <p>Only when the agent really needs the whole result. If it needs a few lines, filtering at the server or compressing the result against the question keeps the context smaller.</p>
+    <h3>Does SuperCompress change the MCP server I am calling?</h3>
+    <p>No. It works on the result text. Your MCP servers keep working as before.</p>
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/coding-agent-token-usage">All coding agents</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

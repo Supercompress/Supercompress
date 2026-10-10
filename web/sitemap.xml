@@ -188,13 +188,91 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/mcp-tool-output-compression</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.supercompress.dev/reduce-cursor-token-usage</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-claude-code-token-usage</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-codex-token-usage</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-hermes-agent-token-usage</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-windsurf-token-usage</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-gemini-cli-token-usage</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-cline-token-usage</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-opencode-token-usage</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/claude-code-context-limit</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/claude-code-mcp-output-too-large</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/mcp-token-reduction</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/context-compression-for-coding-agents</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/coding-agent-token-usage</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/faq</loc>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>

@@ -275,6 +275,250 @@ Full notes: https://www.supercompress.dev/changelog and https://github.com/Super
 - Plugin 0.5.36: server-side auth endpoints, plus a rewritten benchmarks page.
 - v2: the hosted Neural Keep engine is the default on the compress API.
 
+## Coding agent guides
+
+Per-agent and topic guides. Install for every agent: `npm install -g supercompress-proxy && supercompress setup`, then `supercompress doctor`.
+
+### Reduce Claude Code Token Usage: Keep Only the Lines That Matter
+
+URL: https://www.supercompress.dev/reduce-claude-code-token-usage
+
+Where Claude Code tokens go (tool results, file reads, MCP output, CLAUDE.md) and how to cut them: built-in commands, better habits, and SuperCompress, which keeps the lines that answer the current question.
+
+Q: Why does Claude Code use so many tokens?
+A: Each turn resends the session so far, and that session fills up with tool results: file reads, Bash and test output, Grep hits and MCP results. Memory files and the tool definitions of every enabled MCP server are added to every request too.
+
+Q: Does SuperCompress work with a Claude subscription login?
+A: Yes. SuperCompress does not touch how Claude Code talks to Anthropic. It adds an MCP server, instructions and hooks, so you keep your normal Claude Code login.
+
+Q: Does SuperCompress change how I sign in to Claude Code?
+A: No. You keep your normal Claude Code login and models. SuperCompress adds an MCP server and instructions to Claude Code; it does not route Claude Code's model traffic through a proxy.
+
+Q: Does SuperCompress summarize what Claude Code reads?
+A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
+
+Q: How do I undo the Claude Code setup?
+A: Run supercompress uninstall. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.
+
+### Reduce Codex CLI Token Usage: Compress Tool Output in Codex
+
+URL: https://www.supercompress.dev/reduce-codex-token-usage
+
+Where Codex CLI tokens go (shell output, file reads, MCP results, AGENTS.md) and how to cut them: habits that help, plus SuperCompress, which keeps the original lines that answer the current question.
+
+Q: Does SuperCompress work when I sign in to Codex with ChatGPT?
+A: Yes. SuperCompress works through MCP, instructions and hooks, not through Codex's model connection, so it works with a ChatGPT sign-in as well as with an API key.
+
+Q: Does SuperCompress change how I sign in to Codex?
+A: No. You keep your normal Codex login and models. SuperCompress adds an MCP server and instructions to Codex; it does not route Codex's model traffic through a proxy.
+
+Q: Does SuperCompress summarize what Codex reads?
+A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
+
+Q: How do I undo the Codex setup?
+A: Run supercompress uninstall. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.
+
+### Reduce Hermes Agent Token Usage: Compress Tool Results
+
+URL: https://www.supercompress.dev/reduce-hermes-agent-token-usage
+
+Where Hermes Agent tokens go (tool results, memory, skills, MCP output) and how SuperCompress wires MCP, hooks and a plugin into Hermes to keep only the lines that answer the current request.
+
+Q: Does SuperCompress change how I sign in to Hermes Agent?
+A: No. You keep your normal Hermes Agent login and models. SuperCompress adds an MCP server and instructions to Hermes Agent; it does not route Hermes Agent's model traffic through a proxy.
+
+Q: Does SuperCompress summarize what Hermes Agent reads?
+A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
+
+Q: How do I undo the Hermes Agent setup?
+A: Run supercompress uninstall. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.
+
+### Reduce Windsurf Token Usage: Compress Context in Cascade
+
+URL: https://www.supercompress.dev/reduce-windsurf-token-usage
+
+Where Windsurf Cascade tokens go (long conversations, tool output, file reads, MCP tools) and how SuperCompress adds an MCP tool that keeps only the lines that answer the current question.
+
+Q: Does SuperCompress change how I sign in to Windsurf?
+A: No. You keep your normal Windsurf login and models. SuperCompress adds an MCP server and instructions to Windsurf; it does not route Windsurf's model traffic through a proxy.
+
+Q: Does SuperCompress summarize what Windsurf reads?
+A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
+
+Q: How do I undo the Windsurf setup?
+A: Run supercompress uninstall. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.
+
+### Reduce Gemini CLI Token Usage: Compress Tool Output
+
+URL: https://www.supercompress.dev/reduce-gemini-cli-token-usage
+
+Where Gemini CLI tokens go (shell output, file reads, MCP results, GEMINI.md) and how to cut them: built-in commands, habits, and SuperCompress, which keeps the lines that answer the current question.
+
+Q: Does SuperCompress change how I sign in to Gemini CLI?
+A: No. You keep your normal Gemini CLI login and models. SuperCompress adds an MCP server and instructions to Gemini CLI; it does not route Gemini CLI's model traffic through a proxy.
+
+Q: Does SuperCompress summarize what Gemini CLI reads?
+A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
+
+Q: How do I undo the Gemini CLI setup?
+A: Run supercompress uninstall. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.
+
+### Reduce Cline, Roo Code and Kilo Code Token Usage
+
+URL: https://www.supercompress.dev/reduce-cline-token-usage
+
+Where Cline, Roo Code and Kilo Code tokens go (task history, file reads, terminal output, MCP results) and how SuperCompress adds an MCP tool that keeps only the lines that answer the current task.
+
+Q: Does SuperCompress change how I sign in to Cline?
+A: No. You keep your normal Cline login and models. SuperCompress adds an MCP server and instructions to Cline; it does not route Cline's model traffic through a proxy.
+
+Q: Does SuperCompress summarize what Cline reads?
+A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
+
+Q: How do I undo the Cline setup?
+A: Run supercompress uninstall. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.
+
+### Reduce OpenCode Token Usage: Compress Tool Output
+
+URL: https://www.supercompress.dev/reduce-opencode-token-usage
+
+Where OpenCode tokens go (tool output, file reads, MCP results, AGENTS.md) and how SuperCompress adds an MCP server and instructions to OpenCode so the agent keeps only the lines that answer your question.
+
+Q: Does SuperCompress change how I sign in to OpenCode?
+A: No. You keep your normal OpenCode login and models. SuperCompress adds an MCP server and instructions to OpenCode; it does not route OpenCode's model traffic through a proxy.
+
+Q: Does SuperCompress summarize what OpenCode reads?
+A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
+
+Q: How do I undo the OpenCode setup?
+A: Run supercompress uninstall. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.
+
+### Claude Code context limit: why you run out and what to do
+
+URL: https://www.supercompress.dev/claude-code-context-limit
+
+Why Claude Code runs out of context, how to see what is filling the window with /context, when to use /compact, /clear and subagents, and how to keep bulky tool output from piling up.
+
+Q: Why does Claude Code say the context is almost full?
+A: The window holds the system prompt, tool definitions, memory files and the whole session, including every tool result. Long sessions with large file reads and logs fill it fastest. Run /context to see the breakdown.
+
+Q: What happens when the Claude Code context window is full?
+A: Claude Code compacts the session: it replaces the history with a summary so work can continue. Details that were only in old tool output can be lost in that summary.
+
+Q: Is /compact or /clear better?
+A: Use /clear when you switch to unrelated work. Use /compact with a short focus when you are mid-task and want to keep the important details.
+
+Q: Can I stop large tool output from filling the context?
+A: Yes. Ask for narrower output, disable unused MCP servers, and use SuperCompress to keep only the original lines of a large result that answer the current question.
+
+### Claude Code MCP tool output too large: what to do
+
+URL: https://www.supercompress.dev/claude-code-mcp-output-too-large
+
+What to do when an MCP tool response in Claude Code is too large: MAX_MCP_OUTPUT_TOKENS, filtering and paging at the server, and compressing the result against the current question.
+
+Q: What does MAX_MCP_OUTPUT_TOKENS do?
+A: It sets how many tokens of an MCP tool result Claude Code will accept. Raising it lets larger results through, and those results stay in the session for later turns.
+
+Q: Should I just raise MAX_MCP_OUTPUT_TOKENS?
+A: Only when the agent really needs the whole result. If it needs a few lines, filtering at the server or compressing the result against the question keeps the context smaller.
+
+Q: Does SuperCompress change the MCP server I am calling?
+A: No. It works on the result text. Your MCP servers keep working as before.
+
+### MCP token reduction: cut tool definitions and tool results
+
+URL: https://www.supercompress.dev/mcp-token-reduction
+
+MCP servers cost tokens two ways: tool definitions sent on every request and large tool results that stay in context. How to cut both, from disabling servers and tool allowlists to compressing results against the question.
+
+Q: Why do MCP servers use so many tokens?
+A: Each enabled server sends its tool definitions with every request, and tool results stay in the conversation after they are read, so they are sent again on later turns.
+
+Q: What is the fastest way to reduce MCP token usage?
+A: Disable servers and tools a project does not use. That saving repeats on every request. Then deal with large results by filtering at the server or compressing them against the question.
+
+Q: Is SuperCompress itself an MCP server?
+A: Yes. It adds one server with three tools: compress_context, connect_account and usage_summary. Run npm install -g supercompress-proxy && supercompress setup to wire it into every detected agent.
+
+### Context compression for coding agents: approaches compared
+
+URL: https://www.supercompress.dev/context-compression-for-coding-agents
+
+Command output filters, MCP proxies, wire-level proxies, built-in compaction and query-aware extraction compared for Claude Code, Codex and Cursor. What each changes, where it fits, and how to measure it.
+
+Q: What is context compression for coding agents?
+A: Reducing what a coding agent sends to the model, usually by shrinking tool output, file reads and MCP results, or by compacting the session.
+
+Q: What is the best context compression tool for Claude Code?
+A: It depends on where your tokens go. Command filters help with noisy shell output, MCP proxies with huge MCP results, built-in /compact with long sessions, and SuperCompress with bulky output where only a few lines answer the current question. Measure on your own sessions.
+
+Q: Is SuperCompress a summarizer?
+A: No. It is extractive: it keeps original lines and drops the rest, so error messages, paths and code are unchanged.
+
+Q: Can I use SuperCompress with RTK or built-in compaction?
+A: Yes. They act at different points and can be combined.
+
+### Reduce coding agent token usage
+
+URL: https://www.supercompress.dev/coding-agent-token-usage
+
+Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent.
+
+Q: Which coding agents does SuperCompress support?
+A: Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, Continue and more. supercompress setup detects them and supercompress doctor lists what it found.
+
+Q: Do I need to install SuperCompress separately for each agent?
+A: No. One supercompress setup wires every detected agent. Run supercompress plugin after you install a new agent.
+
+### SuperCompress FAQ
+
+URL: https://www.supercompress.dev/faq
+
+Answers about SuperCompress: what it is, how to install it for Claude Code, Cursor and Codex, which agents it supports, how query-aware extractive compression works, MCP tools, API and uninstall.
+
+Q: What is SuperCompress?
+A: Hosted context compression for coding agents and LLM apps. You send a large context (tool output, logs, diffs, file reads, retrieved documents) together with the current question, and our Neural Keep model keeps the original lines that answer it and drops the rest.
+
+Q: How do I install SuperCompress for my coding agent?
+A: Run npm install -g supercompress-proxy && supercompress setup. Setup links your account in the browser, detects the coding agents on the machine and wires each one. Run supercompress doctor to check.
+
+Q: Which coding agents does it work with?
+A: Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, Continue and more. See the coding agent guides.
+
+Q: Is SuperCompress a summarizer?
+A: No. It is extractive. Every kept line is copied from the original, so error messages, IDs, paths and code come through unchanged.
+
+Q: What does query-aware mean?
+A: The same log or file can be compressed differently for different questions. SuperCompress scores each block against the current question and keeps what answers it. The question itself is never compressed.
+
+Q: Does SuperCompress change my agent's login or model?
+A: No. It works through an MCP server, instructions and, for some agents, hooks. Your agent keeps its normal sign-in and talks to its own models.
+
+Q: Is SuperCompress a proxy or gateway?
+A: No. It is not an LLM, a gateway, a router or a cache. It runs before your model call and returns plain text, so it works with any model provider.
+
+Q: What MCP tools does it add?
+A: compress_context (arguments context and query), connect_account and usage_summary.
+
+Q: How do I see what was removed?
+A: Every compress response reports original_tokens and kept_tokens, plus kept and dropped blocks. usage_summary shows totals per agent.
+
+Q: Can I call it from my own app?
+A: Yes. Send POST https://www.supercompress.dev/api/v1/compress with context and query, and an API key from the dashboard in the X-API-Key header. There is also a Python client: pip install supercompress.
+
+Q: How is it different from RTK or Headroom?
+A: RTK filters known shell commands before the agent reads them. Headroom is a proxy that rewrites requests on the way to the model. SuperCompress works on one bulky result at a time against the current question and keeps original lines. See approaches compared.
+
+Q: When should I not use it?
+A: When the prompt is already small, when a file is about to be edited line by line, or when every byte must pass through unchanged for compliance.
+
+Q: How do I uninstall it?
+A: Run supercompress uninstall. It removes only the entries SuperCompress added.
+
+Q: Where is pricing?
+A: Current plans and your free allowance are shown in the dashboard.
+
 ## Links
 
 - Homepage: https://www.supercompress.dev/

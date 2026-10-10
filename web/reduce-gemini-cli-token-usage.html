@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Reduce Gemini CLI Token Usage: Compress Tool Output | SuperCompress</title>
+  <meta name="description" content="Where Gemini CLI tokens go (shell output, file reads, MCP results, GEMINI.md) and how to cut them: built-in commands, habits, and SuperCompress, which keeps the lines that answer the current question." />
+  <meta name="keywords" content="reduce Gemini CLI token usage, Gemini CLI tokens, Gemini CLI context, Gemini CLI MCP compression, SuperCompress Gemini CLI" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Reduce Gemini CLI Token Usage: Compress Tool Output" />
+  <meta property="og:description" content="Where Gemini CLI tokens go (shell output, file reads, MCP results, GEMINI.md) and how to cut them: built-in commands, habits, and SuperCompress, which keeps the lines that answer the current question." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/reduce-gemini-cli-token-usage" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Reduce Gemini CLI Token Usage: Compress Tool Output" />
+  <meta name="twitter:description" content="Where Gemini CLI tokens go (shell output, file reads, MCP results, GEMINI.md) and how to cut them: built-in commands, habits, and SuperCompress, which keeps the lines that answer the current question." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/reduce-gemini-cli-token-usage" />
+  <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-09" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Reduce Gemini CLI Token Usage: Compress Tool Output",
+  "description": "Where Gemini CLI tokens go (shell output, file reads, MCP results, GEMINI.md) and how to cut them: built-in commands, habits, and SuperCompress, which keeps the lines that answer the current question.",
+  "datePublished": "2026-10-09",
+  "dateModified": "2026-10-09",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.supercompress.dev/assets/img/icon-chevron-192.png"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/reduce-gemini-cli-token-usage"
+  },
+  "about": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Gemini CLI"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Blog",
+      "item": "https://www.supercompress.dev/blog"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Coding agent guides",
+      "item": "https://www.supercompress.dev/coding-agent-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Gemini CLI",
+      "item": "https://www.supercompress.dev/reduce-gemini-cli-token-usage"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Install SuperCompress in Gemini CLI",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "name": "Install the CLI and run setup",
+      "text": "Run npm install -g supercompress-proxy && supercompress setup in a terminal. Setup detects Gemini CLI and wires it."
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Restart Gemini CLI",
+      "text": "Restart Gemini CLI so it loads the new MCP server."
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Check the install",
+      "text": "Run supercompress doctor to see a per-agent health check."
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress change how I sign in to Gemini CLI?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. You keep your normal Gemini CLI login and models. SuperCompress adds an MCP server and instructions to Gemini CLI; it does not route Gemini CLI's model traffic through a proxy."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress summarize what Gemini CLI reads?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I undo the Gemini CLI setup?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Run supercompress uninstall. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Gemini CLI · Updated 2026-10-09</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">Gemini CLI</span>
+    <span class="seo-tag">Token usage</span>
+    <span class="seo-tag">MCP</span>
+  </div>
+  <h1>Reduce Gemini CLI Token Usage: Compress Tool Output</h1>
+  <p class="seo-lead">Gemini CLI can read a lot at once, which makes it easy to fill a session with whole files and long command output. Here is where Gemini CLI tokens go and how SuperCompress lets the agent keep only the lines that answer your question.</p>
+  <p class="seo-author">October 9, 2026 · Guide</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="/coding-agent-token-usage">All coding agents</a>
+    <a href="/reduce-claude-code-token-usage">Claude Code</a>
+    <a href="/reduce-cursor-token-usage">Cursor</a>
+    <a href="/reduce-codex-token-usage">Codex</a>
+    <a href="/reduce-hermes-agent-token-usage">Hermes Agent</a>
+    <a href="/mcp-token-reduction">MCP token reduction</a>
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+
+  <div class="article-prose">
+    <div class="seo-verdict">
+      <strong>In short:</strong> use <code>/stats</code> to watch usage, <code>/compress</code> or <code>/clear</code> when a session gets long, and keep <code>GEMINI.md</code> short. Then run <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> to add the SuperCompress MCP server to Gemini CLI.
+    </div>
+
+    <h2 id="where-tokens-go">Where Gemini CLI tokens go</h2>
+    <ul>
+      <li><strong>File reads.</strong> Reading whole files or folders brings everything in at once.</li>
+      <li><strong>Shell output.</strong> Full test and build logs.</li>
+      <li><strong>MCP servers.</strong> Tool definitions plus results.</li>
+      <li><strong>Context files.</strong> <code>GEMINI.md</code> files are loaded into the session.</li>
+    </ul>
+
+    <h2 id="habits">Habits that cut Gemini CLI token usage for free</h2>
+    <ol>
+      <li><strong>Check usage.</strong> <code>/stats</code> shows token use for the session.</li>
+      <li><strong>Compress or clear long sessions.</strong> <code>/compress</code> replaces the history with a summary; <code>/clear</code> starts over.</li>
+      <li><strong>Read narrowly.</strong> Point at the files you mean instead of whole directories.</li>
+      <li><strong>Keep <code>GEMINI.md</code> short.</strong> It is loaded every session.</li>
+      <li><strong>Only enable the MCP servers you use.</strong></li>
+    </ol>
+    <p>These habits shrink what goes in. They don't help when the agent genuinely needs to run a test suite or read a large file and only a few lines of the output matter. That is the part SuperCompress handles.</p>
+
+    <h2 id="how-supercompress-works">How SuperCompress works</h2>
+    <p>SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. Our Neural Keep model scores the lines against that question, keeps the original lines that answer it, and drops the rest. It never rewrites or summarizes, so file paths, error messages, IDs and code come back exactly as they were. The question itself is never compressed.</p>
+    <p>Every compress call reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see what was dropped on your own work instead of trusting a headline number. The <code>usage_summary</code> MCP tool shows totals per agent for your account.</p>
+
+    <h2 id="what-setup-adds">What <code>supercompress setup</code> adds to Gemini CLI</h2>
+    <table class="seo-table">
+      <thead>
+        <tr><th>What</th><th>Where</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>MCP server</strong></td><td><code>~/.gemini/settings.json</code> (<code>mcpServers.supercompress</code>)</td><td>Gives the agent the <code>compress_context</code>, <code>connect_account</code> and <code>usage_summary</code> tools.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="install">Install</h2>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <p>Setup links your SuperCompress account in the browser, detects the coding agents on the machine and wires each one. Restart the agent so it loads the new MCP server. Then check what is wired up:</p>
+    <pre><code>supercompress doctor</code></pre>
+    <p><code>doctor</code> prints a per-agent health check. <code>supercompress uninstall</code> removes only the entries SuperCompress added. Setup backs up each config file before it edits it.</p>
+
+    <h2 id="compared">How this differs from <code>/compress</code></h2>
+    <p>Gemini CLI's <code>/compress</code> summarizes the whole history in its own words. SuperCompress works on one bulky result at a time and keeps original lines, so exact errors, paths and code survive. Use both: SuperCompress on large new output, <code>/compress</code> when the session itself gets long.</p>
+
+    <h2 id="when-to-skip">When to skip it</h2>
+    <ul>
+      <li>Short sessions with small tool results. There is little to drop.</li>
+      <li>Files the agent is about to edit line by line. It needs those in full.</li>
+      <li>Work where every byte must be passed through unchanged for compliance reasons.</li>
+    </ul>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>Does SuperCompress change how I sign in to Gemini CLI?</h3>
+    <p>No. You keep your normal Gemini CLI login and models. SuperCompress adds an MCP server and instructions to Gemini CLI; it does not route Gemini CLI's model traffic through a proxy.</p>
+    <h3>Does SuperCompress summarize what Gemini CLI reads?</h3>
+    <p>No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.</p>
+    <h3>How do I undo the Gemini CLI setup?</h3>
+    <p>Run <code>supercompress uninstall</code>. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.</p>
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/coding-agent-token-usage">All coding agents</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

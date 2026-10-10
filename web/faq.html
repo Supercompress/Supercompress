@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>SuperCompress FAQ: Context Compression for Coding Agents</title>
+  <meta name="description" content="Answers about SuperCompress: what it is, how to install it for Claude Code, Cursor and Codex, which agents it supports, how query-aware extractive compression works, MCP tools, API and uninstall." />
+  <meta name="keywords" content="SuperCompress FAQ, what is SuperCompress, SuperCompress install, SuperCompress MCP, context compression FAQ" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="SuperCompress FAQ" />
+  <meta property="og:description" content="Answers about SuperCompress: what it is, how to install it for Claude Code, Cursor and Codex, which agents it supports, how query-aware extractive compression works, MCP tools, API and uninstall." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/faq" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="SuperCompress FAQ" />
+  <meta name="twitter:description" content="Answers about SuperCompress: what it is, how to install it for Claude Code, Cursor and Codex, which agents it supports, how query-aware extractive compression works, MCP tools, API and uninstall." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/faq" />
+  <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-09" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "headline": "SuperCompress FAQ",
+  "description": "Answers about SuperCompress: what it is, how to install it for Claude Code, Cursor and Codex, which agents it supports, how query-aware extractive compression works, MCP tools, API and uninstall.",
+  "datePublished": "2026-10-09",
+  "dateModified": "2026-10-09",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.supercompress.dev/assets/img/icon-chevron-192.png"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/faq"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Blog",
+      "item": "https://www.supercompress.dev/blog"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Coding agent guides",
+      "item": "https://www.supercompress.dev/coding-agent-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "FAQ",
+      "item": "https://www.supercompress.dev/faq"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is SuperCompress?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Hosted context compression for coding agents and LLM apps. You send a large context (tool output, logs, diffs, file reads, retrieved documents) together with the current question, and our Neural Keep model keeps the original lines that answer it and drops the rest."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I install SuperCompress for my coding agent?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Run npm install -g supercompress-proxy && supercompress setup. Setup links your account in the browser, detects the coding agents on the machine and wires each one. Run supercompress doctor to check."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which coding agents does it work with?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, Continue and more. See the coding agent guides."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is SuperCompress a summarizer?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is extractive. Every kept line is copied from the original, so error messages, IDs, paths and code come through unchanged."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does query-aware mean?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The same log or file can be compressed differently for different questions. SuperCompress scores each block against the current question and keeps what answers it. The question itself is never compressed."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress change my agent's login or model?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It works through an MCP server, instructions and, for some agents, hooks. Your agent keeps its normal sign-in and talks to its own models."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is SuperCompress a proxy or gateway?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is not an LLM, a gateway, a router or a cache. It runs before your model call and returns plain text, so it works with any model provider."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What MCP tools does it add?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "compress_context (arguments context and query), connect_account and usage_summary."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I see what was removed?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Every compress response reports original_tokens and kept_tokens, plus kept and dropped blocks. usage_summary shows totals per agent."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I call it from my own app?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Send POST https://www.supercompress.dev/api/v1/compress with context and query, and an API key from the dashboard in the X-API-Key header. There is also a Python client: pip install supercompress."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is it different from RTK or Headroom?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "RTK filters known shell commands before the agent reads them. Headroom is a proxy that rewrites requests on the way to the model. SuperCompress works on one bulky result at a time against the current question and keeps original lines. See approaches compared."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When should I not use it?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When the prompt is already small, when a file is about to be edited line by line, or when every byte must pass through unchanged for compliance."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I uninstall it?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Run supercompress uninstall. It removes only the entries SuperCompress added."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where is pricing?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Current plans and your free allowance are shown in the dashboard."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">FAQ · Updated 2026-10-09</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">FAQ</span>
+    <span class="seo-tag">Coding agents</span>
+    <span class="seo-tag">MCP</span>
+  </div>
+  <h1>SuperCompress FAQ</h1>
+  <p class="seo-lead">Short answers to the questions people ask most about SuperCompress, for coding agents and for apps.</p>
+  <p class="seo-author">October 9, 2026 · FAQ</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="/coding-agent-token-usage">All coding agents</a>
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="/mcp-token-reduction">MCP token reduction</a>
+    <a href="/mcp-tool-output-compression">MCP tool output compression</a>
+    <a href="/claude-code-context-limit">Claude Code context limit</a>
+    <a href="/claude-code-mcp-output-too-large">MCP output too large</a>
+  </nav>
+
+  <div class="article-prose">
+    <div class="seo-verdict">
+      <strong>In short:</strong> SuperCompress keeps the original lines that answer your agent's current question and drops the rest. Install with <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>.
+    </div>
+
+    <h3>What is SuperCompress?</h3>
+    <p>Hosted context compression for coding agents and LLM apps. You send a large context (tool output, logs, diffs, file reads, retrieved documents) together with the current question, and our Neural Keep model keeps the original lines that answer it and drops the rest.</p>
+    <h3>How do I install SuperCompress for my coding agent?</h3>
+    <p>Run <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>. Setup links your account in the browser, detects the coding agents on the machine and wires each one. Run <code>supercompress doctor</code> to check.</p>
+    <h3>Which coding agents does it work with?</h3>
+    <p>Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, Continue and more. See the <a href="/coding-agent-token-usage">coding agent guides</a>.</p>
+    <h3>Is SuperCompress a summarizer?</h3>
+    <p>No. It is extractive. Every kept line is copied from the original, so error messages, IDs, paths and code come through unchanged.</p>
+    <h3>What does query-aware mean?</h3>
+    <p>The same log or file can be compressed differently for different questions. SuperCompress scores each block against the current question and keeps what answers it. The question itself is never compressed.</p>
+    <h3>Does SuperCompress change my agent&#x27;s login or model?</h3>
+    <p>No. It works through an MCP server, instructions and, for some agents, hooks. Your agent keeps its normal sign-in and talks to its own models.</p>
+    <h3>Is SuperCompress a proxy or gateway?</h3>
+    <p>No. It is not an LLM, a gateway, a router or a cache. It runs before your model call and returns plain text, so it works with any model provider.</p>
+    <h3>What MCP tools does it add?</h3>
+    <p><code>compress_context</code> (arguments <code>context</code> and <code>query</code>), <code>connect_account</code> and <code>usage_summary</code>.</p>
+    <h3>How do I see what was removed?</h3>
+    <p>Every compress response reports <code>original_tokens</code> and <code>kept_tokens</code>, plus kept and dropped blocks. <code>usage_summary</code> shows totals per agent.</p>
+    <h3>Can I call it from my own app?</h3>
+    <p>Yes. Send <code>POST https://www.supercompress.dev/api/v1/compress</code> with <code>context</code> and <code>query</code>, and an API key from the dashboard in the <code>X-API-Key</code> header. There is also a Python client: <code>pip install supercompress</code>.</p>
+    <h3>How is it different from RTK or Headroom?</h3>
+    <p>RTK filters known shell commands before the agent reads them. Headroom is a proxy that rewrites requests on the way to the model. SuperCompress works on one bulky result at a time against the current question and keeps original lines. See <a href="/context-compression-for-coding-agents">approaches compared</a>.</p>
+    <h3>When should I not use it?</h3>
+    <p>When the prompt is already small, when a file is about to be edited line by line, or when every byte must pass through unchanged for compliance.</p>
+    <h3>How do I uninstall it?</h3>
+    <p>Run <code>supercompress uninstall</code>. It removes only the entries SuperCompress added.</p>
+    <h3>Where is pricing?</h3>
+    <p>Current plans and your free allowance are shown in the <a href="/dashboard?signup=1">dashboard</a>.</p>
+
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/coding-agent-token-usage">All coding agents</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>
