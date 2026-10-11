@@ -1,0 +1,40 @@
+{
+  "name": "supercompress-ai",
+  "version": "0.5.39",
+  "description": "SuperCompress CLI — npx supercompress-ai setup for coding agents (Cursor, Claude Code, Codex, and more).",
+  "keywords": [
+    "supercompress",
+    "supercompress-ai",
+    "prompt-compression",
+    "coding-agents",
+    "claude-code",
+    "codex",
+    "cursor",
+    "token-compression",
+    "context-compression",
+    "mcp"
+  ],
+  "homepage": "https://docs.supercompress.dev/coding-agents",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Supercompress/Supercompress.git",
+    "directory": "packages/supercompress-ai"
+  },
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "supercompress-ai": "bin/supercompress-ai.js",
+    "supercompress": "bin/supercompress-ai.js"
+  },
+  "files": [
+    "bin/",
+    "LICENSE",
+    "README.md"
+  ],
+  "dependencies": {
+    "supercompress-proxy": "^0.5.39"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

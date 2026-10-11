@@ -1,6 +1,6 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.37",
+  "version": "0.5.39",
   "description": "SuperCompress v2 for coding agents — ~400M Neural Keep via MCP/hooks across 40+ harnesses. Hosted MCP supports OAuth 2.1 sign-in (PKCE). Launch promo $0.10/1M after 5M free. Benchmarks at supercompress.dev/benchmarks.",
   "keywords": [
     "supercompress",
@@ -35,6 +35,8 @@
   "main": "src/server.js",
   "bin": {
     "supercompress": "bin/supercompress.js",
+    "supercompress-ai": "bin/supercompress.js",
+    "supercompress-proxy": "bin/supercompress.js",
     "supercompress-mcp": "src/mcp.js"
   },
   "files": [

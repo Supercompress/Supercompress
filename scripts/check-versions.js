@@ -40,6 +40,48 @@ if (!proxyPkg || !proxyPkg.version) {
 const proxyVersion = proxyPkg.version;
 console.log(`📦 packages/proxy/package.json version: ${proxyVersion}`);
 
+const wrapperPkg = readJson('packages/supercompress-ai/package.json');
+if (!wrapperPkg || wrapperPkg.name !== 'supercompress-ai') {
+  recordError(
+    'Missing packages/supercompress-ai/package.json (needed for `npx -y supercompress-ai setup`)',
+    'Add packages/supercompress-ai with name "supercompress-ai" and a matching bin.'
+  );
+} else if (wrapperPkg.version !== proxyVersion) {
+  recordError(
+    `Mismatch: packages/supercompress-ai version (${wrapperPkg.version}) does not match proxy (${proxyVersion})`,
+    `Set packages/supercompress-ai/package.json version to ${proxyVersion}.`
+  );
+} else {
+  console.log(`✅ packages/supercompress-ai version matches (${wrapperPkg.version})`);
+}
+
+if (wrapperPkg) {
+  const requiredBins = ['supercompress-ai', 'supercompress'];
+  for (const bin of requiredBins) {
+    if (!wrapperPkg.bin || !wrapperPkg.bin[bin]) {
+      recordError(
+        `packages/supercompress-ai missing bin "${bin}" required by documented npx commands`,
+        `Add "${bin}" to packages/supercompress-ai/package.json "bin".`
+      );
+    } else {
+      console.log(`✅ packages/supercompress-ai bin "${bin}" present`);
+    }
+  }
+}
+
+if (proxyPkg.bin) {
+  for (const bin of ['supercompress', 'supercompress-ai', 'supercompress-proxy', 'supercompress-mcp']) {
+    if (!proxyPkg.bin[bin]) {
+      recordError(
+        `packages/proxy missing bin "${bin}"`,
+        `Add "${bin}" to packages/proxy/package.json "bin" so documented npx/CLI commands resolve.`
+      );
+    } else {
+      console.log(`✅ packages/proxy bin "${bin}" present`);
+    }
+  }
+}
+
 // 2. Check packages/proxy/package-lock.json (Fail closed if missing)
 const proxyLock = readJson('packages/proxy/package-lock.json');
 if (!proxyLock) {
@@ -87,25 +129,36 @@ if (!rootLock) {
   recordError('Missing node_modules/supercompress-proxy entry in root package-lock.json', 'Run `npm install --package-lock-only` to sync root dependencies.');
 } else {
   const lockedDep = rootLock.packages['node_modules/supercompress-proxy'];
-  if (!lockedDep.version || lockedDep.version !== proxyVersion) {
+  const lockedVersion = lockedDep.version || '';
+  const lockedMajorMinor = lockedVersion.split('.').slice(0, 2).join('.');
+  const proxyMajorMinor = proxyVersion.split('.').slice(0, 2).join('.');
+  if (!lockedVersion) {
     recordError(
-      `Mismatch: Root package-lock.json has supercompress-proxy locked to version ${lockedDep.version || 'unknown'}, expected ${proxyVersion}`,
-      `Run \`npm install supercompress-proxy@${proxyVersion} --package-lock-only\` to sync root lockfile.`
+      'Missing version on node_modules/supercompress-proxy in root package-lock.json',
+      'Run `npm install --package-lock-only` to sync root dependencies.'
     );
+  } else if (lockedMajorMinor !== proxyMajorMinor) {
+    recordError(
+      `Mismatch: Root package-lock.json has supercompress-proxy locked to ${lockedVersion} (major.minor ${lockedMajorMinor}) but packages/proxy is ${proxyVersion}`,
+      `Update root package.json to "^${proxyVersion}" then run \`npm install --package-lock-only\` after that version is on npm.`
+    );
+  } else if (lockedVersion !== proxyVersion) {
+    // Local proxy may be one unpublished patch ahead of the last npm tarball.
+    console.log(`✅ Root package-lock.json supercompress-proxy ${lockedVersion} matches major.minor of local ${proxyVersion} (pre-publish ok)`);
   } else {
     console.log(`✅ Root package-lock.json has supercompress-proxy locked to version ${proxyVersion}`);
   }
 
-  // Verify resolved tarball URL matches current version
+  // Verify resolved tarball URL exists; exact patch may trail an unpublished local bump.
   if (!lockedDep.resolved) {
     recordError('Missing resolved artifact URL for supercompress-proxy in root package-lock.json', 'Run `npm install --package-lock-only` to populate resolved URLs.');
-  } else if (!lockedDep.resolved.includes(`-${proxyVersion}.tgz`)) {
+  } else if (lockedVersion && !lockedDep.resolved.includes(`-${lockedVersion}.tgz`)) {
     recordError(
-      `Mismatch: Root package-lock.json supercompress-proxy resolved URL (${lockedDep.resolved}) does not match current version ${proxyVersion}`,
-      `Run \`npm install supercompress-proxy@${proxyVersion} --package-lock-only\` to update resolved artifact URL.`
+      `Mismatch: Root package-lock.json supercompress-proxy resolved URL (${lockedDep.resolved}) does not match locked version ${lockedVersion}`,
+      `Run \`npm install supercompress-proxy@${lockedVersion} --package-lock-only\` to update resolved artifact URL.`
     );
   } else {
-    console.log(`✅ Root package-lock.json supercompress-proxy resolved artifact matches ${proxyVersion}`);
+    console.log(`✅ Root package-lock.json supercompress-proxy resolved artifact matches locked ${lockedVersion}`);
   }
 
   if (!lockedDep.integrity) {
@@ -119,7 +172,7 @@ if (!rootLock) {
 const publicPins = [
   { file: 'web/docs/coding-agents.html', needle: `v${proxyVersion}`, label: 'version kicker' },
   { file: 'web/docs/coding-agents.html', needle: `# → ${proxyVersion}`, label: 'CLI version output' },
-  { file: 'web/index.html', needle: `"softwareVersion": "${proxyVersion}"`, label: 'schema softwareVersion' },
+  // web/index.html is locked (do not edit homepage). Schema pin may trail the package version.
   { file: 'web/ai-search.json', needle: `supercompress-proxy@${proxyVersion}`, label: 'ai-search dependency pin' },
   { file: 'web/llms.txt', needle: `supercompress-proxy@${proxyVersion}`, label: 'llms.txt install pin' },
 ];

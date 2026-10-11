@@ -16,6 +16,7 @@ const { initFirebaseAdmin } = require("./auth");
 const { gistConfigured, loadGistStore, saveGistStore } = require("./gist-store");
 const { agentUsageForMonth } = require("./coding-agent-usage");
 const { skipFirestore } = require("./firebase-off");
+const { isFirestoreUnavailable } = require("./storage-errors");
 
 let /** @type {import("firebase-admin").firestore.Firestore | null} */ _db = null;
 
@@ -117,15 +118,6 @@ function storageError() {
   const err = new Error("Persistent storage is unavailable. Check Firebase Admin credentials and storage status.");
   err.status = 503;
   return err;
-}
-
-function isFirestoreUnavailable(err) {
-  const msg = String(err?.message || "");
-  return (
-    err?.code === 7 ||
-    msg.includes("Cloud Firestore API has not been used") ||
-    msg.includes("Could not load the default credentials")
-  );
 }
 
 function auth() {
@@ -577,15 +569,31 @@ async function trackKeyUsage(ownerUid, keyRec, stats = {}) {
     };
   };
 
-  const docRef = db().collection("key_usage").doc(ownerUid);
-  await db().runTransaction(async (tx) => {
-    const snap = await tx.get(docRef);
-    const data = snap.exists && snap.data() ? snap.data() : { keys: {} };
-    const keys = data.keys && typeof data.keys === "object" ? data.keys : {};
-    keys[keyId] = bump(keys[keyId]);
-    tx.set(docRef, { keys, updated_at: now }, { merge: true });
-  });
-  return true;
+  try {
+    const docRef = db().collection("key_usage").doc(ownerUid);
+    await db().runTransaction(async (tx) => {
+      const snap = await tx.get(docRef);
+      const data = snap.exists && snap.data() ? snap.data() : { keys: {} };
+      const keys = data.keys && typeof data.keys === "object" ? data.keys : {};
+      keys[keyId] = bump(keys[keyId]);
+      tx.set(docRef, { keys, updated_at: now }, { merge: true });
+    });
+    return true;
+  } catch (err) {
+    console.warn("store: key_usage write failed; per-key usage may be incomplete:", err.message);
+    if (isFirestoreUnavailable(err)) firestoreUnavailable = true;
+    try {
+      return await trackKeyUsageOnAuth(keyId, {
+        original_tokens: tokensIn,
+        kept_tokens: tokensOut,
+        tokens_saved: tokensSaved,
+        now,
+      });
+    } catch (authErr) {
+      console.warn("store: auth key_usage fallback skipped:", authErr.message);
+      return false;
+    }
+  }
 }
 
 async function loadKeyUsage(ownerUid) {
@@ -853,25 +861,36 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
   };
 
   if (firestoreUnavailable) {
-    await mutateStore((store) => {
-      if (!store.coding_agent_usage) store.coding_agent_usage = {};
-      if (!store.coding_agent_usage[ownerUid]) store.coding_agent_usage[ownerUid] = {};
-      const prev = store.coding_agent_usage[ownerUid][agentName] || {};
-      store.coding_agent_usage[ownerUid][agentName] = bumpAgent(prev);
+    try {
+      await mutateStore((store) => {
+        if (!store.coding_agent_usage) store.coding_agent_usage = {};
+        if (!store.coding_agent_usage[ownerUid]) store.coding_agent_usage[ownerUid] = {};
+        const prev = store.coding_agent_usage[ownerUid][agentName] || {};
+        store.coding_agent_usage[ownerUid][agentName] = bumpAgent(prev);
+        return true;
+      });
       return true;
-    });
-    return true;
+    } catch (err) {
+      console.warn("store: coding_agent_usage store write failed:", err.message);
+      return false;
+    }
   }
 
-  const docRef = db().collection("coding_agent_usage").doc(ownerUid);
-  await db().runTransaction(async (tx) => {
-    const snap = await tx.get(docRef);
-    const data = snap.exists && snap.data() ? snap.data() : { agents: {} };
-    const agents = data.agents && typeof data.agents === "object" ? data.agents : {};
-    agents[agentName] = bumpAgent(agents[agentName] || {});
-    tx.set(docRef, { agents, updated_at: now }, { merge: true });
-  });
-  return true;
+  try {
+    const docRef = db().collection("coding_agent_usage").doc(ownerUid);
+    await db().runTransaction(async (tx) => {
+      const snap = await tx.get(docRef);
+      const data = snap.exists && snap.data() ? snap.data() : { agents: {} };
+      const agents = data.agents && typeof data.agents === "object" ? data.agents : {};
+      agents[agentName] = bumpAgent(agents[agentName] || {});
+      tx.set(docRef, { agents, updated_at: now }, { merge: true });
+    });
+    return true;
+  } catch (err) {
+    console.warn("store: coding_agent_usage write failed; agent usage may be incomplete:", err.message);
+    if (isFirestoreUnavailable(err)) firestoreUnavailable = true;
+    return false;
+  }
 }
 
 /**

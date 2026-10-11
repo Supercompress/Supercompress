@@ -6,6 +6,7 @@
  * Storage: Firestore in production; in-memory when SC_OAUTH_MEMORY=1 (unit tests).
  */
 const crypto = require("crypto");
+const { mapStorageError, storageUnavailableError } = require("./storage-errors");
 
 const SITE = "https://www.supercompress.dev";
 const ISSUER = SITE;
@@ -35,12 +36,25 @@ function db() {
   const admin = require("firebase-admin");
   const { initFirebaseAdmin } = require("./auth");
   if (!initFirebaseAdmin()) {
-    const err = new Error("OAuth requires Firebase Admin");
-    err.status = 503;
-    err.code = "oauth_unavailable";
-    throw err;
+    throw storageUnavailableError("OAuth requires Firebase Admin and Cloud Firestore.");
   }
   return admin.firestore();
+}
+
+async function firestoreWrite(fn) {
+  try {
+    return await fn(db());
+  } catch (err) {
+    throw mapStorageError(err);
+  }
+}
+
+async function firestoreRead(fn) {
+  try {
+    return await fn(db());
+  } catch (err) {
+    throw mapStorageError(err);
+  }
 }
 
 function issuerMetadata() {
@@ -150,7 +164,9 @@ async function saveClient(client) {
     mem.clients.set(client.client_id, client);
     return client;
   }
-  await db().collection("oauth_clients").doc(client.client_id).set(client, { merge: true });
+  await firestoreWrite((firestore) =>
+    firestore.collection("oauth_clients").doc(client.client_id).set(client, { merge: true })
+  );
   return client;
 }
 
@@ -158,7 +174,7 @@ async function getClient(clientId) {
   const id = String(clientId || "").trim();
   if (!id) return null;
   if (useMemory()) return mem.clients.get(id) || null;
-  const snap = await db().collection("oauth_clients").doc(id).get();
+  const snap = await firestoreRead((firestore) => firestore.collection("oauth_clients").doc(id).get());
   return snap.exists ? snap.data() : null;
 }
 
@@ -248,7 +264,7 @@ async function saveCode(record) {
     mem.codes.set(record.code, record);
     return;
   }
-  await db().collection("oauth_auth_codes").doc(record.code).set(record);
+  await firestoreWrite((firestore) => firestore.collection("oauth_auth_codes").doc(record.code).set(record));
 }
 
 async function takeCode(code) {
@@ -260,14 +276,19 @@ async function takeCode(code) {
     mem.codes.delete(id);
     return rec;
   }
-  const ref = db().collection("oauth_auth_codes").doc(id);
-  return db().runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists) return null;
-    const data = snap.data();
-    tx.delete(ref);
-    return data;
-  });
+  const firestore = db();
+  const ref = firestore.collection("oauth_auth_codes").doc(id);
+  try {
+    return await firestore.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) return null;
+      const data = snap.data();
+      tx.delete(ref);
+      return data;
+    });
+  } catch (err) {
+    throw mapStorageError(err);
+  }
 }
 
 async function saveRefresh(record) {
@@ -275,14 +296,14 @@ async function saveRefresh(record) {
     mem.refresh.set(record.refresh_token, record);
     return;
   }
-  await db().collection("oauth_refresh").doc(record.refresh_token).set(record);
+  await firestoreWrite((firestore) => firestore.collection("oauth_refresh").doc(record.refresh_token).set(record));
 }
 
 async function getRefresh(token) {
   const id = String(token || "").trim();
   if (!id) return null;
   if (useMemory()) return mem.refresh.get(id) || null;
-  const snap = await db().collection("oauth_refresh").doc(id).get();
+  const snap = await firestoreRead((firestore) => firestore.collection("oauth_refresh").doc(id).get());
   return snap.exists ? snap.data() : null;
 }
 

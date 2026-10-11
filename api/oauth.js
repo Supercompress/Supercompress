@@ -29,6 +29,7 @@ const {
   upsertClient,
   MCP_RESOURCE,
 } = require("./_lib/mcp-oauth");
+const { mapStorageError } = require("./_lib/storage-errors");
 
 function send(res, status, body, extra = {}) {
   cors(res);
@@ -126,7 +127,8 @@ async function handleAuthorizeGet(req, res) {
       clientName: clientId.slice(0, 80) || "MCP client",
     });
   } catch (err) {
-    return oauthError(res, err.status || 400, err.code || "invalid_request", err.message);
+    const mapped = mapStorageError(err);
+    return oauthError(res, mapped.status || 400, mapped.code || "invalid_request", mapped.message);
   }
 
   const dash = buildAuthorizeDashboardUrl({
@@ -197,7 +199,8 @@ async function handleApprove(req, res) {
       expires_in: result.expires_in,
     });
   } catch (err) {
-    return oauthError(res, err.status || 400, err.code || "invalid_request", err.message);
+    const mapped = mapStorageError(err);
+    return oauthError(res, mapped.status || 400, mapped.code || "invalid_request", mapped.message);
   }
 }
 
@@ -228,7 +231,8 @@ async function handleToken(req, res) {
     }
     return oauthError(res, 400, "unsupported_grant_type", "Use authorization_code or refresh_token");
   } catch (err) {
-    return oauthError(res, err.status || 400, err.code || "invalid_grant", err.message);
+    const mapped = mapStorageError(err);
+    return oauthError(res, mapped.status || 400, mapped.code || "invalid_grant", mapped.message);
   }
 }
 
@@ -242,7 +246,13 @@ async function handleRegister(req, res) {
     const out = await registerClient(body);
     return send(res, 201, out, { "Cache-Control": "no-store" });
   } catch (err) {
-    return oauthError(res, err.status || 400, err.code || "invalid_client_metadata", err.message);
+    const mapped = mapStorageError(err);
+    return oauthError(
+      res,
+      mapped.status || 400,
+      mapped.code || "invalid_client_metadata",
+      mapped.message
+    );
   }
 }
 

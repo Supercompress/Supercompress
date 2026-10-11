@@ -13,13 +13,24 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+### Fixed
+- `npx -y supercompress-ai setup` now has a matching `supercompress-ai` bin (wrapper package + proxy aliases). Published `0.5.38` did not.
+- Live demo calls `https://www.supercompress.dev/api/v1/compress` instead of the apex host.
+- Setup / MCP OAuth / dynamic client registration return HTTP 503 with a clear storage message when Firestore writes fail (no more opaque 400).
+- Per-key usage writes log a warning and fall back to Auth claims when the store write fails.
+
 ## [MCP OAuth launch] — 2026-10-01
 
 ### Added
 - Public launch note at `/mcp-oauth`: one hosted MCP URL + Google OAuth sign-in for coding agents.
 - Blog featured card + changelog entry; `/mcp-integration` setup rewritten OAuth-first.
 
-## [0.5.39] — 2026-09-30
+## [0.5.39] — 2026-10-11
+
+### Fixed
+- Matching bins so `npx -y supercompress-ai setup` and `npx -y supercompress-proxy setup` resolve.
+- Live demo API base uses the www host.
+- Setup and OAuth/DCR fail closed with a user-facing storage error when Cloud Firestore is unavailable.
 
 ### Changed
 - Homepage hero restored to **Cut your API Costs by 65%.**

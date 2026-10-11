@@ -91,6 +91,14 @@ assert.equal(verifyPkce("wrong", challenge), false);
   assert.ok(refreshed.refresh_token.startsWith("sc_rt_"));
   assert.notEqual(refreshed.refresh_token, token.refresh_token);
 
+  const { mapStorageError } = require("./storage-errors");
+  const firestoreDown = new Error("Cloud Firestore API has not been used in project test");
+  firestoreDown.code = 7;
+  const mapped = mapStorageError(firestoreDown);
+  assert.equal(mapped.status, 503);
+  assert.equal(mapped.code, "temporarily_unavailable");
+  assert.match(mapped.message, /Firestore/);
+
   console.log("✔ mcp-oauth unit");
 })().catch((err) => {
   console.error(err);

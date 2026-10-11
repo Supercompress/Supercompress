@@ -134,6 +134,14 @@ jobs:
         run: node scripts/check-no-pii.js
       - name: Version pins
         run: node scripts/check-versions.js
+      - name: Documented CLI bins
+        run: node scripts/check-bins.test.js
+      - name: Storage error mapping
+        run: node api/_lib/storage-errors.test.js
+      - name: Live demo API host
+        run: node web/assets/js/live-demo-api.test.js
+      - name: MCP OAuth unit
+        run: SC_OAUTH_MEMORY=1 node api/_lib/mcp-oauth.test.js
 
       - name: Benchmark quality gates (committed artifacts)
         run: node scripts/check-benchmark-gates.js

@@ -1,9 +1,9 @@
 (function () {
   "use strict";
 
-  // Same-origin relative URL: calling the apex host from www triggered a CORS
-  // preflight that hit a 308 redirect and failed. Works on any deploy host.
-  const API_URL = "/api/v1/compress";
+  // Apex https://supercompress.dev/api/... 308s to www and fails CORS preflight.
+  // Always call the working www API host (same path the CLI and MCP use).
+  const API_URL = "https://www.supercompress.dev/api/v1/compress";
   const KEY_STORE = "sc_live_demo_key";
   /** In-memory only for the page session — do not persist API keys in sessionStorage. */
   let memoryApiKey = "";

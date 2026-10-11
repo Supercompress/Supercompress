@@ -7,6 +7,7 @@ const crypto = require("crypto");
 const admin = require("firebase-admin");
 const { initFirebaseAdmin } = require("./auth");
 const { KEY_PREFIX, hashApiKey, verifyApiKey } = require("./keys");
+const { mapStorageError, storageUnavailableError } = require("./storage-errors");
 
 const KEY_UID_PREFIX = "sck_";
 const LINK_UID_PREFIX = "sc_lnk_";
@@ -257,23 +258,27 @@ async function putDeviceLink(code, { ownerUid, secret, source = "oauth", agents 
   });
 
   if (!initFirebaseAdmin()) {
-    const err = new Error("Device link requires Firestore to store the one-time secret");
-    err.status = 503;
-    throw err;
+    throw storageUnavailableError(
+      "Device link requires Cloud Firestore to store the one-time secret. Persistent storage is unavailable."
+    );
   }
-  await admin.firestore().collection("device_links").doc(uid).set(
-    {
-      code: codeNorm,
-      owner_uid: ownerUid,
-      secret,
-      source: String(source || "oauth").slice(0, 40),
-      status: "linked",
-      linked_at: now,
-      created_at: existing?.customClaims?.created_at || now,
-      expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-    },
-    { merge: true }
-  );
+  try {
+    await admin.firestore().collection("device_links").doc(uid).set(
+      {
+        code: codeNorm,
+        owner_uid: ownerUid,
+        secret,
+        source: String(source || "oauth").slice(0, 40),
+        status: "linked",
+        linked_at: now,
+        created_at: existing?.customClaims?.created_at || now,
+        expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    throw mapStorageError(err);
+  }
 
   return {
     code: codeNorm,
@@ -354,9 +359,9 @@ async function consumeDeviceLinkSecret(code) {
   if (!normalized) return null;
 
   if (!initFirebaseAdmin()) {
-    const err = new Error("Device link consume requires Firestore");
-    err.status = 503;
-    throw err;
+    throw storageUnavailableError(
+      "Device link consume requires Cloud Firestore. Persistent storage is unavailable."
+    );
   }
 
   const db = admin.firestore();
@@ -387,9 +392,7 @@ async function consumeDeviceLinkSecret(code) {
     });
   } catch (err) {
     console.warn("consumeDeviceLinkSecret firestore:", err.message || err);
-    const fail = new Error("Device link temporarily unavailable. Retry.");
-    fail.status = 503;
-    throw fail;
+    throw mapStorageError(err);
   }
 
   if (taken) {

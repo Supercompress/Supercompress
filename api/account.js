@@ -3,6 +3,7 @@ const { verifyUser, bearerToken } = require("./_lib/auth");
 const { KEY_PREFIX } = require("./_lib/keys");
 const { createKey, revokeKey, listKeys, authenticateKey } = require("./_lib/firebase-key-store");
 const { loadStore, mutateStore } = require("./_lib/store");
+const { mapStorageError } = require("./_lib/storage-errors");
 const { getPlan } = require("./_lib/stripe");
 const admin = require("firebase-admin");
 
@@ -265,7 +266,8 @@ async function handleConnectDevice(req, res) {
         created_at: taken.created_at || status.created_at || null,
       });
     } catch (err) {
-      return json(res, err.status || 500, { detail: err.message || "Lookup failed" });
+      const mapped = mapStorageError(err);
+      return json(res, mapped.status || 500, { detail: mapped.message || "Lookup failed" });
     }
   }
 
@@ -308,7 +310,8 @@ async function handleConnectDevice(req, res) {
       },
     });
   } catch (err) {
-    return json(res, err.status || 401, { detail: err.message });
+    const mapped = mapStorageError(err);
+    return json(res, mapped.status || 401, { detail: mapped.message });
   }
 }
 

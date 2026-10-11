@@ -177,8 +177,12 @@ async function main() {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
     assert.equal(pkg.name, "supercompress-proxy");
     assert.ok(pkg.bin.supercompress);
+    assert.ok(pkg.bin["supercompress-ai"]);
+    assert.ok(pkg.bin["supercompress-proxy"]);
     assert.ok(pkg.bin["supercompress-mcp"]);
     assert.ok(fs.existsSync(path.join(ROOT, pkg.bin.supercompress)));
+    assert.ok(fs.existsSync(path.join(ROOT, pkg.bin["supercompress-ai"])));
+    assert.ok(fs.existsSync(path.join(ROOT, pkg.bin["supercompress-proxy"])));
     assert.ok(fs.existsSync(path.join(ROOT, pkg.bin["supercompress-mcp"])));
     pass("package metadata + bin entrypoints", `v${pkg.version}`);
   } catch (err) {
