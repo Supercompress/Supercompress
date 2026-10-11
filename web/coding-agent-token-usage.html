@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Reduce Coding Agent Token Usage: Claude Code, Cursor, Codex and More | SuperCompress</title>
+  <meta name="description" content="Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent." />
+  <meta name="keywords" content="reduce coding agent token usage, coding agent tokens, Claude Code Cursor Codex token usage, AI coding agent context compression, SuperCompress coding agents" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Reduce coding agent token usage" />
+  <meta property="og:description" content="Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/coding-agent-token-usage" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Reduce coding agent token usage" />
+  <meta name="twitter:description" content="Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/coding-agent-token-usage" />
+  <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-09" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "headline": "Reduce coding agent token usage",
+  "description": "Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent.",
+  "datePublished": "2026-10-09",
+  "dateModified": "2026-10-09",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.supercompress.dev/assets/img/icon-chevron-192.png"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/coding-agent-token-usage"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Blog",
+      "item": "https://www.supercompress.dev/blog"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Coding agent guides",
+      "item": "https://www.supercompress.dev/coding-agent-token-usage"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Coding agent token usage guides",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Claude Code",
+      "url": "https://www.supercompress.dev/reduce-claude-code-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Cursor",
+      "url": "https://www.supercompress.dev/reduce-cursor-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Codex",
+      "url": "https://www.supercompress.dev/reduce-codex-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 4,
+      "name": "Hermes Agent",
+      "url": "https://www.supercompress.dev/reduce-hermes-agent-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 5,
+      "name": "Windsurf",
+      "url": "https://www.supercompress.dev/reduce-windsurf-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 6,
+      "name": "Gemini CLI",
+      "url": "https://www.supercompress.dev/reduce-gemini-cli-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 7,
+      "name": "Cline, Roo Code and Kilo Code",
+      "url": "https://www.supercompress.dev/reduce-cline-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 8,
+      "name": "OpenCode",
+      "url": "https://www.supercompress.dev/reduce-opencode-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 9,
+      "name": "Context compression for coding agents: approaches compared",
+      "url": "https://www.supercompress.dev/context-compression-for-coding-agents"
+    },
+    {
+      "@type": "ListItem",
+      "position": 10,
+      "name": "MCP token reduction",
+      "url": "https://www.supercompress.dev/mcp-token-reduction"
+    },
+    {
+      "@type": "ListItem",
+      "position": 11,
+      "name": "MCP tool output compression",
+      "url": "https://www.supercompress.dev/mcp-tool-output-compression"
+    },
+    {
+      "@type": "ListItem",
+      "position": 12,
+      "name": "Claude Code context limit",
+      "url": "https://www.supercompress.dev/claude-code-context-limit"
+    },
+    {
+      "@type": "ListItem",
+      "position": 13,
+      "name": "Claude Code MCP output too large",
+      "url": "https://www.supercompress.dev/claude-code-mcp-output-too-large"
+    },
+    {
+      "@type": "ListItem",
+      "position": 14,
+      "name": "SuperCompress FAQ",
+      "url": "https://www.supercompress.dev/faq"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Which coding agents does SuperCompress support?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, Continue and more. supercompress setup detects them and supercompress doctor lists what it found."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to install SuperCompress separately for each agent?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. One supercompress setup wires every detected agent. Run supercompress plugin after you install a new agent."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Coding agents · Updated 2026-10-09</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">Coding agents</span>
+    <span class="seo-tag">Token usage</span>
+    <span class="seo-tag">MCP</span>
+  </div>
+  <h1>Reduce coding agent token usage</h1>
+  <p class="seo-lead">Coding agents spend most of their tokens rereading tool output: file reads, shell logs, search hits and MCP results. Pick your agent below for where its tokens go, the habits that help, and what <code>supercompress setup</code> adds to it.</p>
+  <p class="seo-author">October 9, 2026 · Index</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="/mcp-token-reduction">MCP token reduction</a>
+    <a href="/mcp-tool-output-compression">MCP tool output compression</a>
+    <a href="/claude-code-context-limit">Claude Code context limit</a>
+    <a href="/claude-code-mcp-output-too-large">MCP output too large</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+
+  <div class="article-prose">
+    <div class="seo-verdict">
+      <strong>In short:</strong> one install covers every detected agent: <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>, then <code>supercompress doctor</code>. The full harness list is in the <a href="https://docs.supercompress.dev/coding-agents">coding agents guide</a>.
+    </div>
+
+    <h2 id="agents">By coding agent</h2>
+    <table class="seo-table">
+      <thead><tr><th>Agent</th><th>What setup adds</th></tr></thead>
+      <tbody>
+        <tr><td><a href="/reduce-claude-code-token-usage"><strong>Claude Code</strong></a></td><td>MCP server, CLAUDE.md instructions and hooks, or the Claude Code plugin.</td></tr>
+        <tr><td><a href="/reduce-cursor-token-usage"><strong>Cursor</strong></a></td><td>MCP server, an always-on rule and hooks.</td></tr>
+        <tr><td><a href="/reduce-codex-token-usage"><strong>Codex</strong></a></td><td>MCP server, AGENTS.md instructions and hooks. Works with a ChatGPT sign-in.</td></tr>
+        <tr><td><a href="/reduce-hermes-agent-token-usage"><strong>Hermes Agent</strong></a></td><td>MCP server, shell hooks, a plugin and Hermes compression settings.</td></tr>
+        <tr><td><a href="/reduce-windsurf-token-usage"><strong>Windsurf</strong></a></td><td>MCP server for Cascade.</td></tr>
+        <tr><td><a href="/reduce-gemini-cli-token-usage"><strong>Gemini CLI</strong></a></td><td>MCP server in settings.json.</td></tr>
+        <tr><td><a href="/reduce-cline-token-usage"><strong>Cline, Roo Code and Kilo Code</strong></a></td><td>MCP server in each extension&#x27;s settings.</td></tr>
+        <tr><td><a href="/reduce-opencode-token-usage"><strong>OpenCode</strong></a></td><td>MCP server and AGENTS.md instructions.</td></tr>
+      </tbody>
+    </table>
+    <p>Setup also detects Zed, Goose, Continue, Amp, Crush, GitHub Copilot in VS Code, Claude Desktop, Grok Build, OpenClaw and more. Run <code>supercompress doctor</code> to see what it found on your machine.</p>
+
+    <h2 id="guides">Guides</h2>
+    <ul>
+      <li><a href="/context-compression-for-coding-agents">Context compression for coding agents: approaches compared</a></li>
+      <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+      <li><a href="/mcp-tool-output-compression">MCP tool output compression</a></li>
+      <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+      <li><a href="/claude-code-mcp-output-too-large">Claude Code MCP output too large</a></li>
+      <li><a href="/faq">SuperCompress FAQ</a></li>
+    </ul>
+
+    <h2 id="how-supercompress-works">How SuperCompress works</h2>
+    <p>SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. Our Neural Keep model scores the lines against that question, keeps the original lines that answer it, and drops the rest. It never rewrites or summarizes, so file paths, error messages, IDs and code come back exactly as they were. The question itself is never compressed.</p>
+    <p>Every compress call reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see what was dropped on your own work instead of trusting a headline number. The <code>usage_summary</code> MCP tool shows totals per agent for your account.</p>
+
+    <h2 id="install">Install</h2>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <p>Setup links your SuperCompress account in the browser, detects the coding agents on the machine and wires each one. Restart the agent so it loads the new MCP server. Then check what is wired up:</p>
+    <pre><code>supercompress doctor</code></pre>
+    <p><code>doctor</code> prints a per-agent health check. <code>supercompress uninstall</code> removes only the entries SuperCompress added. Setup backs up each config file before it edits it.</p>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>Which coding agents does SuperCompress support?</h3>
+    <p>Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, Continue and more. supercompress setup detects them and supercompress doctor lists what it found.</p>
+    <h3>Do I need to install SuperCompress separately for each agent?</h3>
+    <p>No. One supercompress setup wires every detected agent. Run supercompress plugin after you install a new agent.</p>
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/coding-agent-token-usage">All coding agents</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

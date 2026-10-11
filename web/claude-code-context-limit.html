@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Claude Code Context Limit: Why You Run Out and What to Do | SuperCompress</title>
+  <meta name="description" content="Why Claude Code runs out of context, how to see what is filling the window with /context, when to use /compact, /clear and subagents, and how to keep bulky tool output from piling up." />
+  <meta name="keywords" content="Claude Code context limit, Claude Code context window, Claude Code running out of context, Claude Code auto-compact, Claude Code /compact, Claude Code context full" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Claude Code context limit: why you run out and what to do" />
+  <meta property="og:description" content="Why Claude Code runs out of context, how to see what is filling the window with /context, when to use /compact, /clear and subagents, and how to keep bulky tool output from piling up." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/claude-code-context-limit" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Claude Code context limit: why you run out and what to do" />
+  <meta name="twitter:description" content="Why Claude Code runs out of context, how to see what is filling the window with /context, when to use /compact, /clear and subagents, and how to keep bulky tool output from piling up." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/claude-code-context-limit" />
+  <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-09" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Claude Code context limit: why you run out and what to do",
+  "description": "Why Claude Code runs out of context, how to see what is filling the window with /context, when to use /compact, /clear and subagents, and how to keep bulky tool output from piling up.",
+  "datePublished": "2026-10-09",
+  "dateModified": "2026-10-09",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.supercompress.dev/assets/img/icon-chevron-192.png"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/claude-code-context-limit"
+  },
+  "about": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Claude Code"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Blog",
+      "item": "https://www.supercompress.dev/blog"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Coding agent guides",
+      "item": "https://www.supercompress.dev/coding-agent-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Claude Code context limit",
+      "item": "https://www.supercompress.dev/claude-code-context-limit"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why does Claude Code say the context is almost full?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The window holds the system prompt, tool definitions, memory files and the whole session, including every tool result. Long sessions with large file reads and logs fill it fastest. Run /context to see the breakdown."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens when the Claude Code context window is full?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claude Code compacts the session: it replaces the history with a summary so work can continue. Details that were only in old tool output can be lost in that summary."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is /compact or /clear better?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use /clear when you switch to unrelated work. Use /compact with a short focus when you are mid-task and want to keep the important details."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I stop large tool output from filling the context?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Ask for narrower output, disable unused MCP servers, and use SuperCompress to keep only the original lines of a large result that answer the current question."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Claude Code · Updated 2026-10-09</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">Claude Code</span>
+    <span class="seo-tag">Context window</span>
+    <span class="seo-tag">Guide</span>
+  </div>
+  <h1>Claude Code context limit: why you run out and what to do</h1>
+  <p class="seo-lead">Claude Code warns you as the context window fills, then compacts the session. Most of what fills it is tool output that the agent read once and never needs again. This guide shows how to see what is in the window, the built-in ways to free it, and how to stop bulky output from piling up in the first place.</p>
+  <p class="seo-author">October 9, 2026 · Guide</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="/coding-agent-token-usage">All coding agents</a>
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="/mcp-token-reduction">MCP token reduction</a>
+    <a href="/mcp-tool-output-compression">MCP tool output compression</a>
+    <a href="/claude-code-mcp-output-too-large">MCP output too large</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+
+  <div class="article-prose">
+    <div class="seo-verdict">
+      <strong>In short:</strong> run <code>/context</code> to see what is using the window. Use <code>/clear</code> between tasks, <code>/compact</code> with a focus inside long tasks, and subagents for wide searches. To stop large logs and file reads from filling the window, run <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> so Claude Code keeps only the lines that answer the current question.
+    </div>
+
+    <h2 id="what-fills-it">What fills the Claude Code context window</h2>
+    <ul>
+      <li><strong>System prompt and tools.</strong> Built-in tools plus every enabled MCP server's tool definitions.</li>
+      <li><strong>Memory files.</strong> <code>CLAUDE.md</code> files from your home folder and the project.</li>
+      <li><strong>Messages and tool results.</strong> Every file read, Bash run, Grep and MCP result that is still in the session. This is usually the largest part.</li>
+    </ul>
+
+    <h2 id="see-it">See what is using it</h2>
+    <p>Run <code>/context</code>. It breaks the window down by category so you know whether to trim tools, memory files or the session itself.</p>
+
+    <h2 id="free-it">Free it up</h2>
+    <table class="seo-table">
+      <thead><tr><th>Command</th><th>What it does</th><th>Use it when</th></tr></thead>
+      <tbody>
+        <tr><td><code>/clear</code></td><td>Starts an empty session.</td><td>You are switching to unrelated work.</td></tr>
+        <tr><td><code>/compact</code></td><td>Replaces the session with a summary. Add a focus, such as <code>/compact keep the failing test and the fix plan</code>.</td><td>You are mid-task and the session is long.</td></tr>
+        <tr><td>Auto-compact</td><td>Compacts automatically as the window fills.</td><td>On by default; compacting earlier yourself gives you control over what is kept.</td></tr>
+        <tr><td>Subagents</td><td>Run a search or investigation in a separate context and return a short report.</td><td>The task needs reading a lot of code to find a little.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="prevent-it">Stop it filling up</h2>
+    <ol>
+      <li><strong>Keep <code>CLAUDE.md</code> short.</strong> Link to longer docs instead of pasting them.</li>
+      <li><strong>Disable MCP servers you are not using.</strong> Their tool definitions are sent every turn.</li>
+      <li><strong>Ask for narrow output.</strong> One test file instead of the whole suite; a line range instead of a whole file.</li>
+      <li><strong>Compress bulky output against the question.</strong> SuperCompress keeps the original lines from a log, diff or file read that answer what Claude is working on and drops the rest, before that output piles up in the session.</li>
+    </ol>
+
+    <h2 id="how-supercompress-works">How SuperCompress works</h2>
+    <p>SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. Our Neural Keep model scores the lines against that question, keeps the original lines that answer it, and drops the rest. It never rewrites or summarizes, so file paths, error messages, IDs and code come back exactly as they were. The question itself is never compressed.</p>
+    <p>Every compress call reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see what was dropped on your own work instead of trusting a headline number. The <code>usage_summary</code> MCP tool shows totals per agent for your account.</p>
+
+    <h2 id="install">Install</h2>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <p>Setup links your SuperCompress account in the browser, detects the coding agents on the machine and wires each one. Restart the agent so it loads the new MCP server. Then check what is wired up:</p>
+    <pre><code>supercompress doctor</code></pre>
+    <p><code>doctor</code> prints a per-agent health check. <code>supercompress uninstall</code> removes only the entries SuperCompress added. Setup backs up each config file before it edits it.</p>
+
+    <p>Setup details for Claude Code, including the plugin, are on <a href="/reduce-claude-code-token-usage">Reduce Claude Code token usage</a>.</p>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>Why does Claude Code say the context is almost full?</h3>
+    <p>The window holds the system prompt, tool definitions, memory files and the whole session, including every tool result. Long sessions with large file reads and logs fill it fastest. Run /context to see the breakdown.</p>
+    <h3>What happens when the Claude Code context window is full?</h3>
+    <p>Claude Code compacts the session: it replaces the history with a summary so work can continue. Details that were only in old tool output can be lost in that summary.</p>
+    <h3>Is /compact or /clear better?</h3>
+    <p>Use /clear when you switch to unrelated work. Use /compact with a short focus when you are mid-task and want to keep the important details.</p>
+    <h3>Can I stop large tool output from filling the context?</h3>
+    <p>Yes. Ask for narrower output, disable unused MCP servers, and use SuperCompress to keep only the original lines of a large result that answer the current question.</p>
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/coding-agent-token-usage">All coding agents</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

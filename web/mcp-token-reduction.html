@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>MCP Token Reduction: Cut Tool Definitions and Tool Results | SuperCompress</title>
+  <meta name="description" content="MCP servers cost tokens two ways: tool definitions sent on every request and large tool results that stay in context. How to cut both, from disabling servers and tool allowlists to compressing results against the question." />
+  <meta name="keywords" content="MCP token reduction, reduce MCP tokens, MCP context bloat, MCP tool definitions tokens, MCP server token usage, compress MCP results" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="MCP token reduction: cut tool definitions and tool results" />
+  <meta property="og:description" content="MCP servers cost tokens two ways: tool definitions sent on every request and large tool results that stay in context. How to cut both, from disabling servers and tool allowlists to compressing results against the question." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/mcp-token-reduction" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="MCP token reduction: cut tool definitions and tool results" />
+  <meta name="twitter:description" content="MCP servers cost tokens two ways: tool definitions sent on every request and large tool results that stay in context. How to cut both, from disabling servers and tool allowlists to compressing results against the question." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/mcp-token-reduction" />
+  <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-09" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "MCP token reduction: cut tool definitions and tool results",
+  "description": "MCP servers cost tokens two ways: tool definitions sent on every request and large tool results that stay in context. How to cut both, from disabling servers and tool allowlists to compressing results against the question.",
+  "datePublished": "2026-10-09",
+  "dateModified": "2026-10-09",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.supercompress.dev/assets/img/icon-chevron-192.png"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/mcp-token-reduction"
+  },
+  "about": [
+    {
+      "@type": "Thing",
+      "name": "Model Context Protocol"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Blog",
+      "item": "https://www.supercompress.dev/blog"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Coding agent guides",
+      "item": "https://www.supercompress.dev/coding-agent-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "MCP token reduction",
+      "item": "https://www.supercompress.dev/mcp-token-reduction"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why do MCP servers use so many tokens?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Each enabled server sends its tool definitions with every request, and tool results stay in the conversation after they are read, so they are sent again on later turns."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the fastest way to reduce MCP token usage?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Disable servers and tools a project does not use. That saving repeats on every request. Then deal with large results by filtering at the server or compressing them against the question."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is SuperCompress itself an MCP server?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. It adds one server with three tools: compress_context, connect_account and usage_summary. Run npm install -g supercompress-proxy && supercompress setup to wire it into every detected agent."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">MCP · Updated 2026-10-09</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">MCP</span>
+    <span class="seo-tag">Token usage</span>
+    <span class="seo-tag">Guide</span>
+  </div>
+  <h1>MCP token reduction: cut tool definitions and tool results</h1>
+  <p class="seo-lead">Every MCP server you connect costs tokens in two places: its tool definitions, sent with every request, and its results, which stay in the conversation after the agent reads them. The fixes for each are different. Here is how to cut both.</p>
+  <p class="seo-author">October 9, 2026 · Guide</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="/coding-agent-token-usage">All coding agents</a>
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="/mcp-tool-output-compression">MCP tool output compression</a>
+    <a href="/claude-code-context-limit">Claude Code context limit</a>
+    <a href="/claude-code-mcp-output-too-large">MCP output too large</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+
+  <div class="article-prose">
+    <div class="seo-verdict">
+      <strong>In short:</strong> cut definitions by enabling only the servers and tools a project needs. Cut results by asking servers for less and compressing large results against the current question. SuperCompress handles the second part with one MCP tool, <code>compress_context</code>.
+    </div>
+
+    <h2 id="two-costs">Two kinds of MCP token cost</h2>
+    <table class="seo-table">
+      <thead><tr><th>Cost</th><th>When you pay it</th><th>How it grows</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Tool definitions</strong></td><td>Every request, whether or not the tools are used.</td><td>With the number of servers and tools enabled.</td></tr>
+        <tr><td><strong>Tool results</strong></td><td>When a tool is called, and again on every later turn while the result is in the session.</td><td>With result size and session length.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="definitions">Cutting tool definitions</h2>
+    <ul>
+      <li><strong>Enable per project.</strong> Turn on only the servers a project uses.</li>
+      <li><strong>Allowlist tools.</strong> Many clients let you enable a subset of a server's tools.</li>
+      <li><strong>Load tools on demand.</strong> Some clients and gateways search for tools when needed instead of sending every definition up front.</li>
+      <li><strong>Code mode.</strong> Gateways such as Bifrost expose a few meta-tools and let the model write code against the rest.</li>
+    </ul>
+
+    <h2 id="results">Cutting tool results</h2>
+    <ul>
+      <li><strong>Ask for less.</strong> Use filters, fields and page sizes.</li>
+      <li><strong>Store and preview.</strong> Proxies such as mcp_trunc_proxy or sqz keep the full result outside the context and return a preview plus a retrieval tool.</li>
+      <li><strong>Restructure.</strong> Tools such as compressmcp shorten JSON keys and structure without dropping content.</li>
+      <li><strong>Compress against the question.</strong> SuperCompress keeps the original lines that answer the current question and drops the rest. It works on any text, not only JSON.</li>
+    </ul>
+    <p>These combine. Trim definitions first because the saving repeats every turn, then handle large results.</p>
+
+    <h2 id="how-supercompress-works">How SuperCompress works</h2>
+    <p>SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. Our Neural Keep model scores the lines against that question, keeps the original lines that answer it, and drops the rest. It never rewrites or summarizes, so file paths, error messages, IDs and code come back exactly as they were. The question itself is never compressed.</p>
+    <p>Every compress call reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see what was dropped on your own work instead of trusting a headline number. The <code>usage_summary</code> MCP tool shows totals per agent for your account.</p>
+
+    <h2 id="install">Install</h2>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <p>Setup links your SuperCompress account in the browser, detects the coding agents on the machine and wires each one. Restart the agent so it loads the new MCP server. Then check what is wired up:</p>
+    <pre><code>supercompress doctor</code></pre>
+    <p><code>doctor</code> prints a per-agent health check. <code>supercompress uninstall</code> removes only the entries SuperCompress added. Setup backs up each config file before it edits it.</p>
+
+    <p>More detail on results: <a href="/mcp-tool-output-compression">MCP tool output compression</a>. Claude Code users hitting the size warning: <a href="/claude-code-mcp-output-too-large">MCP output too large</a>.</p>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>Why do MCP servers use so many tokens?</h3>
+    <p>Each enabled server sends its tool definitions with every request, and tool results stay in the conversation after they are read, so they are sent again on later turns.</p>
+    <h3>What is the fastest way to reduce MCP token usage?</h3>
+    <p>Disable servers and tools a project does not use. That saving repeats on every request. Then deal with large results by filtering at the server or compressing them against the question.</p>
+    <h3>Is SuperCompress itself an MCP server?</h3>
+    <p>Yes. It adds one server with three tools: compress_context, connect_account and usage_summary. Run npm install -g supercompress-proxy && supercompress setup to wire it into every detected agent.</p>
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/coding-agent-token-usage">All coding agents</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

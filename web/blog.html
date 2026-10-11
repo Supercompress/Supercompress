@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress Blog — Prompt Compression Guides, Benchmarks & Tutorials</title>
+  <title>SuperCompress Blog: Coding Agent Context Compression Guides</title>
   <meta name="description" content="Field notes on building with less context. Guides, engineering, comparisons, and product updates from SuperCompress." />
   <meta property="og:title" content="SuperCompress Blog" />
   <meta property="og:description" content="Prompt compression tutorials, benchmarks, comparisons, and production guides — organized by topic." />
@@ -31,7 +31,7 @@
     "@context": "https://schema.org",
     "@type": "Blog",
     "name": "SuperCompress Blog",
-    "description": "133 in-depth guides on prompt compression, LLM token optimization, RAG context compression, agent memory, AI cost reduction, and production deployments.",
+    "description": "Guides to cutting coding-agent context in Claude Code, Codex, Cursor and other agents, plus MCP token reduction and context compression for LLM apps.",
     "url": "https://supercompress.dev/blog",
     "publisher": {
       "@type": "Organization",
@@ -56,17 +56,107 @@
       <img class="journal-art" src="/assets/img/hero-stipple-hands-web.png" width="560" height="560" alt="" fetchpriority="high" />
     </header>
     <section aria-label="Article library">
-      <div class="journal-library-heading"><h2>From the journal</h2><p data-result-count aria-live="polite">36 articles</p></div>
+      <div class="journal-library-heading"><h2>From the journal</h2><p data-result-count aria-live="polite">51 articles</p></div>
       <form class="journal-search" role="search" hidden>
         <label>Find a story<input type="search" name="q" placeholder="Search articles…" autocomplete="off" /></label>
         <label>Explore a topic<select name="topic"><option value="">All topics</option><option>Comparisons</option><option>Cost optimization</option><option>Engineering</option><option>Guides</option><option>Product notes</option></select></label>
         <button type="reset">Clear filters</button>
       </form>
       <div class="journal-grid">
-      <article class="journal-card journal-feature" data-blog-card data-category="Product notes">
-        <p class="journal-label">Latest dispatch · Product notes</p>
-        <h2><a href="/mcp-oauth">SuperCompress MCP now has OAuth</a></h2>
-        <p class="journal-description">Add https://www.supercompress.dev/api/mcp to any OAuth-capable MCP client, sign in with Google, and compress coding-agent dumps with hosted ~400M Neural Keep. No API key to paste.</p>
+      <article class="journal-card journal-feature" data-blog-card data-category="Guides">
+        <p class="journal-label">Latest dispatch · Guides</p>
+        <h2><a href="/coding-agent-token-usage">Reduce coding agent token usage</a></h2>
+        <p class="journal-description">Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/reduce-claude-code-token-usage">Reduce Claude Code Token Usage: Keep Only the Lines That Matter</a></h2>
+        <p class="journal-description">Where Claude Code tokens go (tool results, file reads, MCP output, CLAUDE.md) and how to cut them: built-in commands, better habits, and SuperCompress, which keeps the lines that answer the current question.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/reduce-codex-token-usage">Reduce Codex CLI Token Usage: Compress Tool Output in Codex</a></h2>
+        <p class="journal-description">Where Codex CLI tokens go (shell output, file reads, MCP results, AGENTS.md) and how to cut them: habits that help, plus SuperCompress, which keeps the original lines that answer the current question.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/reduce-hermes-agent-token-usage">Reduce Hermes Agent Token Usage: Compress Tool Results</a></h2>
+        <p class="journal-description">Where Hermes Agent tokens go (tool results, memory, skills, MCP output) and how SuperCompress wires MCP, hooks and a plugin into Hermes to keep only the lines that answer the current request.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/reduce-windsurf-token-usage">Reduce Windsurf Token Usage: Compress Context in Cascade</a></h2>
+        <p class="journal-description">Where Windsurf Cascade tokens go (long conversations, tool output, file reads, MCP tools) and how SuperCompress adds an MCP tool that keeps only the lines that answer the current question.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/reduce-gemini-cli-token-usage">Reduce Gemini CLI Token Usage: Compress Tool Output</a></h2>
+        <p class="journal-description">Where Gemini CLI tokens go (shell output, file reads, MCP results, GEMINI.md) and how to cut them: built-in commands, habits, and SuperCompress, which keeps the lines that answer the current question.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/reduce-cline-token-usage">Reduce Cline, Roo Code and Kilo Code Token Usage</a></h2>
+        <p class="journal-description">Where Cline, Roo Code and Kilo Code tokens go (task history, file reads, terminal output, MCP results) and how SuperCompress adds an MCP tool that keeps only the lines that answer the current task.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/reduce-opencode-token-usage">Reduce OpenCode Token Usage: Compress Tool Output</a></h2>
+        <p class="journal-description">Where OpenCode tokens go (tool output, file reads, MCP results, AGENTS.md) and how SuperCompress adds an MCP server and instructions to OpenCode so the agent keeps only the lines that answer your question.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/claude-code-context-limit">Claude Code context limit: why you run out and what to do</a></h2>
+        <p class="journal-description">Why Claude Code runs out of context, how to see what is filling the window with /context, when to use /compact, /clear and subagents, and how to keep bulky tool output from piling up.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/claude-code-mcp-output-too-large">Claude Code MCP tool output too large: what to do</a></h2>
+        <p class="journal-description">What to do when an MCP tool response in Claude Code is too large: MAX_MCP_OUTPUT_TOKENS, filtering and paging at the server, and compressing the result against the current question.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/mcp-token-reduction">MCP token reduction: cut tool definitions and tool results</a></h2>
+        <p class="journal-description">MCP servers cost tokens two ways: tool definitions sent on every request and large tool results that stay in context. How to cut both, from disabling servers and tool allowlists to compressing results against the question.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Comparisons">
+        <p class="journal-label">Comparisons</p>
+        <h2><a href="/context-compression-for-coding-agents">Context compression for coding agents: approaches compared</a></h2>
+        <p class="journal-description">Command output filters, MCP proxies, wire-level proxies, built-in compaction and query-aware extraction compared for Claude Code, Codex and Cursor. What each changes, where it fits, and how to measure it.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/faq">SuperCompress FAQ</a></h2>
+        <p class="journal-description">Answers about SuperCompress: what it is, how to install it for Claude Code, Cursor and Codex, which agents it supports, how query-aware extractive compression works, MCP tools, API and uninstall.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/reduce-cursor-token-usage">Reduce Cursor token usage: keep the lines your agent needs</a></h2>
+        <p class="journal-description">Where Cursor tokens go (long agent threads, tool output, attached files, rules and MCP tools) and what supercompress setup adds to Cursor: an MCP server, an always-on rule and hooks.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/mcp-tool-output-compression">MCP tool output compression</a></h2>
+        <p class="journal-description">Compress MCP tool results against the current question. Keeps the original lines that answer it and reports original_tokens and kept_tokens.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Product notes">
+        <p class="journal-label">Product notes</p>
+        <h2><a href="/mcp-oauth">Connect SuperCompress to your MCP client</a></h2>
+        <p class="journal-description">Add the hosted SuperCompress MCP endpoint to Claude Code and other MCP clients, or run npm install -g supercompress-proxy &amp;&amp; supercompress setup to wire every detected agent.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Guides">
