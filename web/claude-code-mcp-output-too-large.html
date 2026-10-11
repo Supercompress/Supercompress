@@ -185,7 +185,7 @@
     <table class="seo-table">
       <thead><tr><th>Option</th><th>How</th><th>Trade-off</th></tr></thead>
       <tbody>
-        <tr><td><strong>Raise the limit</strong></td><td><code>MAX_MCP_OUTPUT_TOKENS=50000 claude</code></td><td>The whole result goes into context and stays there for later turns.</td></tr>
+        <tr><td><strong>Raise the limit</strong></td><td><code>MAX_MCP_OUTPUT_TOKENS=50000 claude</code></td><td>Raises Claude Code's MCP token budget. Separately, results over ~50,000 characters are still saved to a file and the agent gets the path — so raising the token limit does not put every large result into context.</td></tr>
         <tr><td><strong>Ask for less</strong></td><td>Use the server's filters, field selection, page size or search parameters.</td><td>Only works when the server supports it and you know what to ask for.</td></tr>
         <tr><td><strong>Truncate</strong></td><td>A proxy or wrapper that cuts results at a fixed size.</td><td>Blind: the line you need may be past the cut.</td></tr>
         <tr><td><strong>Compress against the question</strong></td><td>SuperCompress <code>compress_context</code> with the bulky result as <code>context</code> and your ask as <code>query</code>.</td><td>Keeps the original lines that answer the question and drops the rest; reports <code>original_tokens</code> and <code>kept_tokens</code>.</td></tr>
@@ -208,7 +208,7 @@
     <h3>What does MAX_MCP_OUTPUT_TOKENS do?</h3>
     <p>It sets how many tokens of an MCP tool result Claude Code will accept. Raising it lets larger results through, and those results stay in the session for later turns.</p>
     <h3>Should I just raise MAX_MCP_OUTPUT_TOKENS?</h3>
-    <p>Only when the agent really needs the whole result. If it needs a few lines, filtering at the server or compressing the result against the question keeps the context smaller.</p>
+    <p>Only when the agent really needs the whole result in context. Claude Code also has a separate ~50,000-character threshold: above that, the result is written to a file and the agent receives the path, so a higher token limit alone will not inline every large MCP payload. If the agent needs a few lines, filter at the server or compress the result against the question.</p>
     <h3>Does SuperCompress change the MCP server I am calling?</h3>
     <p>No. It works on the result text. Your MCP servers keep working as before.</p>
 
