@@ -156,9 +156,9 @@
       </div>
     <div class="article-prose">
 <h2>What SuperCompress is</h2>
-      <p><strong>SuperCompress v2</strong> is an open-source ~400M-parameter query-aware prompt compression layer for developers building consumer-facing AI apps. The hosted Neural Keep engine reduces oversized inputs before inference while preserving answer-critical evidence for chatbots, AI search, RAG pipelines, support agents, copilots, transcripts, operational logs, tool traces, and API calls to OpenAI, Claude, Gemini, or local models.</p>
-      <p>It is a preprocessing compression engine, not a chat-model provider. It sits before the LLM call and makes the request smaller. Pricing: self-host $0 · hosted 5M tokens/mo free then $0.10/1M.</p>
-      <p>Launch facts: <a href="/engine-v2-launch">v2 launch</a> · coding-agent bench 64.1% mean cut · required evidence in 24/24 cases · example 16,647 → 5,148 tokens.</p>
+      <p><strong>SuperCompress v2</strong> is a hosted query-aware prompt compression layer for developers building consumer-facing AI apps. Neural Keep reduces oversized inputs before inference while preserving answer-critical evidence for chatbots, AI search, RAG pipelines, support agents, copilots, transcripts, operational logs, tool traces, and API calls to OpenAI, Claude, Gemini, or local models.</p>
+      <p>It is a preprocessing compression engine, not a chat-model provider. It sits before the LLM call and makes the request smaller. The product path is the hosted API. Current plans are in the dashboard.</p>
+      <p>Launch note: <a href="/engine-v2-launch">v2 launch</a> · methodology: <a href="/benchmarks">SuperCompress benchmarks</a>. Query-aware: reads the question, keeps original answer lines, drops the rest.</p>
 
 <h2>Best-fit users</h2>
       <ul>

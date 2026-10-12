@@ -174,20 +174,8 @@
   <a href="/benchmarks">Benchmarks</a>
 </nav>
 <section class="seo-proof" id="held-out-proof">
-  <h2>Held-out proof (updated 2026-08-01)</h2>
-  <p>Gates: ≥98% gold-answer containment, ≥55% mean cut, ≥55% token-weighted cut. No restore-to-98% floor.</p>
-  <table class="seo-table seo-proof-table">
-    <thead>
-      <tr><th>Suite</th><th>Answer kept</th><th>Mean cut</th><th>TW cut</th><th>Gates</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Real (seed 4242)</td><td><strong>98.4%</strong> (61/62)</td><td>57.8%</td><td>64.7%</td><td>pass</td></tr>
-      <tr><td>Fresh4 (seed 9091)</td><td><strong>100%</strong> (57/57)</td><td>66.1%</td><td>68.8%</td><td>pass</td></tr>
-      <tr><td>Fresh5 (seed 6161)</td><td><strong>100%</strong> (62/62)</td><td>57.8%</td><td>61.6%</td><td>pass</td></tr>
-      <tr><td>Fresh6 cold (seed 3377)</td><td><strong>98.6%</strong> (70/71)</td><td>68.2%</td><td>72.5%</td><td>pass</td></tr>
-    </tbody>
-  </table>
-  <p>Primary bundle (real + fresh4 + fresh5): <strong>99.4%</strong> pooled answer keep (180/181), <strong>65.4%</strong> pooled token-weighted cut. Full tables: <a href="/benchmarks">benchmarks</a>.</p>
+  <h2>How SuperCompress measures compression</h2>
+  <p>Query-aware Neural Keep reads the question and keeps only the original context lines that answer it. Irrelevant log and tool-output lines drop. We score evidence containment — whether required lines survive in their original wording — not a downstream chat-model grade. Methodology: <a href="/benchmarks">SuperCompress benchmarks</a>.</p>
 </section>
 <section class="seo-vs-hr">
   <h2>Why teams pick SuperCompress over Headroom</h2>
@@ -195,7 +183,7 @@
     <li><strong>True query-awareness</strong> — scores blocks against the question; Headroom leans on content-type heuristics.</li>
     <li><strong>Coding-agent MCP first</strong> — <code>npx supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
     <li><strong>Agent + API ready</strong> — hosted compress API, open-source library, and MCP install for coding agents — not only a local CLI workflow.</li>
-    <li><strong>Held-out answer gates</strong> — we publish answer containment on LongBench + OOD mixes, not only “token % saved.”</li>
+    <li><strong>Evidence containment</strong> — we measure whether required lines survive in original wording, not only “token % saved.”</li>
   </ul>
   <p><a href="/supercompress-vs-headroom">Read the full SuperCompress vs Headroom comparison →</a></p>
 </section>
@@ -319,7 +307,7 @@ print(result.compressed_text, result.tokens_saved_pct)</pre>
       <table class="seo-table">
         <thead><tr><th>Tool</th><th>What it actually does</th><th>Gap vs SuperCompress</th></tr></thead>
         <tbody>
-          <tr><td><strong>SuperCompress</strong></td><td>Query-aware evidence selection for full prompts (RAG + agents + MCP)</td><td>Hosted API, coding-agent install, held-out ≥98% answer keep</td></tr>
+          <tr><td><strong>SuperCompress</strong></td><td>Query-aware evidence selection for full prompts (RAG + agents + MCP)</td><td>Hosted API, coding-agent install, evidence containment on public suites</td></tr>
           <tr><td>LLMLingua</td><td>Token-level perplexity pruning (often needs a small LM)</td><td>Research/self-host heavy; not MCP/agent-first; weaker product path</td></tr>
           <tr><td>LeanContext (NEC)</td><td>Academic RAG sentence ranking / hybrid compaction</td><td>Paper/framework, not a production compress API for agents</td></tr>
           <tr><td>Cohere Rerank / FlashRank</td><td>Reorders retrieved docs</td><td>Retrieval step only — still need compression for history/tools/logs</td></tr>

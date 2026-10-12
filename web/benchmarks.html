@@ -4,10 +4,10 @@
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress v2 Benchmarks — 390 cases · 64.1% B5 cut · 24/24 evidence</title>
-  <meta name="description" content="SuperCompress v2 launch benchmarks: 390 public cases. Coding-agent (B5): 64.1% mean cut, required evidence in 24/24, 16,647 → 5,148 tokens, ~5.8s B5 p50 on hosted Fly CPU. Evidence containment — not downstream LLM completion. Legacy compiler results labeled separately." />
-  <meta property="og:title" content="SuperCompress v2 Benchmarks — 390 cases · Neural Keep" />
-  <meta property="og:description" content="v2 Neural Keep (~400M, hosted Fly CPU): B5 64.1% mean cut, 24/24 evidence, 16,647 → 5,148, ~5.8s p50. 390 public cases. Downstream LLM eval not yet run." />
+  <title>SuperCompress Benchmarks — Context Compression Evidence Containment</title>
+  <meta name="description" content="SuperCompress benchmarks for context compression: 390 public cases measuring whether required evidence survives. Hosted query-aware Neural Keep reads the question and keeps original lines. Coding-agent suite labeled separately from the legacy compiler. Downstream LLM eval not yet run." />
+  <meta property="og:title" content="SuperCompress Benchmarks — Context Compression Evidence Containment" />
+  <meta property="og:description" content="SuperCompress context compression benchmarks: 390 public cases, evidence containment, hosted query-aware Neural Keep. Downstream LLM eval not yet run." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://www.supercompress.dev/benchmarks" />
   <meta property="og:locale" content="en_US" />
@@ -17,10 +17,10 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="SuperCompress v2 Benchmarks — 390 cases" />
-  <meta name="twitter:description" content="B5 coding-agent: 64.1% mean cut, 24/24 evidence, 16,647 → 5,148, ~5.8s p50. Evidence containment metric." />
+  <meta name="twitter:title" content="SuperCompress Benchmarks — Context Compression" />
+  <meta name="twitter:description" content="SuperCompress context compression benchmark: evidence containment on 390 public cases. Hosted query-aware Neural Keep. Downstream LLM eval not yet run." />
   <meta name="twitter:site" content="@supercompress" />
-  <meta name="keywords" content="SuperCompress v2 benchmarks, Neural Keep, coding agent compression, evidence containment, 390 cases, B5 benchmark, context compression" />
+  <meta name="keywords" content="SuperCompress benchmarks, SuperCompress context compression benchmark, Neural Keep, coding agent compression, evidence containment, 390 cases, B5 benchmark, context compression" />
   <link rel="canonical" href="https://www.supercompress.dev/benchmarks" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
@@ -95,7 +95,7 @@
     "@context": "https://schema.org",
     "@type": "Dataset",
     "name": "SuperCompress v2 Launch Benchmarks",
-    "description": "390 public cases for SuperCompress v2 Neural Keep (~400M). B5 coding-agent suite: 64.1% mean cut, 24/24 evidence containment, 16,647 → 5,148 tokens, ~5.8s p50 latency on hosted Fly CPU. Downstream LLM eval not yet run.",
+    "description": "390 public cases for SuperCompress hosted query-aware Neural Keep. Coding-agent suite measures whether required evidence survives compression in original wording. Downstream LLM eval not yet run.",
     "url": "https://www.supercompress.dev/benchmarks",
     "distribution": {
       "@type": "DataDownload",
@@ -122,10 +122,10 @@
       },
       {
         "@type": "Question",
-        "name": "What are the v2 coding-agent (B5) results?",
+        "name": "What does the v2 coding-agent (B5) suite measure?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "On the 24-case coding-agent suite: 64.1% mean token cut, required evidence retained in 24/24 cases, 16,647 → 5,148 tokens total, up to 96.6% cut at ≥99% retention, B5 p50 latency about 5.8 seconds on the hosted Fly CPU Neural Keep path."
+          "text": "Held-out coding-agent dumps. The same scorer checks whether required evidence lines survive compression in their original wording. Headline cut figures from that suite are on hold pending re-verification. Cite methodology here rather than restating unpublished summary numbers."
         }
       },
       {
@@ -133,7 +133,7 @@
         "name": "Is Neural v2 the same as the compiler engine?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. Neural v2 is a ~400M-parameter query-aware cross-encoder hosted on Fly CPU. The compiler is a separate lightweight local/CPU path with millisecond-class latency. Do not mix their benchmarks."
+          "text": "No. Neural v2 is the hosted query-aware Neural Keep model. The compiler is a separate lightweight local/CPU path with millisecond-class latency. Do not mix their benchmarks."
         }
       },
       {
@@ -199,8 +199,8 @@
 
     <div class="bench-head">
         <div class="bench-kicker"><strong>v2 launch · Sep 2026</strong> · 390 public cases · evidence containment</div>
-        <h1>Cut coding-agent context 64.1% on B5.<br>Prove what stayed.</h1>
-        <p>SuperCompress v2 is a <strong>~400M-parameter Neural Keep</strong> engine on the hosted API (Fly CPU today). We measure whether <em>required evidence</em> survives compression — not whether a downstream chat model finishes the task. Downstream LLM eval has <strong>not</strong> been run yet.</p>
+        <h1>SuperCompress benchmarks.<br>Prove what stayed.</h1>
+        <p>SuperCompress v2 is the hosted <strong>query-aware Neural Keep</strong> model. It reads the question, keeps the original context lines that answer it, and drops the rest. We measure whether <em>required evidence</em> survives compression — not whether a downstream chat model finishes the task. Downstream LLM eval has <strong>not</strong> been run yet.</p>
         <div class="bench-stats" aria-label="v2 launch benchmark highlights">
           <div class="bench-stat">
             <span class="label">Public cases</span>
@@ -208,19 +208,19 @@
             <span class="sub">Launch suite across needles, LongBench slices, multihop, coding agents, scaling.</span>
           </div>
           <div class="bench-stat">
-            <span class="label">B5 mean cut</span>
-            <span class="value">64.1%</span>
-            <span class="sub">Coding-agent dumps: 16,647 → 5,148 tokens. Max 96.6% at ≥99% retention.</span>
+            <span class="label">Metric</span>
+            <span class="value">Evidence</span>
+            <span class="sub">Required lines must survive in original wording — not a chat-model grade.</span>
           </div>
           <div class="bench-stat">
-            <span class="label">Evidence held</span>
-            <span class="value">24/24</span>
-            <span class="sub">Required evidence lines kept on every coding-agent case.</span>
+            <span class="label">Engine</span>
+            <span class="value">Neural Keep</span>
+            <span class="sub">Hosted query-aware model. Reads the question; drops irrelevant log and tool-output lines.</span>
           </div>
           <div class="bench-stat">
-            <span class="label">B5 latency p50</span>
-            <span class="value">~5.8s</span>
-            <span class="sub">Hosted Fly CPU Neural Keep path — not the millisecond compiler path.</span>
+            <span class="label">Path</span>
+            <span class="value">Hosted API</span>
+            <span class="sub">Fly CPU Neural Keep — not the millisecond compiler path. MCP + hooks for coding agents.</span>
           </div>
         </div>
       </div>
@@ -232,7 +232,7 @@
             <article class="bench-compare-card">
               <span class="eyebrow">Recommended · hosted</span>
               <strong>Neural v2</strong>
-              <p>~400M query-aware cross-encoder. Hosted Fly CPU inference. Highest-quality context selection. These launch numbers.</p>
+              <p>Hosted query-aware Neural Keep. Scores each line against this query and keeps original wording. Highest-quality context selection.</p>
             </article>
             <article class="bench-compare-card">
               <span class="eyebrow">Fast / local</span>
@@ -248,66 +248,20 @@
         </section>
 
         <section class="bench-section">
-          <h2>Coding-agent suite (B5) — headline</h2>
-          <p>Held-out coding-agent dumps. Same scorer for every method. Tokenizer: tiktoken cl100k_base.</p>
-          <div class="bench-table-wrap">
-            <table class="bench-table">
-              <thead>
-                <tr>
-                  <th>Method</th>
-                  <th>Mean cut</th>
-                  <th>Evidence pass</th>
-                  <th>Tokens in → out</th>
-                  <th>p50 latency</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="sc-row">
-                  <td>SuperCompress v2 (Neural Keep)</td>
-                  <td>64.1%</td>
-                  <td>24 / 24</td>
-                  <td>16,647 → 5,148</td>
-                  <td>~5.8 s</td>
-                </tr>
-                <tr>
-                  <td>Headroom 0.36.4</td>
-                  <td>14.8%</td>
-                  <td>18 / 24</td>
-                  <td>16,647 → 14,009</td>
-                  <td>~0.3 s</td>
-                </tr>
-                <tr>
-                  <td>LLMLingua-2</td>
-                  <td>52.7%</td>
-                  <td>12 / 24</td>
-                  <td>16,647 → 8,030</td>
-                  <td>~0.7 s</td>
-                </tr>
-                <tr>
-                  <td>Truncation (keep last ~35%)</td>
-                  <td>64.3%</td>
-                  <td>11 / 24</td>
-                  <td>16,647 → 5,851</td>
-                  <td>&lt;1 ms</td>
-                </tr>
-                <tr>
-                  <td>SuperCompress v1 (compiler)</td>
-                  <td>60.7%</td>
-                  <td>21 / 24</td>
-                  <td>16,647 → 5,918</td>
-                  <td>~10 ms</td>
-                </tr>
-              </tbody>
-            </table>
+          <h2>Coding-agent suite (B5)</h2>
+          <p>Held-out coding-agent dumps. Same scorer for every method. Tokenizer: tiktoken cl100k_base. We measure whether the <strong>required evidence</strong> survives in original wording — stack traces, IDs, paths, error lines — not whether a downstream chat model finishes a task.</p>
+          <div class="bench-callout">
+            <p style="margin:0 0 10px">Headline cut figures from this suite are <strong>on hold</strong> pending re-verification. Do not treat summary JSON as marketing numbers.</p>
+            <p style="margin:0">Raw methodology JSON remains at <a href="/assets/data/launch-benchmark.json">launch-benchmark.json</a> for researchers. Product writeup: <a href="/engine-v2-launch">v2 launch</a>.</p>
           </div>
-          <p class="bench-meta">Raw JSON: <a href="/assets/data/launch-benchmark.json">launch-benchmark.json</a> · writeup: <a href="/engine-v2-launch">v2 launch</a>.</p>
+          <p>Comparators on the same dumps (qualitative, not a scoreboard): truncation is position-blind; summarization rewrites original lines; LLMLingua-2 is research-style perplexity prune (often self-hosted); Headroom leans on content-type / local proxy workflows. SuperCompress is query-aware extractive keep on the hosted API, with MCP + hooks for coding agents.</p>
         </section>
 
         <section class="bench-section">
           <h2>Aggregate honesty (all 390 cases)</h2>
           <div class="bench-callout">
-            <p style="margin:0 0 10px"><strong>Mean cut across the full 390-case mix is ~3.6%.</strong> That is intentional, not a failure. On needle / LongBench / multihop slices the engine often keeps nearly everything when every line could matter — it knows when <em>not</em> to compress. The 64.1% figure is the coding-agent (B5) suite, where dumps are noisy and query-aware keep shines.</p>
-            <p style="margin:0">Max reduction at ≥99% evidence retention: <strong>96.6%</strong>. Aggregate mean quality retention (containment scorer): ~85%. Downstream LLM completion eval: <strong>not run</strong>.</p>
+            <p style="margin:0 0 10px"><strong>Mean cut across the full 390-case mix is conservative by design.</strong> On needle / LongBench / multihop slices the engine often keeps nearly everything when every line could matter — it knows when <em>not</em> to compress. Query-aware keep shines on noisy coding-agent dumps (B5), where most lines are irrelevant log or tool output.</p>
+            <p style="margin:0">Downstream LLM completion eval: <strong>not run</strong>.</p>
           </div>
         </section>
 
@@ -316,7 +270,7 @@
           <ul style="color:var(--text-body);line-height:1.7;padding-left:1.2rem">
             <li><strong>Quality metric:</strong> answer / needle / evidence containment in the compressed text (original wording).</li>
             <li><strong>Not measured yet:</strong> downstream LLM task success after compression.</li>
-            <li><strong>v2 inference:</strong> query-conditioned cross-encoder (~400M), hosted Fly CPU path for API.</li>
+            <li><strong>v2 inference:</strong> hosted query-aware Neural Keep, Fly CPU path for the API.</li>
             <li><strong>Comparators:</strong> Headroom 0.36.4, LLMLingua-2, truncation, and SuperCompress v1 compiler on B5.</li>
           </ul>
         </section>
@@ -352,7 +306,7 @@
                 <tr>
                   <td>Mean cut (compiler)</td>
                   <td>~58–66%</td>
-                  <td>Maximize drop with ≥98% answer-keep gate</td>
+                  <td>Maximize drop with an answer-keep gate (compiler-era; not Neural Keep)</td>
                 </tr>
                 <tr>
                   <td>Fixed 35% budget oracle recall</td>
@@ -362,7 +316,7 @@
                 <tr>
                   <td>Typical latency</td>
                   <td>~10–47 ms CPU</td>
-                  <td>Local compiler — not the hosted ~400M Fly CPU path</td>
+                  <td>Local compiler — not the hosted Neural Keep path</td>
                 </tr>
               </tbody>
             </table>
@@ -373,11 +327,11 @@
         <div class="bench-faq">
           <h2 style="font-family:var(--serif);font-weight:300;font-size:1.5rem;margin-bottom:8px">FAQ</h2>
           <details open>
-            <summary>Why isn’t aggregate mean cut ~64%?</summary>
-            <p>64.1% is the coding-agent (B5) suite. Across all 390 cases many slices are already dense; v2 refuses to over-cut when evidence is everywhere, so the aggregate mean sits near ~3.6%.</p>
+            <summary>Why isn’t aggregate mean cut a blanket token-cut claim?</summary>
+            <p>Across all 390 cases many slices are already dense; v2 refuses to over-cut when evidence is everywhere. Query-aware keep is strongest on noisy coding-agent dumps, not as a product-wide percentage.</p>
           </details>
           <details>
-            <summary>Does “24/24” mean same answers from GPT/Claude?</summary>
+            <summary>Does evidence containment mean the same answers from GPT/Claude?</summary>
             <p>No. It means required evidence lines were present after compression. Downstream completion quality is a separate eval we have not published yet.</p>
           </details>
           <details>

@@ -63,7 +63,7 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">Architecture</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Query-aware extractive compression: a tiny MLP scores blocks, low-value ones drop, originals stay. ~60ms on CPU — no rewriting, no extra LLM call.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Query-aware extractive compression: hosted Neural Keep reads the question, keeps original lines that answer it, and drops the rest — no rewriting, no extra LLM call.</p>
 
         <div class="doc-toc">
           <h3>Sections</h3>
@@ -106,11 +106,11 @@
   Verifier (estimates important context kept)
         ↓
   Compressed evidence prompt → LLM</code></pre>
-        <p><strong>Compiler path:</strong> end-to-end ~ms on a single CPU core, no GPU. <strong>Neural v2 (hosted):</strong> ~400M cross-encoder on Fly CPU — seconds-scale on long dumps. Do not mix latency claims.</p>
+        <p><strong>Compiler path:</strong> end-to-end ~ms on a single CPU core, no GPU. <strong>Neural v2 (hosted):</strong> query-aware Neural Keep on Fly CPU — seconds-scale on long dumps. Do not mix latency claims.</p>
 
         <div class="doc-callout doc-callout--tip">
           <span class="doc-callout-label">Key insight</span>
-          <strong>~60ms on CPU</strong> vs ~500ms+ for a summarization compressor that needs a separate LLM call. SuperCompress adds negligible latency while typically removing 60–80% of input tokens.
+          Extractive keep vs a summarization compressor that needs a separate LLM call. SuperCompress keeps original wording and drops irrelevant log/tool-output lines instead of rewriting the dump.
         </div>
 
         <h2 id="policy">The learned policy</h2>
@@ -147,9 +147,9 @@
 
         <h2 id="economics">Cost model</h2>
         <ul>
-          <li>Hosted API: <strong>$0.10 / 1M tokens</strong> on original tokens processed (5M/month free, then PAYG).</li>
-          <li>Self-hosted Python / in-browser engine: <strong>$0</strong> compression fee.</li>
-          <li>End-to-end savings = model input dollars avoided − SuperCompress fee (if any).</li>
+          <li>Product path: the <strong>hosted API</strong> (Neural Keep). Current plans are in the dashboard.</li>
+          <li>Coding agents: <code>npm install -g supercompress-proxy</code> then <code>supercompress setup</code>.</li>
+          <li>End-to-end savings = model input tokens avoided − the hosted compress fee (if any).</li>
         </ul>
         <p>Against <strong>full-price</strong> uncached input, fewer tokens usually wins after the fee. Against a loop that is <strong>already mostly cache reads</strong>, recompressing history can lose — use dump-only compression or sticky prefixes instead.</p>
 
@@ -176,7 +176,7 @@
         </table>
 
         <h2 id="browser-port">Browser &amp; modules</h2>
-        <p>The <strong>legacy compiler</strong> also runs in the browser via <code>compress-engine.js</code> and <code>model.json</code> (CPU, millisecond-class). That is <strong>not</strong> the hosted ~400M Neural Keep path. The <a href="https://www.supercompress.dev/arena">Arena</a> and playground demos may use the local compiler for instant preview; production API quality is Neural v2. Function-by-function reference: <a href="https://docs.supercompress.dev/compress-engine">Compress engine</a>.</p>
+        <p>The <strong>legacy compiler</strong> also runs in the browser via <code>compress-engine.js</code> and <code>model.json</code> (CPU, millisecond-class). That is <strong>not</strong> the hosted Neural Keep path. The <a href="https://www.supercompress.dev/arena">Arena</a> and playground demos may use the local compiler for instant preview; production API quality is Neural v2. Function-by-function reference: <a href="https://docs.supercompress.dev/compress-engine">Compress engine</a>.</p>
 
         <div class="doc-callout doc-callout--info">
           <span class="doc-callout-label">Module layout</span>

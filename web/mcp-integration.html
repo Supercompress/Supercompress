@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SuperCompress MCP Server: Compress Context from Any MCP-Compatible AI Agent</title>
-  <meta name="description" content="SuperCompress MCP: OAuth sign-in for remote hosts, or local setup for laptop agents. Compress context from Claude Desktop, Claude Code, Cursor, and 40+ harnesses." />
+  <meta name="description" content="SuperCompress MCP: hosted URL plus npm install -g supercompress-proxy then supercompress setup for laptop agents. Compress context from Claude Desktop, Claude Code, Cursor, and 40+ harnesses." />
   <meta property="og:title" content="SuperCompress MCP Server: Compress Context from Any AI Agent" />
-  <meta property="og:description" content="MCP for SuperCompress with OAuth 2.1 (PKCE) on the hosted URL, plus local setup for Cursor / Claude Code / Codex." />
+  <meta property="og:description" content="MCP for SuperCompress: hosted URL with API key, plus supercompress setup for Cursor / Claude Code / Codex." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://supercompress.dev/mcp-integration" />
   <meta property="og:type" content="article" />
@@ -135,15 +135,15 @@
     <p>Running compression through MCP means the agent handles context reduction automatically, without you switching tools or writing glue code:</p>
 
     <ul>
-      <li><strong>API key for Neural Keep</strong> — The recommended MCP path calls the hosted ~400M Neural Keep API (Fly CPU). A separate local compiler path exists for offline / millisecond preprocessing; it is not the same engine as hosted v2.</li>
+      <li><strong>API key for Neural Keep</strong> — The recommended MCP path calls the hosted query-aware Neural Keep API (Fly CPU). A separate local compiler path exists for offline / millisecond preprocessing; it is not the same engine as hosted v2.</li>
       <li><strong>Zero configuration</strong> — Point your MCP client at <code>node /path/to/mcp/server.js</code> and the tools appear immediately.</li>
       <li><strong>Agent-native</strong> — The agent decides when to compress, when to retrieve, and how to use the compressed context. You don't need to tell it what to do.</li>
       <li><strong>CCR works seamlessly</strong> — Compress with mode="ccr", get retrieval markers in the output, retrieve blocks as needed — all within the same conversation.</li>
     </ul>
 
-    <h2>Setup (OAuth-first)</h2>
+    <h2>Setup</h2>
 
-    <p><strong>Recommended:</strong> point any OAuth-capable MCP client at the hosted URL and sign in with Google when prompted. Full launch note: <a href="/mcp-oauth">MCP OAuth</a>.</p>
+    <p><strong>Recommended:</strong> <code>npm install -g supercompress-proxy</code> then <code>supercompress setup</code>. That wires MCP + hooks for detected agents. Design note for a keyless OAuth path: <a href="/mcp-oauth">MCP OAuth</a>.</p>
 
     <pre>https://www.supercompress.dev/api/mcp</pre>
 
@@ -165,7 +165,7 @@
   }
 }</pre>
 
-    <p>No <code>Authorization</code> header and no <code>SUPERCOMPRESS_API_KEY</code> required when the host supports OAuth — complete Google sign-in when the client prompts.</p>
+    <p>For the hosted URL, send a dashboard API key in a header (<code>Authorization: Bearer</code> or <code>X-API-Key</code>). OAuth 2.1 + PKCE is how a keyless Google sign-in path is designed; it is not the recommended install today.</p>
 
     <h3>Laptop terminal (all agents)</h3>
 

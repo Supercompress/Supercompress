@@ -310,6 +310,31 @@
       "permanent": true
     },
     {
+      "source": "/vs-rtk",
+      "destination": "/supercompress-vs-rtk",
+      "permanent": true
+    },
+    {
+      "source": "/vs-llmlingua",
+      "destination": "/supercompress-vs-llmlingua",
+      "permanent": true
+    },
+    {
+      "source": "/vs-alternatives",
+      "destination": "/supercompress-vs-alternatives",
+      "permanent": true
+    },
+    {
+      "source": "/vs-summarization",
+      "destination": "/supercompress-vs-summarization",
+      "permanent": true
+    },
+    {
+      "source": "/vs-truncation",
+      "destination": "/supercompress-vs-truncation",
+      "permanent": true
+    },
+    {
       "source": "/find-headroom",
       "destination": "/headroom-api",
       "permanent": true
@@ -1774,10 +1799,6 @@
     {
       "source": "/supercompress-vs-llmlingua",
       "destination": "/supercompress-vs-llmlingua.html"
-    },
-    {
-      "source": "/vs-rtk",
-      "destination": "/supercompress-vs-rtk.html"
     },
     {
       "source": "/open-source-token-compression",

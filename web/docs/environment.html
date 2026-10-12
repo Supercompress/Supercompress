@@ -150,7 +150,7 @@ impact = sustainability_from_tokens_saved(saved)
         <ul>
           <li>The eviction itself consumes negligible energy — ~0.000001 kWh per compression on a modern CPU core</li>
           <li>But it avoids much larger GPU prefill work on long contexts</li>
-          <li>At 64% token reduction, every 1 kWh spent on CPU eviction avoids ~1,000 kWh of GPU prefill</li>
+          <li>Fewer prompt tokens mean less GPU prefill: CPU-side selection is cheap compared with the inference it avoids</li>
         </ul>
         <p>This 1:1000 energy ratio is why CPU-side eviction is environmentally significant. The tiny policy makes it possible — a 165M-parameter model running on CPU would consume much more energy per eviction, eroding the net savings.</p>
 
@@ -160,7 +160,7 @@ impact = sustainability_from_tokens_saved(saved)
           <li><strong>State assumptions clearly</strong> — never claim live datacenter metering unless you have it</li>
           <li><strong>Compare quality + savings together</strong> — truncation can save tokens but drops answers (25% oracle recall vs SuperCompress's 100%)</li>
           <li><strong>Don't claim CO2 without methodology</strong> — every estimate links back to the documented assumptions and formulas</li>
-          <li><strong>CPU energy is negligible but included</strong> — the policy runs on CPU with ~60ms latency; the energy cost is orders of magnitude below the GPU prefill savings</li>
+          <li><strong>CPU energy is negligible but included</strong> — hosted Neural Keep runs on CPU; the energy cost is orders of magnitude below the GPU prefill savings</li>
           <li><strong>Let users adjust constants</strong> — the Python API exposes all assumptions so users can plug in their own numbers</li>
         </ol>
         <p>See <a href="https://www.supercompress.dev/benchmarks">benchmarks page</a> for the interactive projection calculator and <code>supercompress/benchmarks/metrics.py</code> for the source code.</p>
