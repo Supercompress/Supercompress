@@ -229,8 +229,8 @@
         <div class="cl-body">
           <h3>SuperCompress v2</h3>
           <ul>
-            <li><strong>~400M Neural Keep is live</strong> on the hosted compress API — scores context against the query, keeps original lines, cuts the rest.</li>
-            <li>Coding-agent evidence-containment methodology published; per-task B5 rows still pending — do not treat summary-only JSON as 64.1%/24/24 headlines.</li>
+            <li><strong>Hosted Neural Keep is live</strong> on the compress API — scores context against the query, keeps original lines, cuts the rest.</li>
+            <li>Coding-agent evidence-containment methodology published; per-task B5 rows still pending — do not treat summary-only JSON as headline cuts.</li>
             <li>Open source. API, and an agent plugin for 40+ harnesses.</li>
             <li>Launch promo (live in billing): <strong>5M free tokens/month, then $0.10 per 1M tokens</strong>. No seat plans.</li>
             <li>Strongest on coding-agent dumps — tool output, logs, diffs, stack traces — where the answer is a few original lines inside a long context.</li>
@@ -246,11 +246,11 @@
           <span class="cl-badge">launch</span>
         </div>
         <div class="cl-body">
-          <h3>SuperCompress MCP now has OAuth</h3>
+          <h3>Hosted MCP OAuth endpoints</h3>
           <ul>
-            <li>One URL: <code>https://www.supercompress.dev/api/mcp</code> — Google sign-in via OAuth 2.1 + PKCE. No key paste when the host supports OAuth.</li>
+            <li>OAuth 2.1 + PKCE endpoints added for <code>https://www.supercompress.dev/api/mcp</code>. Designed for Google sign-in; recommended path remains <code>npm install -g supercompress-proxy</code> then <code>supercompress setup</code> (or an API key header).</li>
             <li>Claude Code: <code>/plugin marketplace add Supercompress/Supercompress</code> then <code>/plugin install supercompress@supercompress</code>.</li>
-            <li>Terminal: <code>npm i -g supercompress-proxy &amp;&amp; supercompress setup</code>.</li>
+            <li>Terminal: <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>.</li>
           </ul>
           <p><a href="/mcp-oauth">Launch note</a> · <a href="/mcp-integration">MCP docs</a> · npm <code>supercompress-proxy@0.5.37</code></p>
         </div>
@@ -265,7 +265,7 @@
         <div class="cl-body">
           <h3>OAuth prompt path (plugin + initialize)</h3>
           <ul>
-            <li>Claude Code <code>.mcp.json</code> no longer sends <code>Authorization: Bearer ${SUPERCOMPRESS_API_KEY}</code> — hosts can prompt OAuth instead of a silent empty key.</li>
+            <li>Claude Code <code>.mcp.json</code> no longer sends <code>Authorization: Bearer ${SUPERCOMPRESS_API_KEY}</code> — hosts can prompt for auth instead of a silent empty key.</li>
             <li>Cursor plugin: <code>SUPERCOMPRESS_API_KEY</code> is optional, not required.</li>
             <li>Hosted MCP returns <strong>401 + WWW-Authenticate on <code>initialize</code></strong> (not only tools/call). Query-string <code>?key=</code> auth removed.</li>
           </ul>
@@ -282,8 +282,8 @@
         <div class="cl-body">
           <h3>MCP OAuth server-side + benchmark page</h3>
           <ul>
-            <li><strong>Hosted MCP OAuth 2.1 (PKCE)</strong> endpoints live (<code>/.well-known/oauth-*</code>, authorize / token / approve). Same Google account path as CLI device-link. Plugin no-key cutover follows in 0.5.37+.</li>
-            <li><code>/benchmarks</code> rewritten for v2 Neural Keep with a separate legacy compiler section. Per-task B5 rows for headline cuts still pending — do not treat summary-only JSON as the source of 64.1% / 24/24 claims.</li>
+            <li><strong>Hosted MCP OAuth 2.1 (PKCE)</strong> endpoints added (<code>/.well-known/oauth-*</code>, authorize / token / approve), designed to share the Google account path with CLI device-link. Recommended install remains <code>supercompress setup</code>.</li>
+            <li><code>/benchmarks</code> rewritten for v2 Neural Keep with a separate legacy compiler section. Per-task B5 rows for headline cuts still pending — do not treat summary-only JSON as headline figures.</li>
             <li>Homepage: Neural v2 vs Compiler split · <strong>40+</strong> harnesses · evidence-containment language.</li>
           </ul>
           <p><a href="/docs/coding-agents">Coding agents</a> · <a href="/benchmarks">Benchmarks</a> · npm <code>supercompress-proxy@0.5.36</code></p>

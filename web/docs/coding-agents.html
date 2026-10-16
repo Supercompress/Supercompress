@@ -159,7 +159,7 @@
 
         <div class="doc-callout doc-callout--info">
           <span class="doc-callout-label">Auth</span>
-          Laptop <code>setup</code> uses browser device-link (Google). Hosted MCP at <code>/api/mcp</code> uses the same Google login via <strong>OAuth 2.1 + PKCE</strong> — or an <code>sc_</code> API key as fallback. Context is compressed on the SuperCompress API; provider keys never leave your agent.
+          Laptop <code>setup</code> uses browser device-link (Google). Hosted MCP at <code>/api/mcp</code> accepts an <code>sc_</code> API key header. OAuth 2.1 + PKCE is how a keyless Google sign-in path is designed; it is not the recommended install today. Context is compressed on the SuperCompress API; provider keys never leave your agent.
         </div>
 
         <h2 id="install">Install</h2>

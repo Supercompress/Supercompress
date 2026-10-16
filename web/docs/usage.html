@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Usage — SuperCompress Documentation</title>
-  <meta name="description" content="Use SuperCompress in production: hosted API or local Python library. No servers to manage, no GPU required, no model downloads." />
+  <meta name="description" content="Use SuperCompress in production: hosted query-aware Neural Keep API. Python client and coding-agent setup call the same hosted path." />
   <meta property="og:title" content="Usage — SuperCompress Documentation" />
-  <meta property="og:description" content="Use SuperCompress via the hosted API or local Python library. No infrastructure to manage." />
+  <meta property="og:description" content="Use SuperCompress via the hosted API. Python client and supercompress setup call the same Neural Keep path." />
   <meta property="og:url" content="https://docs.supercompress.dev/usage" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SuperCompress" />
@@ -63,13 +63,13 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">Usage</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Two ways to compress prompts with SuperCompress: call the hosted API (zero setup) or install the local library (runs on CPU, no GPU needed).</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">SuperCompress is a hosted API. Call it with curl, the Python client, or <code>supercompress setup</code> for coding agents. Neural Keep runs on the service.</p>
 
         <div class="doc-toc">
           <h3>Options</h3>
           <ol>
             <li><a href="#hosted-api">Hosted API (recommended)</a></li>
-            <li><a href="#local-library">Local Python library</a></li>
+            <li><a href="#local-library">Python client</a></li>
             <li><a href="#which-to-choose">Which to choose?</a></li>
           </ol>
         </div>
@@ -112,52 +112,45 @@ out = sc.compress(context, question)
           5M tokens/month free ($5). After that, pay-as-you-go at $0.10 / 1M tokens. Usage tracked in your <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>.
         </div>
 
-        <h2 id="local-library">Local Python library</h2>
-        <p>Run SuperCompress entirely on-device. The local library path runs the on-device compiler (not hosted Neural Keep). No Neural Keep weight download, no GPU required. Hosted v2 still sends context to the SuperCompress API when you use the agent plugin / API key.</p>
+        <h2 id="local-library">Python client</h2>
+        <p>The Python package is a client for the hosted Neural Keep API. Neural Keep runs on the service, not on your machines. Set <code>SUPERCOMPRESS_API_KEY</code> and call compress from your app.</p>
 
         <h3>Install</h3>
         <pre><code><span class="kw">pip</span> install supercompress</code></pre>
 
         <h3>Use it</h3>
-        <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> compress_context
+        <pre><code><span class="kw">from</span> supercompress.client <span class="kw">import</span> SuperCompress
 
-result = compress_context(
-    text=<span class="str">"Your long context…"</span>,
-    question=<span class="str">"What does fetch return?"</span>,
+sc = SuperCompress()  <span class="cm"># reads SUPERCOMPRESS_API_KEY</span>
+result = sc.compress(
+    context=<span class="str">"Your long context…"</span>,
+    query=<span class="str">"What does fetch return?"</span>,
 )
 
 <span class="kw">print</span>(result.compressed_text)
 <span class="kw">print</span>(<span class="str">f"Saved {result.tokens_saved_pct:.1f}% tokens"</span>)</code></pre>
 
-        <h3>Deploy it on your own server</h3>
-        <p>Since the library is just <code>pip install supercompress</code>, you can run it on any Python 3.10+ environment — your own server, a container, or a serverless function. No special setup required.</p>
-        <pre><code><span class="cm"># Works anywhere Python runs</span>
-pip install supercompress
-
-<span class="cm"># Then in your app code</span>
-from supercompress import compress_context</code></pre>
-
         <h3>Browser / static sites</h3>
-        <p>Compression also runs in-browser. The playground at <a href="https://www.supercompress.dev/playground">supercompress.dev/playground</a> runs the same policy client-side — no API key needed.</p>
+        <p>The playground at <a href="https://www.supercompress.dev/playground">supercompress.dev/playground</a> can preview a local compiler path in the browser. Production quality is hosted Neural Keep via the API.</p>
 
         <h2 id="which-to-choose">Which to choose?</h2>
         <table>
           <thead>
-            <tr><th></th><th>Hosted API</th><th>Local library</th></tr>
+            <tr><th></th><th>Hosted API</th><th>Python client</th></tr>
           </thead>
           <tbody>
             <tr><td>Setup</td><td>Get a key, call the endpoint</td><td><code>pip install supercompress</code></td></tr>
-            <tr><td>Latency overhead</td><td>~5ms network + processing</td><td>~60ms in-process</td></tr>
+            <tr><td>Latency overhead</td><td>Network + hosted Neural Keep</td><td>Client call into the hosted API</td></tr>
             <tr><td>External deps</td><td>None (HTTP client only)</td><td>Python 3.10+</td></tr>
-            <tr><td>Rate limits</td><td>Free: 5M tok/mo; then PAYG $0.10/1M</td><td>Unlimited (your hardware)</td></tr>
-            <tr><td>Data privacy</td><td>Context sent to API</td><td>Stays on your machine</td></tr>
-            <tr><td>Best for</td><td>Quick integration, low traffic, prototyping</td><td>High volume, latency-sensitive, air-gapped</td></tr>
+            <tr><td>Rate limits</td><td>See dashboard for current plans</td><td>Same hosted meter as the API</td></tr>
+            <tr><td>Data privacy</td><td>Context sent to the hosted API</td><td>Same hosted Neural Keep path</td></tr>
+            <tr><td>Best for</td><td>Hosted Neural Keep quality</td><td>Python apps calling the same hosted API</td></tr>
           </tbody>
         </table>
 
         <div class="doc-callout doc-callout--info">
           <span class="doc-callout-label">Data & privacy</span>
-          Local library: context never leaves your machine. Hosted API: we process the context you send to return a compressed result and meter usage. We may retain compressed outputs for ~48h for idempotent retries; when CCR is enabled, removed original blocks are retained for the same window. Compress activity previews are <strong>off by default</strong>. See the <a href="/privacy">Privacy Policy</a> for retention details. We do not use Customer Content to train the hosted Neural Keep model.
+          Hosted API: we process the context you send to return a compressed result and meter usage. The Python client calls the same hosted Neural Keep path. We may retain compressed outputs for ~48h for idempotent retries; when CCR is enabled, removed original blocks are retained for the same window. Compress activity previews are <strong>off by default</strong>. See the <a href="/privacy">Privacy Policy</a> for retention details. We do not use Customer Content to train the hosted Neural Keep model.
         </div>
 
         <div class="doc-footer">

@@ -6,7 +6,7 @@
   <title>SuperCompress Documentation — Prompt Compression for LLMs</title>
   <meta name="description" content="Comprehensive documentation for SuperCompress: quickstart, API reference, integration guides, deployment options, and architecture deep-dive." />
   <meta property="og:title" content="SuperCompress Documentation" />
-  <meta property="og:description" content="Learn how to use SuperCompress to reduce LLM token costs by ~64% while preserving answer-critical evidence." />
+  <meta property="og:description" content="Learn how to use SuperCompress: hosted query-aware Neural Keep keeps the original context that answers the question and drops the rest." />
   <meta property="og:url" content="https://docs.supercompress.dev" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:type" content="website" />
@@ -98,7 +98,7 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">SuperCompress documentation</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">v2 is a 400M-parameter engine that keeps the context that answers the query and cuts the rest. Open source (MIT). API, and an agent plugin for 40+ harnesses.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">v2 is the hosted query-aware Neural Keep model: it keeps the context that answers the query and cuts the rest. Hosted API, and an agent plugin for 40+ harnesses.</p>
 
         <div class="doc-card-grid">
           <a href="https://docs.supercompress.dev/quickstart" class="doc-card">
@@ -119,7 +119,7 @@
           <a href="https://docs.supercompress.dev/usage" class="doc-card">
             <div class="card-icon">🚀</div>
             <h3>Usage</h3>
-            <p>Call the hosted API or pip install locally — no servers to manage.</p>
+            <p>Call the hosted API — Neural Keep runs on the service, not your machines.</p>
           </a>
           <a href="https://docs.supercompress.dev/architecture" class="doc-card">
             <div class="card-icon">🧠</div>
@@ -144,7 +144,7 @@
         </div>
 
         <h2>What is SuperCompress?</h2>
-        <p>SuperCompress v2 is a <strong>400M-parameter, query-aware context engine</strong> — <strong>Neural Keep is live</strong> on the hosted API. It looks at the full context, keeps what is relevant to answering the query, and cuts the rest. On the coding-agent benchmark it cut context <strong>64.1%</strong> on average, held the required evidence in <strong>24/24</strong> cases, and took one dump from <strong>16,647 tokens to 5,148</strong>. One case reached <strong>96.6%</strong> reduction at ≥99% evidence retention.</p>
+        <p>SuperCompress v2 is a <strong>query-aware context engine</strong> — <strong>Neural Keep is live</strong> on the hosted API. It looks at the full context, keeps what is relevant to answering the query, and cuts the rest. Strongest on coding-agent dumps: tool output, logs, diffs, and stack traces.</p>
         <p>It is strongest on coding-agent dumps: tool output, logs, diffs, and stack traces. Unlike truncation (which blindly drops the tail) or summarization (which rewrites IDs and errors), SuperCompress <strong>keeps the original lines</strong> that answer the current question. The query itself is never compressed.</p>
 
         <h2>Key facts</h2>
@@ -156,9 +156,9 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>Engine</td><td><strong>~400M Neural Keep</strong> (hosted, live) · query-aware</td></tr>
-            <tr><td>Coding-agent benchmark</td><td><strong>64.1%</strong> mean cut · <strong>24/24</strong> evidence held · <strong>16,647 → 5,148</strong> tokens</td></tr>
-            <tr><td>Best case on that suite</td><td><strong>96.6%</strong> reduction at ≥99% evidence retention</td></tr>
+            <tr><td>Engine</td><td><strong>Hosted Neural Keep</strong> (live) · query-aware</td></tr>
+            <tr><td>Quality metric</td><td><strong>Evidence containment</strong> — required lines survive in original wording. See <a href="https://www.supercompress.dev/benchmarks">benchmarks</a>.</td></tr>
+            <tr><td>Strongest on</td><td>Coding-agent dumps: logs, diffs, stack traces, tool output</td></tr>
             <tr><td>Access</td><td><strong>API</strong> and an agent plugin for <strong>40+ harnesses</strong></td></tr>
             <tr><td>Hosted price</td><td><strong>Launch promo (live):</strong> 5M free tokens/month, then <strong>$0.10 per 1M tokens</strong></td></tr>
             <tr><td>License</td><td><strong>MIT</strong> — free for commercial use</td></tr>
@@ -190,7 +190,7 @@
           <li><strong>Preserves</strong> context dependencies (nearby headings, imports, trace context)</li>
           <li><strong>Reports</strong> tokens saved, important context kept %, and compression risk level</li>
         </ol>
-        <p>The full pipeline takes ~60ms on a single CPU core — no GPU, no model download, no extra LLM calls.</p>
+        <p>The hosted Neural Keep path runs on the API (CPU today). A separate legacy compiler path exists for millisecond local preview — do not mix the two.</p>
 
         <div class="doc-footer">
           <p>SuperCompress · <a href="https://github.com/Supercompress/Supercompress">GitHub</a> · <a href="https://www.supercompress.dev/">Home</a> · <a href="https://www.supercompress.dev/dashboard?signup=1">Dashboard</a> · MIT License</p>

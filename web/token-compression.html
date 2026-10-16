@@ -128,20 +128,8 @@
   <a href="/benchmarks">Benchmarks</a>
 </nav>
 <section class="seo-proof" id="held-out-proof">
-  <h2>Held-out proof (updated 2026-08-01)</h2>
-  <p>Gates: ≥98% gold-answer containment, ≥55% mean cut, ≥55% token-weighted cut. No restore-to-98% floor.</p>
-  <table class="seo-table seo-proof-table">
-    <thead>
-      <tr><th>Suite</th><th>Answer kept</th><th>Mean cut</th><th>TW cut</th><th>Gates</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Real (seed 4242)</td><td><strong>98.4%</strong> (61/62)</td><td>57.8%</td><td>64.7%</td><td>pass</td></tr>
-      <tr><td>Fresh4 (seed 9091)</td><td><strong>100%</strong> (57/57)</td><td>66.1%</td><td>68.8%</td><td>pass</td></tr>
-      <tr><td>Fresh5 (seed 6161)</td><td><strong>100%</strong> (62/62)</td><td>57.8%</td><td>61.6%</td><td>pass</td></tr>
-      <tr><td>Fresh6 cold (seed 3377)</td><td><strong>98.6%</strong> (70/71)</td><td>68.2%</td><td>72.5%</td><td>pass</td></tr>
-    </tbody>
-  </table>
-  <p>Primary bundle (real + fresh4 + fresh5): <strong>99.4%</strong> pooled answer keep (180/181), <strong>65.4%</strong> pooled token-weighted cut. Full tables: <a href="/benchmarks">benchmarks</a>.</p>
+  <h2>How SuperCompress measures compression</h2>
+  <p>Query-aware Neural Keep reads the question and keeps only the original context lines that answer it. Irrelevant log and tool-output lines drop. We score evidence containment — whether required lines survive in their original wording — not a downstream chat-model grade. Methodology: <a href="/benchmarks">SuperCompress benchmarks</a>.</p>
 </section>
 <section class="seo-vs-hr">
   <h2>Why teams pick SuperCompress over Headroom</h2>
@@ -149,7 +137,7 @@
     <li><strong>True query-awareness</strong> — scores blocks against the question; Headroom leans on content-type heuristics.</li>
     <li><strong>Coding-agent MCP first</strong> — <code>npx supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
     <li><strong>Agent + API ready</strong> — hosted compress API, open-source library, and MCP install for coding agents — not only a local CLI workflow.</li>
-    <li><strong>Held-out answer gates</strong> — we publish answer containment on LongBench + OOD mixes, not only “token % saved.”</li>
+    <li><strong>Evidence containment</strong> — we measure whether required lines survive in original wording, not only “token % saved.”</li>
   </ul>
   <p><a href="/supercompress-vs-headroom">Read the full SuperCompress vs Headroom comparison →</a></p>
 </section>
@@ -431,7 +419,7 @@ class CompressionCallback(BaseCallbackHandler):
       <!-- CTA -->
       <div class="guide-cta">
         <h3>Put compression in front of your next LLM call.</h3>
-        <p>Use the hosted API or run SuperCompress locally. Keep the evidence, drop the token waste, and measure savings before context reaches your model.</p>
+        <p>Use the hosted API. Keep the evidence, drop the token waste, and measure savings before context reaches your model. Coding agents: <code>npm install -g supercompress-proxy</code> then <code>supercompress setup</code>.</p>
         <a href="/dashboard" class="btn-brand">Get an API key</a>
         <a href="/benchmarks" class="btn-link-muted" style="display:inline-flex;margin-left:12px;">See benchmarks</a>
       </div>
@@ -444,7 +432,7 @@ class CompressionCallback(BaseCallbackHandler):
         <p>Yes. Token compression operates on the text <em>before</em> it's sent to the model. It works with OpenAI, Anthropic, Google, open-weight models, local models — any LLM that accepts text input.</p>
 
         <h3>Does token compression reduce answer quality?</h3>
-        <p>Not when done correctly. SuperCompress achieves 100% oracle recall on the fixed-budget public suite, and ≥98% gold-answer containment on held-out long-context mixes — meaning answer-critical evidence survives compression. The model receives the same signal — just with less noise.</p>
+        <p>Not when done correctly. SuperCompress is extractive: it keeps the original lines that answer the question and drops the rest, so error messages, IDs, paths, and code come through unchanged. The model receives the same evidence — just with less noise. See <a href="/benchmarks">SuperCompress benchmarks</a> for methodology.</p>
 
         <h3>How is token compression different from prompt engineering?</h3>
         <p>Prompt engineering changes <em>how</em> you write prompts. Token compression reduces <em>how much</em> context you send. They're complementary: good prompt engineering + token compression = best results.</p>

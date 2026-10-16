@@ -282,7 +282,7 @@
         <li><strong>True query-awareness</strong> — Scores every line against the user's actual question, not just content type. A line about account settings is kept when the user asks about billing, dropped when they ask about features.</li>
         <li><strong>Query-aware by default</strong> — scores context against the question instead of only classifying content type.</li>
         <li><strong>Serverless-ready</strong> — nothing to warm up or install beyond a client; call the hosted API from AWS Lambda, Cloudflare Workers, and Vercel Edge Functions.</li>
-        <li><strong>Hosted API</strong> — zero-infrastructure setup with a free tier; the ~400M-parameter Neural Keep model runs on the service, not your machines.</li>
+        <li><strong>Hosted API</strong> — zero-infrastructure setup; the query-aware Neural Keep model runs on the service, not your machines.</li>
         <li><strong>97.5% oracle recall</strong> — The compressed prompt produces answers virtually identical to the full-prompt response, even when evaluated against the "oracle" test of whether any dropped content was actually needed.</li>
       </ul>
     </div>

@@ -141,20 +141,8 @@
   <a href="/benchmarks">Benchmarks</a>
 </nav>
 <section class="seo-proof" id="held-out-proof">
-  <h2>Held-out proof (updated 2026-08-01)</h2>
-  <p>Gates: ≥98% gold-answer containment, ≥55% mean cut, ≥55% token-weighted cut. No restore-to-98% floor.</p>
-  <table class="seo-table seo-proof-table">
-    <thead>
-      <tr><th>Suite</th><th>Answer kept</th><th>Mean cut</th><th>TW cut</th><th>Gates</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Real (seed 4242)</td><td><strong>98.4%</strong> (61/62)</td><td>57.8%</td><td>64.7%</td><td>pass</td></tr>
-      <tr><td>Fresh4 (seed 9091)</td><td><strong>100%</strong> (57/57)</td><td>66.1%</td><td>68.8%</td><td>pass</td></tr>
-      <tr><td>Fresh5 (seed 6161)</td><td><strong>100%</strong> (62/62)</td><td>57.8%</td><td>61.6%</td><td>pass</td></tr>
-      <tr><td>Fresh6 cold (seed 3377)</td><td><strong>98.6%</strong> (70/71)</td><td>68.2%</td><td>72.5%</td><td>pass</td></tr>
-    </tbody>
-  </table>
-  <p>Primary bundle (real + fresh4 + fresh5): <strong>99.4%</strong> pooled answer keep (180/181), <strong>65.4%</strong> pooled token-weighted cut. Full tables: <a href="/benchmarks">benchmarks</a>.</p>
+  <h2>How SuperCompress measures compression</h2>
+  <p>Query-aware Neural Keep reads the question and keeps only the original context lines that answer it. Irrelevant log and tool-output lines drop. We score evidence containment — whether required lines survive in their original wording — not a downstream chat-model grade. Methodology: <a href="/benchmarks">SuperCompress benchmarks</a>.</p>
 </section>
 <section class="seo-vs-hr">
   <h2>Why teams pick SuperCompress over Headroom</h2>
@@ -162,7 +150,7 @@
     <li><strong>True query-awareness</strong> — scores blocks against the question; Headroom leans on content-type heuristics.</li>
     <li><strong>Coding-agent MCP first</strong> — <code>npx supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
     <li><strong>Agent + API ready</strong> — hosted compress API, open-source library, and MCP install for coding agents — not only a local CLI workflow.</li>
-    <li><strong>Held-out answer gates</strong> — we publish answer containment on LongBench + OOD mixes, not only “token % saved.”</li>
+    <li><strong>Evidence containment</strong> — we measure whether required lines survive in original wording, not only “token % saved.”</li>
   </ul>
   <p><a href="/supercompress-vs-headroom">Read the full SuperCompress vs Headroom comparison →</a></p>
 </section>
@@ -176,7 +164,7 @@
       <li><strong>RAG</strong> — keep passages that support the query, not the whole corpus chunk dump</li>
       <li><strong>Coding agents</strong> — shrink logs, diffs, and search hits in Cursor / Claude Code via MCP or proxy</li>
     </ul>
-    <p>SuperCompress ships that policy as open-source JS plus a hosted API. See the labeled held-out gate table above and the published suites on <a href="/benchmarks">/benchmarks</a>. Compare product fit on the <a href="/supercompress-vs-headroom">Headroom comparison</a>.</p>
+    <p>SuperCompress ships that policy as a hosted API plus MCP and hooks for coding agents. See the published suites on <a href="/benchmarks">SuperCompress benchmarks</a>. Compare product fit on the <a href="/supercompress-vs-headroom">Headroom comparison</a>.</p>
   </section>
 <section class="seo-section">
         <h2>Why agents need context compression</h2>
@@ -214,7 +202,7 @@ def rag_with_compression(query, retriever, llm):
     <section class="seo-section">
       <h2>Frequently asked questions</h2>
       <h3>What is a good context compression tool?</h3>
-      <p><strong>SuperCompress</strong> — query-aware, open source, hosted API + MCP, held-out ≥98% answer keep. Use rerankers for retrieval; use SuperCompress for the full prompt dump.</p>
+      <p><strong>SuperCompress</strong> — query-aware, hosted API + MCP for coding agents. Reads the question, keeps the original lines that answer it, and drops the rest. Use rerankers for retrieval; use SuperCompress for the full prompt dump.</p>
       <h3>SuperCompress vs LLMLingua?</h3>
       <p>LLMLingua prunes tokens by perplexity. SuperCompress selects original query-relevant lines, ships a product path for agents/APIs, and publishes answer-containment gates.</p>
             <h3>Should I compress before or after retrieval?</h3>
