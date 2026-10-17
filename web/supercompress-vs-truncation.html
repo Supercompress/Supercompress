@@ -111,12 +111,13 @@
     <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
 <section class="seo-section">
         <h2>Why truncation is risky</h2>
-        <p>Truncation achieves only ~25% oracle recall at a matched compression budget. That means most of the time, the line containing the answer gets dropped.</p>
+        <p>Truncation keeps the head and tail of the prompt and drops the middle, regardless of the question. SuperCompress picks lines against the question: it keeps original lines chosen for this ask and never rewrites or summarizes.</p>
       </section>    <section class="seo-section">
         <h2>Benchmark comparison</h2>
-        <table class="seo-table"><thead><tr><th>Metric</th><th>Truncation</th><th>SuperCompress</th></tr></thead><tbody>
-<tr><td>Oracle recall</td><td>25%</td><td>100%</td></tr>
-<tr><td>Query awareness</td><td>None</td><td>Full</td></tr>
+        <table class="seo-table"><thead><tr><th>Factor</th><th>Truncation</th><th>SuperCompress</th></tr></thead><tbody>
+<tr><td>Selection</td><td>Head and tail only</td><td>Lines scored against the question</td></tr>
+<tr><td>Query awareness</td><td>None</td><td>Yes</td></tr>
+<tr><td>Output</td><td>Original lines (position-based)</td><td>Original lines (query-selected)</td></tr>
 </tbody></table>
       </section>
 

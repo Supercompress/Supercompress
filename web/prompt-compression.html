@@ -63,8 +63,8 @@
       },
       {
         "@type": "Question",
-        "name": "Does prompt compression add latency?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Compression is a preprocess before the LLM call. Hosted Neural Keep runs on CPU; a separate local compiler path exists for millisecond-class preprocessing. Measure wall time on your path — do not treat a single latency figure as product-wide."}
+        "name": "Does prompt compression rewrite the prompt?",
+        "acceptedAnswer": {"@type": "Answer", "text": "No. SuperCompress is extractive and query-aware: it keeps original lines chosen against the question and never rewrites or summarizes. Compression is a preprocess before the LLM call."}
       }
     ]
   }
@@ -163,7 +163,7 @@ print(f"Removed {result.tokens_removed} tokens")</code></pre>
         <table class="seo-table"><thead><tr><th>Factor</th><th>Prompt Compression</th><th>Summarization</th></tr></thead><tbody>
 <tr><td>Method</td><td>Selects original lines</td><td>Rewrites with LLM</td></tr>
 <tr><td>Extra cost</td><td>CPU preprocess (no extra LLM)</td><td>Full LLM call</td></tr>
-<tr><td>Oracle recall</td><td>100%</td><td>~61%</td></tr>
+<tr><td>Query-aware</td><td>Yes — scores lines against the question</td><td>Rewrite is not line selection</td></tr>
 </tbody></table>
       </section>    <section class="seo-section">
         <h2>Cost savings from prompt compression</h2>
@@ -180,8 +180,8 @@ print(f"Removed {result.tokens_removed} tokens")</code></pre>
       <p>No. Summarization rewrites the prompt using another LLM call, changing wording and potentially losing facts. Query-aware compression selects original lines that matter for the current question.</p>
       <h3>How much can prompt compression save?</h3>
       <p>Savings depend on how noisy the dump is. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
-      <h3>Does prompt compression add latency?</h3>
-      <p>Compression is a preprocess before the LLM call. Hosted Neural Keep runs on CPU; a separate local compiler path exists for millisecond-class preprocessing. Measure wall time on your path.</p>
+      <h3>Does prompt compression rewrite the prompt?</h3>
+      <p>No. SuperCompress is extractive and query-aware: it keeps original lines chosen against the question and never rewrites or summarizes. Compression is a preprocess before the LLM call.</p>
     </section>
         </main>
 <footer class="df-footer">

@@ -190,7 +190,7 @@
     <p class="launch-brand">Super<em>Compress</em></p>
     <h1>v2 is live</h1>
     <p class="seo-lead">Human progress has always been an efficiency story. Bigger context windows answered <em>how much</em> an AI can read. SuperCompress is trying to answer <em>how much it should have to</em>.</p>
-    <p>The hosted <strong>query-aware Neural Keep</strong> model is live on the API. It reads your whole context against the current query, keeps the original lines that answer it, and cuts the rest.</p>
+    <p>The API's default model is Neural Keep. It scores lines against the current query, keeps the original lines that answer it, and drops the rest.</p>
     <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> · Founder</p>
 
     <div class="launch-stats" aria-label="v2 Neural Keep highlights">
@@ -218,8 +218,8 @@
 
     <section class="seo-section">
       <h2>Why v2 is different from v1</h2>
-      <p>v1 was a tiny / lightweight compiler: fast on CPU, millisecond-class, good at aggressive drop with answer-keep gates. v2 is the hosted <strong>query-aware Neural Keep</strong> model — on Fly (CPU today). It scores every line against <em>this</em> query and keeps original wording.</p>
-      <p>Critically, it knows when <strong>not</strong> to compress. Across the full 390-case public suite many dense needle and LongBench slices keep nearly everything. Query-aware keep shines on coding-agent dumps, where most lines are irrelevant log or tool output. Mixing those results with compiler-era millisecond CPU claims is wrong — they are different engines.</p>
+      <p>v1 was a tiny / lightweight compiler: a local CPU path, good at aggressive drop with answer-keep gates. v2 is the hosted <strong>query-aware Neural Keep</strong> model. It scores every line against <em>this</em> query and keeps original wording.</p>
+      <p>Critically, it knows when <strong>not</strong> to compress. Across the full 390-case public suite many dense needle and LongBench slices keep nearly everything. Query-aware keep shines on coding-agent dumps, where most lines are irrelevant log or tool output. Mixing those results with compiler-era local-CPU claims is wrong — they are different engines.</p>
     </section>
 
     <section class="seo-section">
@@ -230,7 +230,7 @@
 
     <section class="seo-section">
       <h2>What v2 does</h2>
-      <p><strong>Neural Keep is live</strong> on <code>POST https://api.supercompress.dev/compress</code>. Hosted requests use the query-aware engine: it scores each line against <em>this</em> query, keeps original wording, and drops the noise. It does not paraphrase the stack trace. The question itself is never compressed.</p>
+      <p><strong>Neural Keep</strong> is the default on <code>POST https://api.supercompress.dev/compress</code>. Hosted requests use the query-aware engine: it scores each line against <em>this</em> query, keeps original wording, and drops the noise. It does not paraphrase the stack trace. The question itself is never compressed.</p>
       <p>That is strongest on coding-agent turns. It also helps on RAG chunks and long support threads when most of the text is not about the ask in front of you.</p>
       <div class="launch-example" aria-label="Illustrative keep and drop">
         <p class="ex-label">Illustrative · keep vs drop</p>
@@ -261,7 +261,7 @@ DEBUG retry scheduled</span></pre>
         <tbody>
           <tr class="best-row">
             <td>Engine</td>
-            <td><strong>Hosted Neural Keep</strong> (query-aware, Fly CPU, live)</td>
+            <td><strong>Hosted Neural Keep</strong> (query-aware)</td>
           </tr>
           <tr class="best-row">
             <td>Method</td>
@@ -274,10 +274,6 @@ DEBUG retry scheduled</span></pre>
           <tr>
             <td>Public suite size</td>
             <td><strong>390 cases</strong></td>
-          </tr>
-          <tr>
-            <td>B5 latency p50</td>
-            <td><strong>~5.8 s</strong> on hosted Fly CPU (not the compiler path)</td>
           </tr>
         </tbody>
       </table>
@@ -292,7 +288,6 @@ DEBUG retry scheduled</span></pre>
     <section class="seo-section">
       <h2>Limitations</h2>
       <ul>
-        <li><strong>Latency:</strong> Neural Keep on Fly CPU is seconds-scale on long dumps (~5.8s B5 p50), not the old compiler’s millisecond path.</li>
         <li><strong>Downstream eval:</strong> we have not yet published LLM task-success after compression.</li>
         <li><strong>Workload fit:</strong> strongest on coding-agent / tool-dump noise; conservative when every line could be the needle.</li>
       </ul>

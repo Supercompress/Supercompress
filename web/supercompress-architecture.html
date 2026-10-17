@@ -189,8 +189,8 @@
       <p>Segments with relevance scores above the threshold are assembled back into compressed context, preserving their original order. The assembly step also handles edge cases: keeping context boundaries legible, re-inserting necessary transition text, and ensuring the output is valid for the downstream LLM.</p>
 
       <div class="highlight-box">
-        <h3>Key property: oracle recall</h3>
-        <p>SuperCompress targets 97%+ oracle recall — meaning the compressed prompt contains virtually all the information needed to answer the query, even when evaluated against the full original context. This is achieved by keeping the scorer conservative: when uncertain, it keeps the segment rather than dropping it.</p>
+        <h3>Key property: extractive and query-aware</h3>
+        <p>SuperCompress keeps original lines chosen against the question and never rewrites or summarizes. The scorer is conservative: when uncertain, it keeps the segment rather than dropping it.</p>
       </div>
     </section>
 
@@ -288,7 +288,6 @@
           <tr>
             <th>Form</th>
             <th>Use case</th>
-            <th>Latency</th>
             <th>Setup</th>
           </tr>
         </thead>
@@ -296,19 +295,16 @@
           <tr>
             <td><strong>Python library</strong></td>
             <td>Local in-process compression</td>
-            <td>~15ms</td>
             <td><code>pip install supercompress</code></td>
           </tr>
           <tr>
             <td><strong>Hosted API</strong></td>
             <td>Zero-infrastructure compression</td>
-            <td>~5ms + network</td>
             <td>Get a key at <a href="/dashboard">/dashboard</a></td>
           </tr>
           <tr>
             <td><strong>CI / GitHub Actions</strong></td>
             <td>CI/CD pipeline compression</td>
-            <td>—</td>
             <td>See <a href="https://github.com/Supercompress/Supercompress">github.com/Supercompress/Supercompress</a></td>
           </tr>
         </tbody>
@@ -330,7 +326,7 @@
             <th>Method</th>
             <th>Approach</th>
             <th>Query-aware</th>
-            <th>Latency</th>
+            <th>Extra LLM call</th>
           </tr>
         </thead>
         <tbody>
@@ -338,31 +334,31 @@
             <td><strong>SuperCompress</strong></td>
             <td>Query-aware keep/drop scoring</td>
             <td>Yes</td>
-            <td>~15–60 ms</td>
+            <td>No</td>
           </tr>
           <tr>
             <td><a href="/supercompress-vs-headroom">Headroom</a></td>
             <td>Content-type / structure heuristics</td>
             <td>Type-oriented</td>
-            <td>~100 ms + warmup</td>
+            <td>No</td>
           </tr>
           <tr>
             <td><a href="/supercompress-vs-sliding-window">Sliding window</a></td>
             <td>Fixed-position truncation</td>
             <td>No</td>
-            <td>~0 ms</td>
+            <td>No</td>
           </tr>
           <tr>
             <td><a href="/supercompress-vs-top-k-retrieval">Top-K retrieval</a></td>
             <td>Embedding similarity</td>
             <td>Partial</td>
-            <td>Embedding latency</td>
+            <td>No (embedding model)</td>
           </tr>
           <tr>
             <td><a href="/supercompress-vs-hyde">HyDE</a></td>
             <td>Hypothetical doc + retrieval</td>
             <td>Yes</td>
-            <td>LLM + embedding</td>
+            <td>Yes (plus embedding)</td>
           </tr>
         </tbody>
       </table>

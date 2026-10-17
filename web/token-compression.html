@@ -203,32 +203,28 @@
       <!-- 3. Methods Compared -->
       <section id="methods">
         <h2>Token Compression Methods Compared</h2>
-        <p>Not all token compression is equal. Here are the four main approaches, ranked by effectiveness:</p>
+        <p>Not all token compression is equal. Here are the four main approaches, compared by mechanism:</p>
 
         <div class="guide-methods">
-          <div class="method-card best">
+          <div class="method-card">
             <h4>Learned Compression</h4>
-            <div class="method-score">100%</div>
-            <p><strong>Oracle recall:</strong> 100% &middot; <strong>Path:</strong> CPU preprocess &middot; <strong>No extra LLM</strong></p>
-            <p>A small trained policy scores every line against the question and keeps only the most relevant. Query-aware, model-agnostic, no extra LLM calls. This is what SuperCompress uses. <strong>Best overall.</strong></p>
+            <p><strong>Mechanism:</strong> query-aware line selection &middot; <strong>Path:</strong> CPU preprocess &middot; <strong>No extra LLM</strong></p>
+            <p>A trained policy scores every line against the question and keeps original lines that answer it. Query-aware, model-agnostic, no extra LLM calls. This is what SuperCompress uses. Extractive — it never rewrites or summarizes.</p>
           </div>
           <div class="method-card">
             <h4>H2O (Heavy Hitter Oracle)</h4>
-            <div class="method-score">98%</div>
-            <p><strong>Oracle recall:</strong> 98% &middot; <strong>Latency:</strong> ~56ms &middot; <strong>Attention-based</strong></p>
-            <p>Uses attention scores to identify important tokens. Strong recall but requires access to model internals (attention weights), limiting compatibility with black-box APIs.</p>
+            <p><strong>Mechanism:</strong> attention-based token keep &middot; <strong>Needs model internals</strong></p>
+            <p>Uses attention scores to identify important tokens. Requires access to model internals (attention weights), limiting compatibility with black-box APIs.</p>
           </div>
           <div class="method-card">
             <h4>Summarization</h4>
-            <div class="method-score">61%</div>
-            <p><strong>Oracle recall:</strong> 61% &middot; <strong>Latency:</strong> ~63ms + LLM call &middot; <strong>Extra cost</strong></p>
-            <p>Uses an LLM to rewrite context. Expensive (another model call), can change facts, and loses original phrasing. Not recommended for production agent pipelines.</p>
+            <p><strong>Mechanism:</strong> rewrite &middot; <strong>Extra LLM call</strong></p>
+            <p>Uses an LLM to rewrite context. Another model call, can change facts, and loses original phrasing.</p>
           </div>
           <div class="method-card">
             <h4>FIFO / Truncation</h4>
-            <div class="method-score">25%</div>
-            <p><strong>Oracle recall:</strong> 25% &middot; <strong>Latency:</strong> ~57ms &middot; <strong>Rule-based</strong></p>
-            <p>Keeps the head and tail of context, drops the middle. Simple and cheap, but if the answer-critical line sits in the middle (which it often does), truncation loses it completely.</p>
+            <p><strong>Mechanism:</strong> position-based slice &middot; <strong>Rule-based</strong></p>
+            <p>Keeps the head and tail of context, drops the middle regardless of the question. If the answer-critical line sits in the middle, truncation drops it.</p>
           </div>
         </div>
       </section>
@@ -236,54 +232,50 @@
       <!-- 4. Benchmarks -->
       <section id="benchmarks">
         <h2>Benchmark Results</h2>
-        <p>Compiler benchmarks measure real API-call behavior: original tokens, kept tokens, tokens removed, important context kept, and verifier risk. Fixed-ratio oracle-recall baselines remain useful for research comparisons.</p>
+        <p>Compiler benchmarks measure real API-call behavior: original tokens, kept tokens, tokens removed, important context kept, and verifier risk. Methods differ by mechanism, not by a ranked scoreboard.</p>
 
         <table>
           <thead>
             <tr>
               <th>Policy</th>
-              <th>Oracle Recall</th>
-              <th>Entity Recall</th>
-              <th>Latency</th>
-              <th>Token budget</th>
+              <th>Mechanism</th>
+              <th>Query-aware</th>
+              <th>Extra LLM call</th>
+              <th>Output</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>FIFO / Truncation</td>
-              <td>25%</td>
-              <td>73%</td>
-              <td>rule-based</td>
-              <td>matched</td>
-
+              <td>Keeps head and tail; drops the middle</td>
+              <td>No</td>
+              <td>No</td>
+              <td>Original lines (position-based)</td>
             </tr>
             <tr>
               <td>Summarization</td>
-              <td>61%</td>
-              <td>64%</td>
-              <td>extra LLM call*</td>
-              <td>matched</td>
-
+              <td>Rewrites context with another model</td>
+              <td>Varies</td>
+              <td>Yes</td>
+              <td>Rewritten text</td>
             </tr>
             <tr>
               <td>H2O</td>
-              <td>98%</td>
-              <td>73%</td>
-              <td>needs attention weights</td>
-              <td>matched</td>
-
+              <td>Keeps tokens using attention scores</td>
+              <td>No</td>
+              <td>No (needs model internals)</td>
+              <td>Original tokens (attention-selected)</td>
             </tr>
-            <tr class="best-row">
-              <td>SuperCompress <span class="best-badge">Best</span></td>
-              <td>100%</td>
-              <td>73%</td>
-              <td>CPU preprocess</td>
-              <td>matched</td>
-
+            <tr>
+              <td>SuperCompress</td>
+              <td>Learned query-aware line selection</td>
+              <td>Yes</td>
+              <td>No</td>
+              <td>Original lines (query-selected)</td>
             </tr>
           </tbody>
         </table>
-        <p class="stat-highlight">* Fixed-budget recall comparison — every method is held to the same token budget so oracle recall is comparable. This is not a product-wide API-cost claim. Published suites: <a href="/benchmarks">/benchmarks</a>.</p>
+        <p class="stat-highlight">Published suites: <a href="/benchmarks">/benchmarks</a>. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic.</p>
 
         <h3>Compiler Mode Results</h3>
         <p>In compiler mode, SuperCompress removes as many tokens as it safely can for each API call, then reports important context kept and verifier risk:</p>
