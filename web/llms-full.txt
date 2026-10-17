@@ -459,6 +459,27 @@ A: No. It is extractive: it keeps original lines and drops the rest, so error me
 Q: Can I use SuperCompress with RTK or built-in compaction?
 A: Yes. They act at different points and can be combined.
 
+### Does context compression lower your bill?
+
+URL: https://www.supercompress.dev/does-context-compression-lower-your-bill
+
+Why fewer tokens is not a lower bill: cached prefixes are billed at a fraction of fresh input, cache writes cost a premium, output tokens are untouched by input compression, and extra turns re-send the whole prefix. When compression can help (new content before its first cache write) versus hurt (rewriting history, shell-only coverage, lossy summaries that cause re-read loops). How to measure it: paired runs, cost per solved task, cache-aware usage, count failures and extra turns; do not multiply a token-reduction percentage by the whole bill. SuperCompress compresses new bulky tool results before they enter the conversation, leaves earlier turns untouched, and keeps the original lines that answer the current question.
+
+Q: Does context compression lower your bill?
+A: Not automatically. Independent paired tests keep finding that a large drop in tokens on one payload can sit next to a flat or higher session bill. Cache pricing, extra turns, and coverage decide the result. Measure cache-aware cost per solved task on your own work.
+
+Q: Why does prompt caching change the math?
+A: Coding agents resend the conversation prefix on every turn. Providers bill a cache hit at a fraction of fresh input and charge a premium to write a new cache entry. Input compression does not change output tokens. If a tool rewrites earlier turns, the cheap cached prefix becomes an expensive rewrite.
+
+Q: How should I measure a compression tool?
+A: Run the same tasks with and without the tool. Compare cost per solved task using provider cache-read, cache-write, uncached-input, and output usage. Count failures and extra turns. Do not multiply a tokens-removed percentage by your whole bill.
+
+Q: Does SuperCompress rewrite earlier turns?
+A: No. SuperCompress compresses new bulky tool results and context before they enter the conversation and leaves earlier turns untouched. It is extractive and query-aware: it keeps the original lines that answer the current question and drops the rest.
+
+Q: Can I use SuperCompress with Claude Code, Codex, or Cursor?
+A: Yes. Run npm install -g supercompress-proxy && supercompress setup. Setup detects the coding agents on the machine and wires each one. Then run supercompress doctor to check what is connected.
+
 ### Reduce coding agent token usage
 
 URL: https://www.supercompress.dev/coding-agent-token-usage
