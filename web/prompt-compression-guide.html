@@ -54,7 +54,7 @@
       { "@type": "Question", "name": "What is prompt compression?", "acceptedAnswer": { "@type": "Answer", "text": "Prompt compression reduces the size of LLM prompts by removing redundant or low-value content while preserving the information needed for accurate responses. SuperCompress is query-aware extractive selection: keep original lines that answer this question, drop junk." } },
       { "@type": "Question", "name": "How much does prompt compression save?", "acceptedAnswer": { "@type": "Answer", "text": "Savings depend on how noisy the dump is. Measure original_tokens / kept_tokens (or tokens_saved) on your traffic. Published suites live on /benchmarks — they are not a product-wide API-cost guarantee." } },
       { "@type": "Question", "name": "Does prompt compression work with any LLM?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Prompt compression is model-agnostic — it preprocesses the prompt before sending it to any LLM. It works with GPT-4, Claude, Gemini, Llama, Mistral, and any other model. No fine-tuning or model changes needed." } },
-      { "@type": "Question", "name": "Should I use the API or the local library?", "acceptedAnswer": { "@type": "Answer", "text": "Use the local library for latency-sensitive applications or when you want zero external dependencies. Use the hosted API when you want the fastest results without managing infrastructure — it adds ~5ms overhead and includes automatic scaling and rate limiting." } },
+      { "@type": "Question", "name": "Should I use the API or the local library?", "acceptedAnswer": { "@type": "Answer", "text": "Use the local library when you want zero external dependencies or to run compression in-process. Use the hosted API when you want Neural Keep without managing infrastructure — it includes automatic scaling and rate limiting." } },
       { "@type": "Question", "name": "Is prompt compression better than caching?", "acceptedAnswer": { "@type": "Answer", "text": "They solve different problems. Caching skips the LLM call entirely when identical prompts appear. Compression reduces the cost of every call. For most production systems, the best approach is both: cache identical prompts, compress everything else." } }
     ]
   }</script>
@@ -225,59 +225,45 @@
     </section>
 
     <section id="benchmarks">
-      <h2>3. Benchmarks &amp; Quality Metrics</h2>
-      <p>The standard metrics for evaluating prompt compression are:</p>
+      <h2>3. How the methods differ</h2>
+      <p>Prompt compression methods differ by mechanism — extractive vs rewrite, query-aware or not, and whether they need an extra LLM call:</p>
 
       <table>
         <thead>
           <tr>
-            <th>Metric</th>
-            <th>Definition</th>
-            <th>SuperCompress</th>
-            <th>Truncation</th>
-            <th>Summarization</th>
+            <th>Method</th>
+            <th>Mechanism</th>
+            <th>Query-aware</th>
+            <th>Extra LLM call</th>
+            <th>Output</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Token savings</td>
-            <td>Measure on your traffic</td>
-            <td><strong>original / kept tokens</strong></td>
-            <td>fixed keep-ratio</td>
-            <td>rewrite budget</td>
+            <td>SuperCompress</td>
+            <td>Extractive: scores original lines against the question and keeps those that answer it</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Original lines</td>
           </tr>
           <tr>
-            <td>Answer quality</td>
-            <td>Semantic similarity to full-prompt answer</td>
-            <td><strong>96.3%</strong></td>
-            <td>78.2%</td>
-            <td>88.1%</td>
+            <td>Truncation</td>
+            <td>Keeps head and tail; drops the middle regardless of the question</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Original lines (position-based)</td>
           </tr>
           <tr>
-            <td>Oracle recall</td>
-            <td>% of answers containing info only in dropped content</td>
-            <td><strong>97.5%</strong></td>
-            <td>62.0%</td>
-            <td>81.3%</td>
-          </tr>
-          <tr>
-            <td>Entity recall</td>
-            <td>% of named entities preserved</td>
-            <td><strong>94.1%</strong></td>
-            <td>71.5%</td>
-            <td>85.0%</td>
-          </tr>
-          <tr>
-            <td>Latency</td>
-            <td>Time added per call</td>
-            <td><strong>~15ms</strong></td>
-            <td>0ms</td>
-            <td>500ms–2s</td>
+            <td>Summarization</td>
+            <td>Rewrites the prompt with another model</td>
+            <td>Varies</td>
+            <td>Yes</td>
+            <td>Rewritten text</td>
           </tr>
         </tbody>
       </table>
 
-      <p>These benchmarks were collected across 10,000+ prompts spanning customer support, code generation, data extraction, summarization, and Q&amp;A tasks in the <a href="/benchmarks">SuperCompress benchmarks</a> repository.</p>
+      <p>Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic. Published suites live in the <a href="/benchmarks">SuperCompress benchmarks</a> repository.</p>
     </section>
 
     <section id="frameworks">
@@ -309,7 +295,6 @@
           <tr>
             <th>Environment</th>
             <th>Setup</th>
-            <th>Cold Start</th>
             <th>Guide</th>
           </tr>
         </thead>
@@ -317,31 +302,26 @@
           <tr>
             <td>Serverless (Lambda)</td>
             <td><code>pip install supercompress</code></td>
-            <td>pip package</td>
             <td><a href="/deploy-compression-aws-lambda">AWS Lambda →</a></td>
           </tr>
           <tr>
             <td>Edge (Cloudflare Workers)</td>
             <td>WASM build via <code>supercompress-wasm</code></td>
-            <td>~30ms</td>
             <td><a href="/edge-prompt-compression">Edge guide →</a></td>
           </tr>
           <tr>
             <td>Container (Docker)</td>
             <td><code>FROM python:3.11-slim</code> + pip install</td>
-            <td>~100ms</td>
             <td><a href="/prompt-compression-docker">Docker guide →</a></td>
           </tr>
           <tr>
             <td>CI/CD pipelines</td>
             <td>CI / GitHub Actions</td>
-            <td>—</td>
             <td><a href="/prompt-compression-ci-cd">CI/CD guide →</a></td>
           </tr>
           <tr>
             <td>Hosted API</td>
             <td><code>curl -X POST https://www.supercompress.dev/api/v1/compress</code></td>
-            <td>~5ms</td>
             <td><a href="https://docs.supercompress.dev/api-reference">API docs →</a></td>
           </tr>
         </tbody>
@@ -376,7 +356,7 @@
       <p>SuperCompress keeps original answer-critical lines instead of rewriting them. Measure <code>original_tokens</code> / <code>kept_tokens</code> and answer quality on your eval set. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
 
       <h3>Should I use the API or the local library?</h3>
-      <p>Use the local library (<code>pip install supercompress</code>) for latency-sensitive applications, high-throughput systems, or when you want zero external dependencies. Use the hosted API when you want the fastest results without managing infrastructure — it adds ~5ms overhead and includes automatic scaling, rate limiting, and usage analytics.</p>
+      <p>Use the local library (<code>pip install supercompress</code>) when you want zero external dependencies or to run compression in-process. Use the hosted API when you want Neural Keep without managing infrastructure — it includes automatic scaling, rate limiting, and usage analytics.</p>
 
       <h3>How does SuperCompress compare to Headroom?</h3>
       <p>SuperCompress is query-aware: it scores context against the question, ships MCP for coding agents, and publishes held-out answer-keep gates. Headroom leans on content-type heuristics and its own workflows. Compare product fit and answer keep — see the <a href="/supercompress-vs-headroom">full comparison</a>.</p>

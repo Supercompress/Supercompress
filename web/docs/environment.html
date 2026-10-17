@@ -158,7 +158,7 @@ impact = sustainability_from_tokens_saved(saved)
         <p>We follow these principles when presenting environmental impact data:</p>
         <ol>
           <li><strong>State assumptions clearly</strong> — never claim live datacenter metering unless you have it</li>
-          <li><strong>Compare quality + savings together</strong> — truncation can save tokens but drops answers (25% oracle recall vs SuperCompress's 100%)</li>
+          <li><strong>Compare quality + savings together</strong> — truncation can save tokens but drops the middle regardless of the question, while SuperCompress picks lines against the question</li>
           <li><strong>Don't claim CO2 without methodology</strong> — every estimate links back to the documented assumptions and formulas</li>
           <li><strong>CPU energy is negligible but included</strong> — hosted Neural Keep runs on CPU; the energy cost is orders of magnitude below the GPU prefill savings</li>
           <li><strong>Let users adjust constants</strong> — the Python API exposes all assumptions so users can plug in their own numbers</li>

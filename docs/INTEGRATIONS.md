@@ -10,26 +10,23 @@ SuperCompress is a **library** — wire it anywhere you build LLM prompts from l
 npm install -g supercompress-proxy && supercompress setup
 ```
 
-**Remote / cloud MCP (Cursor Cloud, Grok Bot, marketplace HTTP):** OAuth 2.1 with PKCE is live.
+**Remote / cloud MCP (Cursor Cloud, Grok Bot, marketplace HTTP):** hosts that cannot run the CLI connect to `https://www.supercompress.dev/api/mcp` with the coding-agent key that `supercompress setup` created, set as `SUPERCOMPRESS_API_KEY`.
 
-1. Add MCP URL `https://www.supercompress.dev/api/mcp`
-2. Host discovers `/.well-known/oauth-protected-resource` → authorization server
-3. Browser Google sign-in on the SuperCompress dashboard → access token (`sc_live_…`)
-4. Optional fallback: set `SUPERCOMPRESS_API_KEY` manually
+`supercompress setup` opens browser sign-in. A coding-agent key is created and saved automatically.
 
 | Agent | Install |
 |-------|---------|
-| **Laptop agents (Cursor / Claude Code / Codex / …)** | `npm i -g supercompress-proxy && supercompress setup` |
-| **Grok Bot / cloud MCP** | Add hosted MCP `https://www.supercompress.dev/api/mcp` — complete OAuth when prompted (or set `SUPERCOMPRESS_API_KEY`) |
-| **Claude Code marketplace** | `/plugin marketplace add Supercompress/Supercompress` then `/plugin install supercompress@supercompress` — OAuth or Configure API key |
-| **Codex marketplace** | `codex plugin marketplace add Supercompress/Supercompress` then `codex plugin add supercompress@supercompress` |
-| **Cursor** | [Cursor Marketplace](https://cursor.com/marketplace) → search "SuperCompress" — OAuth or `supercompress setup` |
+| **Laptop agents (Cursor / Claude Code / Codex / …)** | `npm install -g supercompress-proxy && supercompress setup` (browser sign-in; a coding-agent key is created and saved automatically) |
+| **Grok Bot / cloud MCP** | `npm install -g supercompress-proxy && supercompress setup` on a machine that can open a browser, then connect the host to `https://www.supercompress.dev/api/mcp` with that coding-agent key set as `SUPERCOMPRESS_API_KEY` |
+| **Claude Code marketplace** | `npm install -g supercompress-proxy && supercompress setup`. Optionally `/plugin marketplace add Supercompress/Supercompress` then `/plugin install supercompress@supercompress` |
+| **Codex marketplace** | `npm install -g supercompress-proxy && supercompress setup`. Optionally `codex plugin marketplace add Supercompress/Supercompress` then `codex plugin add supercompress@supercompress` |
+| **Cursor** | `npm install -g supercompress-proxy && supercompress setup`. Optionally [Cursor Marketplace](https://cursor.com/marketplace) → search "SuperCompress" |
 
 Grok Bot needs the **hosted** MCP (`https://www.supercompress.dev/api/mcp`) — local `npx` stdio is not reachable from the Bot's cloud computer.
 
-Tools: `compress_context`, `connect_account` (OAuth / dashboard fallback), `usage_summary`. Source: [`integrations/plugins/supercompress/`](../integrations/plugins/supercompress/).
+Tools: `compress_context`, `connect_account` (opens browser sign-in / dashboard link), `usage_summary`. Source: [`integrations/plugins/supercompress/`](../integrations/plugins/supercompress/).
 
-### OAuth endpoints
+### OAuth endpoints (in development, not a supported sign-in path yet)
 
 | URL | Purpose |
 |-----|---------|
