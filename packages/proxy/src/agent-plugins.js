@@ -31,6 +31,45 @@ const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(HOME, ".sup
 const MCP_SERVER_PATH = path.join(__dirname, "mcp.js");
 const PLUGINS_FILE = path.join(CONFIG_DIR, "agent-plugins.json");
 const PLUGINS_DIR = path.join(CONFIG_DIR, "plugins");
+const edit = require("./config-edit");
+const BACKUP_PATH = path.join(CONFIG_DIR, "agent-config-backups.json");
+
+function loadOriginals() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(BACKUP_PATH, "utf8"));
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Record a file's pre-setup contents (first write wins) in the manifest
+ * uninstall uses to know original values. Shared with detector.backupFile.
+ */
+function recordOriginal(filePath) {
+  if (!filePath) return;
+  const backups = loadOriginals();
+  if (Object.prototype.hasOwnProperty.call(backups, filePath)) return;
+  backups[filePath] = fs.existsSync(filePath)
+    ? { exists: true, content: fs.readFileSync(filePath, "utf8") }
+    : { exists: false, content: "" };
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  fs.writeFileSync(BACKUP_PATH, JSON.stringify(backups, null, 2) + "\n");
+}
+
+/** Pre-setup JSON object for `filePath`: {} if it did not exist, null if unknown. */
+function originalJsonFor(filePath) {
+  const snap = loadOriginals()[filePath];
+  if (!snap || typeof snap !== "object") return null;
+  if (!snap.exists) return {};
+  try {
+    const data = edit.parseJsonLoose(String(snap.content || ""));
+    return edit.isPlainObject(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
 
 function expandHome(p) {
   if (!p) return p;
@@ -225,19 +264,12 @@ function writeOpenClawJson(filePath) {
 }
 
 function removeOpenClawJson(filePath) {
-  if (!fs.existsSync(filePath)) return false;
-  let data;
-  try {
-    data = parseLooseJson(fs.readFileSync(filePath, "utf8"));
-  } catch {
-    return false;
-  }
-  if (!data?.mcp?.servers?.supercompress) return false;
-  delete data.mcp.servers.supercompress;
-  if (data.mcp.servers && Object.keys(data.mcp.servers).length === 0) delete data.mcp.servers;
-  if (data.mcp && Object.keys(data.mcp).length === 0) delete data.mcp;
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
-  return true;
+  return edit.editJsonFile(filePath, (data) => {
+    if (!data?.mcp?.servers?.supercompress) return;
+    delete data.mcp.servers.supercompress;
+    if (data.mcp.servers && Object.keys(data.mcp.servers).length === 0) delete data.mcp.servers;
+    if (data.mcp && Object.keys(data.mcp).length === 0) delete data.mcp;
+  });
 }
 
 function writeMcpJson(filePath) {
@@ -257,12 +289,12 @@ function writeMcpJson(filePath) {
 }
 
 function removeMcpJson(filePath) {
-  if (!fs.existsSync(filePath)) return false;
-  const data = parseLooseJson(fs.readFileSync(filePath, "utf8"));
-  if (!data.mcpServers?.supercompress) return false;
-  delete data.mcpServers.supercompress;
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
-  return true;
+  const original = originalJsonFor(filePath);
+  return edit.editJsonFile(filePath, (data) => {
+    if (!data.mcpServers?.supercompress) return;
+    delete data.mcpServers.supercompress;
+    edit.pruneCreatedEmpty(data, original, ["mcpServers"]);
+  });
 }
 
 function writeOpenCodeJson(filePath) {
@@ -284,13 +316,11 @@ function writeOpenCodeJson(filePath) {
 }
 
 function removeOpenCodeJson(filePath) {
-  if (!fs.existsSync(filePath)) return false;
-  const data = parseLooseJson(fs.readFileSync(filePath, "utf8"));
-  if (!data.mcp?.supercompress) return false;
-  delete data.mcp.supercompress;
-  if (data.mcp && Object.keys(data.mcp).length === 0) delete data.mcp;
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
-  return true;
+  return edit.editJsonFile(filePath, (data) => {
+    if (!data.mcp?.supercompress) return;
+    delete data.mcp.supercompress;
+    if (data.mcp && Object.keys(data.mcp).length === 0) delete data.mcp;
+  });
 }
 
 function writeCodexToml(filePath) {
@@ -303,21 +333,17 @@ function writeCodexToml(filePath) {
     `args = [${entry.args.map((a) => JSON.stringify(a)).join(", ")}]\n` +
     `[mcp_servers.supercompress.env]\n` +
     `SUPERCOMPRESS_CONFIG_DIR = ${JSON.stringify(CONFIG_DIR)}\n`;
-  raw = raw
-    .replace(/\n?\[mcp_servers\.supercompress\.env\][\s\S]*?(?=\n\[|$)/, "\n")
-    .replace(/\n?\[mcp_servers\.supercompress\][\s\S]*?(?=\n\[|$)/, "\n");
-  raw = `${raw.trimEnd()}\n\n${block}`;
-  fs.writeFileSync(filePath, raw.startsWith("\n") ? raw.slice(1) : raw);
+  raw = edit.removeTomlTable(raw, "mcp_servers.supercompress");
+  raw = raw.trim() ? `${raw.trimEnd()}\n\n${block}` : block;
+  fs.writeFileSync(filePath, raw);
 }
 
 function removeCodexToml(filePath) {
   if (!fs.existsSync(filePath)) return false;
   const raw = fs.readFileSync(filePath, "utf8");
-  const cleaned = raw
-    .replace(/\n?\[mcp_servers\.supercompress\.env\][\s\S]*?(?=\n\[|$)/, "\n")
-    .replace(/\n?\[mcp_servers\.supercompress\][\s\S]*?(?=\n\[|$)/, "\n");
+  const cleaned = edit.removeTomlTable(raw, "mcp_servers.supercompress");
   if (cleaned === raw) return false;
-  fs.writeFileSync(filePath, cleaned.trimEnd() + "\n");
+  fs.writeFileSync(filePath, cleaned);
   return true;
 }
 
@@ -826,7 +852,14 @@ function removeOpenClawAutoCompressArtifacts(openclawHome = path.join(HOME, ".op
   const configPath = path.join(openclawHome, "openclaw.json");
   if (fs.existsSync(configPath)) {
     try {
-      let data = parseLooseJson(fs.readFileSync(configPath, "utf8"));
+      const raw = fs.readFileSync(configPath, "utf8");
+      let data;
+      try {
+        data = edit.parseJsonLoose(raw);
+      } catch (err) {
+        throw new Error(`not valid JSON (${err.message}); left untouched`);
+      }
+      if (!edit.isPlainObject(data)) throw new Error("not a JSON object; left untouched");
       let changed = false;
 
       if (data?.hooks?.internal?.entries?.["supercompress-bootstrap"]) {
@@ -865,8 +898,24 @@ function removeOpenClawAutoCompressArtifacts(openclawHome = path.join(HOME, ".op
         changed = true;
       }
 
+      // Containers / flags enableOpenClawAutoConfig introduced, when the
+      // pre-install config is known and they are now empty.
+      const original = originalJsonFor(configPath);
+      if (changed && original) {
+        if (data?.hooks?.internal?.enabled === true &&
+            !(original.hooks && original.hooks.internal &&
+              Object.prototype.hasOwnProperty.call(original.hooks.internal, "enabled")) &&
+            edit.isPlainObject(data.hooks.internal.entries) &&
+            Object.keys(data.hooks.internal.entries).length === 0) {
+          delete data.hooks.internal.enabled;
+        }
+        edit.pruneCreatedEmpty(data, original, ["hooks", "internal", "entries"]);
+        edit.pruneCreatedEmpty(data, original, ["plugins", "entries"]);
+        edit.pruneCreatedEmpty(data, original, ["plugins", "load", "paths"]);
+      }
+
       if (changed) {
-        fs.writeFileSync(configPath, JSON.stringify(data, null, 2) + "\n");
+        fs.writeFileSync(configPath, edit.rewriteJson(raw, data));
         removed.push("OpenClaw auto config");
       }
     } catch (err) {
@@ -915,6 +964,7 @@ function installPlugin(plugin, { force = false } = {}) {
     const writer = FORMAT_WRITERS[plugin.format];
     if (!writer) throw new Error(`No writer for format ${plugin.format}`);
     backupBeforeWrite(plugin.configPath);
+    recordOriginal(plugin.configPath);
     writer.write(plugin.configPath);
     for (const extra of plugin.extraWriters || []) {
       const fmt = extra.format || "mcp-json";
@@ -923,6 +973,7 @@ function installPlugin(plugin, { force = false } = {}) {
       const w = FORMAT_WRITERS[fmt];
       if (w) {
         backupBeforeWrite(cfg);
+        recordOriginal(cfg);
         w.write(cfg);
       }
     }
@@ -930,6 +981,7 @@ function installPlugin(plugin, { force = false } = {}) {
 
   if (plugin.instructionPath) {
     backupBeforeWrite(expandHome(plugin.instructionPath) || plugin.instructionPath);
+    recordOriginal(expandHome(plugin.instructionPath) || plugin.instructionPath);
     writeInstructionFile(plugin.instructionPath);
   }
   return plugin.name;
@@ -1111,6 +1163,7 @@ function resolveWrapSpec(agentName) {
 }
 
 module.exports = {
+  recordOriginal,
   BUILTIN_PLUGINS,
   FORMAT_WRITERS,
   allPlugins,

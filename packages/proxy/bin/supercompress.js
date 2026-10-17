@@ -537,10 +537,11 @@ async function main() {
       stopServer();
       require("../src/service").unregister();
       console.log("  → Reverting agent configurations...");
-      const { revertAll, removeMcp } = require("../src/detector");
-      const undone = revertAll();
-      undone.forEach((a) => console.log(`  → ${a}`));
-      removeMcp().forEach((a) => console.log(`  → Removed ${a} MCP registration`));
+      // revertAll removes only what SuperCompress added (MCP entries, hooks,
+      // instruction blocks, proxy settings) and leaves everything else —
+      // including MCP servers added after install — untouched.
+      const { revertAll } = require("../src/detector");
+      revertAll().forEach((a) => console.log(`  → ${a}`));
       // Remove config dir
       if (fs.existsSync(CONFIG_DIR)) {
         fs.rmSync(CONFIG_DIR, { recursive: true, force: true });
