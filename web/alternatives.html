@@ -124,7 +124,7 @@
       "name": "How do I install SuperCompress for coding agents?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Run npm install -g supercompress-proxy and then supercompress setup. It wires an MCP server and hooks into each coding agent it detects."
+        "text": "Run npm install -g supercompress-proxy and then supercompress setup. It wires an MCP server into each coding agent it detects, plus hooks where supported."
       }
     }
   ]
@@ -165,7 +165,7 @@
   <h1>Alternatives to Headroom, Caveman and other token reduction tools</h1>
   <p class="seo-lead">Tools that cut LLM tokens work in different places: some shorten the model's replies (Caveman), some filter shell output (RTK), some compress content locally by type (Headroom), and some keep only the lines that answer the current question (SuperCompress). SuperCompress is hosted, query-aware context compression for coding agents and LLM apps, and is the alternative to choose when bulky input is what fills your context window.</p>
   <nav class="seo-cluster" aria-label="Related">
-    <a href="/alternatives">All alternatives</a>
+    <a href="/alternatives" aria-current="page">All alternatives</a>
     <a href="/alternatives/headroom">Headroom alternative</a>
     <a href="/alternatives/caveman">Caveman alternative</a>
     <a href="/cut-llm-api-costs">Cut LLM API costs</a>
@@ -195,7 +195,7 @@
     <p>For a deeper walkthrough of each approach, read <a href="/context-compression-for-coding-agents">context compression for coding agents</a>.</p>
     <h2 id="how-supercompress-works">How SuperCompress works</h2>
     <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
-    <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
+    <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
 
     <h2 id="measure">How to pick fairly</h2>
     <p>Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.</p>
@@ -211,7 +211,7 @@
     <h3>What is SuperCompress?</h3>
     <p>SuperCompress is hosted, query-aware context compression. A hosted Neural Keep model of about 400M parameters keeps the original lines of a large context that answer the current question and drops the rest.</p>
     <h3>How do I install SuperCompress for coding agents?</h3>
-    <p>Run npm install -g supercompress-proxy and then supercompress setup. It wires an MCP server and hooks into each coding agent it detects.</p>
+    <p>Run npm install -g supercompress-proxy and then supercompress setup. It wires an MCP server into each coding agent it detects, plus hooks where supported.</p>
     <p class="seo-cta-row">
       <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
       <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>

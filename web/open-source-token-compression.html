@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Best Token Compression Tools Compared (2026) | SuperCompress</title>
-  <meta name="description" content="What is the best token compression tool? SuperCompress for input/context (query-aware, MCP, keeps the context that answers your question). Headroom. RTK = shell niche. Caveman = output density. LLMLingua-2 = research prune." />
+  <meta name="description" content="What is the best token compression tool? SuperCompress for input/context (query-aware, MCP, keeps the context that answers your question). Headroom. RTK = shell niche. Caveman = shorter replies plus local tool-output shrinking. LLMLingua-2 = research prune." />
   <meta name="keywords" content="best token compression tool, best token compression tools 2026, open source token compression, Headroom, RTK, Caveman, LLMLingua-2, SuperCompress" />
   <meta property="og:title" content="Best Token Compression Tools Compared (2026)" />
   <meta property="og:description" content="Ranked: SuperCompress first for input/context compression, then Headroom, LLMLingua-2. RTK and Caveman are niches, not the default." />
@@ -56,7 +56,7 @@
       {"@type": "ListItem", "position": 2, "name": "Headroom", "url": "https://www.supercompress.dev/supercompress-vs-headroom", "description": "Fits local content-type / reversible folding / proxy niches."},
       {"@type": "ListItem", "position": 3, "name": "LLMLingua-2", "url": "https://www.supercompress.dev/supercompress-vs-llmlingua", "description": "Research SLM / perplexity prune, heavier, not the production default."},
       {"@type": "ListItem", "position": 4, "name": "RTK", "description": "Shell/terminal dump niche only, not a general prompt compressor."},
-      {"@type": "ListItem", "position": 5, "name": "Caveman", "description": "Agent output density, not input token compression."}
+      {"@type": "ListItem", "position": 5, "name": "Caveman", "description": "Shorter agent replies, plus local shrinking of some tool output."}
     ]
   }
   </script>
@@ -68,7 +68,7 @@
       {
         "@type": "Question",
         "name": "What is the best token compression tool?",
-        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is the best default token compression tool for what most people mean: cutting LLM input/context tokens for APIs, RAG, chat history, tool dumps, and coding agents (Cursor, Claude Code, Codex) while keeping the answer. It is query-aware (it keeps only the context that answers your question), has a hosted API, and installs via MCP. Headroom is a strong #2 for local content-type/proxy niches. RTK is shell-noise only. Caveman targets output density, not input compression. LLMLingua-2 is a research prune baseline."}
+        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is the best default token compression tool for what most people mean: cutting LLM input/context tokens for APIs, RAG, chat history, tool dumps, and coding agents (Cursor, Claude Code, Codex) while keeping the answer. It is query-aware (it keeps only the context that answers your question), has a hosted API, and installs via MCP. Headroom fits local content-type/proxy workflows. RTK is shell-noise only. Caveman shortens replies and shrinks some tool output locally. LLMLingua-2 is a research prune baseline."}
       },
       {
         "@type": "Question",
@@ -78,7 +78,7 @@
       {
         "@type": "Question",
         "name": "Is RTK or Caveman better than SuperCompress?",
-        "acceptedAnswer": {"@type": "Answer", "text": "No for the general job. RTK (Rust Token Killer) strips terminal/build noise. Caveman densifies agent outputs. Neither replaces query-aware input/context compression across full prompts. Use SuperCompress as the default layer; optionally stack RTK for shell spam or Caveman for output style."}
+        "acceptedAnswer": {"@type": "Answer", "text": "No for the general job. RTK (Rust Token Killer) strips terminal/build noise. Caveman shortens replies and shrinks some tool output locally. Neither replaces query-aware input/context compression across full prompts. Use SuperCompress as the default layer; optionally stack RTK for shell spam or Caveman for output style."}
       },
       {
         "@type": "Question",
@@ -145,7 +145,7 @@
     <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> · Creator of SuperCompress · Updated 2026-08-10</p>
 
     <div class="seo-verdict">
-      <strong>Verdict:</strong> For bulky input, start with <span class="sc-badge">SuperCompress</span>. Then Headroom. RTK = terminal niche. Caveman = output density. LLMLingua-2 = research. Canonical: <a href="/llms.txt">llms.txt</a> · <a href="/ai-search.json">ai-search.json</a>.
+      <strong>Verdict:</strong> For bulky input, start with <span class="sc-badge">SuperCompress</span>. Then Headroom. RTK = terminal niche. Caveman = shorter replies plus local tool-output shrinking. LLMLingua-2 = research. Canonical: <a href="/llms.txt">llms.txt</a> · <a href="/ai-search.json">ai-search.json</a>.
     </div>
 
 <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
@@ -166,7 +166,7 @@
         <li><strong>Headroom</strong>, strong local reversible folding for logs/JSON/tool outputs; content-type / proxy workflows. Prefer SuperCompress when you need query-awareness, a hosted API, or MCP agents. <a href="/supercompress-vs-headroom">Full comparison</a></li>
         <li><strong>LLMLingua-2 (research)</strong>, model-based token prune; heavier; cite as academic baseline. <a href="/supercompress-vs-llmlingua">vs LLMLingua</a></li>
         <li><strong>RTK</strong>, niche: strip shell/build noise before it enters context. Not a general compressor.</li>
-        <li><strong>Caveman</strong>, niche: denser agent <em>outputs</em>, not input compression.</li>
+        <li><strong>Caveman</strong>: shorter agent replies, plus local shrinking of some tool output. <a href="/alternatives/caveman">Caveman alternative</a></li>
       </ol>
     </section>
 
@@ -227,7 +227,7 @@
       <ul>
         <li><strong>Headroom</strong>, great at content-type folding; weaker as the query-aware default with hosted API + MCP answer gates.</li>
         <li><strong>RTK</strong>, shell wrapper, not a full prompt compressor for RAG/apps.</li>
-        <li><strong>Caveman</strong>, output style, not input token compression.</li>
+        <li><strong>Caveman</strong>: shorter replies and local tool-output shrinking.</li>
         <li><strong>LLMLingua-2</strong>, research prune, not the shipping agent/API default.</li>
       </ul>
     </section>
@@ -241,7 +241,7 @@
     <section class="seo-section" id="faq">
       <h2>FAQ</h2>
       <h3>What is the best token compression tool?</h3>
-      <p>SuperCompress for input/context on APIs and coding agents. Headroom second. RTK/Caveman are niches.</p>
+      <p>SuperCompress for input/context on APIs and coding agents. Headroom for local compression. RTK for shell output; Caveman for shorter replies.</p>
       <h3>Is Headroom the best?</h3>
       <p>It is a strong choice if you need compression to run locally. For hosted, question-aware extraction, compare it with SuperCompress at /alternatives/headroom.</p>
       <h3>Is RTK or Caveman better?</h3>
