@@ -4,10 +4,10 @@ const { iterateSseData, providerError } = require("./sse");
 
 const DEFAULT_URL = "https://api.openai.com/v1/chat/completions";
 
-function buildOpenAIBody(ctx) {
+function buildOpenAIBody(ctx, upstreamModel) {
   const n = ctx.normalized || {};
   const body = {
-    model: ctx.model_routed || n.model,
+    model: upstreamModel || ctx.model_routed || n.model,
     messages: (n.messages || []).map((m) => ({
       role: m.role,
       content: m.content,
@@ -33,21 +33,32 @@ function extractContent(json) {
 }
 
 /**
+ * One adapter for every provider that speaks OpenAI Chat Completions
+ * (OpenAI, Google, Mistral, xAI, DeepSeek, Groq, Together, Fireworks, Perplexity,
+ * OpenRouter, Cerebras, Cohere, Ollama, Azure OpenAI). See registry.js.
+ *
  * @param {object} options
  * @param {string} [options.apiKey]
- * @param {string} [options.baseUrl]
+ * @param {string} [options.baseUrl] — full chat-completions URL (default OpenAI)
+ * @param {(model: string) => string} [options.urlFor] — per-model URL (Azure deployments)
+ * @param {string} [options.providerName="openai"] — label on results and error codes
+ * @param {string} [options.apiKeyEnv="OPENAI_API_KEY"] — env fallback for the key
+ * @param {"bearer"|"api-key"} [options.auth="bearer"]
+ * @param {boolean} [options.keyOptional=false] — local providers (Ollama) need no key
  * @param {typeof fetch} [options.fetchImpl]
  */
 function createOpenAIProvider(options = {}) {
   const fetchImpl = options.fetchImpl || globalThis.fetch;
   const baseUrl = options.baseUrl || DEFAULT_URL;
+  const name = options.providerName || "openai";
+  const keyEnv = options.apiKeyEnv === undefined ? "OPENAI_API_KEY" : options.apiKeyEnv;
 
-  async function callOpenAI(ctx) {
-    const apiKey = options.apiKey || process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      const err = new Error("openai_api_key_missing");
+  async function callOpenAI(ctx, call = {}) {
+    const apiKey = options.apiKey || (keyEnv ? process.env[keyEnv] : "");
+    if (!apiKey && !options.keyOptional) {
+      const err = new Error(`${name}_api_key_missing`);
       err.status = 401;
-      err.code = "openai_api_key_missing";
+      err.code = `${name}_api_key_missing`;
       throw err;
     }
     if (typeof fetchImpl !== "function") {
@@ -56,14 +67,19 @@ function createOpenAIProvider(options = {}) {
       throw err;
     }
 
-    const body = buildOpenAIBody(ctx);
-    const res = await fetchImpl(baseUrl, {
+    const body = buildOpenAIBody(ctx, call.model);
+    const url = typeof options.urlFor === "function" ? options.urlFor(body.model) : baseUrl;
+    const headers = {
+      "Content-Type": "application/json",
+      Accept: body.stream ? "text/event-stream" : "application/json",
+    };
+    if (apiKey) {
+      if (options.auth === "api-key") headers["api-key"] = apiKey;
+      else headers.Authorization = `Bearer ${apiKey}`;
+    }
+    const res = await fetchImpl(url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: body.stream ? "text/event-stream" : "application/json",
-      },
+      headers,
       body: JSON.stringify(body),
     });
 
@@ -76,7 +92,7 @@ function createOpenAIProvider(options = {}) {
         /* keep text */
       }
       throw providerError(
-        parsed?.error?.message || `openai_http_${res.status}`,
+        parsed?.error?.message || `${name}_http_${res.status}`,
         res.status,
         parsed
       );
@@ -113,7 +129,7 @@ function createOpenAIProvider(options = {}) {
 
       ctx.provider_result = {
         model: body.model,
-        provider: "openai",
+        provider: name,
         output: { content: "" },
         usage: acc.usage,
         stream: streamText(),
@@ -124,7 +140,7 @@ function createOpenAIProvider(options = {}) {
     const json = await res.json();
     ctx.provider_result = {
       model: json.model || body.model,
-      provider: "openai",
+      provider: name,
       output: { content: extractContent(json) },
       usage: {
         input_tokens: json.usage?.prompt_tokens ?? 0,

@@ -3,9 +3,10 @@
 const { callStubProvider } = require("./stub");
 const { createOpenAIProvider } = require("./openai");
 const { createAnthropicProvider } = require("./anthropic");
+const registry = require("./registry");
 
 /**
- * Resolve provider name from catalog entry or model id heuristics.
+ * Resolve provider name: catalog entry → route decision → "provider/model" prefix → model-id heuristics.
  */
 function resolveProviderName(ctx, catalog) {
   const model = ctx.model_routed || ctx.normalized?.model;
@@ -15,10 +16,20 @@ function resolveProviderName(ctx, catalog) {
   }
   if (ctx.route_decision?.provider) return String(ctx.route_decision.provider);
   const id = String(model || "");
-  if (/^claude/i.test(id)) return "anthropic";
-  if (/^gpt-|^o[0-9]/i.test(id)) return "openai";
   if (id === "stub-model" || !id) return "stub";
-  return "unknown";
+  return registry.providerFromModelId(id) || "unknown";
+}
+
+/**
+ * The model id to send upstream: a catalog entry's `upstream_model`, else the id with any
+ * "provider/" prefix removed (so "groq/llama-3.3-70b-versatile" calls Groq with "llama-3.3-70b-versatile").
+ */
+function upstreamModelFor(ctx, catalog) {
+  const model = String(ctx.model_routed || ctx.normalized?.model || "");
+  const entry = catalog && typeof catalog.get === "function" ? catalog.get(model) : null;
+  if (entry?.upstream_model) return String(entry.upstream_model);
+  const pre = registry.splitProviderPrefix(model);
+  return pre ? pre.model : model;
 }
 
 /**
@@ -26,66 +37,74 @@ function resolveProviderName(ctx, catalog) {
  *
  * @param {object} [options]
  * @param {object} [options.catalog] — normalizeCatalog() result with .get
- * @param {string} [options.openaiApiKey]
- * @param {string} [options.anthropicApiKey]
+ * @param {Record<string,string>} [options.apiKeys] — per-provider keys, e.g. { groq: "…" } (env otherwise)
+ * @param {string} [options.openaiApiKey] — kept for compatibility (same as apiKeys.openai)
+ * @param {string} [options.anthropicApiKey] — kept for compatibility (same as apiKeys.anthropic)
+ * @param {string} [options.openaiBaseUrl]
+ * @param {string} [options.anthropicBaseUrl]
  * @param {typeof fetch} [options.fetchImpl]
+ * @param {object} [options.env=process.env]
  * @param {boolean} [options.allowStubFallback=true] — when keys missing, use stub (tests)
  * @param {boolean} [options.requireLive=false] — fail closed if keys missing
  */
 function createProvider(options = {}) {
-  const openai = createOpenAIProvider({
-    apiKey: options.openaiApiKey,
-    baseUrl: options.openaiBaseUrl,
-    fetchImpl: options.fetchImpl,
-  });
-  const anthropic = createAnthropicProvider({
-    apiKey: options.anthropicApiKey,
-    baseUrl: options.anthropicBaseUrl,
-    fetchImpl: options.fetchImpl,
-  });
+  const env = options.env || process.env;
+  const keys = { ...(options.apiKeys || {}) };
+  if (options.openaiApiKey) keys.openai = options.openaiApiKey;
+  if (options.anthropicApiKey) keys.anthropic = options.anthropicApiKey;
   const catalog = options.catalog;
   const allowStubFallback = options.allowStubFallback !== false;
   const requireLive = options.requireLive === true;
+  const adapters = new Map();
+
+  function adapterFor(name) {
+    if (adapters.has(name)) return adapters.get(name);
+    const spec = registry.PROVIDERS[name];
+    if (!spec) return null;
+    let fn;
+    if (spec.kind === "anthropic") {
+      fn = createAnthropicProvider({
+        apiKey: keys.anthropic || registry.apiKeyFor("anthropic", env) || undefined,
+        baseUrl: options.anthropicBaseUrl,
+        fetchImpl: options.fetchImpl,
+      });
+    } else {
+      const explicitBase = name === "openai" ? options.openaiBaseUrl : undefined;
+      fn = createOpenAIProvider({
+        providerName: name,
+        apiKey: keys[name] || registry.apiKeyFor(name, env) || undefined,
+        apiKeyEnv: null, // resolved above from the registry (incl. alternate key names)
+        baseUrl: explicitBase || (spec.azure ? undefined : registry.chatUrlFor(name, "", env)),
+        urlFor: spec.azure ? (model) => registry.chatUrlFor(name, model, env) : undefined,
+        auth: spec.auth === "api-key" ? "api-key" : "bearer",
+        keyOptional: !spec.keyEnv,
+        fetchImpl: options.fetchImpl,
+      });
+    }
+    adapters.set(name, fn);
+    return fn;
+  }
 
   async function providerFn(ctx) {
     const name = resolveProviderName(ctx, catalog);
+    if (name === "stub") return callStubProvider(ctx);
 
-    if (name === "stub") {
-      return callStubProvider(ctx);
+    const adapter = adapterFor(name);
+    if (!adapter) {
+      const err = new Error(`provider_unknown:${name}`);
+      err.status = 400;
+      err.code = "provider_unknown";
+      throw err;
     }
-    if (name === "openai") {
-      try {
-        return await openai(ctx);
-      } catch (err) {
-        if (
-          allowStubFallback &&
-          !requireLive &&
-          (err.code === "openai_api_key_missing" || err.message === "openai_api_key_missing")
-        ) {
-          return callStubProvider(ctx);
-        }
-        throw err;
+    try {
+      return await adapter(ctx, { model: upstreamModelFor(ctx, catalog) });
+    } catch (err) {
+      const missing = `${name}_api_key_missing`;
+      if (allowStubFallback && !requireLive && (err.code === missing || err.message === missing)) {
+        return callStubProvider(ctx);
       }
+      throw err;
     }
-    if (name === "anthropic") {
-      try {
-        return await anthropic(ctx);
-      } catch (err) {
-        if (
-          allowStubFallback &&
-          !requireLive &&
-          (err.code === "anthropic_api_key_missing" || err.message === "anthropic_api_key_missing")
-        ) {
-          return callStubProvider(ctx);
-        }
-        throw err;
-      }
-    }
-
-    const err = new Error(`provider_unknown:${name}`);
-    err.status = 400;
-    err.code = "provider_unknown";
-    throw err;
   }
 
   return providerFn;
@@ -94,7 +113,9 @@ function createProvider(options = {}) {
 module.exports = {
   createProvider,
   resolveProviderName,
+  upstreamModelFor,
   callStubProvider,
   createOpenAIProvider,
   createAnthropicProvider,
+  registry,
 };

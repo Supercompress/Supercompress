@@ -8,7 +8,7 @@ const ANTHROPIC_VERSION = "2023-06-01";
 /**
  * Map OpenAI-shaped NormalizedRequest messages → Anthropic Messages API body.
  */
-function buildAnthropicBody(ctx) {
+function buildAnthropicBody(ctx, upstreamModel) {
   const n = ctx.normalized || {};
   const systemParts = [];
   const messages = [];
@@ -33,7 +33,7 @@ function buildAnthropicBody(ctx) {
   }
 
   const body = {
-    model: ctx.model_routed || n.model,
+    model: upstreamModel || ctx.model_routed || n.model,
     messages,
     max_tokens: n.max_tokens != null ? Number(n.max_tokens) : 1024,
     stream: n.stream === true,
@@ -68,7 +68,7 @@ function createAnthropicProvider(options = {}) {
   const fetchImpl = options.fetchImpl || globalThis.fetch;
   const baseUrl = options.baseUrl || DEFAULT_URL;
 
-  async function callAnthropic(ctx) {
+  async function callAnthropic(ctx, call = {}) {
     const apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       const err = new Error("anthropic_api_key_missing");
@@ -82,7 +82,7 @@ function createAnthropicProvider(options = {}) {
       throw err;
     }
 
-    const body = buildAnthropicBody(ctx);
+    const body = buildAnthropicBody(ctx, call.model);
     const res = await fetchImpl(baseUrl, {
       method: "POST",
       headers: {

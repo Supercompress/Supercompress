@@ -73,6 +73,23 @@ const DEFAULT_CATALOG = [
   },
 ];
 
+/**
+ * Models on the other supported providers (services/gateway/providers/registry.js).
+ * The gateway adds an entry only when its provider is configured (API key set), so a
+ * deployment never routes to a provider it cannot call. Prices are illustrative, as above;
+ * windows are kept conservative so a request the router accepts also fits upstream.
+ * Override or extend with SC_CP_CATALOG / SC_CP_CATALOG_FILE.
+ */
+const PROVIDER_CATALOG = [
+  { id: "gemini-2.5-flash", provider: "google", max_context_tokens: 1_048_576, input_usd_per_mtok: 0.3, output_usd_per_mtok: 2.5, capabilities: ["chat", "tools", "vision"], weight: 2, latency_ms_p50: 600, tier: 1, tags: ["cheap", "fast", "long-context"] },
+  { id: "gemini-2.5-pro", provider: "google", max_context_tokens: 1_048_576, input_usd_per_mtok: 1.25, output_usd_per_mtok: 10, capabilities: ["chat", "tools", "vision"], weight: 2, latency_ms_p50: 1400, tier: 3, tags: ["flagship", "long-context"] },
+  { id: "mistral-small-latest", provider: "mistral", max_context_tokens: 128_000, input_usd_per_mtok: 0.1, output_usd_per_mtok: 0.3, capabilities: ["chat", "tools"], weight: 2, latency_ms_p50: 450, tier: 1, tags: ["cheap", "fast"] },
+  { id: "mistral-large-latest", provider: "mistral", max_context_tokens: 128_000, input_usd_per_mtok: 2, output_usd_per_mtok: 6, capabilities: ["chat", "tools"], weight: 2, latency_ms_p50: 1000, tier: 3, tags: ["flagship"] },
+  { id: "grok-4", provider: "xai", max_context_tokens: 256_000, input_usd_per_mtok: 3, output_usd_per_mtok: 15, capabilities: ["chat", "tools"], weight: 2, latency_ms_p50: 1500, tier: 3, tags: ["flagship"] },
+  { id: "deepseek-chat", provider: "deepseek", max_context_tokens: 64_000, input_usd_per_mtok: 0.27, output_usd_per_mtok: 1.1, capabilities: ["chat", "tools"], weight: 2, latency_ms_p50: 900, tier: 1, tags: ["cheap"] },
+  { id: "llama-3.3-70b-versatile", provider: "groq", max_context_tokens: 128_000, input_usd_per_mtok: 0.59, output_usd_per_mtok: 0.79, capabilities: ["chat", "tools"], weight: 2, latency_ms_p50: 300, tier: 2, tags: ["fast", "open-weights"] },
+];
+
 function normalizeModelEntry(raw = {}) {
   const id = String(raw.id || "").trim();
   if (!id) {
@@ -97,6 +114,8 @@ function normalizeModelEntry(raw = {}) {
     /** 0=edge … 3=flagship. Optional max_tier gate. */
     tier: raw.tier != null ? Math.max(0, Number(raw.tier) || 0) : 1,
     tags: Array.isArray(raw.tags) ? raw.tags.map(String) : [],
+    /** Model id sent upstream when it differs from the catalog id (e.g. an OpenRouter slug). */
+    ...(raw.upstream_model ? { upstream_model: String(raw.upstream_model) } : {}),
   };
 }
 
@@ -131,6 +150,7 @@ function defaultCatalog() {
 
 module.exports = {
   DEFAULT_CATALOG,
+  PROVIDER_CATALOG,
   normalizeModelEntry,
   normalizeCatalog,
   defaultCatalog,
