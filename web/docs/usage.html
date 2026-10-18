@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Usage — SuperCompress Documentation</title>
+  <title>Usage | SuperCompress Documentation</title>
   <meta name="description" content="Use SuperCompress in production: hosted query-aware Neural Keep API. Python client and coding-agent setup call the same hosted path." />
-  <meta property="og:title" content="Usage — SuperCompress Documentation" />
+  <meta property="og:title" content="Usage, SuperCompress Documentation" />
   <meta property="og:description" content="Use SuperCompress via the hosted API. Python client and supercompress setup call the same Neural Keep path." />
   <meta property="og:url" content="https://docs.supercompress.dev/usage" />
   <meta property="og:type" content="website" />
@@ -78,7 +78,7 @@
         <p>The fastest way to use SuperCompress in production. Get an API key, call the endpoint, done. No servers, no containers, no config.</p>
 
         <h3>Get a key</h3>
-        <p>Sign in at <a href="https://www.supercompress.dev/dashboard?signup=1">supercompress.dev/dashboard</a> with Google or email and create an API key. Free allowance includes 5M tokens/month ($5 worth).</p>
+        <p>Sign in at <a href="https://www.supercompress.dev/dashboard?signup=1">supercompress.dev/dashboard</a> with Google or email and create an API key. A free monthly allowance is included.</p>
 
         <h3>Call the API</h3>
         <pre><code><span class="cm"># Quick one-liner (form-encoded)</span>
@@ -92,7 +92,7 @@
   -H <span class="str">"Content-Type: application/json"</span> \
   -d <span class="str">'{"context":"Your long context here…","query":"What do you want to know?"}'</span>
 
-<span class="cm"># Prefer header auth — query-string API keys are rejected</span>
+<span class="cm"># Prefer header auth, query-string API keys are rejected</span>
 <span class="kw">curl</span> -X POST https://api.supercompress.dev/compress \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
   -H <span class="str">"Content-Type: application/json"</span> \
@@ -109,7 +109,7 @@ out = sc.compress(context, question)
 
         <div class="doc-callout doc-callout--tip">
           <span class="doc-callout-label">Free tier</span>
-          5M tokens/month free ($5). After that, pay-as-you-go at $0.10 / 1M tokens. Usage tracked in your <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>.
+          A free monthly allowance is included, then pay-as-you-go; current plans are in the dashboard. Usage tracked in your <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>.
         </div>
 
         <h2 id="local-library">Python client</h2>
@@ -139,7 +139,7 @@ result = sc.compress(
             <tr><th></th><th>Hosted API</th><th>Python client</th></tr>
           </thead>
           <tbody>
-            <tr><td>Setup</td><td>Get a key, call the endpoint</td><td><code>pip install supercompress</code></td></tr>
+            <tr><td>Setup</td><td>Get a key, call the endpoint</td><td>Python HTTP client for the hosted API</td></tr>
             <tr><td>Latency overhead</td><td>Network + hosted Neural Keep</td><td>Client call into the hosted API</td></tr>
             <tr><td>External deps</td><td>None (HTTP client only)</td><td>Python 3.10+</td></tr>
             <tr><td>Rate limits</td><td>See dashboard for current plans</td><td>Same hosted meter as the API</td></tr>
@@ -161,7 +161,7 @@ result = sc.compress(
               <aside class="docs-signup-cta" aria-label="Get started">
           <p class="docs-signup-cta-kicker">Free to start</p>
           <h2>Get your API key</h2>
-          <p>5M free tokens/mo · then $0.10/1M. No credit card.</p>
+          <p>Free monthly allowance. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
             <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>

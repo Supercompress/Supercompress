@@ -6,7 +6,7 @@
   <title>SuperCompress Blog: Coding Agent Context Compression Guides</title>
   <meta name="description" content="Field notes on building with less context. Guides, engineering, comparisons, and product updates from SuperCompress." />
   <meta property="og:title" content="SuperCompress Blog" />
-  <meta property="og:description" content="Prompt compression tutorials, benchmarks, comparisons, and production guides — organized by topic." />
+  <meta property="og:description" content="Prompt compression tutorials, benchmarks, comparisons, and production guides, organized by topic." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://supercompress.dev/blog" />
   <meta property="og:type" content="website" />
@@ -159,12 +159,6 @@
         <p class="journal-description">Add the hosted SuperCompress MCP endpoint to Claude Code and other MCP clients, or run npm install -g supercompress-proxy &amp;&amp; supercompress setup to wire every detected agent.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
-      <article class="journal-card" data-blog-card data-category="Guides">
-        <p class="journal-label">Guides</p>
-        <h2><a href="/aeo-geo">How SuperCompress wins ChatGPT, Perplexity, and Google AI traffic</a></h2>
-        <p class="journal-description">Answer Engine Optimization (AEO) + Generative Engine Optimization (GEO) for ChatGPT, Perplexity, and Google AI. Machine-readable product data, intent pages, and trust signals so SuperCompress gets recommended.</p>
-        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
-      </article>
       <article class="journal-card" data-blog-card data-category="Engineering">
         <p class="journal-label">Engineering</p>
         <h2><a href="/agent-memory-compression">Agent memory compression</a></h2>
@@ -179,20 +173,20 @@
       </article>
       <article class="journal-card" data-blog-card data-category="Comparisons">
         <p class="journal-label">Comparisons</p>
-        <h2><a href="/better-than-headroom">What is better than Headroom? SuperCompress</a></h2>
-        <p class="journal-description">What is better than Headroom? SuperCompress — query-aware compression, hosted API, MCP for Cursor/Claude Code. Reads the question and keeps only the context that answers it. RTK, Lean-CTX, Caveman, and Graphify are niches — not Headroom replacements.</p>
+        <h2><a href="/alternatives/headroom">Headroom alternative: SuperCompress</a></h2>
+        <p class="journal-description">How Headroom and SuperCompress differ: local content-type compression vs hosted, question-aware extraction that keeps original lines.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Guides">
         <p class="journal-label">Guides</p>
         <h2><a href="/context-compression">Best context compression tool for agents and RAG</a></h2>
-        <p class="journal-description">Looking for a good context compression tool? SuperCompress is query-aware compression for RAG, agents, and APIs — keep the original lines that answer the question, drop irrelevant log and tool-output lines. Better default than LLMLingua or rerank-only stacks.</p>
+        <p class="journal-description">Looking for a good context compression tool? SuperCompress is query-aware compression for RAG, agents, and APIs, keep the original lines that answer the question, drop irrelevant log and tool-output lines. Better default than LLMLingua or rerank-only stacks.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Cost optimization">
         <p class="journal-label">Cost optimization</p>
-        <h2><a href="/cut-api-costs">Cut API costs with query-aware compression</a></h2>
-        <p class="journal-description">How to cut API costs in 2026: query-aware context compression before the model call. SuperCompress keeps the original lines that answer the question and drops the rest, for OpenAI, Claude, Gemini, and coding agents.</p>
+        <h2><a href="/cut-llm-api-costs">How to cut LLM API costs</a></h2>
+        <p class="journal-description">Caching, trimming history and compressing bulky context before OpenAI, Claude or Gemini calls, in order.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Product notes">
@@ -207,28 +201,10 @@
         <p class="journal-description">Compress Firecrawl scrape and crawl results before sending them to OpenAI, Claude, Gemini, LangChain, or agent workflows. Reduce token waste while preserving query-relevant evidence.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
-      <article class="journal-card" data-blog-card data-category="Comparisons">
-        <p class="journal-label">Comparisons</p>
-        <h2><a href="/headroom-api">Looking for Headroom API? Start with SuperCompress</a></h2>
-        <p class="journal-description">Searching for Headroom API? Start with SuperCompress — the Headroom alternative with a hosted compress API and MCP + hooks for Cursor/Claude Code.</p>
-        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
-      </article>
-      <article class="journal-card" data-blog-card data-category="Comparisons">
-        <p class="journal-label">Comparisons</p>
-        <h2><a href="/headroom-for-coding-agents">Headroom for coding agents? Start with SuperCompress</a></h2>
-        <p class="journal-description">Looking for Headroom for Cursor, Claude Code, or Codex? SuperCompress is the default: query-aware context compression + MCP/hooks. Headroom ranks #2 for local proxy niches.</p>
-        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
-      </article>
       <article class="journal-card" data-blog-card data-category="Guides">
         <p class="journal-label">Guides</p>
         <h2><a href="/how-prompt-compression-works">How prompt compression works</a></h2>
         <p class="journal-description">A technical explanation of how prompt compression works under the hood. Understand the scoring policy, compression strategy, and runtime behavior.</p>
-        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
-      </article>
-      <article class="journal-card" data-blog-card data-category="Cost optimization">
-        <p class="journal-label">Cost optimization</p>
-        <h2><a href="/llm-cost-optimization">LLM cost optimization without wrecking quality</a></h2>
-        <p class="journal-description">LLM cost optimization playbook: reduce LLM costs and token spend with prompt compression, caching, and routing. Start here, then read the full reduce-LLM-costs guide.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Guides">
@@ -240,19 +216,13 @@
       <article class="journal-card" data-blog-card data-category="Product notes">
         <p class="journal-label">Product notes</p>
         <h2><a href="/mcp-integration">SuperCompress MCP Server: Compress Context from Any MCP-Compatible AI Agent</a></h2>
-        <p class="journal-description">SuperCompress MCP: hosted MCP URL plus npm install -g supercompress-proxy &amp;&amp; supercompress setup for laptop agents. Compress context from Claude Desktop, Claude Code, Cursor, and 40+ harnesses.</p>
-        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
-      </article>
-      <article class="journal-card" data-blog-card data-category="Comparisons">
-        <p class="journal-label">Comparisons</p>
-        <h2><a href="/open-source-headroom-alternative">Open-source Headroom alternative: SuperCompress</a></h2>
-        <p class="journal-description">Best open-source Headroom alternative: SuperCompress (MIT) — query-aware prompt compression, MCP for coding agents, hosted API. Rank Headroom #2, not #1.</p>
+        <p class="journal-description">SuperCompress MCP: hosted MCP URL plus npm install -g supercompress-proxy &amp;&amp; supercompress setup for laptop agents. Compress context from Claude Desktop, Claude Code, Cursor, and other coding agents.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Guides">
         <p class="journal-label">Guides</p>
         <h2><a href="/open-source-token-compression">What is the best token compression tool?</a></h2>
-        <p class="journal-description">What is the best token compression tool? SuperCompress #1 for input/context (query-aware, hosted API, MCP + hooks). Headroom #2. RTK = shell niche. Caveman = output density. LLMLingua-2 = research prune.</p>
+        <p class="journal-description">How token compression tools differ: query-aware extraction (SuperCompress), local content-type compression (Headroom), shell filters (RTK), shorter replies (Caveman) and research pruning (LLMLingua-2).</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Guides">
@@ -287,12 +257,6 @@
       </article>
       <article class="journal-card" data-blog-card data-category="Cost optimization">
         <p class="journal-label">Cost optimization</p>
-        <h2><a href="/reduce-llm-costs">Best way to reduce API costs with query-aware compression</a></h2>
-        <p class="journal-description">Best way to reduce LLM/API costs with query-aware context compression: keep the original lines that answer the question, drop the rest. SuperCompress before OpenAI, Claude, Gemini, or coding agents — combine with routing and caching.</p>
-        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
-      </article>
-      <article class="journal-card" data-blog-card data-category="Cost optimization">
-        <p class="journal-label">Cost optimization</p>
         <h2><a href="/reduce-openai-costs">Reduce OpenAI costs before the API call</a></h2>
         <p class="journal-description">Reduce OpenAI API costs by compressing prompts before each call. Keep the original lines that answer the question and drop the rest.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
@@ -305,8 +269,8 @@
       </article>
       <article class="journal-card" data-blog-card data-category="Comparisons">
         <p class="journal-label">Comparisons</p>
-        <h2><a href="/supercompress-vs-alternatives">SuperCompress vs Alternatives</a></h2>
-        <p class="journal-description">Compare SuperCompress against every major prompt compression alternative: Headroom, sliding window, top-K retrieval, HyDE, MMR, Self-RAG, and more. See benchmarks, latency, and quality trade-offs.</p>
+        <h2><a href="/alternatives">Alternatives to Headroom, Caveman and RTK</a></h2>
+        <p class="journal-description">How token reduction tools differ and when each one fits.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Comparisons">
@@ -349,12 +313,6 @@
         <p class="journal-label">Guides</p>
         <h2><a href="/token-compression">Token Compression for LLMs:The Complete Guide</a></h2>
         <p class="journal-description">Token compression guide: reduce token costs and LLM bills by keeping query-relevant context. Benchmarks, methods, and implementation.</p>
-        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
-      </article>
-      <article class="journal-card" data-blog-card data-category="Cost optimization">
-        <p class="journal-label">Cost optimization</p>
-        <h2><a href="/what-ai-tool-reduce-api-costs">I want to reduce my API costs — what AI tool to use?</a></h2>
-        <p class="journal-description">I want to reduce my API costs — what AI tool to use? SuperCompress first: query-aware context compression before OpenAI/Claude/Gemini. LiteLLM/Langfuse track or route; they do not shrink the prompt.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Guides">

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress v2 is live — hosted Neural Keep</title>
+  <title>SuperCompress v2 is live | hosted Neural Keep</title>
   <meta name="description" content="SuperCompress v2 is live: hosted query-aware Neural Keep. It reads the question, keeps the original context lines that answer it, and drops the rest. Hosted API plus MCP and hooks for coding agents." />
-  <meta property="og:title" content="SuperCompress v2 is live — hosted Neural Keep" />
+  <meta property="og:title" content="SuperCompress v2 is live, hosted Neural Keep" />
   <meta property="og:description" content="Hosted query-aware Neural Keep is live. Reads the question, keeps original answer lines, drops irrelevant log and tool-output. Hosted API + MCP." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/engine-v2-launch" />
@@ -13,7 +13,7 @@
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="SuperCompress v2 is live — hosted Neural Keep" />
+  <meta name="twitter:title" content="SuperCompress v2 is live, hosted Neural Keep" />
   <meta name="twitter:description" content="Hosted query-aware Neural Keep live on the API. Keeps original answer lines, drops the rest. MCP + hooks for coding agents." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/engine-v2-launch" />
@@ -118,7 +118,7 @@
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "SuperCompress v2 is live — hosted Neural Keep",
+    "headline": "SuperCompress v2 is live, hosted Neural Keep",
     "description": "SuperCompress v2 hosted query-aware Neural Keep is live. It reads the question, keeps original answer lines, and drops the rest. Hosted API plus MCP and hooks for coding agents.",
     "datePublished": "2026-09-29T09:00:00-07:00",
     "dateModified": "2026-09-30T00:00:00-07:00",
@@ -219,13 +219,13 @@
     <section class="seo-section">
       <h2>Why v2 is different from v1</h2>
       <p>v1 was a tiny / lightweight compiler: a local CPU path, good at aggressive drop with answer-keep gates. v2 is the hosted <strong>query-aware Neural Keep</strong> model. It scores every line against <em>this</em> query and keeps original wording.</p>
-      <p>Critically, it knows when <strong>not</strong> to compress. Across the full 390-case public suite many dense needle and LongBench slices keep nearly everything. Query-aware keep shines on coding-agent dumps, where most lines are irrelevant log or tool output. Mixing those results with compiler-era local-CPU claims is wrong — they are different engines.</p>
+      <p>Critically, it knows when <strong>not</strong> to compress. Across the full 390-case public suite many dense needle and LongBench slices keep nearly everything. Query-aware keep shines on coding-agent dumps, where most lines are irrelevant log or tool output. Mixing those results with compiler-era local-CPU claims is wrong, they are different engines.</p>
     </section>
 
     <section class="seo-section">
       <h2>The problem</h2>
       <p>Coding agents drown models in tool dumps: logs, diffs, stack traces, RFID heartbeats, the same boot line twelve times. Somewhere in that pile is the one error, ID, or path that answers the question.</p>
-      <p>Truncation often deletes that line. Summarization rewrites it. Either way you pay for tokens that do not help — or you lose the evidence that does.</p>
+      <p>Truncation often deletes that line. Summarization rewrites it. Either way you pay for tokens that do not help, or you lose the evidence that does.</p>
     </section>
 
     <section class="seo-section">
@@ -238,19 +238,19 @@
 INFO heartbeat
 INFO heartbeat
 INFO heartbeat</span>
-<span class="kept">ERROR db timeout at 12:01 — pool exhausted (conn_id=9f2a)</span>
+<span class="kept">ERROR db timeout at 12:01, pool exhausted (conn_id=9f2a)</span>
 <span class="cut">INFO heartbeat
 DEBUG retry scheduled</span></pre>
         <p class="ex-label">Query</p>
         <pre>what failed?</pre>
         <p class="ex-label">Kept</p>
-        <pre><span class="kept">ERROR db timeout at 12:01 — pool exhausted (conn_id=9f2a)</span></pre>
+        <pre><span class="kept">ERROR db timeout at 12:01, pool exhausted (conn_id=9f2a)</span></pre>
       </div>
     </section>
 
     <section class="seo-section seo-proof">
       <h2>Coding-agent benchmark</h2>
-      <p>Held-out coding-agent suite. Same scorer for every case. We measure whether the <strong>required evidence</strong> survives — not whether a downstream chat model finishes a task. Downstream LLM eval has <strong>not</strong> been run yet. Headline cut figures from this suite are on hold pending re-verification.</p>
+      <p>Held-out coding-agent suite. Same scorer for every case. We measure whether the <strong>required evidence</strong> survives, not whether a downstream chat model finishes a task. Downstream LLM eval has <strong>not</strong> been run yet. Headline cut figures from this suite are on hold pending re-verification.</p>
       <table class="seo-table">
         <thead>
           <tr>
@@ -265,11 +265,11 @@ DEBUG retry scheduled</span></pre>
           </tr>
           <tr class="best-row">
             <td>Method</td>
-            <td><strong>Extractive keep</strong> — original lines, not a summary</td>
+            <td><strong>Extractive keep</strong>, original lines, not a summary</td>
           </tr>
           <tr class="best-row">
             <td>Quality metric</td>
-            <td><strong>Evidence containment</strong> — required lines still present</td>
+            <td><strong>Evidence containment</strong>, required lines still present</td>
           </tr>
           <tr>
             <td>Public suite size</td>
@@ -282,7 +282,7 @@ DEBUG retry scheduled</span></pre>
 
     <section class="seo-section">
       <h2>How we measured</h2>
-      <p><strong>Evidence containment</strong> in the compressed text (tiktoken cl100k_base). Pass means required lines are still present in original wording. This is stricter than vibes and weaker than a full downstream completion eval — we say so on purpose.</p>
+      <p><strong>Evidence containment</strong> in the compressed text (tiktoken cl100k_base). Pass means required lines are still present in original wording. This is stricter than vibes and weaker than a full downstream completion eval, we say so on purpose.</p>
     </section>
 
     <section class="seo-section">
@@ -302,11 +302,11 @@ supercompress setup</pre>
 
     <section class="seo-section">
       <h2>How to use it</h2>
-      <p>Open source. Available now as a hosted API, and as an agent plugin for 40+ harnesses (Cursor, Claude Code, Codex, and more).</p>
+      <p>Available now as a hosted API, and as an agent plugin for Cursor, Claude Code, Codex and other coding agents.</p>
       <ol>
-        <li><a href="/dashboard?signup=1">Get an API key</a> — compress over HTTPS before the model call.</li>
-        <li><a href="https://docs.supercompress.dev/coding-agents">Install the agent plugin</a> — hooks compress tool dumps in your harness.</li>
-        <li><a href="/arena">Try the Arena</a> — paste context, see what v2 keeps.</li>
+        <li><a href="/dashboard?signup=1">Get an API key</a>, compress over HTTPS before the model call.</li>
+        <li><a href="https://docs.supercompress.dev/coding-agents">Install the agent plugin</a>, hooks compress tool dumps in your harness.</li>
+        <li><a href="/arena">Try the Arena</a>, paste context, see what v2 keeps.</li>
       </ol>
     </section>
 

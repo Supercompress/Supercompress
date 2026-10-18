@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quickstart — SuperCompress Documentation</title>
+  <title>Quickstart | SuperCompress Documentation</title>
   <meta name="description" content="Get started with SuperCompress in under 5 minutes. Install, get an API key, compress your first prompt." />
-  <meta property="og:title" content="Quickstart — SuperCompress Documentation" />
+  <meta property="og:title" content="Quickstart, SuperCompress Documentation" />
   <meta property="og:description" content="Get started with SuperCompress in under 5 minutes." />
   <meta property="og:url" content="https://docs.supercompress.dev/quickstart" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
@@ -66,7 +66,7 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">Quickstart</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Install SuperCompress, get an API key, and compress your first prompt — in under 5 minutes.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Install SuperCompress, get an API key, and compress your first prompt, in under 5 minutes.</p>
 
         <div class="doc-callout doc-callout--info">
           <span class="doc-callout-label">Prefer the hosted API?</span>
@@ -94,7 +94,7 @@
 
         <h2 id="get-a-key">2. Get an API key</h2>
         <p>To use the hosted API, head to the <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>, sign in with Google or email, and create a key. Keys look like <code>sc_live_xxxxxxxx</code>.</p>
-        <p>For local-only use, you don't need a key — the library compresses entirely on-device.</p>
+        <p>For local-only use, you don't need a key, the library compresses entirely on-device.</p>
         <p>Set your key as an environment variable:</p>
         <pre><code><span class="kw">export</span> <span class="str">SUPERCOMPRESS_API_KEY</span>=sc_live_YOUR_KEY</code></pre>
 
@@ -110,14 +110,14 @@ Billing cycle: monthly
 Seats: 5
 
 ## Feature requests (Q2)
-Multi-workspace view — in progress
-Dark mode — planned
-API rate limit increase — under review
+Multi-workspace view, in progress
+Dark mode, planned
+API rate limit increase, under review
 
 ## Recent activity
-2026-06-28 — upgraded from Starter to Pro
-2026-06-25 — generated 3 API keys
-2026-06-20 — hit rate limit, filed support ticket
+2026-06-28, upgraded from Starter to Pro
+2026-06-25, generated 3 API keys
+2026-06-20, hit rate limit, filed support ticket
 """</span>
 
 question = <span class="str">"What plan is the user on and how many seats do they have?"</span>
@@ -135,8 +135,8 @@ Billing cycle: monthly
 Seats: 5
 
 <span class="cm">## Recent activity</span>
-2026-06-28 — upgraded from Starter to Pro</code></pre>
-        <p>Notice that the <strong>Feature requests</strong> section was dropped — it's irrelevant to a question about the current plan. The <strong>Recent activity</strong> section was partially kept because the upgrade confirms the plan. The compiler preserved what matters and cut the rest.</p>
+2026-06-28, upgraded from Starter to Pro</code></pre>
+        <p>Notice that the <strong>Feature requests</strong> section was dropped, it's irrelevant to a question about the current plan. The <strong>Recent activity</strong> section was partially kept because the upgrade confirms the plan. The compiler preserved what matters and cut the rest.</p>
 
         <h2 id="understand">4. Understand what happened</h2>
         <p>The <code>compress_context</code> function returns a <code>CompressResult</code> with useful metadata:</p>
@@ -145,19 +145,18 @@ Seats: 5
 <span class="kw">print</span>(<span class="str">f"Saved: {result.tokens_saved_pct:.1f}%"</span>)
 <span class="kw">print</span>(<span class="str">f"Policy: {result.policy_name}"</span>)</code></pre>
         <p>On this example you'll see something like:</p>
-        <pre><code>Original: 104 tokens
-Compressed: 40 tokens
-Saved: 61.5%
+        <pre><code>Original: &lt;original_tokens&gt; tokens
+Compressed: &lt;kept_tokens&gt; tokens
+Saved: &lt;tokens_saved_pct&gt;%
 Policy: SuperCompress</code></pre>
-        <p>The function also supports <strong>compiler mode</strong> (default in the hosted API) which doesn't require a budget — it maximizes removal while keeping important evidence and reporting a risk level.</p>
+        <p>The function also supports <strong>compiler mode</strong> (default in the hosted API) which doesn't require a budget, it maximizes removal while keeping important evidence and reporting a risk level.</p>
 
         <h2 id="next-steps">5. Next steps</h2>
         <ul>
-          <li><strong>Use the hosted API</strong> — <code class="str">POST /api/v1/compress</code> (or just <code>/compress</code>) from any language. See the <a href="https://docs.supercompress.dev/api-reference">API reference</a>.</li>
-          <li><strong>Wire it into your app</strong> — add compression before OpenAI, LangChain, Express.js, or any LLM call. See <a href="https://docs.supercompress.dev/integrations">integrations</a>.</li>
-          <li><strong>Deploy on your own server</strong> — <code>pip install supercompress</code> and call it from any Python backend. See <a href="https://docs.supercompress.dev/usage">usage</a>.</li>
-          <li><strong>Try the playground</strong> — test compression on your own text in-browser at <a href="https://www.supercompress.dev/playground">supercompress.dev/playground</a>.</li>
-          <li><strong>Compare approaches</strong> — see how SuperCompress stacks up against truncation, summarization, and H2O at <a href="https://www.supercompress.dev/benchmarks">supercompress.dev/benchmarks</a>.</li>
+          <li><strong>Use the hosted API</strong>: <code class="str">POST /api/v1/compress</code> (or just <code>/compress</code>) from any language. See the <a href="https://docs.supercompress.dev/api-reference">API reference</a>.</li>
+          <li><strong>Wire it into your app</strong>, add compression before OpenAI, LangChain, Express.js, or any LLM call. See <a href="https://docs.supercompress.dev/integrations">integrations</a>.</li>
+          <li><strong>Try the playground</strong>, test compression on your own text in-browser at <a href="https://www.supercompress.dev/playground">supercompress.dev/playground</a>.</li>
+          <li><strong>Compare approaches</strong>, see how SuperCompress stacks up against truncation, summarization, and H2O at <a href="https://www.supercompress.dev/benchmarks">supercompress.dev/benchmarks</a>.</li>
         </ul>
 
         <h2>Using the hosted API (curl)</h2>
@@ -206,7 +205,7 @@ out = sc.compress(context, question)
               <aside class="docs-signup-cta" aria-label="Get started">
           <p class="docs-signup-cta-kicker">Free to start</p>
           <h2>Get your API key</h2>
-          <p>5M free tokens/mo · then $0.10/1M. No credit card.</p>
+          <p>Free monthly allowance. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
             <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>

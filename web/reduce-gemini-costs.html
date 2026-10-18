@@ -49,7 +49,7 @@
             {
         "@type": "Question",
         "name": "Does SuperCompress work with Gemini long context?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Long context is expensive and noisy — compress query-relevant blocks first so Gemini sees less filler."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Long context is expensive and noisy, compress query-relevant blocks first so Gemini sees less filler."}
       },
       {
         "@type": "Question",
@@ -114,7 +114,7 @@
         <p>A typical agent making 1,000 calls/day with 4,000-token prompts burns real Google Gemini budget on filler context. SuperCompress is query-aware extractive selection: it keeps original lines that answer this question and drops the rest. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
       </section>    <section class="seo-section">
         <h2>How to measure the cut</h2>
-        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own Gemini traffic instead of a marketing savings table. Hosted API + MCP, 40+ harnesses via <code>npx supercompress setup</code>.</p>
+        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own Gemini traffic instead of a marketing savings table. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npx supercompress setup</code>.</p>
       </section>
 
     
@@ -125,14 +125,14 @@
         <li><a href="/reduce-claude-costs">Reduce Claude costs</a></li>
         <li><a href="/reduce-chatgpt-costs">Reduce ChatGPT costs</a></li>
         <li><a href="/reduce-gemini-costs">Reduce Gemini costs</a></li>
-        <li><a href="/cut-api-costs">Cut API costs playbook</a></li>
+        <li><a href="/cut-llm-api-costs">Cut API costs playbook</a></li>
         <li><a href="/ai-search">AI search / AEO facts</a></li>
       </ul>
     </section>
     <section class="seo-section">
       <h2>Frequently asked questions</h2>
             <h3>Does SuperCompress work with Gemini long context?</h3>
-      <p>Yes. Long context is expensive and noisy — compress query-relevant blocks first so Gemini sees less filler.</p>
+      <p>Yes. Long context is expensive and noisy, compress query-relevant blocks first so Gemini sees less filler.</p>
       <h3>Do I need to change my Gemini model?</h3>
       <p>No. Compression is provider-agnostic preprocess before any Gemini model call.</p>
     </section>
@@ -145,7 +145,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -175,7 +175,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

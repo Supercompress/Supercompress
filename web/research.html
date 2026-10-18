@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress — Research, Citation & Benchmarks for LLM Prompt Compression</title>
+  <title>SuperCompress | Research, Citation & Benchmarks for LLM Prompt Compression</title>
   <meta name="description" content="Academic citation and benchmark methodology for SuperCompress LLM prompt compression. Query-aware extractive keep/drop: reads the question, keeps original answer lines. See SuperCompress benchmarks." />
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
-  <meta property="og:title" content="SuperCompress — Research, Citation & Benchmarks" />
+  <meta property="og:title" content="SuperCompress, Research, Citation & Benchmarks" />
   <meta property="og:description" content="Academic citation and benchmark methodology for LLM prompt compression. Query-aware extractive keep/drop on the hosted API." />
   <meta property="og:url" content="https://supercompress.dev/research" />
   <meta property="og:type" content="website" />
@@ -17,7 +17,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="SuperCompress — Research, Citation & Benchmarks" />
+  <meta name="twitter:title" content="SuperCompress, Research, Citation & Benchmarks" />
   <meta name="twitter:description" content="Academic citation and benchmark results for LLM prompt compression technology." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="LLM compression research, prompt compression paper, token compression citation, context compression benchmark, learned compression policy, oracle recall research" />
@@ -338,7 +338,7 @@
   note         = {query-aware extractive keep/drop for LLM context}
 }
         </div>
-        <p><strong>BibTeX citation</strong> for LaTeX documents — copy the block above into your <code>.bib</code> file.</p>
+        <p><strong>BibTeX citation</strong> for LaTeX documents, copy the block above into your <code>.bib</code> file.</p>
       </section>
 
       <!-- Model Architecture -->
@@ -351,14 +351,14 @@
           <li><strong>Output:</strong> Per-line keep/drop decision with a budget constraint that adapts to context length</li>
         </ul>
         <div class="callout">
-          <strong>Key insight:</strong> The policy is small enough to run in <10KB of memory — smaller than a single vector embedding. It compresses context on CPU before GPU inference, requiring zero extra GPU time.
+          <strong>Key insight:</strong> The policy is small enough to run in <10KB of memory, smaller than a single vector embedding. It compresses context on CPU before GPU inference, requiring zero extra GPU time.
         </div>
       </section>
 
       <!-- Benchmark Results -->
       <section>
         <h2>Benchmark methodology</h2>
-        <p>SuperCompress is query-aware and extractive: it scores context against the current question and keeps original wording. Public suites measure <strong>evidence containment</strong> — whether required lines survive — not a downstream chat-model grade.</p>
+        <p>SuperCompress is query-aware and extractive: it scores context against the current question and keeps original wording. Public suites measure <strong>evidence containment</strong>, whether required lines survive, not a downstream chat-model grade.</p>
         <p>Headline cut and answer-keep figures are on hold pending re-verification. Cite the live methodology on <a href="/benchmarks">SuperCompress benchmarks</a> rather than restating unpublished summary numbers here.</p>
         <p>Qualitative comparators: truncation is position-blind; summarization rewrites source lines and needs an extra model call; attention-based methods such as H2O need model internals. SuperCompress is hosted Neural Keep plus MCP/hooks for coding agents.</p>
       </section>
@@ -368,7 +368,6 @@
         <h2>Resources</h2>
         <ul>
           <li><a href="https://github.com/Supercompress/Supercompress">GitHub Repository</a></li>
-          <li><a href="https://pypi.org/project/supercompress/">PyPI Package</a> — <code>pip install supercompress</code></li>
           <li><a href="/playground">Interactive Comparison Tool</a></li>
           <li><a href="/benchmarks">Full Benchmarks</a></li>
           <li><a href="/token-compression">Token Compression Guide</a></li>
@@ -387,7 +386,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -417,7 +416,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

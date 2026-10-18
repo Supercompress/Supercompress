@@ -185,7 +185,7 @@
     <table class="seo-table">
       <thead><tr><th>Option</th><th>How</th><th>Trade-off</th></tr></thead>
       <tbody>
-        <tr><td><strong>Raise the limit</strong></td><td><code>MAX_MCP_OUTPUT_TOKENS=50000 claude</code></td><td>Raises Claude Code's MCP token budget. Separately, results over ~50,000 characters are still saved to a file and the agent gets the path — so raising the token limit does not put every large result into context.</td></tr>
+        <tr><td><strong>Raise the limit</strong></td><td><code>MAX_MCP_OUTPUT_TOKENS=50000 claude</code></td><td>Raises Claude Code's MCP token budget. Separately, results over ~50,000 characters are still saved to a file and the agent gets the path, so raising the token limit does not put every large result into context.</td></tr>
         <tr><td><strong>Ask for less</strong></td><td>Use the server's filters, field selection, page size or search parameters.</td><td>Only works when the server supports it and you know what to ask for.</td></tr>
         <tr><td><strong>Truncate</strong></td><td>A proxy or wrapper that cuts results at a fixed size.</td><td>Blind: the line you need may be past the cut.</td></tr>
         <tr><td><strong>Compress against the question</strong></td><td>SuperCompress <code>compress_context</code> with the bulky result as <code>context</code> and your ask as <code>query</code>.</td><td>Keeps the original lines that answer the question and drops the rest; reports <code>original_tokens</code> and <code>kept_tokens</code>.</td></tr>

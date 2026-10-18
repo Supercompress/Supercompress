@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress — See Compression in Action</title>
+  <title>SuperCompress | See Compression in Action</title>
   <meta name="description" content="Paste any text and see how SuperCompress intelligently compresses it while preserving answer-critical information. Live demo." />
-  <meta property="og:title" content="SuperCompress — See Compression in Action" />
+  <meta property="og:title" content="SuperCompress, See Compression in Action" />
   <meta property="og:description" content="Paste text, ask a question, and watch SuperCompress intelligently compress context in real time." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:image:width" content="1200" />
@@ -369,9 +369,9 @@
   <div class="df-header-spacer" aria-hidden="true"></div>
 <div class="header" style="padding-top:40px;">
   <div style="text-align:center;background:linear-gradient(135deg,rgba(37,99,235,0.08),rgba(124,58,237,0.08));border-bottom:1px solid #1a1a1a;padding:8px 20px;font-size:13px;color:#94a3b8;">
-    <span style="color:#60a5fa;font-weight:600;">pip install supercompress</span>
+    <span style="color:#60a5fa;font-weight:600;">npm install -g supercompress-proxy &amp;&amp; supercompress setup</span>
     <span style="margin:0 8px;">•</span>
-    <span>Open source LLM prompt compression</span>
+    <span>Hosted context compression</span>
     <span style="margin:0 8px;">•</span>
     <a href="https://github.com/Supercompress/Supercompress" style="color:#60a5fa;text-decoration:none;" target="_blank">★ Star on GitHub</a>
   </div>
@@ -382,7 +382,7 @@
 
   <div class="container">
     <div style="text-align:center;font-size:13px;color:#64748b;margin-bottom:16px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;padding:8px 16px;display:inline-block;width:auto;margin-left:auto;margin-right:auto;">
-      <span role="img" aria-label="zap">⚡</span> This demo simulates the compression logic locally — results are illustrative.
+      <span role="img" aria-label="zap">⚡</span> This demo simulates the compression logic locally, results are illustrative.
       <a href="https://supercompress.dev/live-demo" style="color:#60a5fa;">Try the real API →</a>
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 8px;">
@@ -418,19 +418,19 @@
     <div class="results-section" id="results">
       <div class="stats-row" id="statsRow">
         <div class="stat-card accent">
-          <div class="stat-value" id="origTokens">—</div>
+          <div class="stat-value" id="origTokens">-</div>
           <div class="stat-label">Original Tokens</div>
         </div>
         <div class="stat-card green">
-          <div class="stat-value" id="compTokens">—</div>
+          <div class="stat-value" id="compTokens">-</div>
           <div class="stat-label">Compressed Tokens</div>
         </div>
         <div class="stat-card purple">
-          <div class="stat-value" id="savingsPct">—</div>
+          <div class="stat-value" id="savingsPct">-</div>
           <div class="stat-label">Tokens Saved</div>
         </div>
         <div class="stat-card amber">
-          <div class="stat-value" id="latency">—</div>
+          <div class="stat-value" id="latency">-</div>
           <div class="stat-label">Latency</div>
         </div>
       </div>
@@ -466,7 +466,7 @@
     </div>
 
     <div class="footer">
-      <a href="https://github.com/Supercompress/Supercompress">SuperCompress</a> — Open source LLM context compression. MIT License (commercial use allowed).
+      <a href="https://github.com/Supercompress/Supercompress">SuperCompress</a>, Open source LLM context compression. MIT License (commercial use allowed).
     </div>
   </div>
 
@@ -474,7 +474,7 @@
     // Presets
     const PRESETS = {
       rag: {
-        context: `The Earth's climate has changed throughout history. In the past 650,000 years, there have been seven cycles of glacial advance and retreat, with the abrupt end of the last ice age about 11,700 years ago marking the beginning of the modern climate era — and of human civilization. Most of these climate changes are attributed to very small variations in Earth\\'s orbit that change the amount of solar energy our planet receives.
+        context: `The Earth's climate has changed throughout history. In the past 650,000 years, there have been seven cycles of glacial advance and retreat, with the abrupt end of the last ice age about 11,700 years ago marking the beginning of the modern climate era, and of human civilization. Most of these climate changes are attributed to very small variations in Earth\\'s orbit that change the amount of solar energy our planet receives.
 
 Carbon dioxide (CO2) levels have increased dramatically since the Industrial Revolution. In 2021, the global average CO2 concentration reached 414 parts per million (ppm), the highest ever recorded. This is primarily due to fossil fuel combustion and deforestation.
 
@@ -675,7 +675,7 @@ Response Format:
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -705,7 +705,7 @@ Response Format:
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

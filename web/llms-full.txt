@@ -130,7 +130,7 @@ After setup, restart the agent so it loads the MCP server. Large tool dumps then
 
 ### Supported harnesses
 
-SuperCompress works across 40+ coding-agent harnesses. Native MCP config is written for the main hosts:
+SuperCompress works across most coding-agent harnesses. Native MCP config is written for the main hosts:
 
 - Claude Code (`~/.claude.json` plus hooks)
 - Cursor (`~/.cursor/mcp.json` plus hooks and an always-on rule)
@@ -223,19 +223,6 @@ Optional header: `Idempotency-Key`. A retry with the same key and the same body 
 | 422 | `context` missing, empty or longer than 120,000 characters. |
 | 429 | Rate limit reached. Wait `retry_after_seconds`, then retry. |
 | 5xx | Server error. Retry with the same `Idempotency-Key`. |
-
-### Python client for the hosted API
-
-```python
-# pip install supercompress
-from supercompress.client import SuperCompress
-
-sc = SuperCompress()  # reads SUPERCOMPRESS_API_KEY
-out = sc.compress(context, question)
-print(out.compressed_text)
-```
-
-The client calls `https://www.supercompress.dev/api/v1/compress` and returns the same fields as the HTTP response.
 
 ### Where to call it in an LLM app
 
@@ -505,7 +492,7 @@ Q: How do I see what was removed?
 A: Every compress response reports original_tokens and kept_tokens, plus kept and dropped blocks. usage_summary shows totals per agent.
 
 Q: Can I call it from my own app?
-A: Yes. Send POST https://www.supercompress.dev/api/v1/compress with context and query, and an API key from the dashboard in the X-API-Key header. There is also a Python client: pip install supercompress.
+A: Yes. Send POST https://www.supercompress.dev/api/v1/compress with context and query, and an API key from the dashboard in the X-API-Key header.
 
 Q: How is it different from RTK or Headroom?
 A: RTK filters known shell commands before the agent reads them. Headroom is a proxy that rewrites requests on the way to the model. SuperCompress works on one bulky result at a time against the current question and keeps original lines. See approaches compared.

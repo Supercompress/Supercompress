@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SuperCompress MCP Server: Compress Context from Any MCP-Compatible AI Agent</title>
-  <meta name="description" content="SuperCompress MCP: hosted URL plus npm install -g supercompress-proxy then supercompress setup for laptop agents. Compress context from Claude Desktop, Claude Code, Cursor, and 40+ harnesses." />
+  <meta name="description" content="SuperCompress MCP: hosted URL plus npm install -g supercompress-proxy then supercompress setup for laptop agents. Compress context from Claude Desktop, Claude Code, Cursor, and other coding agents." />
   <meta property="og:title" content="SuperCompress MCP Server: Compress Context from Any AI Agent" />
   <meta property="og:description" content="MCP for SuperCompress: hosted URL with API key, plus supercompress setup for Cursor / Claude Code / Codex." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
@@ -14,7 +14,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="SuperCompress MCP Server: Compress Context from Any AI Agent" />
-  <meta name="twitter:description" content="Compress prompt context from Claude Desktop, Claude Code, or Cursor via SuperCompress MCP. Hosted Neural Keep API or local compiler — not the same path." />
+  <meta name="twitter:description" content="Compress prompt context from Claude Desktop, Claude Code, or Cursor via SuperCompress MCP. Hosted Neural Keep API or local compiler, not the same path." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="MCP, Model Context Protocol, MCP server, Claude Desktop MCP, Claude Code MCP, Cursor MCP, AI agent tools, prompt compression MCP, SuperCompress MCP, MCP-compatible agent" />
   <link rel="canonical" href="https://supercompress.dev/mcp-integration" />
@@ -32,7 +32,7 @@
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "SuperCompress MCP Server: Compress Context from Any MCP-Compatible AI Agent",
-    "description": "The SuperCompress MCP server brings prompt compression to every MCP-compatible agent — Claude Desktop, Claude Code, Cursor, and more.",
+    "description": "The SuperCompress MCP server brings prompt compression to every MCP-compatible agent, Claude Desktop, Claude Code, Cursor, and more.",
     "author": {"@type": "Organization", "name": "SuperCompress"},
     "datePublished": "2026-07-08",
     "publisher": {"@type": "Organization", "name": "SuperCompress"},
@@ -91,11 +91,11 @@
       <span class="seo-tag">Integration</span>
     </div>
     <h1>SuperCompress MCP Server: Compress Context from Any MCP-Compatible AI Agent</h1>
-    <p class="seo-lead">AI agents are only as good as the context they can see. But long context costs money, consumes window space, and slows down inference. The <strong>SuperCompress MCP server</strong> lets any MCP-compatible agent — Claude Desktop, Claude Code, Cursor, Windsurf — compress context before sending it to an LLM, without leaving the agent workflow.</p>
+    <p class="seo-lead">AI agents are only as good as the context they can see. But long context costs money, consumes window space, and slows down inference. The <strong>SuperCompress MCP server</strong> lets any MCP-compatible agent, Claude Desktop, Claude Code, Cursor, Windsurf, compress context before sending it to an LLM, without leaving the agent workflow.</p>
     <p class="seo-author">July 8, 2026 · 4 min read</p>
 
 <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
-  <a href="/reduce-llm-costs">Reduce LLM costs</a>
+  <a href="/cut-llm-api-costs">Reduce LLM costs</a>
   <a href="/token-compression">Token compression</a>
   <a href="/prompt-compression">Prompt compression</a>
   <a href="/context-compression">Smart context compression</a>
@@ -107,7 +107,7 @@
     <div class="article-prose">
 <h2>What is MCP?</h2>
 
-    <p>The <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol (MCP)</a> is an open standard that lets AI agents communicate with external tools and data sources. An MCP server exposes tools — like <code>compress</code> or <code>retrieve</code> — that the agent can invoke autonomously during a conversation.</p>
+    <p>The <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol (MCP)</a> is an open standard that lets AI agents communicate with external tools and data sources. An MCP server exposes tools, like <code>compress</code> or <code>retrieve</code>, that the agent can invoke autonomously during a conversation.</p>
 
     <p>The SuperCompress MCP server exposes three tools:</p>
 
@@ -135,10 +135,10 @@
     <p>Running compression through MCP means the agent handles context reduction automatically, without you switching tools or writing glue code:</p>
 
     <ul>
-      <li><strong>API key for Neural Keep</strong> — The recommended MCP path calls the hosted query-aware Neural Keep API (Fly CPU). A separate local compiler path exists for offline / millisecond preprocessing; it is not the same engine as hosted v2.</li>
-      <li><strong>Zero configuration</strong> — Point your MCP client at <code>node /path/to/mcp/server.js</code> and the tools appear immediately.</li>
-      <li><strong>Agent-native</strong> — The agent decides when to compress, when to retrieve, and how to use the compressed context. You don't need to tell it what to do.</li>
-      <li><strong>CCR works seamlessly</strong> — Compress with mode="ccr", get retrieval markers in the output, retrieve blocks as needed — all within the same conversation.</li>
+      <li><strong>API key for Neural Keep</strong>, The recommended MCP path calls the hosted query-aware Neural Keep API (Fly CPU). A separate local compiler path exists for offline / millisecond preprocessing; it is not the same engine as hosted v2.</li>
+      <li><strong>Zero configuration</strong>, Point your MCP client at <code>node /path/to/mcp/server.js</code> and the tools appear immediately.</li>
+      <li><strong>Agent-native</strong>, The agent decides when to compress, when to retrieve, and how to use the compressed context. You don't need to tell it what to do.</li>
+      <li><strong>CCR works seamlessly</strong>, Compress with mode="ccr", get retrieval markers in the output, retrieve blocks as needed, all within the same conversation.</li>
     </ul>
 
     <h2>Setup</h2>
@@ -176,19 +176,19 @@
     <p>The agent calls the <code>compress</code> tool whenever it encounters context that's too large to fit in its window. Here's what happens:</p>
 
     <ol>
-      <li><strong>Agent detects oversized context</strong> — Log files, codebase excerpts, conversation history, or API responses that exceed comfortable window size.</li>
-      <li><strong>Agent calls <code>compress</code></strong> — Passes the raw context and the current question. The MCP server runs the full SuperCompress engine (same as the hosted API) and returns compressed text with token savings stats.</li>
-      <li><strong>Agent reads the compressed output</strong> — Proceeds with a smaller, query-relevant context. Token savings, important_kept_pct, and compression_risk are available in the second content block.</li>
-      <li><strong>If CCR mode was used</strong> — The agent can later call <code>retrieve</code> with a hash from a <code>[SC-Retrieve: hash]</code> marker to get the original text for any dropped block.</li>
+      <li><strong>Agent detects oversized context</strong>, Log files, codebase excerpts, conversation history, or API responses that exceed comfortable window size.</li>
+      <li><strong>Agent calls <code>compress</code></strong>, Passes the raw context and the current question. The MCP server runs the full SuperCompress engine (same as the hosted API) and returns compressed text with token savings stats.</li>
+      <li><strong>Agent reads the compressed output</strong>, Proceeds with a smaller, query-relevant context. Token savings, important_kept_pct, and compression_risk are available in the second content block.</li>
+      <li><strong>If CCR mode was used</strong>, The agent can later call <code>retrieve</code> with a hash from a <code>[SC-Retrieve: hash]</code> marker to get the original text for any dropped block.</li>
     </ol>
 
     <h3>Example conversation</h3>
 
-    <pre>User: Analyze this 10K-line log file for the root cause of the outage.
+    <pre>User: Analyze this very long log file for the root cause of the outage.
       [pastes log file]
 
 Agent: [calls compress tool with context=log, query="root cause of outage"]
-       [receives 120-line compressed output with 92% token savings]
+       [receives only the lines that explain the outage]
 
 Agent: Based on the compressed log, the root cause is...
        [provides analysis from the compressed content]
@@ -222,9 +222,9 @@ Agent: Here are the exact error messages from the log...</pre>
 
     <p>The MCP server is available now in the SuperCompress repository. Future versions will add:</p>
     <ul>
-      <li><strong>Anthropic cache_control middleware</strong> — Auto-wrapping compressed outputs with proper cache_control markers for Claude</li>
-      <li><strong>Binary content support</strong> — Compress images and structured data alongside text context</li>
-      <li><strong>Streaming compression</strong> — Progressive compression for real-time agent contexts</li>
+      <li><strong>Anthropic cache_control middleware</strong>, Auto-wrapping compressed outputs with proper cache_control markers for Claude</li>
+      <li><strong>Binary content support</strong>, Compress images and structured data alongside text context</li>
+      <li><strong>Streaming compression</strong>, Progressive compression for real-time agent contexts</li>
     </ul>
     </div>
   </main>
@@ -236,7 +236,7 @@ Agent: Here are the exact error messages from the log...</pre>
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -266,7 +266,7 @@ Agent: Here are the exact error messages from the log...</pre>
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

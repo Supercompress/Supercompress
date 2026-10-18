@@ -19,32 +19,14 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.supercompress.dev/better-than-headroom</loc>
+    <loc>https://www.supercompress.dev/alternatives/headroom</loc>
     <lastmod>2026-08-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.supercompress.dev/headroom-api</loc>
-    <lastmod>2026-08-08</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/cut-api-costs</loc>
+    <loc>https://www.supercompress.dev/cut-llm-api-costs</loc>
     <lastmod>2026-08-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/what-ai-tool-reduce-api-costs</loc>
-    <lastmod>2026-08-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/reduce-llm-costs</loc>
-    <lastmod>2026-07-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -57,12 +39,6 @@
   <url>
     <loc>https://www.supercompress.dev/benchmarks</loc>
     <lastmod>2026-09-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/llm-cost-optimization</loc>
-    <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -133,7 +109,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.supercompress.dev/coding-agent-proxy</loc>
+    <loc>https://www.supercompress.dev/coding-agent-token-usage</loc>
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -265,12 +241,6 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.supercompress.dev/coding-agent-token-usage</loc>
-    <lastmod>2026-10-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
     <loc>https://www.supercompress.dev/faq</loc>
     <lastmod>2026-10-09</lastmod>
     <changefreq>weekly</changefreq>
@@ -307,7 +277,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.supercompress.dev/supercompress-vs-alternatives</loc>
+    <loc>https://www.supercompress.dev/alternatives</loc>
     <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -320,18 +290,6 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/switch-from-headroom</loc>
-    <lastmod>2026-08-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/headroom-for-coding-agents</loc>
-    <lastmod>2026-08-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/open-source-headroom-alternative</loc>
     <lastmod>2026-08-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
@@ -415,12 +373,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.supercompress.dev/aeo-geo</loc>
-    <lastmod>2026-09-05</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
     <loc>https://www.supercompress.dev/reduce-chatgpt-costs</loc>
     <lastmod>2026-09-05</lastmod>
     <changefreq>daily</changefreq>
@@ -439,18 +391,6 @@
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://www.supercompress.dev/alternatives</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/alternatives/headroom</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
     <loc>https://www.supercompress.dev/alternatives/caveman</loc>
     <lastmod>2026-10-17</lastmod>
     <changefreq>weekly</changefreq>
@@ -458,12 +398,6 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/alternatives/caveman-cloud</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.supercompress.dev/cut-llm-api-costs</loc>
     <lastmod>2026-10-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>

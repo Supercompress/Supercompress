@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Changelog — SuperCompress</title>
+  <title>Changelog | SuperCompress</title>
   <meta name="description" content="Release notes for SuperCompress: coding-agent plugin, API, and product updates. Every version we ship." />
-  <meta property="og:title" content="Changelog — SuperCompress" />
+  <meta property="og:title" content="Changelog, SuperCompress" />
   <meta property="og:description" content="Release notes for SuperCompress coding-agent plugin, API, and product updates." />
   <meta property="og:url" content="https://www.supercompress.dev/changelog" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Changelog — SuperCompress" />
+  <meta name="twitter:title" content="Changelog, SuperCompress" />
   <meta name="twitter:description" content="Release notes for SuperCompress." />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/changelog" />
@@ -207,7 +207,7 @@
     <header class="cl-hero">
       <p class="cl-kicker">Releases</p>
       <h1>What’s <em>new</em>.</h1>
-      <p class="cl-lead">Notes for every SuperCompress ship — coding-agent plugin, API, and product. Mirrored on GitHub Releases.</p>
+      <p class="cl-lead">Notes for every SuperCompress ship, coding-agent plugin, API, and product. Mirrored on GitHub Releases.</p>
       <div class="cl-actions">
         <a class="btn-primary btn-primary-sm" href="https://github.com/Supercompress/Supercompress/releases" target="_blank" rel="noopener">
           <span class="btn-primary-label">GitHub releases</span>
@@ -229,11 +229,11 @@
         <div class="cl-body">
           <h3>SuperCompress v2</h3>
           <ul>
-            <li><strong>Hosted Neural Keep is live</strong> on the compress API — scores context against the query, keeps original lines, cuts the rest.</li>
-            <li>Coding-agent evidence-containment methodology published; per-task B5 rows still pending — do not treat summary-only JSON as headline cuts.</li>
-            <li>Open source. API, and an agent plugin for 40+ harnesses.</li>
-            <li>Launch promo (live in billing): <strong>5M free tokens/month, then $0.10 per 1M tokens</strong>. No seat plans.</li>
-            <li>Strongest on coding-agent dumps — tool output, logs, diffs, stack traces — where the answer is a few original lines inside a long context.</li>
+            <li><strong>Hosted Neural Keep is live</strong> on the compress API, scores context against the query, keeps original lines, cuts the rest.</li>
+            <li>Coding-agent evidence-containment methodology published; per-task B5 rows still pending, do not treat summary-only JSON as headline cuts.</li>
+            <li>Hosted API, and an agent plugin for coding agents.</li>
+            <li>Pay-as-you-go billing went live, with a free monthly allowance. No seat plans.</li>
+            <li>Strongest on coding-agent dumps, tool output, logs, diffs, stack traces, where the answer is a few original lines inside a long context.</li>
           </ul>
           <p><a href="/engine-v2-launch">Launch note</a> · <a href="/dashboard?signup=1">Get an API key</a> · <a href="https://docs.supercompress.dev/coding-agents">Agent plugin</a></p>
         </div>
@@ -265,7 +265,7 @@
         <div class="cl-body">
           <h3>OAuth prompt path (plugin + initialize)</h3>
           <ul>
-            <li>Claude Code <code>.mcp.json</code> no longer sends <code>Authorization: Bearer ${SUPERCOMPRESS_API_KEY}</code> — hosts can prompt for auth instead of a silent empty key.</li>
+            <li>Claude Code <code>.mcp.json</code> no longer sends <code>Authorization: Bearer ${SUPERCOMPRESS_API_KEY}</code>, hosts can prompt for auth instead of a silent empty key.</li>
             <li>Cursor plugin: <code>SUPERCOMPRESS_API_KEY</code> is optional, not required.</li>
             <li>Hosted MCP returns <strong>401 + WWW-Authenticate on <code>initialize</code></strong> (not only tools/call). Query-string <code>?key=</code> auth removed.</li>
           </ul>
@@ -283,8 +283,8 @@
           <h3>MCP OAuth server-side + benchmark page</h3>
           <ul>
             <li><strong>Hosted MCP OAuth 2.1 (PKCE)</strong> endpoints added (<code>/.well-known/oauth-*</code>, authorize / token / approve), designed to share the Google account path with CLI device-link. Recommended install remains <code>supercompress setup</code>.</li>
-            <li><code>/benchmarks</code> rewritten for v2 Neural Keep with a separate legacy compiler section. Per-task B5 rows for headline cuts still pending — do not treat summary-only JSON as headline figures.</li>
-            <li>Homepage: Neural v2 vs Compiler split · <strong>40+</strong> harnesses · evidence-containment language.</li>
+            <li><code>/benchmarks</code> rewritten for v2 Neural Keep with a separate legacy compiler section. Per-task B5 rows for headline cuts still pending, do not treat summary-only JSON as headline figures.</li>
+            <li>Homepage: Neural v2 vs Compiler split · coding-agent harnesses · evidence-containment language.</li>
           </ul>
           <p><a href="/docs/coding-agents">Coding agents</a> · <a href="/benchmarks">Benchmarks</a> · npm <code>supercompress-proxy@0.5.36</code></p>
         </div>
@@ -299,9 +299,9 @@
         <div class="cl-body">
           <h3>API / dashboard</h3>
           <ul>
-            <li><strong>Analytics panel</strong> inside the API dashboard — live token savings, requests, coding-agent share, and key breakdown from your signed-in <code>/api/keys</code> meter (dither charts). <code>/analytics</code> stays on <code>/dashboard?panel=analytics</code>.</li>
+            <li><strong>Analytics panel</strong> inside the API dashboard, live token savings, requests, coding-agent share, and key breakdown from your signed-in <code>/api/keys</code> meter (dither charts). <code>/analytics</code> stays on <code>/dashboard?panel=analytics</code>.</li>
             <li>Fix Analytics chart paint (Bayer wells, layout-ready draw). No demo/fake flash in production.</li>
-            <li><strong>Fingerprint-bound Idempotency-Key</strong> — reuse with a different compress payload returns <code>409 idempotency_conflict</code> (blocks free recompress / billing bypass).</li>
+            <li><strong>Fingerprint-bound Idempotency-Key</strong>, reuse with a different compress payload returns <code>409 idempotency_conflict</code> (blocks free recompress / billing bypass).</li>
             <li>Durable hourly rate-limit hits keyed by <strong>payload fingerprint</strong>, not the client-chosen request id.</li>
             <li><strong>Request-level billing idempotency</strong> (<code>Idempotency-Key</code> / <code>billing_usage/{uid}:{requestId}</code>) so billing timeouts cannot double-charge on retry.</li>
             <li>Bill before per-key analytics; auto-recharge when balance is positive but insufficient, then retry the same request id.</li>
@@ -310,12 +310,12 @@
           </ul>
           <h3>Site / docs</h3>
           <ul>
-            <li><strong>GitHub Sponsors</strong> on the Supercompress repo — Sponsor button + <code>FUNDING.yml</code> → <a href="https://github.com/sponsors/arjunkshah12345-hash">@arjunkshah12345-hash</a>.</li>
+            <li><strong>GitHub Sponsors</strong> on the Supercompress repo, Sponsor button + <code>FUNDING.yml</code> → <a href="https://github.com/sponsors/arjunkshah12345-hash">@arjunkshah12345-hash</a>.</li>
           </ul>
           <h3>Coding agent plugin</h3>
           <ul>
             <li>macOS/Linux service register+unregister uses <code>execFileSync</code> argv (no shell-interpolated <code>launchctl</code> paths).</li>
-            <li><strong>Interactive TUI</strong> (<code>supercompress</code> / <code>supercompress tui</code>, npm <code>0.5.19</code>) — paper-branded live usage, connect, setup, plugin, agents, and proxy. Needs Bun; classic commands still work.</li>
+            <li><strong>Interactive TUI</strong> (<code>supercompress</code> / <code>supercompress tui</code>, npm <code>0.5.19</code>), paper-branded live usage, connect, setup, plugin, agents, and proxy. Needs Bun; classic commands still work.</li>
             <li><strong>OpenClaw auto-compress</strong> parity with Hermes: setup/plugin installs MCP + <code>AGENTS.md</code> + managed skill + internal hooks + extension plugin.</li>
             <li><strong>Session-scoped inbox</strong> (<code>inbox/&lt;sessionId&gt;/latest.md</code>) + <code>SUPERCOMPRESS_CONFIG_DIR</code>; exact plugin path uninstall; real <code>compactSessionMemory</code>; chunk ≤120k; stable hook idempotency keys.</li>
             <li><strong>Preserve tool-call order</strong> when splitting compressible history; rank compression against the latest user ask in the full thread.</li>
@@ -401,7 +401,7 @@
             <li><strong>Auto across agents:</strong> MCP installed on every detected host (Cursor, Claude, Codex, OpenCode, FreeBuff, Windsurf, Continue, Gemini, and more).</li>
             <li>Claude Code + Codex: every-message + <code>PostToolUse</code> tool-dump compression.</li>
             <li>Always-on instruction files when those agents are present.</li>
-            <li><code>supercompress wrap &lt;agent&gt;</code> — Headroom-style full-traffic proxy auto-compress.</li>
+            <li><code>supercompress wrap &lt;agent&gt;</code>, Headroom-style full-traffic proxy auto-compress.</li>
           </ul>
           <h3>Repository &amp; site</h3>
           <ul>
@@ -490,8 +490,8 @@
         <div class="cl-body">
           <h3>Coding agent plugin</h3>
           <ul>
-            <li><strong>postinstall is guidance-only</strong> — no longer rewrites agent MCP configs on <code>npm install</code>. Use <code>supercompress setup</code> or <code>supercompress plugin</code>.</li>
-            <li><strong>FreeBuff dual-launch</strong> — MCP compress handshake waits for tool responses.</li>
+            <li><strong>postinstall is guidance-only</strong>, no longer rewrites agent MCP configs on <code>npm install</code>. Use <code>supercompress setup</code> or <code>supercompress plugin</code>.</li>
+            <li><strong>FreeBuff dual-launch</strong>, MCP compress handshake waits for tool responses.</li>
             <li>Docs/README aligned with MCP-first install path; agent catalog count 49.</li>
           </ul>
         </div>
@@ -524,7 +524,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -554,7 +554,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

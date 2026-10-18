@@ -136,10 +136,10 @@
     },
     {
       "@type": "Question",
-      "name": "Is SuperCompress a proxy or gateway?",
+      "name": "Is SuperCompress a proxy?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. It is not an LLM, a gateway, a router or a cache. It runs before your model call and returns plain text, so it works with any model provider."
+        "text": "No. It is not an LLM or a cache. It runs before your model call and returns plain text, so it works with any model provider."
       }
     },
     {
@@ -163,7 +163,7 @@
       "name": "Can I call it from my own app?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Send POST https://www.supercompress.dev/api/v1/compress with context and query, and an API key from the dashboard in the X-API-Key header. There is also a Python client: pip install supercompress."
+        "text": "Yes. Send POST https://www.supercompress.dev/api/v1/compress with context and query, and an API key from the dashboard in the X-API-Key header."
       }
     },
     {
@@ -268,14 +268,14 @@
     <p>The same log or file can be compressed differently for different questions. SuperCompress scores each block against the current question and keeps what answers it. The question itself is never compressed.</p>
     <h3>Does SuperCompress change my agent&#x27;s login or model?</h3>
     <p>No. It works through an MCP server, instructions and, for some agents, hooks. Your agent keeps its normal sign-in and talks to its own models.</p>
-    <h3>Is SuperCompress a proxy or gateway?</h3>
-    <p>No. It is not an LLM, a gateway, a router or a cache. It runs before your model call and returns plain text, so it works with any model provider.</p>
+    <h3>Is SuperCompress a proxy?</h3>
+    <p>No. It is not an LLM or a cache. It runs before your model call and returns plain text, so it works with any model provider.</p>
     <h3>What MCP tools does it add?</h3>
     <p><code>compress_context</code> (arguments <code>context</code> and <code>query</code>), <code>connect_account</code> and <code>usage_summary</code>.</p>
     <h3>How do I see what was removed?</h3>
     <p>Every compress response reports <code>original_tokens</code> and <code>kept_tokens</code>, plus kept and dropped blocks. <code>usage_summary</code> shows totals per agent.</p>
     <h3>Can I call it from my own app?</h3>
-    <p>Yes. Send <code>POST https://www.supercompress.dev/api/v1/compress</code> with <code>context</code> and <code>query</code>, and an API key from the dashboard in the <code>X-API-Key</code> header. There is also a Python client: <code>pip install supercompress</code>.</p>
+    <p>Yes. Send <code>POST https://www.supercompress.dev/api/v1/compress</code> with <code>context</code> and <code>query</code>, and an API key from the dashboard in the <code>X-API-Key</code> header.</p>
     <h3>How is it different from RTK or Headroom?</h3>
     <p>RTK filters known shell commands before the agent reads them. Headroom is a proxy that rewrites requests on the way to the model. SuperCompress works on one bulky result at a time against the current question and keeps original lines. See <a href="/context-compression-for-coding-agents">approaches compared</a>.</p>
     <h3>When should I not use it?</h3>
