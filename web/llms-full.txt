@@ -545,7 +545,7 @@ Coding agents reach it through an MCP tool (compress_context) plus hooks that th
 
 #### How to pick fairly
 
-Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
+Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see PointFive's end-to-end study at https://arxiv.org/abs/2607.12161, the code-compression-bench SWE-bench runs at https://github.com/daseinlabs/code-compression-bench, JetBrains' rtk trial at https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/ and the THOL leaderboard at https://pi-infected.github.io/token-harness-optimizer-leaderboard/; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
 
 ### Headroom alternative: SuperCompress
 
@@ -555,7 +555,7 @@ If you want a Headroom alternative, SuperCompress is the closest hosted option. 
 
 #### What Headroom is
 
-Headroom is an Apache-2.0 open-source project (installed with pip install "headroom-ai[all]") that sits between your application and the model provider. It ships as a Python and TypeScript library, a local proxy, an agent wrapper (headroom wrap claude and similar) and an MCP server. Its ContentRouter detects the type of each block (JSON, logs, search results, diffs, HTML, code, plain text) and sends it to a matching compressor, and it can cache originals locally so the model can retrieve them later. Compression runs on your own machine. Sources: https://github.com/chopratejas/headroom and https://docs.headroomlabs.ai/docs/architecture.
+Headroom is an Apache-2.0 open-source project (installed with pip install "headroom-ai[all]") that sits between your application and the model provider. It ships as a Python and TypeScript library, a local proxy, an agent wrapper (headroom wrap claude and similar) and an MCP server. Its ContentRouter detects the type of each block (JSON, logs, search results, diffs, HTML, code, plain text) and sends it to a matching compressor, and it can cache originals locally so the model can retrieve them later. Compression runs on your own machine. Sources: https://github.com/headroomlabs-ai/headroom and https://docs.headroomlabs.ai/docs/architecture.
 
 #### How SuperCompress works
 
@@ -588,7 +588,7 @@ Pick SuperCompress if the real problem is that only a few lines of a large resul
 
 #### How to pick fairly
 
-Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
+Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see PointFive's end-to-end study at https://arxiv.org/abs/2607.12161, the code-compression-bench SWE-bench runs at https://github.com/daseinlabs/code-compression-bench, JetBrains' rtk trial at https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/ and the THOL leaderboard at https://pi-infected.github.io/token-harness-optimizer-leaderboard/; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
 
 More detail: SuperCompress vs Headroom, switching from Headroom, Caveman alternative.
 
@@ -632,7 +632,7 @@ If your agent keeps reading huge outputs where only a handful of lines matter, s
 
 #### How to pick fairly
 
-Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
+Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see PointFive's end-to-end study at https://arxiv.org/abs/2607.12161, the code-compression-bench SWE-bench runs at https://github.com/daseinlabs/code-compression-bench, JetBrains' rtk trial at https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/ and the THOL leaderboard at https://pi-infected.github.io/token-harness-optimizer-leaderboard/; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
 
 See also: Caveman Cloud alternative, Headroom alternative, reduce Claude Code token usage.
 
@@ -669,7 +669,7 @@ Works with | Coding agents and SDK calls, per its site | Claude Code, Cursor, Co
 
 #### How to pick fairly
 
-Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
+Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see PointFive's end-to-end study at https://arxiv.org/abs/2607.12161, the code-compression-bench SWE-bench runs at https://github.com/daseinlabs/code-compression-bench, JetBrains' rtk trial at https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/ and the THOL leaderboard at https://pi-infected.github.io/token-harness-optimizer-leaderboard/; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
 
 See also: Caveman alternative, how to cut LLM API costs.
 
@@ -718,7 +718,7 @@ Shorter replies (for example Caveman) | Cuts output tokens | Yes, it acts on the
 
 #### How to pick fairly
 
-Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
+Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see PointFive's end-to-end study at https://arxiv.org/abs/2607.12161, the code-compression-bench SWE-bench runs at https://github.com/daseinlabs/code-compression-bench, JetBrains' rtk trial at https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/ and the THOL leaderboard at https://pi-infected.github.io/token-harness-optimizer-leaderboard/; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
 
 Provider-specific guides: reduce OpenAI costs, reduce Claude costs, reduce Gemini costs, reduce Claude Code token usage, reduce Cursor token usage.
 

@@ -19,7 +19,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/cut-llm-api-costs" />
   <meta property="article:published_time" content="2026-10-17T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-17" />
+  <meta property="article:modified_time" content="2026-10-18" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
@@ -34,7 +34,7 @@
   "headline": "How to cut LLM API costs",
   "description": "Practical ways to cut LLM API costs: send fewer input tokens, use prompt caching, trim history, and compress bulky context with SuperCompress, which keeps only the lines that answer the current question.",
   "datePublished": "2026-10-17",
-  "dateModified": "2026-10-17",
+  "dateModified": "2026-10-18",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -175,7 +175,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Guide · Updated 2026-10-17</p>
+  <p class="seo-kicker">Guide · Updated 2026-10-18</p>
   <h1>How to cut LLM API costs</h1>
   <p class="seo-lead">The most reliable way to cut LLM API costs is to send fewer input tokens per call, because input (history, retrieved documents, tool output) is usually most of what you pay for. Use prompt caching for stable prefixes, trim old history, and compress bulky context before the call. SuperCompress does the last part: a hosted model keeps the original lines that answer the current question and drops the rest, so your OpenAI, Claude or Gemini call gets smaller without paraphrasing anything.</p>
   <nav class="seo-cluster" aria-label="Related">
@@ -218,7 +218,7 @@
       </tbody>
     </table>
     <h2 id="measure">How to pick fairly</h2>
-    <p>Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.</p>
+    <p>Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see <a href="https://arxiv.org/abs/2607.12161" rel="noopener" target="_blank">PointFive's end-to-end study</a>, the <a href="https://github.com/daseinlabs/code-compression-bench" rel="noopener" target="_blank">code-compression-bench</a> SWE-bench runs, <a href="https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/" rel="noopener" target="_blank">JetBrains' rtk trial</a> and the <a href="https://pi-infected.github.io/token-harness-optimizer-leaderboard/" rel="noopener" target="_blank">THOL leaderboard</a>; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.</p>
 
     <p>Provider-specific guides: <a href="/reduce-openai-costs">reduce OpenAI costs</a>, <a href="/reduce-claude-costs">reduce Claude costs</a>, <a href="/reduce-gemini-costs">reduce Gemini costs</a>, <a href="/reduce-claude-code-token-usage">reduce Claude Code token usage</a>, <a href="/reduce-cursor-token-usage">reduce Cursor token usage</a>.</p>
 

@@ -197,23 +197,23 @@
           <p>Scores every line/passage of the prompt against the user's specific question. Drops only content irrelevant to the query. Used by SuperCompress.</p>
         </div>
         <div class="method-card">
-          <h4><a href="/supercompress-vs-sliding-window">Sliding Window</a></h4>
+          <h4><a href="/alternatives">Sliding Window</a></h4>
           <p>Keeps only the N most recent tokens. Simple and fast but drops older context that may still be relevant.</p>
         </div>
         <div class="method-card">
-          <h4><a href="/supercompress-vs-top-k-retrieval">Top-K Retrieval</a></h4>
+          <h4><a href="/alternatives">Top-K Retrieval</a></h4>
           <p>Uses embedding similarity to select the K most relevant passages. Effective for RAG pipelines but misses non-vector context.</p>
         </div>
         <div class="method-card">
-          <h4><a href="/supercompress-vs-hyde">HyDE</a></h4>
+          <h4><a href="/alternatives">HyDE</a></h4>
           <p>Generates a hypothetical answer first, then retrieves passages similar to it. Adds an extra LLM call.</p>
         </div>
         <div class="method-card">
-          <h4><a href="/supercompress-vs-mmr">MMR (Maximal Marginal Relevance)</a></h4>
+          <h4><a href="/alternatives">MMR (Maximal Marginal Relevance)</a></h4>
           <p>Selects diverse passages that cover multiple subtopics. Prevents redundancy but may drop the most relevant content.</p>
         </div>
         <div class="method-card">
-          <h4><a href="/supercompress-vs-self-rag">Self-RAG</a></h4>
+          <h4><a href="/alternatives">Self-RAG</a></h4>
           <p>LLM decides which passages to retrieve and when. Most flexible but most expensive, requires the LLM to participate in the selection.</p>
         </div>
       </div>
@@ -270,20 +270,20 @@
       <h2>4. Framework Integration</h2>
       <p>SuperCompress integrates with every major LLM framework. Here's how to add compression to your stack:</p>
 
-      <h3><a href="/supercompress-dspy">DSPy</a></h3>
-      <p>Add a compression layer to any DSPy module. The compressor acts as an optimizer-aware preprocessor, reducing token costs without modifying your program structure. <a href="/supercompress-dspy">Read the DSPy integration guide →</a></p>
+      <h3>DSPy</h3>
+      <p>Add a compression layer to any DSPy module. The compressor acts as an optimizer-aware preprocessor, reducing token costs without modifying your program structure.</p>
 
-      <h3><a href="/supercompress-haystack">Haystack</a></h3>
-      <p>Implement a custom <code>PreProcessor</code> that compresses documents before indexing or before LLM inference. Works with the full Haystack pipeline API. <a href="/supercompress-haystack">Read the Haystack integration guide →</a></p>
+      <h3>Haystack</h3>
+      <p>Implement a custom <code>PreProcessor</code> that compresses documents before indexing or before LLM inference. Works with the full Haystack pipeline API.</p>
 
-      <h3><a href="/supercompress-semantic-kernel">Semantic Kernel</a></h3>
-      <p>Use <code>IPromptFilter</code> to intercept and compress prompts before they reach the LLM. Transparent to the rest of your application. <a href="/supercompress-semantic-kernel">Read the Semantic Kernel guide →</a></p>
+      <h3>Semantic Kernel</h3>
+      <p>Use <code>IPromptFilter</code> to intercept and compress prompts before they reach the LLM. Transparent to the rest of your application.</p>
 
-      <h3><a href="/python-prompt-compression">Python (native)</a></h3>
-      <p>The simplest integration: <code>from supercompress import compress; result = compress(context, query)</code>. Works in any Python 3.10+ environment. <a href="/python-prompt-compression">Read the Python guide →</a></p>
+      <h3>Python (native)</h3>
+      <p>The simplest integration: <code>from supercompress import compress; result = compress(context, query)</code>. Works in any Python 3.10+ environment.</p>
 
       <h3>Web frameworks</h3>
-      <p>Add compression middleware to <a href="/fastapi-compression-middleware">FastAPI</a>, <a href="/flask-compression-integration">Flask</a>, <a href="/django-compression-views">Django</a>, <a href="/express-compression-routes">Express.js</a>, or <a href="/spring-compression-controllers">Spring Boot</a>.</p>
+      <p>Add compression middleware to FastAPI, Flask, Django, Express.js, or Spring Boot. See the <a href="https://docs.supercompress.dev/integrations">integrations docs</a>.</p>
     </section>
 
     <section id="deployment">
@@ -302,22 +302,22 @@
           <tr>
             <td>Serverless (Lambda)</td>
             <td>Call the hosted API</td>
-            <td><a href="/deploy-compression-aws-lambda">AWS Lambda →</a></td>
+            <td>AWS Lambda</td>
           </tr>
           <tr>
             <td>Edge (Cloudflare Workers)</td>
             <td>WASM build via <code>supercompress-wasm</code></td>
-            <td><a href="/edge-prompt-compression">Edge guide →</a></td>
+            <td>Edge / WASM</td>
           </tr>
           <tr>
             <td>Container (Docker)</td>
             <td><code>FROM python:3.11-slim</code> + pip install</td>
-            <td><a href="/prompt-compression-docker">Docker guide →</a></td>
+            <td>Docker</td>
           </tr>
           <tr>
             <td>CI/CD pipelines</td>
             <td>CI / GitHub Actions</td>
-            <td><a href="/prompt-compression-ci-cd">CI/CD guide →</a></td>
+            <td>CI / GitHub Actions</td>
           </tr>
           <tr>
             <td>Hosted API</td>
@@ -327,7 +327,7 @@
         </tbody>
       </table>
 
-      <p>For a full comparison of deployment options, see <a href="/serverless-prompt-compression">serverless prompt compression</a> and <a href="/batch-prompt-compression">batch compression</a> guides.</p>
+      <p>For deployment options, see the <a href="https://docs.supercompress.dev/usage">usage</a> and <a href="https://docs.supercompress.dev/api-reference">API</a> docs.</p>
     </section>
 
     <section id="best-practices">
@@ -337,13 +337,13 @@
       <p>Apply compression as early as possible in your pipeline. In a RAG setup, compress the retrieved documents before inserting them into the prompt template. In a chatbot, compress the conversation history before appending it to the next turn. This maximizes the savings at each stage.</p>
 
       <h3>Monitor compression metrics</h3>
-      <p>Track savings per request, overall token reduction, and response quality over time. Tools like <a href="/prompt-compression-wandb">Weights &amp; Biases</a>, <a href="/prompt-compression-mlflow">MLflow</a>, and <a href="/prompt-compression-langfuse">Langfuse</a> have SuperCompress integration guides.</p>
+      <p>Track savings per request, overall token reduction, and response quality over time. Tools like Weights &amp; Biases, MLflow, and Langfuse can record those metrics alongside SuperCompress.</p>
 
       <h3>Test with production data</h3>
-      <p>Run A/B comparisons on your actual prompts. <a href="/ab-testing-compression">A/B test compression</a> to validate that compressed prompts produce answers of equivalent quality on your specific use case.</p>
+      <p>Run A/B comparisons on your actual prompts to validate compression on your specific use case.</p>
 
       <h3>Handle edge cases</h3>
-      <p>See the <a href="/prompt-compression-mistakes">common mistakes</a> guide for pitfalls to avoid, including over-compression, loss of formatting, and insufficient context for multi-step reasoning.</p>
+      <p>Watch for common pitfalls, including over-compression, loss of formatting, and insufficient context for multi-step reasoning.</p>
     </section>
 
     <section id="faq">
@@ -362,7 +362,7 @@
       <p>SuperCompress is query-aware: it scores context against the question, ships MCP for coding agents, and publishes held-out answer-keep gates. Headroom leans on content-type heuristics and its own workflows. Compare product fit and answer keep, see the <a href="/supercompress-vs-headroom">full comparison</a>.</p>
 
       <h3>Is prompt compression better than caching?</h3>
-      <p>They solve different problems. <a href="/prompt-compression-vs-caching">Caching</a> skips the LLM call entirely when identical prompts appear. Compression reduces the cost of every call, including unique ones. For most production systems, the best approach is both: cache identical prompts, compress everything else.</p>
+      <p>They solve different problems. Caching skips the LLM call entirely when identical prompts appear. Compression reduces the cost of every call, including unique ones. For most production systems, the best approach is both: cache identical prompts, compress everything else.</p>
     </section>
 
     <div class="cta-section">

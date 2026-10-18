@@ -164,7 +164,7 @@
         <li><strong>Deterministic given inputs</strong>, same context + query always produces the same compression. Predictable and auditable.</li>
       </ul>
 
-      <p>The system is designed for <a href="/serverless-prompt-compression">serverless deployment</a>, the local compiler path is a small CPU preprocess suitable for AWS Lambda, Cloudflare Workers, and Vercel Edge Functions. Do not treat a single latency figure as product-wide.</p>
+      <p>The system is designed for serverless deployment, the local compiler path is a small CPU preprocess suitable for AWS Lambda, Cloudflare Workers, and Vercel Edge Functions. Do not treat a single latency figure as product-wide.</p>
     </section>
 
     <section id="pipeline">
@@ -242,7 +242,7 @@
         <li>Scoring runs as a lightweight CPU preprocess before the LLM call</li>
         <li>The entire package (policy + code) is ~200KB, fits in a single network packet</li>
         <li>Runs as preprocess before the expensive LLM call</li>
-        <li><a href="/edge-prompt-compression">Edge deployment</a> is straightforward, the policy compiles to WASM for Cloudflare Workers</li>
+        <li>Edge deployment is straightforward, the policy compiles to WASM for Cloudflare Workers</li>
       </ul>
 
       <p>The policy was trained on a dataset of ~100K (context, query, keep/drop) examples generated from real production prompts across customer support, code generation, data extraction, and Q&A tasks. Training used a contrastive loss that penalizes dropping segments that contain information needed to answer the query.</p>
@@ -307,7 +307,7 @@
 
       <p>The hosted API runs the Neural Keep model and adds automatic scaling, rate limiting, and usage analytics through the <a href="/dashboard">dashboard</a>.</p>
 
-      <p>For framework-specific setup, see the integration guides for <a href="/fastapi-compression-middleware">FastAPI</a>, <a href="/flask-compression-integration">Flask</a>, <a href="/django-compression-views">Django</a>, <a href="/express-compression-routes">Express.js</a>, and <a href="/spring-compression-controllers">Spring Boot</a>.</p>
+      <p>For framework-specific setup, see the <a href="https://docs.supercompress.dev/integrations">integrations docs</a>.</p>
     </section>
 
     <section id="comparison">
@@ -338,19 +338,19 @@
             <td>No</td>
           </tr>
           <tr>
-            <td><a href="/supercompress-vs-sliding-window">Sliding window</a></td>
+            <td><a href="/alternatives">Sliding window</a></td>
             <td>Fixed-position truncation</td>
             <td>No</td>
             <td>No</td>
           </tr>
           <tr>
-            <td><a href="/supercompress-vs-top-k-retrieval">Top-K retrieval</a></td>
+            <td><a href="/alternatives">Top-K retrieval</a></td>
             <td>Embedding similarity</td>
             <td>Partial</td>
             <td>No (embedding model)</td>
           </tr>
           <tr>
-            <td><a href="/supercompress-vs-hyde">HyDE</a></td>
+            <td><a href="/alternatives">HyDE</a></td>
             <td>Hypothetical doc + retrieval</td>
             <td>Yes</td>
             <td>Yes (plus embedding)</td>
