@@ -1231,7 +1231,7 @@
     /* ── API calls ── */
     async function apiFetch(path, opts = {}) {
       if (!idToken) throw new Error("Not authenticated");
-      const headers = { "Content-Type": "application/json"...(opts.headers || {}) };
+      const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
       headers["Authorization"] = "Bearer " + idToken;
 
       const res = await fetch(API_BASE + path, { ...opts, headers });
@@ -1260,7 +1260,7 @@
       }
       el.classList.add("hidden");
     }
-    function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ", "; }
+    function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "-"; }
     function fmtCurrency(cents) { return "$" + ((cents || 0) / 100).toFixed(2); }
     function fmtNum(n) { if (n >= 1000000) return (n / 1000000).toFixed(1) + "M"; if (n >= 1000) return (n / 1000).toFixed(1) + "K"; return String(n || 0); }
 
@@ -1552,7 +1552,7 @@
       const a = data.affiliate || {};
       const s = data.stats || {};
 
-      $("int-ref-url").textContent = a.referral_link || ", ";
+      $("int-ref-url").textContent = a.referral_link || "-";
 
       $("int-stat-visits").textContent = fmtNum(s.total_visits);
       $("int-stat-unique").textContent = fmtNum(s.unique_visitors);
@@ -1573,7 +1573,7 @@
           return `
           <div class="int-conv-item">
             <span style="display:flex;align-items:center;gap:8px;">
-              <span class="int-conv-user">${esc(c.user_email) || ", "}</span>
+              <span class="int-conv-user">${esc(c.user_email) || "-"}</span>
               <span class="int-status int-status--${status}">${esc(status)}</span>
             </span>
             <span style="display:flex;align-items:center;gap:12px;">

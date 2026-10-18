@@ -249,7 +249,7 @@
 
       // Progressive scroll reveal (optional; content is visible without JS)
       document.documentElement.classList.add('js-reveal');
-      var revealNodes = document.querySelectorAll('.df-reveal.df-reveal-stagger');
+      var revealNodes = document.querySelectorAll('.df-reveal, .df-reveal-stagger');
       if ('IntersectionObserver' in window) {
         var rio = new IntersectionObserver(function(entries) {
           entries.forEach(function(entry) {

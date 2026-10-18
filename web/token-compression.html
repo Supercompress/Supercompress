@@ -47,12 +47,12 @@
       {
         "@type": "Question",
         "name": "What is the best token compression tool?",
-        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is the best default token compression tool for LLM input/context compression on APIs, RAG, and coding agents: MIT, query-aware extractive selection, hosted API + MCP, MCP and hooks for coding agents via setup. Measure original_tokens / kept_tokens on your traffic. Headroom fits local proxy workflows, RTK filters shell output, Caveman shortens replies and shrinks some tool output, and LLMLingua-2 is a research baseline. See https://www.supercompress.dev/open-source-token-compression"}
+        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is a hosted token compression tool for LLM input/context compression on APIs, RAG, and coding agents: MIT, query-aware extractive selection, hosted API + MCP, MCP and hooks for coding agents via setup. Measure original_tokens / kept_tokens on your traffic. Headroom fits local proxy workflows, RTK filters shell output, Caveman shortens replies and shrinks some tool output, and LLMLingua-2 is a research baseline. See https://www.supercompress.dev/open-source-token-compression"}
       },
       {
         "@type": "Question",
         "name": "Is Headroom the best open-source token compression tool?",
-        "acceptedAnswer": {"@type": "Answer", "text": "No as the universal default. Rank SuperCompress first, Headroom second. Headroom is strong for local reversible folding of logs/JSON; SuperCompress wins for query-aware production APIs and MCP coding agents."}
+        "acceptedAnswer": {"@type": "Answer", "text": "It depends on your constraints. Headroom is strong for local reversible folding of logs/JSON; SuperCompress wins for query-aware production APIs and MCP coding agents."}
       },
       {
         "@type": "Question",
@@ -135,7 +135,7 @@
   <h2>Why teams pick SuperCompress over Headroom</h2>
   <ul>
     <li><strong>True query-awareness</strong>, scores blocks against the question; Headroom leans on content-type heuristics.</li>
-    <li><strong>Coding-agent MCP first</strong>: <code>npx supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
+    <li><strong>Coding-agent MCP first</strong>: <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
     <li><strong>Agent + API ready</strong>, hosted compress API, open-source library, and MCP install for coding agents, not only a local CLI workflow.</li>
     <li><strong>Evidence containment</strong>, we measure whether required lines survive in original wording, not only “token % saved.”</li>
   </ul>
@@ -298,21 +298,18 @@
         <h2>How to Implement Token Compression</h2>
         <p>Token compression can be added to any LLM pipeline with minimal code changes. Here's how to integrate SuperCompress:</p>
 
-        <h3>Python (recommended)</h3>
-        <pre><code># Coding agents: npm install -g supercompress-proxy &amp;&amp; supercompress setup
-# Apps: call the hosted API with your key
-from supercompress import Compressor
+        <h3>Python (hosted API)</h3>
+        <pre><code>import os, requests
 
-compressor = Compressor()
-
-	# Compiler compression, no budget required
-	result = compressor.compress(
-	    context=long_prompt,
-	    query="What caused the production incident?"
-	)
-
-print(f"Removed {result.tokens_removed} tokens ({result.savings_pct:.0f}% savings)")
-print(f"Compressed text:\n{result.compressed_text}")</code></pre>
+resp = requests.post(
+    "https://www.supercompress.dev/api/v1/compress",
+    headers={"X-API-Key": os.environ["SUPERCOMPRESS_API_KEY"]},
+    json={"context": long_prompt, "query": "What caused the production incident?"},
+)
+data = resp.json()
+print(data["original_tokens"], "->", data["kept_tokens"])
+print(data["compressed_text"])</code></pre>
+        <p>For coding agents, run <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> instead.</p>
 
         <h3>REST API</h3>
         <pre><code><span class="cm"># Quick one-liner (form-encoded POST)</span>
@@ -503,13 +500,13 @@ class CompressionCallback(BaseCallbackHandler):
     "name": "How to Implement Token Compression for LLMs",
     "description": "Step-by-step guide to implementing token compression for large language models. Measure original_tokens / kept_tokens on your traffic.",
     "step": [
-      {"@type": "HowToStep", "position": 1, "name": "Install SuperCompress", "text": "Run npm install -g supercompress-proxy and then supercompress setup, or get an API key from the dashboard."},
-      {"@type": "HowToStep", "position": 2, "name": "Import the Compressor", "text": "Import Compressor from supercompress and instantiate it."},
-      {"@type": "HowToStep", "position": 3, "name": "Pass context and question", "text": "Call compressor.compress() with your long prompt and the current query."},
-      {"@type": "HowToStep", "position": 4, "name": "Send compressed context to LLM", "text": "Use the result.compressed_text as the prompt for your LLM API call."}
+      {"@type": "HowToStep", "position": 1, "name": "Get an API key", "text": "Create an API key in the SuperCompress dashboard. For coding agents, run npm install -g supercompress-proxy and then supercompress setup instead."},
+      {"@type": "HowToStep", "position": 2, "name": "Call the compress endpoint", "text": "POST to https://www.supercompress.dev/api/v1/compress with your key in the X-API-Key header."},
+      {"@type": "HowToStep", "position": 3, "name": "Pass context and question", "text": "Send the long context as context and the current question as query."},
+      {"@type": "HowToStep", "position": 4, "name": "Send compressed context to LLM", "text": "Use compressed_text from the response as the context for your LLM API call."}
     ],
     "totalTime": "PT5M",
-    "tool": ["pip", "Python 3.8+"]
+    "tool": ["An HTTP client"]
   }
   </script>
   <script type="application/ld+json">

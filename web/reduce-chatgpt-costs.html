@@ -114,7 +114,7 @@
         <p>A typical agent making 1,000 calls/day with 4,000-token prompts burns real ChatGPT / OpenAI budget on filler context. SuperCompress is query-aware extractive selection: it keeps original lines that answer this question and drops the rest. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
       </section>    <section class="seo-section">
         <h2>How to measure the cut</h2>
-        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own ChatGPT / OpenAI traffic instead of a marketing savings table. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npx supercompress setup</code>.</p>
+        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own ChatGPT / OpenAI traffic instead of a marketing savings table. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>.</p>
       </section>
 
     

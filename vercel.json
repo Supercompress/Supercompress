@@ -8,6 +8,21 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/chatgpt-traffic",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
+      "source": "/geo",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
+      "source": "/aeo",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
       "source": "/aeo-geo",
       "destination": "/ai-search",
       "permanent": true
@@ -206,7 +221,7 @@
           "value": "api.supercompress.dev"
         }
       ],
-      "destination": "https://www.supercompress.dev/aeo-geo",
+      "destination": "https://www.supercompress.dev/ai-search",
       "permanent": true
     },
     {
@@ -1808,22 +1823,6 @@
       "destination": "/reduce-gemini-costs.html"
     },
     {
-      "source": "/aeo-geo",
-      "destination": "/aeo-geo.html"
-    },
-    {
-      "source": "/aeo",
-      "destination": "/aeo-geo.html"
-    },
-    {
-      "source": "/geo",
-      "destination": "/aeo-geo.html"
-    },
-    {
-      "source": "/chatgpt-traffic",
-      "destination": "/aeo-geo.html"
-    },
-    {
       "source": "/llm-cost-optimization",
       "destination": "/llm-cost-optimization.html"
     },
@@ -1926,10 +1925,6 @@
     {
       "source": "/api/:path*",
       "destination": "/api/soft-probe"
-    },
-    {
-      "source": "/aeo-geo",
-      "destination": "/aeo-geo.html"
     },
     {
       "source": "/reduce-chatgpt-costs",

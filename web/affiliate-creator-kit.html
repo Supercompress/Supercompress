@@ -38,16 +38,16 @@
     .kit-grid { display: grid; gap: 14px; margin-top: 34px; grid-template-columns: minmax(0, 1fr); }
     @media (min-width: 900px) { .kit-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
     .kit-card { border: 0.5px solid var(--card-border); border-radius: 8px; background: #fff; padding: 22px; min-width: 0; }
-    .kit-card h2.kit-section h2 { font-family: var(--serif); font-weight: 300; letter-spacing: -.01em; color: var(--text-primary); }
+    .kit-card h2, .kit-section h2 { font-family: var(--serif); font-weight: 300; letter-spacing: -.01em; color: var(--text-primary); }
     .kit-card h2 { font-size: 22px; margin: 0 0 10px; }
-    .kit-card p.kit-card li.kit-section p.kit-section li { color: var(--text-body); font-size: 14px; line-height: 1.6; }
-    .kit-card ul.kit-section ul { padding-left: 18px; margin: 12px 0 0; }
+    .kit-card p, .kit-card li, .kit-section p, .kit-section li { color: var(--text-body); font-size: 14px; line-height: 1.6; }
+    .kit-card ul, .kit-section ul { padding-left: 18px; margin: 12px 0 0; }
     .kit-section { margin-top: 46px; min-width: 0; }
     .kit-section h2 { font-size: clamp(26px, 4vw, 38px); margin: 0 0 16px; }
     .kit-copy { background: #f7f7f4; color: #262626; border: 1px solid #ebeae5; border-radius: 8px; padding: 16px; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.55; }
     .kit-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 0.5px solid var(--card-border); border-radius: 8px; background: #fff; }
     .kit-table { width: 100%; min-width: 640px; border-collapse: collapse; }
-    .kit-table th.kit-table td { padding: 14px; border-bottom: 0.5px solid var(--card-border); text-align: left; vertical-align: top; font-size: 14px; line-height: 1.5; }
+    .kit-table th, .kit-table td { padding: 14px; border-bottom: 0.5px solid var(--card-border); text-align: left; vertical-align: top; font-size: 14px; line-height: 1.5; }
     .kit-table tr:last-child td { border-bottom: 0; }
     .kit-table th { color: var(--text-muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; background: #f9f9f6; }
     .kit-cta { margin-top: 52px; padding: 28px; border: 0.5px solid var(--card-border); border-radius: 8px; background: var(--feat-blue); }

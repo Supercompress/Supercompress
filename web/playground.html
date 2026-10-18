@@ -356,13 +356,13 @@
         const linesIn = (context || "").split("\n").length;
         const linesOut = (data.compressed_text || "").split("\n").length;
         $("stat-lines").textContent = fmt(Math.max(0, linesIn - linesOut));
-        $("stat-policy").textContent = data.policy_name || ", ";
-        $("stat-mode").textContent = data.mode || ", ";
+        $("stat-policy").textContent = data.policy_name || "-";
+        $("stat-mode").textContent = data.mode || "-";
         $("stat-quality").textContent =
-          data.answer_quality != null ? fmt(data.answer_quality * 100, 0) + "%" : ", ";
+          data.answer_quality != null ? fmt(data.answer_quality * 100, 0) + "%" : "-";
         $("stat-important").textContent =
-          data.important_kept_pct != null ? fmt(data.important_kept_pct * 100, 0) + "%" : ", ";
-        $("stat-risk").textContent = data.compression_risk || ", ";
+          data.important_kept_pct != null ? fmt(data.important_kept_pct * 100, 0) + "%" : "-";
+        $("stat-risk").textContent = data.compression_risk || "-";
       }
 
       // Presets
