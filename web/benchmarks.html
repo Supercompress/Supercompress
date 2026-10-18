@@ -4,9 +4,9 @@
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress Benchmarks — Context Compression Evidence Containment</title>
+  <title>SuperCompress Benchmarks | Context Compression Evidence Containment</title>
   <meta name="description" content="SuperCompress benchmarks for context compression: 390 public cases measuring whether required evidence survives. Hosted query-aware Neural Keep reads the question and keeps original lines. Coding-agent suite labeled separately from the legacy compiler. Downstream LLM eval not yet run." />
-  <meta property="og:title" content="SuperCompress Benchmarks — Context Compression Evidence Containment" />
+  <meta property="og:title" content="SuperCompress Benchmarks, Context Compression Evidence Containment" />
   <meta property="og:description" content="SuperCompress context compression benchmarks: 390 public cases, evidence containment, hosted query-aware Neural Keep. Downstream LLM eval not yet run." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://www.supercompress.dev/benchmarks" />
@@ -17,7 +17,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="SuperCompress Benchmarks — Context Compression" />
+  <meta name="twitter:title" content="SuperCompress Benchmarks, Context Compression" />
   <meta name="twitter:description" content="SuperCompress context compression benchmark: evidence containment on 390 public cases. Hosted query-aware Neural Keep. Downstream LLM eval not yet run." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="SuperCompress benchmarks, SuperCompress context compression benchmark, Neural Keep, coding agent compression, evidence containment, 390 cases, B5 benchmark, context compression" />
@@ -66,8 +66,8 @@
     .bench-compare-card .eyebrow { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brand); margin-bottom: 8px; }
     .bench-compare-card strong { display: block; font-size: 1.25rem; line-height: 1.15; font-family: var(--serif); font-weight: 400; margin-bottom: 8px; }
     .bench-compare-card p { font-size: 0.86rem; line-height: 1.55; color: var(--text-body); margin: 0; }
-    @media (max-width: 900px) { .bench-stats, .bench-compare-grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 560px) { .bench-stats, .bench-compare-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .bench-stats.bench-compare-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .bench-stats.bench-compare-grid { grid-template-columns: 1fr; } }
   </style>
   <link rel="preconnect" href="https://github.com" />
   <link rel="dns-prefetch" href="https://github.com" />
@@ -117,7 +117,7 @@
         "name": "What does SuperCompress v2 measure on benchmarks?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Evidence containment: whether required answer-critical lines survive compression in their original wording. This is not a downstream LLM completion eval — that suite has not been run yet."
+          "text": "Evidence containment: whether required answer-critical lines survive compression in their original wording. This is not a downstream LLM completion eval, that suite has not been run yet."
         }
       },
       {
@@ -200,7 +200,7 @@
     <div class="bench-head">
         <div class="bench-kicker"><strong>v2 launch · Sep 2026</strong> · 390 public cases · evidence containment</div>
         <h1>SuperCompress benchmarks.<br>Prove what stayed.</h1>
-        <p>SuperCompress v2 is the hosted <strong>query-aware Neural Keep</strong> model. It reads the question, keeps the original context lines that answer it, and drops the rest. We measure whether <em>required evidence</em> survives compression — not whether a downstream chat model finishes the task. Downstream LLM eval has <strong>not</strong> been run yet.</p>
+        <p>SuperCompress v2 is the hosted <strong>query-aware Neural Keep</strong> model. It reads the question, keeps the original context lines that answer it, and drops the rest. We measure whether <em>required evidence</em> survives compression, not whether a downstream chat model finishes the task. Downstream LLM eval has <strong>not</strong> been run yet.</p>
         <div class="bench-stats" aria-label="v2 launch benchmark highlights">
           <div class="bench-stat">
             <span class="label">Public cases</span>
@@ -210,7 +210,7 @@
           <div class="bench-stat">
             <span class="label">Metric</span>
             <span class="value">Evidence</span>
-            <span class="sub">Required lines must survive in original wording — not a chat-model grade.</span>
+            <span class="sub">Required lines must survive in original wording, not a chat-model grade.</span>
           </div>
           <div class="bench-stat">
             <span class="label">Engine</span>
@@ -220,14 +220,14 @@
           <div class="bench-stat">
             <span class="label">Path</span>
             <span class="value">Hosted API</span>
-            <span class="sub">Fly CPU Neural Keep — not the millisecond compiler path. MCP + hooks for coding agents.</span>
+            <span class="sub">Fly CPU Neural Keep, not the millisecond compiler path. MCP + hooks for coding agents.</span>
           </div>
         </div>
       </div>
 
       <div class="df-container df-container-narrow">
         <section class="bench-section">
-          <h2>Two engines — do not mix numbers</h2>
+          <h2>Two engines, do not mix numbers</h2>
           <div class="bench-compare-grid">
             <article class="bench-compare-card">
               <span class="eyebrow">Recommended · hosted</span>
@@ -237,7 +237,7 @@
             <article class="bench-compare-card">
               <span class="eyebrow">Fast / local</span>
               <strong>Compiler</strong>
-              <p>Lightweight local path. CPU. Millisecond-class preprocessing. Legacy results live in the labeled section below — separate product.</p>
+              <p>Lightweight local path. CPU. Millisecond-class preprocessing. Legacy results live in the labeled section below, separate product.</p>
             </article>
             <article class="bench-compare-card">
               <span class="eyebrow">Metric honesty</span>
@@ -249,18 +249,18 @@
 
         <section class="bench-section">
           <h2>Coding-agent suite (B5)</h2>
-          <p>Held-out coding-agent dumps. Same scorer for every method. Tokenizer: tiktoken cl100k_base. We measure whether the <strong>required evidence</strong> survives in original wording — stack traces, IDs, paths, error lines — not whether a downstream chat model finishes a task.</p>
+          <p>Held-out coding-agent dumps. Same scorer for every method. Tokenizer: tiktoken cl100k_base. We measure whether the <strong>required evidence</strong> survives in original wording, stack traces, IDs, paths, error lines, not whether a downstream chat model finishes a task.</p>
           <div class="bench-callout">
             <p style="margin:0 0 10px">Headline cut figures from this suite are <strong>on hold</strong> pending re-verification. Do not treat summary JSON as marketing numbers.</p>
             <p style="margin:0">Raw methodology JSON remains at <a href="/assets/data/launch-benchmark.json">launch-benchmark.json</a> for researchers. Product writeup: <a href="/engine-v2-launch">v2 launch</a>.</p>
           </div>
-          <p>Comparators on the same dumps (qualitative, not a scoreboard): truncation is position-blind; summarization rewrites original lines; LLMLingua-2 is research-style perplexity prune (often self-hosted); Headroom leans on content-type / local proxy workflows. SuperCompress is query-aware extractive keep on the hosted API, with MCP + hooks for coding agents.</p>
+          <p>Comparators on the same dumps (qualitative, not a scoreboard): truncation is position-blind; summarization rewrites original lines; LLMLingua-2 is research-style perplexity prune; Headroom leans on content-type / local proxy workflows. SuperCompress is query-aware extractive keep on the hosted API, with MCP + hooks for coding agents.</p>
         </section>
 
         <section class="bench-section">
           <h2>Aggregate honesty (all 390 cases)</h2>
           <div class="bench-callout">
-            <p style="margin:0 0 10px"><strong>Mean cut across the full 390-case mix is conservative by design.</strong> On needle / LongBench / multihop slices the engine often keeps nearly everything when every line could matter — it knows when <em>not</em> to compress. Query-aware keep shines on noisy coding-agent dumps (B5), where most lines are irrelevant log or tool output.</p>
+            <p style="margin:0 0 10px"><strong>Mean cut across the full 390-case mix is conservative by design.</strong> On needle / LongBench / multihop slices the engine often keeps nearly everything when every line could matter, it knows when <em>not</em> to compress. Query-aware keep shines on noisy coding-agent dumps (B5), where most lines are irrelevant log or tool output.</p>
             <p style="margin:0">Downstream LLM completion eval: <strong>not run</strong>.</p>
           </div>
         </section>
@@ -278,7 +278,7 @@
         <section class="bench-section">
           <h2>Limitations</h2>
           <ul style="color:var(--text-body);line-height:1.7;padding-left:1.2rem">
-            <li><strong>Latency:</strong> Neural v2 B5 p50 is ~5.8s on the hosted Fly CPU path — not millisecond-class.</li>
+            <li><strong>Latency:</strong> Neural v2 B5 p50 is ~5.8s on the hosted Fly CPU path, not millisecond-class.</li>
             <li><strong>Downstream eval:</strong> evidence containment ≠ proven answer quality from a chat model.</li>
             <li><strong>Workload fit:</strong> strongest on coding-agent / tool-dump noise; conservative on dense needle/QA mixes.</li>
           </ul>
@@ -316,7 +316,7 @@
                 <tr>
                   <td>Typical latency</td>
                   <td>~10–47 ms CPU</td>
-                  <td>Local compiler — not the hosted Neural Keep path</td>
+                  <td>Local compiler, not the hosted Neural Keep path</td>
                 </tr>
               </tbody>
             </table>
@@ -342,7 +342,7 @@
 
         <div class="bench-cta">
           <h2>Ship with less context</h2>
-          <p style="color:var(--text-body);margin:12px 0 24px">5M free tokens/mo · then $0.10/1M · MIT</p>
+          <p style="color:var(--text-body);margin:12px 0 24px">Hosted Neural Keep API · free monthly allowance</p>
           <p>
             <a class="btn" href="/dashboard?signup=1">Get API key</a>
             &nbsp;

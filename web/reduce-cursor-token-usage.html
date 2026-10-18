@@ -91,7 +91,7 @@
       "name": "Does SuperCompress change how I sign in to Cursor?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. You keep your normal Cursor login and models. SuperCompress adds an MCP server, an always-on rule and hooks to Cursor; it does not route Cursor's model traffic through a proxy."
+        "text": "No. You keep your normal Cursor login and models. SuperCompress adds an MCP server, an always-on rule and hooks to Cursor; your model traffic does not pass through SuperCompress."
       }
     },
     {
@@ -252,7 +252,7 @@
     <h3>Why is my Cursor token usage so high?</h3>
     <p>Agent threads send the conversation back to the model on every turn, and that conversation fills up with tool output: file reads, shell and test output, search results and MCP tool results. Attached files, always-on rules and enabled MCP servers add more on every request.</p>
     <h3>Does SuperCompress change how I sign in to Cursor?</h3>
-    <p>No. You keep your normal Cursor login and models. SuperCompress adds an MCP server, an always-on rule and hooks to Cursor; it does not route Cursor's model traffic through a proxy.</p>
+    <p>No. You keep your normal Cursor login and models. SuperCompress adds an MCP server, an always-on rule and hooks to Cursor; your model traffic does not pass through SuperCompress.</p>
     <h3>Does SuperCompress rewrite or summarize what Cursor reads?</h3>
     <p>No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.</p>
     <h3>How do I see what was removed?</h3>

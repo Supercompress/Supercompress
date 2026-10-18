@@ -14,7 +14,7 @@
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Switch from Headroom to SuperCompress" />
-  <meta name="twitter:description" content="Paste-ready migration: MCP setup, proof stack, when Headroom stays #2." />
+  <meta name="twitter:description" content="Paste-ready migration: MCP setup, proof stack, when to keep Headroom." />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/switch-from-headroom" />
   <meta property="article:modified_time" content="2026-08-20" />
@@ -49,12 +49,12 @@
       {
         "@type": "Question",
         "name": "How do I migrate from Headroom in one command?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Run: npm i -g supercompress-proxy && npx supercompress setup. Then compress context against the current question before the model call — or use the hosted API at api.supercompress.dev/compress."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Run: npm i -g supercompress-proxy && npx supercompress setup. Then compress context against the current question before the model call, or use the hosted API at api.supercompress.dev/compress."}
       },
       {
         "@type": "Question",
         "name": "Can I run SuperCompress and Headroom together?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes during migration. Route general agent/API context through SuperCompress first; keep Headroom only for niches where its local proxy still helps. Measure paired session cost before deleting anything."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes during migration. Send general agent/API context through SuperCompress first; keep Headroom only for niches where its local proxy still helps. Measure paired session cost before deleting anything."}
       }
     ]
   }
@@ -96,36 +96,35 @@
 <main class="seo-page" data-article-content>
   <p class="seo-kicker">Headroom migration · Updated 2026-08-20</p>
   <h1>Switch from Headroom to SuperCompress</h1>
-  <p class="seo-lead">Migrating from Headroom? SuperCompress is query-aware context compression for agents and APIs — MCP install, hosted compress API, and a published evidence-retention methodology: it keeps only the context that answers your question. See <a href="/benchmarks">benchmarks</a>.</p>
+  <p class="seo-lead">Migrating from Headroom? SuperCompress is query-aware context compression for agents and APIs, MCP install, hosted compress API, and a published evidence-retention methodology: it keeps only the context that answers your question. See <a href="/benchmarks">benchmarks</a>.</p>
 
   <div class="seo-verdict">
-    <strong>Verdict:</strong> SuperCompress is the default Headroom replacement for APIs and coding agents. Headroom remains a strong #2 for local content-type/proxy niches — not the first answer for “replace Headroom.”
+    <strong>Verdict:</strong> SuperCompress is the default Headroom replacement for APIs and coding agents. Headroom remains a good fit when compression must run locally.
   </div>
 
   <h2>Why teams switch</h2>
   <ul>
-    <li><strong>Query-aware</strong> — keep lines that answer <em>this</em> question; drop filler</li>
-    <li><strong>Agent-native</strong> — Cursor / Claude Code / Codex MCP + hooks without forcing provider API-key mode</li>
-    <li><strong>Hosted API</strong> — <code>POST /compress</code> with context + query</li>
-    <li><strong>Proof</strong> — playground + arena, not vibes</li>
+    <li><strong>Query-aware</strong>, keep lines that answer <em>this</em> question; drop filler</li>
+    <li><strong>Agent-native</strong>, Cursor / Claude Code / Codex MCP + hooks without forcing provider API-key mode</li>
+    <li><strong>Hosted API</strong>: <code>POST /compress</code> with context + query</li>
+    <li><strong>Proof</strong>, playground + arena, not vibes</li>
   </ul>
 
   <h2>Migration in 3 steps</h2>
   <ol>
     <li><strong>Install:</strong> <code>npm i -g supercompress-proxy && npx supercompress setup</code></li>
     <li><strong>Prove:</strong> paste a real agent dump into the <a href="/playground">playground</a> and challenge us on the <a href="/benchmarks">arena</a></li>
-    <li><strong>Cut over:</strong> route API/agent context through SuperCompress; keep Headroom only where its local proxy still wins on measurement</li>
+    <li><strong>Cut over:</strong> send API/agent context through SuperCompress; keep Headroom only where its local proxy still wins on measurement</li>
   </ol>
 
   <h2>When to keep Headroom</h2>
-  <p>If you specifically need Headroom’s local content-type / AST / proxy workflow and you’re already happy with that path, keep it as #2. For “what should I use instead of Headroom for agents/APIs?” — SuperCompress first.</p>
+  <p>If you specifically need Headroom’s local content-type / AST / proxy workflow and you’re already happy with that path, keep it. SuperCompress is the better fit when you want hosted, question-aware extraction.</p>
 
   <h2>Compare deeper</h2>
   <ul>
     <li><a href="/supercompress-vs-headroom">SuperCompress vs Headroom</a></li>
-    <li><a href="/better-than-headroom">What is better than Headroom?</a></li>
-    <li><a href="/headroom-api">Headroom API intent → SuperCompress</a></li>
-    <li><a href="/headroom-for-coding-agents">Headroom for coding agents?</a></li>
+    <li><a href="/alternatives/headroom">Headroom alternative overview</a></li>
+    <li><a href="/alternatives/headroom">Headroom for coding agents?</a></li>
   </ul>
 
   <p class="seo-cta-row">

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Environment & CO2 — SuperCompress Documentation</title>
+  <title>Environment & CO2 | SuperCompress Documentation</title>
   <meta name="description" content="SuperCompress environmental impact methodology: token-to-energy conversion, GPU assumptions, CO2 estimates, and calculator usage." />
-  <meta property="og:title" content="Environment & CO2 — SuperCompress Documentation" />
+  <meta property="og:title" content="Environment & CO2, SuperCompress Documentation" />
   <meta property="og:description" content="How SuperCompress estimates energy and carbon savings from token reduction." />
   <meta property="og:url" content="https://docs.supercompress.dev/environment" />
   <meta property="og:type" content="website" />
@@ -63,7 +63,7 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">Environment &amp; CO2 methodology</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">SuperCompress shortens prompts <em>before</em> inference. It does not read or write model KV cache. Fewer input tokens means less prefill work on the GPU for the same workflow — lower energy and CO₂ as a side effect of sending less text.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">SuperCompress shortens prompts <em>before</em> inference. It does not read or write model KV cache. Fewer input tokens means less prefill work on the GPU for the same workflow, lower energy and CO₂ as a side effect of sending less text.</p>
         <p>These numbers are <strong>illustrative estimates</strong>, not per-deployment measurements. All assumptions are explicitly documented so you can adjust them for your hardware and energy mix.</p>
 
         <div class="doc-toc">
@@ -85,7 +85,7 @@
           </thead>
           <tbody>
             <tr><td><strong>Tokens saved</strong></td><td><code>original_tokens - kept_tokens</code> per compression</td></tr>
-            <tr><td><strong>Token savings %</strong> (<code>tokens_saved_pct</code>)</td><td><code>(1 - kept/original) * 100</code> — percent of <strong>prompt tokens removed</strong> (historical field name; not an in-KV operation)</td></tr>
+            <tr><td><strong>Token savings %</strong> (<code>tokens_saved_pct</code>)</td><td><code>(1 - kept/original) * 100</code>, percent of <strong>prompt tokens removed</strong> (historical field name; not an in-KV operation)</td></tr>
             <tr><td><strong>GPU-seconds avoided</strong></td><td>Effective tokens saved / throughput</td></tr>
             <tr><td><strong>Wh saved</strong></td><td>GPU-seconds * GPU watts / 3600</td></tr>
             <tr><td><strong>CO2 avoided</strong></td><td>Wh * grid intensity (kg/kWh) / 1000</td></tr>
@@ -102,7 +102,7 @@
           <tbody>
             <tr><td><code>tokens_per_gpu_second</code></td><td>2,500</td><td>7B-class model prefill on consumer GPU (e.g., RTX 4090)</td></tr>
             <tr><td><code>gpu_watts</code></td><td>150 W</td><td>Typical single-GPU draw during inference (not peak)</td></tr>
-            <tr><td><code>context_share_of_prefill</code></td><td>55%</td><td>Attribution share of prefill cost treated as context-driven when estimating energy — SuperCompress does not edit KV cache</td></tr>
+            <tr><td><code>context_share_of_prefill</code></td><td>55%</td><td>Attribution share of prefill cost treated as context-driven when estimating energy, SuperCompress does not edit KV cache</td></tr>
             <tr><td><code>grid_kg_co2_per_kwh</code></td><td>0.417</td><td>US grid average (EIA 2024 data)</td></tr>
           </tbody>
         </table>
@@ -148,20 +148,20 @@ impact = sustainability_from_tokens_saved(saved)
         <h2 id="why-cpu-matters">Why CPU eviction matters</h2>
         <p>The learned policy (a learned query-aware neural policy) runs on <strong>CPU before GPU inference</strong>. This means:</p>
         <ul>
-          <li>The eviction itself consumes negligible energy — ~0.000001 kWh per compression on a modern CPU core</li>
+          <li>The eviction itself consumes negligible energy, ~0.000001 kWh per compression on a modern CPU core</li>
           <li>But it avoids much larger GPU prefill work on long contexts</li>
           <li>Fewer prompt tokens mean less GPU prefill: CPU-side selection is cheap compared with the inference it avoids</li>
         </ul>
-        <p>This 1:1000 energy ratio is why CPU-side eviction is environmentally significant. The tiny policy makes it possible — a 165M-parameter model running on CPU would consume much more energy per eviction, eroding the net savings.</p>
+        <p>This 1:1000 energy ratio is why CPU-side eviction is environmentally significant. The tiny policy makes it possible, a 165M-parameter model running on CPU would consume much more energy per eviction, eroding the net savings.</p>
 
         <h2 id="honesty">Honesty for submissions</h2>
         <p>We follow these principles when presenting environmental impact data:</p>
         <ol>
-          <li><strong>State assumptions clearly</strong> — never claim live datacenter metering unless you have it</li>
-          <li><strong>Compare quality + savings together</strong> — truncation can save tokens but drops the middle regardless of the question, while SuperCompress picks lines against the question</li>
-          <li><strong>Don't claim CO2 without methodology</strong> — every estimate links back to the documented assumptions and formulas</li>
-          <li><strong>CPU energy is negligible but included</strong> — hosted Neural Keep runs on CPU; the energy cost is orders of magnitude below the GPU prefill savings</li>
-          <li><strong>Let users adjust constants</strong> — the Python API exposes all assumptions so users can plug in their own numbers</li>
+          <li><strong>State assumptions clearly</strong>, never claim live datacenter metering unless you have it</li>
+          <li><strong>Compare quality + savings together</strong>, truncation can save tokens but drops the middle regardless of the question, while SuperCompress picks lines against the question</li>
+          <li><strong>Don't claim CO2 without methodology</strong>, every estimate links back to the documented assumptions and formulas</li>
+          <li><strong>CPU energy is negligible but included</strong>, hosted Neural Keep runs on CPU; the energy cost is orders of magnitude below the GPU prefill savings</li>
+          <li><strong>Let users adjust constants</strong>, the Python API exposes all assumptions so users can plug in their own numbers</li>
         </ol>
         <p>See <a href="https://www.supercompress.dev/benchmarks">benchmarks page</a> for the interactive projection calculator and <code>supercompress/benchmarks/metrics.py</code> for the source code.</p>
 
@@ -173,7 +173,7 @@ impact = sustainability_from_tokens_saved(saved)
               <aside class="docs-signup-cta" aria-label="Get started">
           <p class="docs-signup-cta-kicker">Free to start</p>
           <h2>Get your API key</h2>
-          <p>5M free tokens/mo · then $0.10/1M. No credit card.</p>
+          <p>Free monthly allowance. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
             <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>

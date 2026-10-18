@@ -121,7 +121,7 @@
     <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
 
 <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
-  <a href="/reduce-llm-costs">Reduce LLM costs</a>
+  <a href="/cut-llm-api-costs">Reduce LLM costs</a>
   <a href="/token-compression">Token compression</a>
   <a href="/prompt-compression" aria-current="page">Prompt compression</a>
   <a href="/context-compression">Context compression</a>
@@ -131,15 +131,15 @@
 </nav>
 <section class="seo-proof" id="held-out-proof">
   <h2>How SuperCompress measures compression</h2>
-  <p>Query-aware Neural Keep reads the question and keeps only the original context lines that answer it. Irrelevant log and tool-output lines drop. We score evidence containment — whether required lines survive in their original wording — not a downstream chat-model grade. Methodology: <a href="/benchmarks">SuperCompress benchmarks</a>.</p>
+  <p>Query-aware Neural Keep reads the question and keeps only the original context lines that answer it. Irrelevant log and tool-output lines drop. We score evidence containment, whether required lines survive in their original wording, not a downstream chat-model grade. Methodology: <a href="/benchmarks">SuperCompress benchmarks</a>.</p>
 </section>
 <section class="seo-vs-hr">
   <h2>Why teams pick SuperCompress over Headroom</h2>
   <ul>
-    <li><strong>True query-awareness</strong> — scores blocks against the question; Headroom leans on content-type heuristics.</li>
-    <li><strong>Coding-agent MCP first</strong> — <code>npx supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
-    <li><strong>Agent + API ready</strong> — hosted compress API, open-source library, and MCP install for coding agents — not only a local CLI workflow.</li>
-    <li><strong>Evidence containment</strong> — we measure whether required lines survive in original wording, not only “token % saved.”</li>
+    <li><strong>True query-awareness</strong>, scores blocks against the question; Headroom leans on content-type heuristics.</li>
+    <li><strong>Coding-agent MCP first</strong>: <code>npx supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
+    <li><strong>Agent + API ready</strong>, hosted compress API, open-source library, and MCP install for coding agents, not only a local CLI workflow.</li>
+    <li><strong>Evidence containment</strong>, we measure whether required lines survive in original wording, not only “token % saved.”</li>
   </ul>
   <p><a href="/supercompress-vs-headroom">Read the full SuperCompress vs Headroom comparison →</a></p>
 </section>
@@ -163,15 +163,11 @@ print(f"Removed {result.tokens_removed} tokens")</code></pre>
         <table class="seo-table"><thead><tr><th>Factor</th><th>Prompt Compression</th><th>Summarization</th></tr></thead><tbody>
 <tr><td>Method</td><td>Selects original lines</td><td>Rewrites with LLM</td></tr>
 <tr><td>Extra cost</td><td>CPU preprocess (no extra LLM)</td><td>Full LLM call</td></tr>
-<tr><td>Query-aware</td><td>Yes — scores lines against the question</td><td>Rewrite is not line selection</td></tr>
+<tr><td>Query-aware</td><td>Yes, scores lines against the question</td><td>Rewrite is not line selection</td></tr>
 </tbody></table>
       </section>    <section class="seo-section">
         <h2>Cost savings from prompt compression</h2>
-        <table class="seo-table"><thead><tr><th>Scenario</th><th>Daily Calls</th><th>GPT-4o Monthly Savings</th></tr></thead><tbody>
-<tr><td>Small agent</td><td>100</td><td>~$20</td></tr>
-<tr><td>Medium RAG app</td><td>1,000</td><td>~$295</td></tr>
-<tr><td>Enterprise</td><td>500,000</td><td>~$98,500</td></tr>
-</tbody></table>
+        <p>Savings depend on how much bulky context you send per call. Measure <code>original_tokens</code> and <code>kept_tokens</code> on your own traffic and compare your provider bill per finished task.</p>
       </section>
 
     <section class="seo-section">
@@ -192,7 +188,7 @@ print(f"Removed {result.tokens_removed} tokens")</code></pre>
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -222,7 +218,7 @@ print(f"Removed {result.tokens_removed} tokens")</code></pre>
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression" aria-current="page">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

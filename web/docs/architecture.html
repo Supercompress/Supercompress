@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Architecture — SuperCompress Documentation</title>
+  <title>Architecture | SuperCompress Documentation</title>
   <meta name="description" content="SuperCompress architecture: extractive query-aware compression, prompt caching vs agent loops, compiler mode, and cost model." />
-  <meta property="og:title" content="Architecture — SuperCompress Documentation" />
+  <meta property="og:title" content="Architecture, SuperCompress Documentation" />
   <meta property="og:description" content="Extractive query-aware compression, how it interacts with prompt cache, agent-loop usage, and the hosted cost model." />
   <meta property="og:url" content="https://docs.supercompress.dev/architecture" />
   <meta property="og:type" content="website" />
@@ -63,7 +63,7 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">Architecture</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Query-aware extractive compression: hosted Neural Keep reads the question, keeps original lines that answer it, and drops the rest — no rewriting, no extra LLM call.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Query-aware extractive compression: hosted Neural Keep reads the question, keeps original lines that answer it, and drops the rest, no rewriting, no extra LLM call.</p>
 
         <div class="doc-toc">
           <h3>Sections</h3>
@@ -83,7 +83,7 @@
         <table>
           <thead><tr><th>Property</th><th>Meaning</th></tr></thead>
           <tbody>
-            <tr><td>Extractive</td><td>Original text only — no paraphrase / summary rewrite</td></tr>
+            <tr><td>Extractive</td><td>Original text only, no paraphrase / summary rewrite</td></tr>
             <tr><td>Query-aware</td><td>Scoring uses overlap with the current question</td></tr>
             <tr><td>Per-call</td><td>Re-runs over the <code>context</code> you pass each time</td></tr>
             <tr><td>Not a cache</td><td>Does not implement provider prompt caching; it shrinks what you send</td></tr>
@@ -106,7 +106,7 @@
   Verifier (estimates important context kept)
         ↓
   Compressed evidence prompt → LLM</code></pre>
-        <p><strong>Compiler path:</strong> end-to-end ~ms on a single CPU core, no GPU. <strong>Neural v2 (hosted):</strong> query-aware Neural Keep on Fly CPU — seconds-scale on long dumps. Do not mix latency claims.</p>
+        <p><strong>Compiler path:</strong> end-to-end ~ms on a single CPU core, no GPU. <strong>Neural v2 (hosted):</strong> query-aware Neural Keep on Fly CPU, seconds-scale on long dumps. Do not mix latency claims.</p>
 
         <div class="doc-callout doc-callout--tip">
           <span class="doc-callout-label">Key insight</span>
@@ -122,16 +122,16 @@
           <tbody>
             <tr><td>Feature dim</td><td><strong>16</strong> per token</td></tr>
             <tr><td>Hidden dim</td><td>64</td></tr>
-            <tr><td>Size</td><td>~10K parameters, tens of KB on disk</td></tr>
+            <tr><td>Size</td><td>Small local scorer. Production compression on the API uses the hosted Neural Keep model (~400M parameters).</td></tr>
             <tr><td>Output</td><td>Keep / eviction oriented scores for extractive selection</td></tr>
-            <tr><td>Inference</td><td>Pure JS / NumPy-style math — no GPU required</td></tr>
+            <tr><td>Inference</td><td>Pure JS / NumPy-style math, no GPU required</td></tr>
           </tbody>
         </table>
-        <p>Features include position, query n-gram overlap, line shape, structure signals, entropy, and related cues. Compiler mode then packs at <strong>block</strong> granularity with dependency rules — not blind per-token truncation.</p>
+        <p>Features include position, query n-gram overlap, line shape, structure signals, entropy, and related cues. Compiler mode then packs at <strong>block</strong> granularity with dependency rules, not blind per-token truncation.</p>
 
         <h2 id="caching">Prompt caching &amp; agent loops</h2>
         <p>SuperCompress compresses <strong>text before</strong> the model call. It never reads or writes the model’s KV cache. Fewer tokens simply means less prefill work for whatever happens next on the provider.</p>
-        <p>Provider prompt cache (OpenAI prefix cache, Anthropic <code>cache_control</code>, vLLM APC) needs a <strong>byte-identical prefix</strong> across turns. Providers often implement that with their own KV reuse — that is their cache, not ours.</p>
+        <p>Provider prompt cache (OpenAI prefix cache, Anthropic <code>cache_control</code>, vLLM APC) needs a <strong>byte-identical prefix</strong> across turns. Providers often implement that with their own KV reuse, that is their cache, not ours.</p>
         <p>Because compression is query-aware and re-runs each call, recompressing the <strong>entire growing history</strong> every turn can change the kept set → different prefix → cache miss on that blob. The compressed body may then bill as normal (uncached) input even though it is smaller.</p>
 
         <div class="doc-callout doc-callout--info">
@@ -139,7 +139,7 @@
           <ol>
             <li>Leave system prompts and prior turns alone so they can stay cacheable.</li>
             <li>Compress <strong>new bulky dumps</strong> (files, tool output, logs, search/RAG) against the current query.</li>
-            <li>Append that artifact — do not rewrite the whole transcript each turn.</li>
+            <li>Append that artifact, do not rewrite the whole transcript each turn.</li>
           </ol>
         </div>
 
@@ -151,12 +151,12 @@
           <li>Coding agents: <code>npm install -g supercompress-proxy</code> then <code>supercompress setup</code>.</li>
           <li>End-to-end savings = model input tokens avoided − the hosted compress fee (if any).</li>
         </ul>
-        <p>Against <strong>full-price</strong> uncached input, fewer tokens usually wins after the fee. Against a loop that is <strong>already mostly cache reads</strong>, recompressing history can lose — use dump-only compression or sticky prefixes instead.</p>
+        <p>Against <strong>full-price</strong> uncached input, fewer tokens usually wins after the fee. Against a loop that is <strong>already mostly cache reads</strong>, recompressing history can lose, use dump-only compression or sticky prefixes instead.</p>
 
         <h2 id="compiler">Compiler mode</h2>
         <p>Compiler mode is the production path (default on the hosted API). No user budget. It:</p>
         <ol>
-          <li><strong>Segments</strong> context into semantic blocks — headings, code, logs, chat turns, prose, tables, config</li>
+          <li><strong>Segments</strong> context into semantic blocks, headings, code, logs, chat turns, prose, tables, config</li>
           <li><strong>Downranks</strong> repeated tool output, boilerplate, noise, duplicates, irrelevant context</li>
           <li><strong>Preserves</strong> nearby headings, imports, trace/log context, balanced markdown fences</li>
           <li><strong>Verifies</strong> important-kept % and risk (<code>low</code> / <code>medium</code> / <code>high</code>)</li>
@@ -169,7 +169,7 @@
             <tr><th></th><th>Compiler</th><th>Fixed-ratio</th><th>Precision / CCR</th></tr>
           </thead>
           <tbody>
-            <tr><td>Budget?</td><td>No — maximize removal safely</td><td>Yes — <code>budget_ratio</code></td><td>Verifier-gated / reversible markers</td></tr>
+            <tr><td>Budget?</td><td>No, maximize removal safely</td><td>Yes, <code>budget_ratio</code></td><td>Verifier-gated / reversible markers</td></tr>
             <tr><td>Risk reporting</td><td>Yes</td><td>No</td><td>Yes (precision)</td></tr>
             <tr><td>Best for</td><td>Production</td><td>Research / legacy</td><td>Stricter keep guarantees / retrieve</td></tr>
           </tbody>
@@ -200,7 +200,7 @@
               <aside class="docs-signup-cta" aria-label="Get started">
           <p class="docs-signup-cta-kicker">Free to start</p>
           <h2>Get your API key</h2>
-          <p>5M free tokens/mo · then $0.10/1M. No credit card.</p>
+          <p>Free monthly allowance. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
             <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>

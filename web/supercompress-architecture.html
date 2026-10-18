@@ -11,10 +11,10 @@
   <link rel="stylesheet" href="/assets/css/article-page.css?v=2" />
 <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress Architecture — How Query-Aware Prompt Compression Works | SuperCompress</title>
+  <title>SuperCompress Architecture | How Query-Aware Prompt Compression Works | SuperCompress</title>
   <meta name="description" content="Deep dive into SuperCompress's architecture: the query-aware scoring policy, segment-then-score pipeline, compiler mode with verifier, and how extractive selection keeps original answer lines." />
   <meta name="robots" content="index, follow" />
-  <meta property="og:title" content="SuperCompress Architecture — How Query-Aware Prompt Compression Works" />
+  <meta property="og:title" content="SuperCompress Architecture, How Query-Aware Prompt Compression Works" />
   <meta property="og:description" content="How a query-aware neural CPU policy keeps original answer lines and drops junk. Full architecture breakdown: segmentation, scoring, compilation, and verification." />
   <meta property="og:url" content="https://supercompress.dev/supercompress-architecture" />
   <meta property="og:type" content="article" />
@@ -22,13 +22,13 @@
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="SuperCompress Architecture — Query-Aware Prompt Compression" />
+  <meta name="twitter:title" content="SuperCompress Architecture, Query-Aware Prompt Compression" />
   <meta name="twitter:description" content="How the query-aware neural policy works: segmentation, scoring, compilation, and verification." />
   <link rel="canonical" href="https://supercompress.dev/supercompress-architecture" />
   <script type="application/ld+json">{
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "SuperCompress Architecture — How Query-Aware Prompt Compression Works",
+    "headline": "SuperCompress Architecture, How Query-Aware Prompt Compression Works",
     "description": "Technical deep dive into SuperCompress's query-aware compression architecture: query-aware neural policy, segment-then-score pipeline, compiler mode, and verifier.",
     "datePublished": "2026-07-03",
     "author": { "@type": "Organization", "name": "SuperCompress" },
@@ -129,7 +129,7 @@
 <main class="seo-page" data-article-content>
     <h1>SuperCompress Architecture</h1>
     <p class="meta">Last updated July 3, 2026 · 10 min read</p>
-    <p class="subtitle">How query-aware compression keeps original answer-critical lines and drops junk before inference — a technical deep dive. Measure original_tokens / kept_tokens on your traffic.</p>
+    <p class="subtitle">How query-aware compression keeps original answer-critical lines and drops junk before inference, a technical deep dive. Measure original_tokens / kept_tokens on your traffic.</p>
 
     <div class="toc">
       <h2>Contents</h2>
@@ -158,32 +158,32 @@
 
       <p>The key design choices:</p>
       <ul>
-        <li><strong>Neural Keep</strong> — hosted query-aware cross-encoder on Fly CPU today (recommended). Separate <strong>compiler</strong> path: tiny feed-forward on CPU for local preprocessing.</li>
-        <li><strong>Query-aware</strong> — scores each passage against the user's specific question, not just the content type.</li>
-        <li><strong>No model download</strong> — the policy is bundled in the pip package (~200KB total).</li>
-        <li><strong>Deterministic given inputs</strong> — same context + query always produces the same compression. Predictable and auditable.</li>
+        <li><strong>Neural Keep</strong>, hosted query-aware cross-encoder on Fly CPU today (recommended). Separate <strong>compiler</strong> path: tiny feed-forward on CPU for local preprocessing.</li>
+        <li><strong>Query-aware</strong>, scores each passage against the user's specific question, not just the content type.</li>
+        <li><strong>No model download</strong>, the policy is bundled in the pip package (~200KB total).</li>
+        <li><strong>Deterministic given inputs</strong>, same context + query always produces the same compression. Predictable and auditable.</li>
       </ul>
 
-      <p>The system is designed for <a href="/serverless-prompt-compression">serverless deployment</a> — the local compiler path is a small CPU preprocess suitable for AWS Lambda, Cloudflare Workers, and Vercel Edge Functions. Do not treat a single latency figure as product-wide.</p>
+      <p>The system is designed for <a href="/serverless-prompt-compression">serverless deployment</a>, the local compiler path is a small CPU preprocess suitable for AWS Lambda, Cloudflare Workers, and Vercel Edge Functions. Do not treat a single latency figure as product-wide.</p>
     </section>
 
     <section id="pipeline">
       <h2>2. The Compression Pipeline</h2>
 
       <h3>Step 1: Segmentation</h3>
-      <p>The input context is split into semantic segments. Each segment is a coherent unit — a paragraph, a code block, a list item, or a section of a log file. The segmenter uses heuristics (blank lines, indentation, markdown headers, code fence boundaries) to identify natural breaks.</p>
+      <p>The input context is split into semantic segments. Each segment is a coherent unit, a paragraph, a code block, a list item, or a section of a log file. The segmenter uses heuristics (blank lines, indentation, markdown headers, code fence boundaries) to identify natural breaks.</p>
 
       <h3>Step 2: Feature Extraction</h3>
       <p>Each segment is converted into a feature vector that captures:</p>
       <ul>
-        <li><strong>Lexical overlap</strong> — n-gram similarity between the segment and the query</li>
-        <li><strong>Positional features</strong> — where the segment appears in the context (beginning, middle, end)</li>
-        <li><strong>Structural features</strong> — whether it's code, prose, JSON, markdown, etc.</li>
-        <li><strong>Novelty score</strong> — information overlap with previously seen segments</li>
+        <li><strong>Lexical overlap</strong>, n-gram similarity between the segment and the query</li>
+        <li><strong>Positional features</strong>, where the segment appears in the context (beginning, middle, end)</li>
+        <li><strong>Structural features</strong>, whether it's code, prose, JSON, markdown, etc.</li>
+        <li><strong>Novelty score</strong>, information overlap with previously seen segments</li>
       </ul>
 
       <h3>Step 3: Scoring</h3>
-      <p>The learned policy takes the feature vector and outputs a relevance score (0–1) for each segment. The threshold is adaptive — the policy adjusts its cutoff based on the distribution of scores and the target compression ratio.</p>
+      <p>The learned policy takes the feature vector and outputs a relevance score (0–1) for each segment. The threshold is adaptive, the policy adjusts its cutoff based on the distribution of scores and the target compression ratio.</p>
 
       <h3>Step 4: Assembly</h3>
       <p>Segments with relevance scores above the threshold are assembled back into compressed context, preserving their original order. The assembly step also handles edge cases: keeping context boundaries legible, re-inserting necessary transition text, and ensuring the output is valid for the downstream LLM.</p>
@@ -238,11 +238,11 @@
 
       <p>The small size is intentional. It means:</p>
       <ul>
-        <li>The policy fits in L1 cache on modern CPUs — no memory bottleneck</li>
+        <li>The policy fits in L1 cache on modern CPUs, no memory bottleneck</li>
         <li>Scoring runs as a lightweight CPU preprocess before the LLM call</li>
-        <li>The entire package (policy + code) is ~200KB — fits in a single network packet</li>
+        <li>The entire package (policy + code) is ~200KB, fits in a single network packet</li>
         <li>Runs as preprocess before the expensive LLM call</li>
-        <li><a href="/edge-prompt-compression">Edge deployment</a> is straightforward — the policy compiles to WASM for Cloudflare Workers</li>
+        <li><a href="/edge-prompt-compression">Edge deployment</a> is straightforward, the policy compiles to WASM for Cloudflare Workers</li>
       </ul>
 
       <p>The policy was trained on a dataset of ~100K (context, query, keep/drop) examples generated from real production prompts across customer support, code generation, data extraction, and Q&A tasks. Training used a contrastive loss that penalizes dropping segments that contain information needed to answer the query.</p>
@@ -254,10 +254,10 @@
       <p>In addition to the basic scoring policy, SuperCompress offers a <strong>compiler mode</strong> that applies a second-pass optimization. The compiler:</p>
 
       <ol>
-        <li><strong>Deduplicates</strong> — removes repeated information across segments, keeping the most complete version</li>
-        <li><strong>Strips tool noise</strong> — removes boilerplate from tool outputs, stack traces, and logging statements that don't contribute to the answer</li>
-        <li><strong>Preserves dependencies</strong> — if a later segment references an earlier definition, both are kept even if one scores low individually</li>
-        <li><strong>Reports verification risk</strong> — the compiler flags segments where dropping them carries uncertainty, producing a risk score alongside the compressed output</li>
+        <li><strong>Deduplicates</strong>, removes repeated information across segments, keeping the most complete version</li>
+        <li><strong>Strips tool noise</strong>, removes boilerplate from tool outputs, stack traces, and logging statements that don't contribute to the answer</li>
+        <li><strong>Preserves dependencies</strong>, if a later segment references an earlier definition, both are kept even if one scores low individually</li>
+        <li><strong>Reports verification risk</strong>, the compiler flags segments where dropping them carries uncertainty, producing a risk score alongside the compressed output</li>
       </ol>
 
       <p>Compiler mode adds a second pass (dedupe, tool-noise strip, dependency keep) and reports verification risk alongside the compressed output. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
@@ -273,9 +273,9 @@
         <li><strong>Dependency integrity:</strong> If the context defines a term or concept that the query references, is that definition still present?</li>
       </ul>
 
-      <p>The verifier produces a risk score (low, medium, high) for each compression. Applications can use this score to decide whether to use the compressed output, fall back to the original, or route to a more expensive model for verification.</p>
+      <p>The verifier produces a risk score (low, medium, high) for each compression. Applications can use this score to decide whether to use the compressed output, fall back to the original, or keep the full context.</p>
 
-      <p>In practice, >95% of compressions across the benchmark suite receive a low-risk score, and the high-risk cases are typically very short prompts where compression has little room to operate.</p>
+      <p>In practice, most compressions across the benchmark suite receive a low-risk score, and the high-risk cases are typically very short prompts where compression has little room to operate.</p>
     </section>
 
     <section id="deployment">
@@ -292,11 +292,6 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><strong>Python library</strong></td>
-            <td>Local in-process compression</td>
-            <td><code>pip install supercompress</code></td>
-          </tr>
           <tr>
             <td><strong>Hosted API</strong></td>
             <td>Zero-infrastructure compression</td>
@@ -363,7 +358,7 @@
         </tbody>
       </table>
 
-      <p>For a comprehensive comparison, see the <a href="/supercompress-vs-alternatives">alternatives hub</a> and the <a href="/prompt-compression">full guide</a>.</p>
+      <p>For a comprehensive comparison, see the <a href="/alternatives">alternatives hub</a> and the <a href="/prompt-compression">full guide</a>.</p>
     </section>
 
     <div class="cta-section">
@@ -380,7 +375,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -410,7 +405,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

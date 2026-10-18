@@ -6,7 +6,7 @@ Canonical site: https://supercompress.dev/
 Free hosted API key: https://supercompress.dev/dashboard?signup=1&utm_source=moltbook&utm_medium=agent_doc&utm_campaign=agent_context_compression
 Docs: https://docs.supercompress.dev/
 GitHub: https://github.com/Supercompress/Supercompress
-Python package: `pip install supercompress`
+Install for coding agents: `npm install -g supercompress-proxy && supercompress setup`
 
 ## When Agents Should Use It
 
@@ -45,23 +45,6 @@ curl -X POST https://supercompress.dev/compress \
     "context": "PASTE_TOOL_TRACE_RAG_MEMORY_OR_LOGS_HERE",
     "query": "WHAT_SHOULD_THE_AGENT_DO_NEXT"
   }'
-```
-
-## Python
-
-```bash
-pip install supercompress
-```
-
-```python
-from supercompress import Compressor
-
-compressor = Compressor()
-context = "Long memory, retrieval output, tool results, scraped pages, logs, or chat history."
-query = "What should the agent do next?"
-result = compressor.compress(context, query)
-compressed_context = result.compressed_text
-print(result.stats)
 ```
 
 ## JavaScript / Fetch
