@@ -107,7 +107,7 @@
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">Technical guide</p>
     <h1>How prompt compression works</h1>
-    <p class="seo-lead">SuperCompress uses a learned policy of a learned query-aware neural policy — tiny compared to the LLMs it optimizes for. Here is how it works under the hood.</p>
+    <p class="seo-lead">SuperCompress uses a hosted, query-aware Neural Keep model (about 400M parameters) to decide which lines to keep. Here is how it works under the hood.</p>
     <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
 <section class="seo-section">
         <h2>The scoring policy</h2>
@@ -124,7 +124,7 @@
 <li>The remaining blocks are reassembled in order</li>
 <li>Token counts and compression metrics are returned</li>
 </ol>
-<p>The entire process is a CPU preprocess with no GPU required. Measure wall time on your path — hosted Neural Keep and the local compiler are different engines.</p>
+<p>The entire process is a CPU preprocess with no GPU required. Measure wall time on your path, hosted Neural Keep and the local compiler are different engines.</p>
       </section>
 
     <section class="seo-section">
@@ -143,7 +143,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -173,7 +173,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

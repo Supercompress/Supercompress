@@ -49,7 +49,7 @@
             {
         "@type": "Question",
         "name": "Does token compression require a model download?",
-        "acceptedAnswer": {"@type": "Answer", "text": "No. SuperCompress uses a tiny CPU policy and does not require a model download or GPU."}
+        "acceptedAnswer": {"@type": "Answer", "text": "No. Compression runs on the hosted Neural Keep model (about 400M parameters), so there is nothing to download or run yourself."}
       },
       {
         "@type": "Question",
@@ -112,7 +112,7 @@
 <section class="seo-section">
         <h2>What is LLM token compression?</h2>
         <p><strong>LLM token compression</strong> reduces the number of tokens sent to a language model during inference while preserving the information needed to answer the current query.</p>
-<p>In a typical RAG query, 60-80% of retrieved context may be irrelevant to the specific question. Those tokens still cost money and add latency.</p>
+<p>In many RAG queries, much of the retrieved context is irrelevant to the specific question. Those tokens still cost money and add latency.</p>
       </section>    <section class="seo-section">
         <h2>Token compression methods compared</h2>
         <table class="seo-table"><thead><tr><th>Method</th><th>Mechanism</th><th>Query-aware</th><th>Extra LLM call</th></tr></thead><tbody>
@@ -122,16 +122,16 @@
 </tbody></table>
       </section>    <section class="seo-section">
         <h2>Integrating with your LLM pipeline</h2>
-                        <pre><code>pip install supercompress
-from supercompress import Compressor
-comp = Compressor()
-result = comp.compress(context, query)</code></pre>
+                        <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"context":"...","query":"..."}'</code></pre>
       </section>
 
     <section class="seo-section">
       <h2>Frequently asked questions</h2>
             <h3>Does token compression require a model download?</h3>
-      <p>No. SuperCompress uses a tiny CPU policy and does not require a model download or GPU.</p>
+      <p>No. Compression runs on the hosted Neural Keep model (about 400M parameters), so there is nothing to download or run yourself.</p>
       <h3>Does it work with local models?</h3>
       <p>Yes. Compression is model-agnostic and works before any model call.</p>
     </section>
@@ -144,7 +144,7 @@ result = comp.compress(context, query)</code></pre>
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -174,7 +174,7 @@ result = comp.compress(context, query)</code></pre>
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

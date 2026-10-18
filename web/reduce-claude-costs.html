@@ -54,7 +54,7 @@
       {
         "@type": "Question",
         "name": "Does this work with Claude Code and Cursor?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Install MCP with npx supercompress setup — SuperCompress compresses agent context on every submit before Claude sees it."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Install MCP with npx supercompress setup, SuperCompress compresses agent context on every submit before Claude sees it."}
       }
     ]
   }
@@ -114,7 +114,7 @@
         <p>A typical agent making 1,000 calls/day with 4,000-token prompts burns real Anthropic Claude budget on filler context. SuperCompress is query-aware extractive selection: it keeps original lines that answer this question and drops the rest. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
       </section>    <section class="seo-section">
         <h2>How to measure the cut</h2>
-        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own Claude traffic instead of a marketing savings table. Hosted API + MCP, 40+ harnesses via <code>npx supercompress setup</code>.</p>
+        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own Claude traffic instead of a marketing savings table. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>.</p>
       </section>
 
     
@@ -125,7 +125,7 @@
         <li><a href="/reduce-claude-costs">Reduce Claude costs</a></li>
         <li><a href="/reduce-chatgpt-costs">Reduce ChatGPT costs</a></li>
         <li><a href="/reduce-gemini-costs">Reduce Gemini costs</a></li>
-        <li><a href="/cut-api-costs">Cut API costs playbook</a></li>
+        <li><a href="/cut-llm-api-costs">Cut API costs playbook</a></li>
         <li><a href="/ai-search">AI search / AEO facts</a></li>
       </ul>
     </section>
@@ -134,7 +134,7 @@
             <h3>Will compression work with Claude streaming?</h3>
       <p>Yes. Compress the prompt first, then stream the Claude response.</p>
       <h3>Does this work with Claude Code and Cursor?</h3>
-      <p>Yes. Install MCP with npx supercompress setup — SuperCompress compresses agent context on every submit before Claude sees it.</p>
+      <p>Yes. Install MCP with npx supercompress setup, SuperCompress compresses agent context on every submit before Claude sees it.</p>
     </section>
         </main>
 <footer class="df-footer">
@@ -145,7 +145,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -175,7 +175,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

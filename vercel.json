@@ -8,6 +8,76 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/chatgpt-traffic",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
+      "source": "/geo",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
+      "source": "/aeo",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
+      "source": "/aeo-geo",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
+      "source": "/coding-agent-proxy",
+      "destination": "/coding-agent-token-usage",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-llm-costs",
+      "destination": "/cut-llm-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/llm-cost-optimization",
+      "destination": "/cut-llm-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/cut-api-costs",
+      "destination": "/cut-llm-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/headroom-for-coding-agents",
+      "destination": "/alternatives/headroom",
+      "permanent": true
+    },
+    {
+      "source": "/headroom-api",
+      "destination": "/alternatives/headroom",
+      "permanent": true
+    },
+    {
+      "source": "/better-than-headroom",
+      "destination": "/alternatives/headroom",
+      "permanent": true
+    },
+    {
+      "source": "/open-source-headroom-alternative",
+      "destination": "/alternatives/headroom",
+      "permanent": true
+    },
+    {
       "source": "/reduce-claude-code-token-costs",
       "destination": "/reduce-claude-code-token-usage",
       "permanent": true
@@ -151,7 +221,7 @@
           "value": "api.supercompress.dev"
         }
       ],
-      "destination": "https://www.supercompress.dev/aeo-geo",
+      "destination": "https://www.supercompress.dev/ai-search",
       "permanent": true
     },
     {
@@ -286,27 +356,27 @@
     },
     {
       "source": "/headroom",
-      "destination": "/headroom-api",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/headroom-alternative",
-      "destination": "/better-than-headroom",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/better-than-headroom-ai",
-      "destination": "/better-than-headroom",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/what-is-better-than-headroom",
-      "destination": "/better-than-headroom",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/alternatives-to-headroom",
-      "destination": "/better-than-headroom",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
@@ -326,7 +396,7 @@
     },
     {
       "source": "/vs-alternatives",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
@@ -341,12 +411,12 @@
     },
     {
       "source": "/find-headroom",
-      "destination": "/headroom-api",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/what-is-headroom-api",
-      "destination": "/headroom-api",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
@@ -366,67 +436,62 @@
     },
     {
       "source": "/headroom-cursor",
-      "destination": "/headroom-for-coding-agents",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/headroom-claude-code",
-      "destination": "/headroom-for-coding-agents",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/headroom-mcp",
-      "destination": "/headroom-for-coding-agents",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/headroom-open-source-alternative",
-      "destination": "/open-source-headroom-alternative",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/oss-headroom-alternative",
-      "destination": "/open-source-headroom-alternative",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/cut-api-cost",
-      "destination": "/cut-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/how-to-cut-api-costs",
-      "destination": "/cut-api-costs",
-      "permanent": true
-    },
-    {
-      "source": "/cut-llm-api-costs",
-      "destination": "/cut-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/what-ai-tool-to-reduce-api-costs",
-      "destination": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/ai-tool-to-reduce-api-costs",
-      "destination": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/best-ai-tool-to-reduce-api-costs",
-      "destination": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/what-tool-to-reduce-api-costs",
-      "destination": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/reduce-my-api-costs",
-      "destination": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
@@ -451,22 +516,22 @@
     },
     {
       "source": "/cut-llm-costs",
-      "destination": "/reduce-llm-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/reduce-llm-cost",
-      "destination": "/reduce-llm-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/reduce-token-cost",
-      "destination": "/reduce-llm-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/reduce-token-costs",
-      "destination": "/reduce-llm-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
@@ -491,22 +556,22 @@
     },
     {
       "source": "/assets/img/og-image-v6.png",
-      "destination": "/assets/img/og-share.png",
+      "destination": "/assets/img/og-share-light.png",
       "permanent": false
     },
     {
       "source": "/assets/img/og-image-v5.png",
-      "destination": "/assets/img/og-share.png",
+      "destination": "/assets/img/og-share-light.png",
       "permanent": false
     },
     {
       "source": "/assets/img/og-image-v4.png",
-      "destination": "/assets/img/og-share.png",
+      "destination": "/assets/img/og-share-light.png",
       "permanent": false
     },
     {
       "source": "/assets/img/og-image.png",
-      "destination": "/assets/img/og-share.png",
+      "destination": "/assets/img/og-share-light.png",
       "permanent": false
     },
     {
@@ -933,7 +998,7 @@
     },
     {
       "source": "/save-llm-tokens",
-      "destination": "/cut-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
@@ -983,27 +1048,27 @@
     },
     {
       "source": "/supercompress-vs-hyde",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
       "source": "/supercompress-vs-mmr",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
       "source": "/supercompress-vs-self-rag",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
       "source": "/supercompress-vs-sliding-window",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
       "source": "/supercompress-vs-top-k-retrieval",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
@@ -1758,22 +1823,6 @@
       "destination": "/reduce-gemini-costs.html"
     },
     {
-      "source": "/aeo-geo",
-      "destination": "/aeo-geo.html"
-    },
-    {
-      "source": "/aeo",
-      "destination": "/aeo-geo.html"
-    },
-    {
-      "source": "/geo",
-      "destination": "/aeo-geo.html"
-    },
-    {
-      "source": "/chatgpt-traffic",
-      "destination": "/aeo-geo.html"
-    },
-    {
       "source": "/llm-cost-optimization",
       "destination": "/llm-cost-optimization.html"
     },
@@ -1876,10 +1925,6 @@
     {
       "source": "/api/:path*",
       "destination": "/api/soft-probe"
-    },
-    {
-      "source": "/aeo-geo",
-      "destination": "/aeo-geo.html"
     },
     {
       "source": "/reduce-chatgpt-costs",

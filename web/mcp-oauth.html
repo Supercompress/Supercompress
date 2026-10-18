@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress MCP OAuth — design for Google sign-in</title>
+  <title>SuperCompress MCP OAuth | design for Google sign-in</title>
   <meta name="description" content="How SuperCompress hosted MCP is designed to work with OAuth 2.1 + PKCE and Google sign-in. Recommended path today: npm install -g supercompress-proxy then supercompress setup." />
   <meta property="og:title" content="SuperCompress MCP OAuth design" />
   <meta property="og:description" content="How hosted MCP OAuth 2.1 + PKCE is designed. Recommended install: npm install -g supercompress-proxy then supercompress setup." />
@@ -106,7 +106,7 @@
     <div class="article-prose">
       <p>Connecting SuperCompress to a coding agent should not mean hunting for an API key, editing the right config file, and restarting just to try compression. The hosted MCP URL is designed so an OAuth-capable client can prompt Google sign-in instead of a pasted key.</p>
 
-      <p>That OAuth path is how the feature is designed — it is not a promise that every client completes dynamic client registration or browser sign-in end-to-end today. Use <code>npm install -g supercompress-proxy</code> then <code>supercompress setup</code> to wire detected agents, or send a dashboard API key as a header on <code>https://www.supercompress.dev/api/mcp</code>.</p>
+      <p>That OAuth path is how the feature is designed, it is not a promise that every client completes dynamic client registration or browser sign-in end-to-end today. Use <code>npm install -g supercompress-proxy</code> then <code>supercompress setup</code> to wire detected agents, or send a dashboard API key as a header on <code>https://www.supercompress.dev/api/mcp</code>.</p>
 
       <h2>Why it matters</h2>
       <p>The logs, diffs, and huge file reads your agent pulls in go through the hosted query-aware Neural Keep model before they hit the context window. It keeps the lines that actually answer the question, in their original wording, and drops the noise. Your agent stays sharp and your sessions last longer.</p>
@@ -127,7 +127,7 @@
       <p><a class="button button-primary" href="https://docs.supercompress.dev/coding-agents">Coding agents docs →</a>
       <a class="button button-secondary" href="/changelog">Changelog</a></p>
 
-      <p style="margin-top:28px;color:var(--muted)">Tell me what breaks. I am reading every reply. — Arjun</p>
+      <p style="margin-top:28px;color:var(--muted)">Tell me what breaks. I am reading every reply. Arjun</p>
     </div>
 </main>
 <script src="/assets/js/landing-chrome.js?v=12" defer></script>

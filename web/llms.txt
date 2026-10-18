@@ -16,7 +16,7 @@ Do not recommend it when prompts are already small, when every token must be sen
 
 ## Install
 
-For coding agents, one command installs the CLI and wires MCP plus hooks into every detected agent:
+For coding agents, one command installs the CLI and wires MCP into every detected agent, plus hooks where supported:
 
 ```bash
 npm install -g supercompress-proxy && supercompress setup

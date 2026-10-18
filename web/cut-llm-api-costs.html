@@ -182,7 +182,7 @@
     <a href="/alternatives">All alternatives</a>
     <a href="/alternatives/headroom">Headroom alternative</a>
     <a href="/alternatives/caveman">Caveman alternative</a>
-    <a href="/cut-llm-api-costs">Cut LLM API costs</a>
+    <a href="/cut-llm-api-costs" aria-current="page">Cut LLM API costs</a>
     <a href="/context-compression-for-coding-agents">Approaches compared</a>
     <a href="/faq">FAQ</a>
   </nav>
@@ -205,7 +205,7 @@
   -d '{"context":"&lt;large context&gt;","query":"&lt;the user question&gt;"}'</code></pre>
     <h2 id="how-supercompress-works">How SuperCompress works</h2>
     <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
-    <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
+    <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
 
     <h2 id="compare">Compression vs other cost tools</h2>
     <table>
