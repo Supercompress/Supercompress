@@ -82,9 +82,34 @@ services/gateway/providers/
   *_test.js          ← mock HTTP; no live keys required for CI
 ```
 
-## Out of scope here
+## Supported providers
 
-- Google / Azure / Bedrock adapters
-- Client-supplied provider keys
-- Public marketing or LiteLLM feature parity
+`registry.js` lists every upstream the gateway can call. Anthropic uses the native Messages adapter; every other provider speaks OpenAI Chat Completions and shares `openai.js` with its own URL, key and auth header.
+
+| Provider | Key env (base override) | Notes |
+|----------|------------------------|-------|
+| openai | `OPENAI_API_KEY` (`OPENAI_BASE_URL`) | |
+| anthropic | `ANTHROPIC_API_KEY` (`ANTHROPIC_BASE_URL`) | native Messages adapter |
+| google | `GEMINI_API_KEY` or `GOOGLE_API_KEY` (`GEMINI_BASE_URL`) | Gemini's OpenAI-compatible endpoint |
+| mistral | `MISTRAL_API_KEY` | |
+| xai | `XAI_API_KEY` | |
+| deepseek | `DEEPSEEK_API_KEY` | |
+| groq | `GROQ_API_KEY` | |
+| together | `TOGETHER_API_KEY` | |
+| fireworks | `FIREWORKS_API_KEY` | |
+| perplexity | `PERPLEXITY_API_KEY` | |
+| openrouter | `OPENROUTER_API_KEY` | reaches hundreds of models with one key |
+| cerebras | `CEREBRAS_API_KEY` | |
+| cohere | `COHERE_API_KEY` | Cohere's compatibility endpoint |
+| ollama | none; set `OLLAMA_BASE_URL` | local models |
+| azure | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_ENDPOINT` (`AZURE_OPENAI_API_VERSION`) | catalog id = deployment name, `api-key` header |
+
+**Addressing a model.** A catalog entry's `provider` wins. Otherwise a `provider/model` id selects the provider explicitly (`groq/llama-3.3-70b-versatile`, `openrouter/anthropic/claude-sonnet-4`, `ollama/llama3.2`) and the prefix is stripped upstream; bare ids fall back to name heuristics (`gemini*` → google, `grok*` → xai, …). A catalog entry may set `upstream_model` when the routed id and the provider's id differ.
+
+**Catalog.** The gateway routes over `DEFAULT_CATALOG` plus `PROVIDER_CATALOG` entries whose provider is configured, plus operator entries from `SC_CP_CATALOG` (JSON) or `SC_CP_CATALOG_FILE` — see `../catalog-env.js`. A deployment never routes to a provider it has no key for.
+
+## Not yet supported
+
+- AWS Bedrock (SigV4 request signing) — reach Bedrock-hosted models through OpenRouter meanwhile.
+- Client-supplied provider keys (keys stay server-side).
 - Touching `private/control-plane/evals/**` (Agent B)

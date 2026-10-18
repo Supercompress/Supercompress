@@ -13,6 +13,7 @@ const { createPipeline, STAGE_ORDER } = require("./pipeline");
 const { fromChatCompletions, toChatCompletions } = require("./adapters/chat-completions");
 const { createDefaultCompressFn } = require("./compress");
 const { createProvider } = require("./providers");
+const { catalogFromEnv, policyFromEnv } = require("./catalog-env");
 const {
   createLedgerStore,
   createReservationStore,
@@ -27,7 +28,6 @@ const {
   selectRoute,
   nextFallback,
   isRetryableProviderError,
-  defaultCatalog,
   normalizeCatalog,
 } = require("../../packages/control-plane");
 const { computeRouteEconomics, attachEconomicsToTrace } = require("../../packages/control-plane/economics");
@@ -86,10 +86,12 @@ function createWiredGateway(options = {}) {
     money = store.money;
   }
 
-  const policy = normalizePolicy(options.policy || { version: 1, compress_default: true });
+  const policy = normalizePolicy(
+    options.policy || policyFromEnv(options.env || process.env) || { version: 1, compress_default: true }
+  );
   const catalog = options.catalog
     ? normalizeCatalog(options.catalog)
-    : defaultCatalog();
+    : normalizeCatalog(catalogFromEnv(options.env || process.env));
   const staticHealth = options.health || {};
   const rateLimits =
     options.rateLimits ||
