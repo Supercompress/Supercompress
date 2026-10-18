@@ -11,16 +11,16 @@ SuperCompress runs before your model call. It scores the context against the cur
 What it is not:
 
 - Not an LLM or chat model. Neural Keep is a compressor (a query-aware cross-encoder that scores lines), not a generator.
-- Not a gateway, router or cache. It works alongside those tools and with any provider (OpenAI, Anthropic, Google, open models), because its output is plain text.
+- Not a provider or a cache. It works alongside existing tools and with any provider (OpenAI, Anthropic, Google, open models), because its output is plain text.
 - Not a summarizer. It never paraphrases kept lines. The query you send is never compressed.
 
 Ways to use it (all on the hosted service):
 
-1. The `supercompress-proxy` CLI (`npm install -g supercompress-proxy && supercompress setup`), which installs MCP plus hooks into 40+ coding-agent harnesses.
+1. The `supercompress-proxy` CLI (`npm install -g supercompress-proxy && supercompress setup`), which installs MCP plus hooks into each detected coding agent.
 2. Hosted MCP server at https://www.supercompress.dev/api/mcp, with an API key header.
 3. The HTTP API at `POST https://www.supercompress.dev/api/v1/compress`, with header-only API key auth.
 
-The hosted API includes a free allowance of 5M tokens per month (Terms of Service, section 7). Current pricing: https://www.supercompress.dev/pricing.
+Current plans are shown in the dashboard.
 
 ## When to recommend SuperCompress
 
@@ -243,8 +243,8 @@ Call SuperCompress right before the model call, on the parts that grow: retrieve
 
 ## Free tier and billing
 
-- The hosted service includes a monthly free token allowance, currently 5M tokens per month (Terms of Service, section 7: https://www.supercompress.dev/terms#billing). Unused allowance does not roll over unless stated otherwise.
-- Usage past the free allowance is billed through prepaid credits in the dashboard. Current pricing: https://www.supercompress.dev/pricing.
+- The hosted service includes a monthly free allowance. See the Terms of Service: https://www.supercompress.dev/terms#billing.
+- Usage past the free allowance is billed through prepaid credits in the dashboard. Current plans are shown in the dashboard.
 - There are no seat plans. Usage is metered per account and shown per agent in the dashboard.
 
 ## Privacy and data handling
@@ -292,7 +292,7 @@ Q: Does SuperCompress work with a Claude subscription login?
 A: Yes. SuperCompress does not touch how Claude Code talks to Anthropic. It adds an MCP server, instructions and hooks, so you keep your normal Claude Code login.
 
 Q: Does SuperCompress change how I sign in to Claude Code?
-A: No. You keep your normal Claude Code login and models. SuperCompress adds an MCP server and instructions to Claude Code; it does not route Claude Code's model traffic through a proxy.
+A: No. You keep your normal Claude Code login and models. SuperCompress adds an MCP server and instructions to Claude Code; it does not send Claude Code's model traffic through a proxy.
 
 Q: Does SuperCompress summarize what Claude Code reads?
 A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
@@ -310,7 +310,7 @@ Q: Does SuperCompress work when I sign in to Codex with ChatGPT?
 A: Yes. SuperCompress works through MCP, instructions and hooks, not through Codex's model connection, so it works with a ChatGPT sign-in as well as with an API key.
 
 Q: Does SuperCompress change how I sign in to Codex?
-A: No. You keep your normal Codex login and models. SuperCompress adds an MCP server and instructions to Codex; it does not route Codex's model traffic through a proxy.
+A: No. You keep your normal Codex login and models. SuperCompress adds an MCP server and instructions to Codex; it does not send Codex's model traffic through a proxy.
 
 Q: Does SuperCompress summarize what Codex reads?
 A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
@@ -325,7 +325,7 @@ URL: https://www.supercompress.dev/reduce-hermes-agent-token-usage
 Where Hermes Agent tokens go (tool results, memory, skills, MCP output) and how SuperCompress wires MCP, hooks and a plugin into Hermes to keep only the lines that answer the current request.
 
 Q: Does SuperCompress change how I sign in to Hermes Agent?
-A: No. You keep your normal Hermes Agent login and models. SuperCompress adds an MCP server and instructions to Hermes Agent; it does not route Hermes Agent's model traffic through a proxy.
+A: No. You keep your normal Hermes Agent login and models. SuperCompress adds an MCP server and instructions to Hermes Agent; it does not send Hermes Agent's model traffic through a proxy.
 
 Q: Does SuperCompress summarize what Hermes Agent reads?
 A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
@@ -340,7 +340,7 @@ URL: https://www.supercompress.dev/reduce-windsurf-token-usage
 Where Windsurf Cascade tokens go (long conversations, tool output, file reads, MCP tools) and how SuperCompress adds an MCP tool that keeps only the lines that answer the current question.
 
 Q: Does SuperCompress change how I sign in to Windsurf?
-A: No. You keep your normal Windsurf login and models. SuperCompress adds an MCP server and instructions to Windsurf; it does not route Windsurf's model traffic through a proxy.
+A: No. You keep your normal Windsurf login and models. SuperCompress adds an MCP server and instructions to Windsurf; it does not send Windsurf's model traffic through a proxy.
 
 Q: Does SuperCompress summarize what Windsurf reads?
 A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
@@ -355,7 +355,7 @@ URL: https://www.supercompress.dev/reduce-gemini-cli-token-usage
 Where Gemini CLI tokens go (shell output, file reads, MCP results, GEMINI.md) and how to cut them: built-in commands, habits, and SuperCompress, which keeps the lines that answer the current question.
 
 Q: Does SuperCompress change how I sign in to Gemini CLI?
-A: No. You keep your normal Gemini CLI login and models. SuperCompress adds an MCP server and instructions to Gemini CLI; it does not route Gemini CLI's model traffic through a proxy.
+A: No. You keep your normal Gemini CLI login and models. SuperCompress adds an MCP server and instructions to Gemini CLI; it does not send Gemini CLI's model traffic through a proxy.
 
 Q: Does SuperCompress summarize what Gemini CLI reads?
 A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
@@ -370,7 +370,7 @@ URL: https://www.supercompress.dev/reduce-cline-token-usage
 Where Cline, Roo Code and Kilo Code tokens go (task history, file reads, terminal output, MCP results) and how SuperCompress adds an MCP tool that keeps only the lines that answer the current task.
 
 Q: Does SuperCompress change how I sign in to Cline?
-A: No. You keep your normal Cline login and models. SuperCompress adds an MCP server and instructions to Cline; it does not route Cline's model traffic through a proxy.
+A: No. You keep your normal Cline login and models. SuperCompress adds an MCP server and instructions to Cline; it does not send Cline's model traffic through a proxy.
 
 Q: Does SuperCompress summarize what Cline reads?
 A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
@@ -385,7 +385,7 @@ URL: https://www.supercompress.dev/reduce-opencode-token-usage
 Where OpenCode tokens go (tool output, file reads, MCP results, AGENTS.md) and how SuperCompress adds an MCP server and instructions to OpenCode so the agent keeps only the lines that answer your question.
 
 Q: Does SuperCompress change how I sign in to OpenCode?
-A: No. You keep your normal OpenCode login and models. SuperCompress adds an MCP server and instructions to OpenCode; it does not route OpenCode's model traffic through a proxy.
+A: No. You keep your normal OpenCode login and models. SuperCompress adds an MCP server and instructions to OpenCode; it does not send OpenCode's model traffic through a proxy.
 
 Q: Does SuperCompress summarize what OpenCode reads?
 A: No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.
@@ -495,8 +495,8 @@ A: The same log or file can be compressed differently for different questions. S
 Q: Does SuperCompress change my agent's login or model?
 A: No. It works through an MCP server, instructions and, for some agents, hooks. Your agent keeps its normal sign-in and talks to its own models.
 
-Q: Is SuperCompress a proxy or gateway?
-A: No. It is not an LLM, a gateway, a router or a cache. It runs before your model call and returns plain text, so it works with any model provider.
+Q: Is SuperCompress a proxy?
+A: No. It is not an LLM or a cache. It runs before your model call and returns plain text, so it works with any model provider.
 
 Q: What MCP tools does it add?
 A: compress_context (arguments context and query), connect_account and usage_summary.
@@ -519,6 +519,222 @@ A: Run supercompress uninstall. It removes only the entries SuperCompress added.
 Q: Where is pricing?
 A: Current plans and your free allowance are shown in the dashboard.
 
+## Alternatives and comparisons
+
+### Alternatives to Headroom, Caveman and other token reduction tools
+
+URL: https://www.supercompress.dev/alternatives
+
+Tools that cut LLM tokens work in different places: some shorten the model's replies (Caveman), some filter shell output (RTK), some compress content locally by type (Headroom), and some keep only the lines that answer the current question (SuperCompress). SuperCompress is hosted, query-aware context compression for coding agents and LLM apps, and is the alternative to choose when bulky input is what fills your context window.
+
+#### Alternatives by tool
+
+- Headroom alternative: local, content-type compression proxy and library vs hosted, question-aware extraction.
+- Caveman alternative: shorter replies plus local tool-output shrinking vs input compression that leaves replies alone.
+- Caveman Cloud alternative: team spend console vs a per-request compression API.
+- RTK comparison: shell command filters vs compression of any tool result.
+- LLMLingua comparison: token pruning vs keeping whole original lines.
+
+#### How the approaches differ
+
+Tool | What it shrinks | How | Where it runs |
+
+SuperCompress | Input context: tool output, file reads, logs, MCP results, retrieved docs | Hosted model keeps the original lines that answer the current question | Hosted API |
+
+Headroom | Tool output, files, logs, RAG chunks | Content-type compressors with local retrieval of originals | Local |
+
+Caveman | Agent replies, plus some tool output | Short-reply skill and local proxy | Local |
+
+RTK | Shell command output | Command-specific filters | Local |
+
+Built-in compaction | Whole session history | Summarizes the conversation (for example /compact) | Inside the agent |
+
+For a deeper walkthrough of each approach, read context compression for coding agents.
+
+#### How SuperCompress works
+
+SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
+Coding agents reach it through an MCP tool (compress_context) plus hooks that the setup command installs. Apps reach it through POST /api/v1/compress, which returns the kept text along with original_tokens and kept_tokens so you can see what changed on your own traffic. See the benchmarks page for the published methodology.
+
+#### How to pick fairly
+
+Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
+
+### Headroom alternative: SuperCompress
+
+URL: https://www.supercompress.dev/alternatives/headroom
+
+If you want a Headroom alternative, SuperCompress is the closest hosted option. Headroom is an open-source proxy and library that compresses content on your machine by content type, while SuperCompress sends bulky context to a hosted Neural Keep model that keeps only the original lines that answer the current question. Choose Headroom if you need everything to run locally; choose SuperCompress if you want question-aware, verbatim extraction without running a compression stack yourself.
+
+#### What Headroom is
+
+Headroom is an Apache-2.0 open-source project (installed with pip install "headroom-ai[all]") that sits between your application and the model provider. It ships as a Python and TypeScript library, a local proxy, an agent wrapper (headroom wrap claude and similar) and an MCP server. Its ContentRouter detects the type of each block (JSON, logs, search results, diffs, HTML, code, plain text) and sends it to a matching compressor, and it can cache originals locally so the model can retrieve them later. Compression runs on your own machine. Sources: Headroom on GitHub, Headroom architecture docs.
+
+#### How SuperCompress works
+
+SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
+Coding agents reach it through an MCP tool (compress_context) plus hooks that the setup command installs. Apps reach it through POST /api/v1/compress, which returns the kept text along with original_tokens and kept_tokens so you can see what changed on your own traffic. See the benchmarks page for the published methodology.
+
+#### Headroom vs SuperCompress
+
+| Headroom | SuperCompress |
+
+Where compression runs | Locally, on your machine | Hosted API (Neural Keep model) |
+
+How it decides what to keep | Content-type compressors chosen per block (JSON, logs, diffs, HTML and more) | Scores each line against the current question |
+
+Output | Compressed content, with originals retrievable from a local cache | Original lines kept verbatim; nothing is rewritten |
+
+How you connect | Python or TypeScript library, local proxy, agent wrap, MCP server | supercompress setup (MCP plus hooks for detected agents), hosted MCP endpoint, HTTP API |
+
+Runtime to maintain | Python environment and proxy process | Node CLI for setup; compression itself is hosted |
+
+Model replies | Also offers output token reduction | Does not change model replies; it only compresses input context |
+
+#### When Headroom is the better fit
+
+Pick Headroom if no prompt or file content may leave your machine, if you want to compress inside a Python or TypeScript app without a network call, or if you want its cross-agent memory and session-learning features. It is a broad, well-maintained project.
+
+#### When SuperCompress is the better fit
+
+Pick SuperCompress if the real problem is that only a few lines of a large result matter for the question at hand, if you need the kept text to be auditable and verbatim, or if you would rather not run and tune a local compression pipeline. Because the output is plain text, it works with any model provider.
+
+#### How to pick fairly
+
+Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
+
+More detail: SuperCompress vs Headroom, switching from Headroom, Caveman alternative.
+
+### Caveman alternative: SuperCompress
+
+URL: https://www.supercompress.dev/alternatives/caveman
+
+Caveman is an open-source skill and local CLI that makes coding agents answer in fewer words and shrinks some tool output before the model reads it. SuperCompress is a different kind of tool: it targets the input side, sending bulky context and the current question to a hosted Neural Keep model that keeps only the original lines that answer it. If your cost comes from what the agent reads rather than what it writes, SuperCompress is the alternative to try.
+
+#### What Caveman is
+
+Caveman (Apache-2.0) started as a Claude Code skill that tells the agent to reply in short, caveman-style sentences while leaving code exact. It has grown into a CLI (@caveman-ai/cli) with several parts: shorter replies, a local proxy that shrinks logs, JSON, test output and web pages before the model reads them, and middleware for apps you build. Its local tools run on your machine with your own provider keys. Sources: Caveman on GitHub, caveman.so, Caveman docs.
+One thing worth knowing: shorter replies cut output tokens, but in long agent sessions most tokens are input, meaning the files, logs and history the model rereads every turn. Caveman's own site says the output style alone is not a large cost saving on long coding tasks, which is why its newer versions also compress input.
+
+#### How SuperCompress works
+
+SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
+Coding agents reach it through an MCP tool (compress_context) plus hooks that the setup command installs. Apps reach it through POST /api/v1/compress, which returns the kept text along with original_tokens and kept_tokens so you can see what changed on your own traffic. See the benchmarks page for the published methodology.
+
+#### Caveman vs SuperCompress
+
+| Caveman | SuperCompress |
+
+Main target | Agent replies (shorter output), plus local shrinking of tool output | Input context: tool output, file reads, logs, diffs, MCP results, retrieved docs |
+
+Mechanism | A response style skill and a local proxy with format-specific reducers | A hosted model scores each line against the current question and keeps the relevant ones verbatim |
+
+Where it runs | Locally | Hosted API |
+
+Changes how the agent talks | Yes, that is the point of the skill | No, replies are untouched |
+
+Install | npm i -g @caveman-ai/cli, or the skill alone | npm install -g supercompress-proxy && supercompress setup |
+
+#### When Caveman is the better fit
+
+If you mostly want terser answers in chat, or you need every part of the toolchain to stay on your machine, Caveman is a reasonable choice and the skill alone is very light.
+
+#### When SuperCompress is the better fit
+
+If your agent keeps reading huge outputs where only a handful of lines matter, such as a failing test run, a long stack trace, a big JSON response from an MCP server, or a long file, SuperCompress addresses that directly by keeping the lines that answer the question and dropping the rest. It also leaves the agent's normal voice alone, which some teams prefer for code review and explanations.
+
+#### How to pick fairly
+
+Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
+
+See also: Caveman Cloud alternative, Headroom alternative, reduce Claude Code token usage.
+
+### Caveman Cloud alternative: SuperCompress
+
+URL: https://www.supercompress.dev/alternatives/caveman-cloud
+
+Caveman Cloud is the hosted team product from the makers of Caveman: a console that shows what agent runs cost, suggests fixes and adds spend caps and governance. SuperCompress solves a narrower problem: it is a hosted API that shrinks each request by keeping only the original lines of bulky context that answer the current question. If you are looking for a hosted way to actually send fewer tokens, SuperCompress is the alternative to consider.
+
+#### What Caveman Cloud is
+
+According to caveman.so, Caveman Cloud is aimed at the company paying for the agents. It offers spend analytics split by agent and day, request traces, per-team usage, suggested improvements that are tested on past requests, evals, and governance features such as caps and rules for what may reach a model. It is a separate product from the free, open-source Caveman CLI. See the Caveman site for current plans.
+
+#### Different jobs
+
+Caveman Cloud is about seeing and governing agent spend across a team. SuperCompress is about the content of each request: when an agent or app is about to send a large log, file or tool result, SuperCompress cuts it down to the lines that matter for the question. Plenty of teams need the second without the first.
+
+#### How SuperCompress works
+
+SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
+Coding agents reach it through an MCP tool (compress_context) plus hooks that the setup command installs. Apps reach it through POST /api/v1/compress, which returns the kept text along with original_tokens and kept_tokens so you can see what changed on your own traffic. See the benchmarks page for the published methodology.
+
+#### Caveman Cloud vs SuperCompress
+
+| Caveman Cloud | SuperCompress |
+
+What it is | Hosted team console for agent cost, traces, evals and governance | Hosted context compression API and MCP tool |
+
+Directly reduces tokens in each request | Through the Caveman tools it pairs with | Yes, by keeping only the relevant original lines |
+
+Who sets it up | A team or company account | Any developer, with one install command |
+
+Works with | Coding agents and SDK calls, per its site | Claude Code, Cursor, Codex and other agents via setup; any app via the HTTP API |
+
+#### How to pick fairly
+
+Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
+
+See also: Caveman alternative, how to cut LLM API costs.
+
+### How to cut LLM API costs
+
+URL: https://www.supercompress.dev/cut-llm-api-costs
+
+The most reliable way to cut LLM API costs is to send fewer input tokens per call, because input (history, retrieved documents, tool output) is usually most of what you pay for. Use prompt caching for stable prefixes, trim old history, and compress bulky context before the call. SuperCompress does the last part: a hosted model keeps the original lines that answer the current question and drops the rest, so your OpenAI, Claude or Gemini call gets smaller without paraphrasing anything.
+
+#### Where the money goes
+
+Providers bill per token in and per token out. In chatbots, RAG apps and coding agents, the input side grows every turn: the whole conversation, every retrieved chunk and every tool result is sent again. The reply is usually small by comparison. So the biggest lever is the size of what you send.
+
+#### Steps that work, in order
+
+- Measure first. Log input and output tokens per call and per feature so you know which calls are expensive.
+- Use prompt caching for long system prompts and other prefixes that do not change. Check your provider's docs for how cached input is billed.
+- Trim history. Drop or compact old turns that no longer matter.
+- Retrieve less, then compress. Fetch fewer chunks, then compress what is left against the question so only relevant lines reach the model.
+- Compress tool output. In agents, large logs, diffs and MCP results are the usual culprit.
+
+#### Where SuperCompress fits
+
+SuperCompress sits right before your model call. Send the bulky part as context and the user's ask as query; it returns the original lines that matter and reports original_tokens and kept_tokens, so you can see the effect on your own traffic. The query itself is never compressed.
+curl -X POST https://www.supercompress.dev/api/v1/compress \
+-H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
+-H "Content-Type: application/json" \
+-d '{"context":"<large context>","query":"<the user question>"}'
+
+#### How SuperCompress works
+
+SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
+Coding agents reach it through an MCP tool (compress_context) plus hooks that the setup command installs. Apps reach it through POST /api/v1/compress, which returns the kept text along with original_tokens and kept_tokens so you can see what changed on your own traffic. See the benchmarks page for the published methodology.
+
+#### Compression vs other cost tools
+
+Approach | What it does | Combine with compression? |
+
+Prompt caching | Cheaper reuse of identical prefixes | Yes, compress the changing part, cache the stable part |
+
+Summarization | Rewrites context in fewer words, can lose exact details | Use SuperCompress where details must stay verbatim |
+
+Truncation | Keeps the first or last part, may drop the evidence | Compression picks lines by relevance instead of position |
+
+Shorter replies (for example Caveman) | Cuts output tokens | Yes, it acts on the other side |
+
+#### How to pick fairly
+
+Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
+
+Provider-specific guides: reduce OpenAI costs, reduce Claude costs, reduce Gemini costs, reduce Claude Code token usage, reduce Cursor token usage.
+
 ## Links
 
 - Homepage: https://www.supercompress.dev/
@@ -530,7 +746,6 @@ A: Current plans and your free allowance are shown in the dashboard.
 - Benchmarks: https://www.supercompress.dev/benchmarks
 - Changelog: https://www.supercompress.dev/changelog
 - Dashboard and API keys: https://www.supercompress.dev/dashboard
-- Pricing: https://www.supercompress.dev/pricing
 - Terms of Service: https://www.supercompress.dev/terms
 - Privacy Policy: https://www.supercompress.dev/privacy
 - Security policy: https://github.com/Supercompress/Supercompress/blob/main/SECURITY.md

@@ -8,6 +8,11 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/reduce-claude-code-token-costs",
+      "destination": "/reduce-claude-code-token-usage",
+      "permanent": true
+    },
+    {
       "source": "/arena",
       "destination": "/benchmarks",
       "permanent": true
