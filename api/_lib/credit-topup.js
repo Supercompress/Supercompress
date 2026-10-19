@@ -201,10 +201,16 @@ async function applyCreditTopUp(session) {
   const autoRecharge = session.metadata?.auto_recharge !== "false";
 
   let paymentMethod = prev.sc_default_payment_method || null;
+  // Live PaymentIntent stamp is the replay guard once a session ages out of the
+  // capped claims list, so fail closed: if Stripe can't be read, don't credit
+  // (the webhook 500s and Stripe retries).
+  const livePi = session.payment_intent
+    ? await getStripe().paymentIntents.retrieve(String(session.payment_intent))
+    : null;
   try {
     const stripe = getStripe();
-    if (session.payment_intent) {
-      const pi = await stripe.paymentIntents.retrieve(String(session.payment_intent));
+    if (livePi) {
+      const pi = livePi;
       if (pi.metadata?.sc_credited === "true") {
         await markStripeCredited(session);
         return {
