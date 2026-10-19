@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reduce Gemini API Costs With Prompt Compression | SuperCompress</title>
-  <meta name="description" content="Cut Google Gemini API token spend with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API. Measure original_tokens / kept_tokens on your traffic." />
+  <title>Reduce Gemini API Costs | SuperCompress</title>
+  <meta name="description" content="Cut Google Gemini API input tokens with query-aware compression: keep the lines that answer the question, drop the rest, and measure kept_tokens." />
   <meta property="og:title" content="Cut Gemini Token Spend Without Losing Answers" />
-  <meta property="og:description" content="Cut Google Gemini API token spend with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API." />
+  <meta property="og:description" content="Cut Google Gemini API input tokens with query-aware compression: keep the lines that answer the question, drop the rest, and measure kept_tokens." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/reduce-gemini-costs" />
   <meta property="og:type" content="article" />
@@ -14,7 +14,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="Cut Gemini Token Spend Without Losing Answers" />
-  <meta name="twitter:description" content="Cut Google Gemini API token spend with query-aware compression. Preserve answer-critical evidence for Gemini 1.5/2.x and agent workflows. MIT open source + hosted API." />
+  <meta name="twitter:description" content="Cut Google Gemini API input tokens with query-aware compression: keep the lines that answer the question, drop the rest, and measure kept_tokens." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/reduce-gemini-costs" />
   <meta property="article:published_time" content="2026-09-05" />
@@ -37,7 +37,7 @@
     "datePublished": "2026-09-05",
     "dateModified": "2026-09-05",
     "author": {"@type": "Person", "name": "Arjun Shah", "url": "https://www.arjunshah.xyz/", "sameAs": ["https://www.arjunshah.xyz/", "https://x.com/arjunkshah21"]},
-    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://supercompress.dev/assets/img/logo-chevrons.png"}},
+    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
     "mainEntityOfPage": "https://www.supercompress.dev/reduce-gemini-costs"
   }
   </script>
@@ -60,6 +60,32 @@
   }
   </script>
   <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Cut LLM API costs",
+      "item": "https://www.supercompress.dev/cut-llm-api-costs"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Reduce Gemini API costs before inference",
+      "item": "https://www.supercompress.dev/reduce-gemini-costs"
+    }
+  ]
+}
+</script>
 </head>
 <body data-editorial="article">
 <header class="df-header">
@@ -106,6 +132,7 @@
   <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">Gemini cost reduction guide</p>
+    <nav class="sc-breadcrumb" aria-label="Breadcrumb" style="font-size:.85rem;opacity:.75;margin:0 0 .75rem"><a href="/">Home</a> / <a href="/cut-llm-api-costs">Cut LLM API costs</a> / <span aria-current="page">Reduce Gemini API costs before inference</span></nav>
     <h1>Reduce Gemini API costs before inference</h1>
     <p class="seo-lead">Gemini pricing still scales with input tokens. SuperCompress removes low-value context before the Gemini API call while keeping the evidence needed for the current query.</p>
     <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-09-05</p>
@@ -136,7 +163,8 @@
       <h3>Do I need to change my Gemini model?</h3>
       <p>No. Compression is provider-agnostic preprocess before any Gemini model call.</p>
     </section>
-        </main>
+        <section class="sc-related" aria-labelledby="sc-related-h" style="margin:2.5rem 0 1rem"><h2 id="sc-related-h">Related guides</h2><ul><li><a href="/reduce-chatgpt-costs">Reduce ChatGPT API costs with query-aware compression</a></li><li><a href="/cut-llm-api-costs">How to cut LLM API costs</a></li><li><a href="/reduce-openai-costs">Reduce OpenAI costs before the API call</a></li><li><a href="/reduce-claude-costs">Reduce Claude API costs before the model call</a></li><li><a href="/llm-context-window-too-long">LLM context window too long: six ways to shrink it</a></li><li><a href="/context-compression">Best context compression tool for agents and RAG</a></li><li><a href="/coding-agent-token-usage">Reduce coding agent token usage</a></li></ul></section>
+</main>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">

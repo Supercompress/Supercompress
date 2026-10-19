@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Firecrawl Context Compression: Compress Scraped Pages Before LLM Calls - SuperCompress</title>
-  <meta name="description" content="Compress Firecrawl scrape and crawl results before sending them to OpenAI, Claude, Gemini, LangChain, or agent workflows. Reduce token waste while preserving query-relevant evidence." />
+  <title>Firecrawl Context Compression | SuperCompress</title>
+  <meta name="description" content="Compress Firecrawl scrape and crawl results against your question before sending them to OpenAI, Claude, Gemini or an agent workflow." />
   <meta property="og:title" content="Firecrawl Context Compression with SuperCompress" />
   <meta property="og:description" content="Compress long Firecrawl scrape results before the model call. Keep evidence, drop token waste." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta property="og:url" content="https://supercompress.dev/firecrawl-context-compression" />
+  <meta property="og:url" content="https://www.supercompress.dev/firecrawl-context-compression" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <link rel="canonical" href="https://supercompress.dev/firecrawl-context-compression" />
+  <link rel="canonical" href="https://www.supercompress.dev/firecrawl-context-compression" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -31,9 +31,9 @@
     "description": "Compress Firecrawl scrape and crawl results before sending them to LLMs.",
     "datePublished": "2026-07-18",
     "dateModified": "2026-07-18",
-    "author": {"@type": "Person", "name": "Arjun Shah"},
-    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://supercompress.dev/assets/img/logo-chevrons.png"}},
-    "mainEntityOfPage": "https://supercompress.dev/firecrawl-context-compression"
+    "author": {"@type": "Person", "name": "Arjun Shah", "url": "https://www.arjunshah.xyz/", "sameAs": ["https://www.arjunshah.xyz/", "https://x.com/arjunkshah21"]},
+    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
+    "mainEntityOfPage": "https://www.supercompress.dev/firecrawl-context-compression"
   }
   </script>
   <script type="application/ld+json">
@@ -47,6 +47,32 @@
   }
   </script>
   <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Guides",
+      "item": "https://www.supercompress.dev/prompt-compression"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Compress Firecrawl results before they hit your LLM.",
+      "item": "https://www.supercompress.dev/firecrawl-context-compression"
+    }
+  ]
+}
+</script>
 </head>
 <body data-editorial="article">
 <header class="df-header">
@@ -93,6 +119,7 @@
   <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">Integration guide</p>
+    <nav class="sc-breadcrumb" aria-label="Breadcrumb" style="font-size:.85rem;opacity:.75;margin:0 0 .75rem"><a href="/">Home</a> / <a href="/prompt-compression">Guides</a> / <span aria-current="page">Compress Firecrawl results before they hit your LLM.</span></nav>
     <h1>Compress Firecrawl results before they hit your LLM.</h1>
     <p class="seo-lead">Firecrawl is useful because it turns pages into model-ready content. The problem is that model-ready content can still be huge. SuperCompress runs between Firecrawl and the model, keeping query-relevant evidence while removing scraped noise.</p>
 <section class="seo-section">
@@ -109,7 +136,7 @@
 
     <section class="seo-section">
       <h2>Hosted API example</h2>
-      <pre><code>curl -X POST https://supercompress.dev/compress \
+      <pre><code>curl -X POST https://www.supercompress.dev/compress \
   -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -151,7 +178,8 @@ print(compressed.stats)</code></pre>
       <p>No. Firecrawl extracts page content. SuperCompress runs after extraction and before inference to reduce the context sent to the model.</p>
     </section>
 
-        </main>
+        <section class="sc-related" aria-labelledby="sc-related-h" style="margin:2.5rem 0 1rem"><h2 id="sc-related-h">Related guides</h2><ul><li><a href="/supercompress-architecture">SuperCompress Architecture</a></li><li><a href="/what-is-context-compression-for-ai-agents">What is context compression for AI agents?</a></li><li><a href="/context-rot">What is context rot?</a></li><li><a href="/extractive-vs-abstractive-context-compression">Extractive vs abstractive context compression</a></li><li><a href="/cut-llm-api-costs">How to cut LLM API costs</a></li></ul></section>
+</main>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">

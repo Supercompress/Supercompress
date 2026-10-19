@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>SuperCompress vs LLMLingua / LLMLingua-2 (2026): Query-Aware Compression Compared</title>
-  <meta name="description" content="SuperCompress vs LLMLingua and LLMLingua-2: query-aware evidence selection vs SLM/perplexity token pruning. Latency, quality gates, API/MCP path compared." />
+  <title>SuperCompress vs LLMLingua and LLMLingua-2</title>
+  <meta name="description" content="SuperCompress vs LLMLingua and LLMLingua-2: query-aware line selection versus perplexity-based token pruning, plus API and MCP paths compared." />
   <meta name="keywords" content="SuperCompress vs LLMLingua, LLMLingua-2 alternative, LLMLingua alternative, prompt compression comparison, token compression vs LLMLingua" />
   <meta property="og:title" content="SuperCompress vs LLMLingua / LLMLingua-2 (2026)" />
   <meta property="og:description" content="Query-aware evidence selection (hosted API + MCP) vs Microsoft LLMLingua / LLMLingua-2 token pruning." />
@@ -26,7 +26,7 @@
     "headline": "SuperCompress vs LLMLingua / LLMLingua-2 (2026)",
     "description": "Comparison of SuperCompress and Microsoft LLMLingua / LLMLingua-2 for LLM prompt and token compression.",
     "dateModified": "2026-08-03",
-    "author": {"@type": "Person", "name": "Arjun Shah"},
+    "author": {"@type": "Person", "name": "Arjun Shah", "url": "https://www.arjunshah.xyz/", "sameAs": ["https://www.arjunshah.xyz/", "https://x.com/arjunkshah21"]},
     "publisher": {"@type": "Organization", "name": "SuperCompress"},
     "mainEntityOfPage": "https://www.supercompress.dev/supercompress-vs-llmlingua"
   }
@@ -59,6 +59,32 @@
   <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
   <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
   <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Alternatives",
+      "item": "https://www.supercompress.dev/alternatives"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "SuperCompress vs LLMLingua / LLMLingua-2",
+      "item": "https://www.supercompress.dev/supercompress-vs-llmlingua"
+    }
+  ]
+}
+</script>
 </head>
 <body data-editorial="article">
 <header class="df-header">
@@ -105,6 +131,7 @@
   <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
   <p class="seo-kicker">LLMLingua alternative · Updated 2026-08-03</p>
+  <nav class="sc-breadcrumb" aria-label="Breadcrumb" style="font-size:.85rem;opacity:.75;margin:0 0 .75rem"><a href="/">Home</a> / <a href="/alternatives">Alternatives</a> / <span aria-current="page">SuperCompress vs LLMLingua / LLMLingua-2</span></nav>
   <h1>SuperCompress vs LLMLingua / LLMLingua-2</h1>
   <p class="seo-lead">LLMLingua and LLMLingua-2 are Microsoft research compressors that <strong>prune tokens</strong> with a small LM / classifier. SuperCompress is a <strong>query-aware evidence selector</strong>: it keeps the original lines that answer the current question, and ships a hosted API + MCP for coding agents.</p>
 
@@ -177,6 +204,7 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
   -d '{"context":"...","query":"..."}'</code></pre>
     <p>Coding agents: <a href="https://docs.supercompress.dev/coding-agents">docs.supercompress.dev/coding-agents</a></p>
   </div>
+<section class="sc-related" aria-labelledby="sc-related-h" style="margin:2.5rem 0 1rem"><h2 id="sc-related-h">Related guides</h2><ul><li><a href="/supercompress-vs-rtk">SuperCompress vs RTK (Rust Token Killer)</a></li><li><a href="/supercompress-vs-summarization">SuperCompress vs summarization</a></li><li><a href="/supercompress-vs-truncation">SuperCompress vs truncation</a></li><li><a href="/switch-from-headroom">Switch from Headroom to SuperCompress</a></li><li><a href="/context-compression-tools-compared">Context compression tools for AI agents compared</a></li><li><a href="/headroom-vs-caveman">Headroom vs Caveman</a></li><li><a href="/how-prompt-compression-works">How prompt compression works</a></li></ul></section>
 </main>
 <script src="/assets/js/site-chrome.js?v=12" defer></script>
 <footer class="df-footer">

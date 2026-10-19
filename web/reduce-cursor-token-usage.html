@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Reduce Cursor Token Usage: Compress Tool Output in Cursor | SuperCompress</title>
-  <meta name="description" content="Where Cursor tokens go (long agent threads, tool output, attached files, rules and MCP tools) and how to cut them: better habits, plus SuperCompress, which keeps the lines that answer the current question." />
+  <title>Reduce Cursor Token Usage | SuperCompress</title>
+  <meta name="description" content="Where Cursor tokens go (long threads, tool output, attached files, rules, MCP tools) and how to cut them with better habits and SuperCompress." />
   <meta name="keywords" content="reduce Cursor token usage, Cursor token usage, Cursor tokens, Cursor context too long, compress context in Cursor, Cursor MCP compression, SuperCompress Cursor" />
   <meta property="og:title" content="Reduce Cursor token usage with SuperCompress" />
   <meta property="og:description" content="Cursor agent threads fill up with tool output. SuperCompress keeps the original lines that answer the current question and drops the rest." />
@@ -35,10 +35,7 @@
   "description": "Where Cursor tokens go (long agent threads, tool output, attached files, rules and MCP tools) and how to cut them: better habits, plus SuperCompress, which keeps the lines that answer the current question.",
   "datePublished": "2026-10-08",
   "dateModified": "2026-10-08",
-  "author": {
-    "@type": "Person",
-    "name": "Arjun Shah"
-  },
+  "author": {"@type": "Person", "name": "Arjun Shah", "url": "https://www.arjunshah.xyz/", "sameAs": ["https://www.arjunshah.xyz/", "https://x.com/arjunkshah21"]},
   "publisher": {
     "@type": "Organization",
     "name": "SuperCompress"
@@ -130,6 +127,32 @@
 }
   </script>
   <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Coding agents",
+      "item": "https://www.supercompress.dev/coding-agent-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Reduce Cursor token usage: keep the lines your agent needs",
+      "item": "https://www.supercompress.dev/reduce-cursor-token-usage"
+    }
+  ]
+}
+</script>
 </head>
 <body data-editorial="article">
 <header class="df-header">
@@ -166,6 +189,7 @@
     <span class="seo-tag">Token usage</span>
     <span class="seo-tag">MCP</span>
   </div>
+  <nav class="sc-breadcrumb" aria-label="Breadcrumb" style="font-size:.85rem;opacity:.75;margin:0 0 .75rem"><a href="/">Home</a> / <a href="/coding-agent-token-usage">Coding agents</a> / <span aria-current="page">Reduce Cursor token usage: keep the lines your agent needs</span></nav>
   <h1>Reduce Cursor token usage: keep the lines your agent needs</h1>
   <p class="seo-lead">A long Cursor agent thread sends the conversation back to the model on every turn, and most of that conversation is tool output: file reads, shell and test logs, search hits and MCP results. Here is where Cursor tokens go, the habits that cut them for free, and how SuperCompress keeps only the lines that answer the question your agent is working on.</p>
   <p class="seo-author">October 8, 2026 · Guide</p>
@@ -265,6 +289,7 @@
       <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
     </p>
   </div>
+<section class="sc-related" aria-labelledby="sc-related-h" style="margin:2.5rem 0 1rem"><h2 id="sc-related-h">Related guides</h2><ul><li><a href="/reduce-codex-token-usage">Reduce Codex CLI Token Usage: Compress Tool Output in Codex</a></li><li><a href="/reduce-windsurf-token-usage">Reduce Windsurf Token Usage: Compress Context in Cascade</a></li><li><a href="/reduce-gemini-cli-token-usage">Reduce Gemini CLI Token Usage: Compress Tool Output</a></li><li><a href="/reduce-cline-token-usage">Reduce Cline, Roo Code and Kilo Code Token Usage</a></li><li><a href="/compress-claude-code-tool-output">Compress Claude Code tool output with hooks and MCP</a></li><li><a href="/mcp-context-bloat">MCP context bloat: what fills your context window and how to fix it</a></li><li><a href="/mcp-tool-output-compression">MCP tool output compression: keep the lines that answer the question</a></li></ul></section>
 </main>
 <footer class="df-footer">
   <div class="df-footer-inner">

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress MCP OAuth | design for Google sign-in</title>
-  <meta name="description" content="How SuperCompress hosted MCP is designed to work with OAuth 2.1 + PKCE and Google sign-in. Recommended path today: npm install -g supercompress-proxy then supercompress setup." />
+  <title>SuperCompress MCP Sign-In Design</title>
+  <meta name="description" content="Design notes for sign-in on the SuperCompress hosted MCP endpoint. Recommended path today: npm install -g supercompress-proxy, then supercompress setup." />
   <meta property="og:title" content="SuperCompress MCP OAuth design" />
   <meta property="og:description" content="How hosted MCP OAuth 2.1 + PKCE is designed. Recommended install: npm install -g supercompress-proxy then supercompress setup." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
@@ -39,6 +39,32 @@
   }
   </script>
   <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "MCP",
+      "item": "https://www.supercompress.dev/mcp-tool-output-compression"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "SuperCompress MCP OAuth design",
+      "item": "https://www.supercompress.dev/mcp-oauth"
+    }
+  ]
+}
+</script>
 </head>
 <body data-editorial="article">
 <header class="df-header">
@@ -90,6 +116,7 @@
       <span class="seo-tag">OAuth</span>
       <span class="seo-tag">MCP</span>
     </div>
+    <nav class="sc-breadcrumb" aria-label="Breadcrumb" style="font-size:.85rem;opacity:.75;margin:0 0 .75rem"><a href="/">Home</a> / <a href="/mcp-tool-output-compression">MCP</a> / <span aria-current="page">SuperCompress MCP OAuth design</span></nav>
     <h1>SuperCompress MCP OAuth design</h1>
     <p class="seo-lead">Hosted MCP is designed for OAuth 2.1 + PKCE with Google sign-in. The path that works today is the CLI: <code>npm install -g supercompress-proxy</code> then <code>supercompress setup</code>.</p>
     <p class="seo-author">October 1, 2026 · Launch note</p>
@@ -129,6 +156,7 @@
 
       <p style="margin-top:28px;color:var(--muted)">Tell me what breaks. I am reading every reply. Arjun</p>
     </div>
+<section class="sc-related" aria-labelledby="sc-related-h" style="margin:2.5rem 0 1rem"><h2 id="sc-related-h">Related guides</h2><ul><li><a href="/mcp-context-bloat">MCP context bloat: what fills your context window and how to fix it</a></li><li><a href="/cursor-mcp-context-compression">Cursor MCP context compression: setup guide</a></li><li><a href="/mcp-tool-output-compression">MCP tool output compression: keep the lines that answer the question</a></li><li><a href="/mcp-token-reduction">MCP token reduction: cut tool definitions and tool results</a></li><li><a href="/reduce-tool-call-output-tokens">How to reduce tokens in tool call output</a></li><li><a href="/coding-agent-token-usage">Reduce coding agent token usage</a></li></ul></section>
 </main>
 <script src="/assets/js/landing-chrome.js?v=12" defer></script>
 <script src="/assets/js/blog-editorial.js?v=1" defer></script>

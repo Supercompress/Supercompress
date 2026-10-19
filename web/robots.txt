@@ -1,8 +1,8 @@
 # SuperCompress crawl policy
-# Canonical LLM index: https://supercompress.dev/llms.txt
-# Full LLM index: https://supercompress.dev/llms-full.txt
-# Human-readable AI search facts: https://supercompress.dev/ai-search
-# AI search facts: https://supercompress.dev/ai-search.json
+# Canonical LLM index: https://www.supercompress.dev/llms.txt
+# Full LLM index: https://www.supercompress.dev/llms-full.txt
+# Human-readable AI search facts: https://www.supercompress.dev/ai-search
+# AI search facts: https://www.supercompress.dev/ai-search.json
 # Terms: https://www.supercompress.dev/terms
 # Privacy: https://www.supercompress.dev/privacy
 
@@ -55,6 +55,27 @@ User-agent: CCBot
 Allow: /
 
 User-agent: Bytespider
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: Meta-ExternalFetcher
+Allow: /
+
+User-agent: DuckAssistBot
+Allow: /
+
+User-agent: MistralAI-User
+Allow: /
+
+User-agent: Google-CloudVertexBot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: cohere-ai
 Allow: /
 
 User-agent: *

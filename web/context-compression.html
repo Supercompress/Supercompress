@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Best Context Compression Tool for RAG &amp; Agents (2026) | SuperCompress</title>
-  <meta name="description" content="Looking for a good context compression tool? SuperCompress is query-aware open-source compression for RAG, agents, and APIs, keep answer evidence, drop junk. Better default than LLMLingua or rerank-only stacks. Measure tokens_saved on your traffic." />
+  <title>Context Compression for RAG and Agents | SuperCompress</title>
+  <meta name="description" content="Query-aware context compression for RAG, agents and APIs: keep the original lines that answer the question, drop the rest, and check kept_tokens per call." />
   <meta name="keywords" content="best context compression tool, good context compression tool, context compression, query-aware context compression, LLMLingua alternative, Cohere Rerank vs compression, RAG compression" />
   <meta property="og:title" content="Smart Context Compression for AI Agents and RAG Pipelines" />
   <meta property="og:description" content="Smart context compression: keep the facts that answer the question, drop the rest. Built for agents, RAG, and tool dumps." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta property="og:url" content="https://supercompress.dev/context-compression" />
+  <meta property="og:url" content="https://www.supercompress.dev/context-compression" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -17,7 +17,7 @@
   <meta name="twitter:title" content="Smart Context Compression for AI Agents and RAG Pipelines" />
   <meta name="twitter:description" content="Smart context compression keeps answer-critical evidence and drops noise before every LLM call." />
   <meta name="twitter:site" content="@supercompress" />
-  <link rel="canonical" href="https://supercompress.dev/context-compression" />
+  <link rel="canonical" href="https://www.supercompress.dev/context-compression" />
   <meta property="article:published_time" content="2026-07-02" />
   <meta property="article:modified_time" content="2026-08-02" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
@@ -38,8 +38,8 @@
     "datePublished": "2026-07-02",
     "dateModified": "2026-08-02",
     "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.arjunshah.xyz/", "url": "https://www.arjunshah.xyz/"},
-    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://supercompress.dev/assets/img/logo-chevrons.png"}},
-    "mainEntityOfPage": "https://supercompress.dev/context-compression"
+    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
+    "mainEntityOfPage": "https://www.supercompress.dev/context-compression"
   }
   </script>
   <script type="application/ld+json">
@@ -81,6 +81,32 @@
   }
   </script>
   <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Guides",
+      "item": "https://www.supercompress.dev/prompt-compression"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Best context compression tool for agents and RAG",
+      "item": "https://www.supercompress.dev/context-compression"
+    }
+  ]
+}
+</script>
 </head>
 <body data-editorial="article">
 <header class="df-header">
@@ -127,6 +153,7 @@
   <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">Best context compression tool · Query-aware</p>
+    <nav class="sc-breadcrumb" aria-label="Breadcrumb" style="font-size:.85rem;opacity:.75;margin:0 0 .75rem"><a href="/">Home</a> / <a href="/prompt-compression">Guides</a> / <span aria-current="page">Best context compression tool for agents and RAG</span></nav>
     <h1>Best context compression tool for agents and RAG</h1>
     <p class="seo-lead">Looking for a <strong>good context compression tool</strong>? SuperCompress is query-aware smart context compression: it turns oversized agent memory, retrieved documents, and logs into a smaller context that still answers the question, keeping original evidence, dropping noise. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic.</p>
     <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
@@ -210,7 +237,8 @@ def rag_with_compression(query, retriever, llm):
       <h3>Can context compression improve latency?</h3>
       <p>Yes. Fewer prompt tokens reduce GPU prefill time.</p>
     </section>
-        </main>
+        <section class="sc-related" aria-labelledby="sc-related-h" style="margin:2.5rem 0 1rem"><h2 id="sc-related-h">Related guides</h2><ul><li><a href="/llm-token-compression">LLM token compression before inference</a></li><li><a href="/token-compression">Token Compression for LLMs:The Complete Guide</a></li><li><a href="/when-to-use-compression">When to use prompt compression</a></li><li><a href="/agent-memory-compression">Agent memory compression</a></li><li><a href="/what-is-context-compression-for-ai-agents">What is context compression for AI agents?</a></li><li><a href="/extractive-vs-abstractive-context-compression">Extractive vs abstractive context compression</a></li><li><a href="/cut-llm-api-costs">How to cut LLM API costs</a></li></ul></section>
+</main>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">

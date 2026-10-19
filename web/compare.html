@@ -11,14 +11,14 @@
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://supercompress.dev/compare" />
+  <meta property="og:url" content="https://www.supercompress.dev/compare" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="LLM context compression comparison, prompt compression demo, token reduction comparison, SuperCompress interactive, AI tool comparison" />
-  <link rel="canonical" href="https://supercompress.dev/compare" />
+  <link rel="canonical" href="https://www.supercompress.dev/compare" />
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -291,12 +291,12 @@
       "@type": "ListItem",
       "position": 1,
       "name": "Home",
-      "item": "https://supercompress.dev/"
+      "item": "https://www.supercompress.dev/"
     },{
       "@type": "ListItem",
       "position": 2,
       "name": "Interactive Comparison",
-      "item": "https://supercompress.dev/compare"
+      "item": "https://www.supercompress.dev/compare"
     }]
   }
   </script>
@@ -308,17 +308,14 @@
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Linux, macOS, Windows",
     "description": "Paste any LLM context and see how SuperCompress intelligently compresses it while preserving answer-critical information. Interactive live demo.",
-    "url": "https://supercompress.dev/compare",
+    "url": "https://www.supercompress.dev/compare",
     "sameAs": "https://github.com/Supercompress/Supercompress",
     "offers": {
       "@type": "Offer",
       "price": "0",
       "priceCurrency": "USD"
     },
-    "author": {
-      "@type": "Person",
-      "name": "Arjun Shah"
-    },
+    "author": {"@type": "Person", "name": "Arjun Shah", "url": "https://www.arjunshah.xyz/", "sameAs": ["https://www.arjunshah.xyz/", "https://x.com/arjunkshah21"]},
     "license": "https://opensource.org/licenses/MIT"
   }
   </script>
@@ -383,7 +380,7 @@
   <div class="container">
     <div style="text-align:center;font-size:13px;color:#64748b;margin-bottom:16px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;padding:8px 16px;display:inline-block;width:auto;margin-left:auto;margin-right:auto;">
       <span role="img" aria-label="zap">⚡</span> This demo simulates the compression logic locally, results are illustrative.
-      <a href="https://supercompress.dev/live-demo" style="color:#60a5fa;">Try the real API →</a>
+      <a href="https://www.supercompress.dev/live-demo" style="color:#60a5fa;">Try the real API →</a>
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 8px;">
       <button class="preset-btn" onclick="loadPreset('rag')">📄 RAG Context</button>
@@ -639,13 +636,13 @@ Response Format:
     }
 
     function shareTwitter() {
-      const url = encodeURIComponent('https://supercompress.dev/compare');
+      const url = encodeURIComponent('https://www.supercompress.dev/compare');
       const text = encodeURIComponent('SuperCompress - See how query-aware prompt compression works. Keep original answer lines, drop the rest. Try it live:');
       window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
     }
 
     function shareHN() {
-      const url = encodeURIComponent('https://supercompress.dev/compare');
+      const url = encodeURIComponent('https://www.supercompress.dev/compare');
       const title = encodeURIComponent('SuperCompress - Interactive LLM Context Compression Demo');
       window.open('https://news.ycombinator.com/submitlink?u=' + url + '&t=' + title, '_blank');
     }

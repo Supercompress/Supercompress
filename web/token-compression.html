@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Token Compression Guide: Cut LLM Costs Without Losing Answers | SuperCompress</title>
-  <meta name="description" content="Token compression guide: reduce token costs and LLM bills by keeping query-relevant context. Benchmarks, methods, and implementation." />
+  <title>Token Compression Guide | SuperCompress</title>
+  <meta name="description" content="Token compression explained: cut LLM input tokens by keeping query-relevant context. Methods, trade-offs and implementation." />
   <meta property="og:title" content="Token Compression for LLMs: The Complete Guide (2026)" />
   <meta property="og:description" content="Everything you need to know about LLM token compression: techniques, benchmarks, implementation, and how to implement it." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:url" content="https://supercompress.dev/token-compression" />
+  <meta property="og:url" content="https://www.supercompress.dev/token-compression" />
   <meta property="og:type" content="article" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:site_name" content="SuperCompress" />
@@ -20,9 +20,9 @@
   <meta name="twitter:description" content="Learn token compression techniques to cut LLM input tokens without losing answers. Complete guide with benchmarks, implementation, and interactive demo." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="token compression, LLM token optimization, prompt compression guide, reduce LLM costs, context compression tutorial, LLM efficiency, prompt engineering cost savings" />
-  <link rel="canonical" href="https://supercompress.dev/token-compression" />
-  <link rel="alternate" type="text/plain" href="https://supercompress.dev/llms.txt" title="LLMs.txt" />
-  <link rel="alternate" type="application/json" href="https://supercompress.dev/ai-search.json" title="AI search facts" />
+  <link rel="canonical" href="https://www.supercompress.dev/token-compression" />
+  <link rel="alternate" type="text/plain" href="https://www.supercompress.dev/llms.txt" title="LLMs.txt" />
+  <link rel="alternate" type="application/json" href="https://www.supercompress.dev/ai-search.json" title="AI search facts" />
   <meta property="article:published_time" content="2026-06-29" />
   <meta property="article:modified_time" content="2026-08-10" />
   <link rel="preconnect" href="https://github.com" />
@@ -63,6 +63,32 @@
   }
   </script>
   <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Guides",
+      "item": "https://www.supercompress.dev/prompt-compression"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Token compression guide",
+      "item": "https://www.supercompress.dev/token-compression"
+    }
+  ]
+}
+</script>
 </head>
 <body data-editorial="article">
   <div class="df-page-bg-top" aria-hidden="true"></div>
@@ -114,6 +140,7 @@
 <!-- Guide Header -->
     <main class="seo-page" data-article-content>
       <p class="seo-kicker">Definitive Resource · Updated 2026</p>
+      <nav class="sc-breadcrumb" aria-label="Breadcrumb" style="font-size:.85rem;opacity:.75;margin:0 0 .75rem"><a href="/">Home</a> / <a href="/prompt-compression">Guides</a> / <span aria-current="page">Token compression guide</span></nav>
       <h1>Token Compression for LLMs:<br />The Complete Guide</h1>
       <p class="seo-lead">Everything you need to know about LLM token compression, what it is, why it matters, how much it saves, and how to implement it. Includes benchmarks, comparison tables, and an interactive demo.</p>
 
@@ -314,11 +341,11 @@ print(data["compressed_text"])</code></pre>
         <h3>REST API</h3>
         <pre><code><span class="cm"># Quick one-liner (form-encoded POST)</span>
 curl -d <span class="str">"context=Your long prompt here...&query=What should the model answer?"</span> \
-  https://supercompress.dev/compress \
+  https://www.supercompress.dev/compress \
   -H <span class="str">"X-API-Key: sc_live_your_key"</span>
 
 <span class="cm"># Or as JSON (standard)</span>
-curl -X POST https://supercompress.dev/api/v1/compress \
+curl -X POST https://www.supercompress.dev/api/v1/compress \
   -H <span class="str">"X-API-Key: sc_live_your_key"</span> \
   -H <span class="str">"Content-Type: application/json"</span> \
   -d <span class="str">'{"context":"Your long prompt here...","query":"What should the model answer?"}'</span>
@@ -413,7 +440,8 @@ class CompressionCallback(BaseCallbackHandler):
     </div>
 
     <!-- Footer -->
-    </main>
+    <section class="sc-related" aria-labelledby="sc-related-h" style="margin:2.5rem 0 1rem"><h2 id="sc-related-h">Related guides</h2><ul><li><a href="/when-to-use-compression">When to use prompt compression</a></li><li><a href="/agent-memory-compression">Agent memory compression</a></li><li><a href="/firecrawl-context-compression">Compress Firecrawl results before they hit your LLM.</a></li><li><a href="/supercompress-architecture">SuperCompress Architecture</a></li><li><a href="/what-is-context-compression-for-ai-agents">What is context compression for AI agents?</a></li><li><a href="/extractive-vs-abstractive-context-compression">Extractive vs abstractive context compression</a></li><li><a href="/cut-llm-api-costs">How to cut LLM API costs</a></li></ul></section>
+</main>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
@@ -516,10 +544,7 @@ class CompressionCallback(BaseCallbackHandler):
     "headline": "Token Compression for LLMs: The Complete Guide (2026)",
     "description": "The definitive guide to LLM token compression. Learn what token compression is, how query-aware selection keeps original evidence, compare methods, and see benchmark results.",
     "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
-    "author": {
-      "@type": "Person",
-      "name": "Arjun Shah"
-    },
+    "author": {"@type": "Person", "name": "Arjun Shah", "url": "https://www.arjunshah.xyz/", "sameAs": ["https://www.arjunshah.xyz/", "https://x.com/arjunkshah21"]},
     "datePublished": "2026-06-29",
     "dateModified": "2026-10-19",
     "publisher": {
@@ -528,7 +553,7 @@ class CompressionCallback(BaseCallbackHandler):
     },
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": "https://supercompress.dev/token-compression"
+      "@id": "https://www.supercompress.dev/token-compression"
     }
   }
   </script>
@@ -546,10 +571,7 @@ class CompressionCallback(BaseCallbackHandler):
       "price": "0",
       "priceCurrency": "USD"
     },
-    "author": {
-      "@type": "Person",
-      "name": "Arjun Shah"
-    },
+    "author": {"@type": "Person", "name": "Arjun Shah", "url": "https://www.arjunshah.xyz/", "sameAs": ["https://www.arjunshah.xyz/", "https://x.com/arjunkshah21"]},
     "license": "https://opensource.org/licenses/MIT"
   }
   </script>

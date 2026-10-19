@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How Prompt Compression Works: The Technical Deep-Dive - SuperCompress</title>
-  <meta name="description" content="A technical explanation of how prompt compression works under the hood. Understand the scoring policy, compression strategy, and runtime behavior." />
+  <title>How Prompt Compression Works | SuperCompress</title>
+  <meta name="description" content="How query-aware extractive prompt compression works: segment the context, score each line against the question, keep original lines, drop the rest." />
   <meta property="og:title" content="How Prompt Compression Works: The Technical Deep-Dive" />
-  <meta property="og:description" content="A technical explanation of how prompt compression works under the hood. Understand the scoring policy, compression strategy, and runtime behavior." />
+  <meta property="og:description" content="How query-aware extractive prompt compression works: segment the context, score each line against the question, keep original lines, drop the rest." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta property="og:url" content="https://supercompress.dev/how-prompt-compression-works" />
+  <meta property="og:url" content="https://www.supercompress.dev/how-prompt-compression-works" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="How Prompt Compression Works: The Technical Deep-Dive" />
-  <meta name="twitter:description" content="A technical explanation of how prompt compression works under the hood. Understand the scoring policy, compression strategy, and runtime behavior." />
+  <meta name="twitter:description" content="How query-aware extractive prompt compression works: segment the context, score each line against the question, keep original lines, drop the rest." />
   <meta name="twitter:site" content="@supercompress" />
-  <link rel="canonical" href="https://supercompress.dev/how-prompt-compression-works" />
+  <link rel="canonical" href="https://www.supercompress.dev/how-prompt-compression-works" />
   <meta property="article:published_time" content="2026-07-03" />
   <meta property="article:modified_time" content="2026-07-03" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
@@ -37,8 +37,8 @@
     "datePublished": "2026-07-03",
     "dateModified": "2026-07-03",
     "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.arjunshah.xyz/", "url": "https://www.arjunshah.xyz/"},
-    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://supercompress.dev/assets/img/logo-chevrons.png"}},
-    "mainEntityOfPage": "https://supercompress.dev/how-prompt-compression-works"
+    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
+    "mainEntityOfPage": "https://www.supercompress.dev/how-prompt-compression-works"
   }
   </script>
   <script type="application/ld+json">
@@ -60,6 +60,32 @@
   }
   </script>
   <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Guides",
+      "item": "https://www.supercompress.dev/prompt-compression"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "How prompt compression works",
+      "item": "https://www.supercompress.dev/how-prompt-compression-works"
+    }
+  ]
+}
+</script>
 </head>
 <body data-editorial="article">
 <header class="df-header">
@@ -106,6 +132,7 @@
   <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">Technical guide</p>
+    <nav class="sc-breadcrumb" aria-label="Breadcrumb" style="font-size:.85rem;opacity:.75;margin:0 0 .75rem"><a href="/">Home</a> / <a href="/prompt-compression">Guides</a> / <span aria-current="page">How prompt compression works</span></nav>
     <h1>How prompt compression works</h1>
     <p class="seo-lead">SuperCompress uses a hosted, query-aware Neural Keep model (about 400M parameters) to decide which lines to keep. Here is how it works under the hood.</p>
     <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
@@ -134,7 +161,8 @@
       <h3>Can I retrain the policy on my data?</h3>
       <p>The current release uses a pre-trained policy. Custom training is on the roadmap.</p>
     </section>
-        </main>
+        <section class="sc-related" aria-labelledby="sc-related-h" style="margin:2.5rem 0 1rem"><h2 id="sc-related-h">Related guides</h2><ul><li><a href="/prompt-compression">Prompt compression that keeps the answer</a></li><li><a href="/prompt-compression-guide">Prompt Compression Guide</a></li><li><a href="/context-compression">Best context compression tool for agents and RAG</a></li><li><a href="/llm-token-compression">LLM token compression before inference</a></li><li><a href="/what-is-context-compression-for-ai-agents">What is context compression for AI agents?</a></li><li><a href="/extractive-vs-abstractive-context-compression">Extractive vs abstractive context compression</a></li><li><a href="/cut-llm-api-costs">How to cut LLM API costs</a></li></ul></section>
+</main>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">

@@ -11,12 +11,12 @@
   <link rel="stylesheet" href="/assets/css/article-page.css?v=2" />
 <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress Architecture | How Query-Aware Prompt Compression Works | SuperCompress</title>
-  <meta name="description" content="Deep dive into SuperCompress's architecture: the query-aware scoring policy, segment-then-score pipeline, compiler mode with verifier, and how extractive selection keeps original answer lines." />
+  <title>SuperCompress Architecture | SuperCompress</title>
+  <meta name="description" content="How SuperCompress works inside: query-aware scoring, a segment-then-score pipeline, and extractive selection that keeps original lines." />
   <meta name="robots" content="index, follow" />
   <meta property="og:title" content="SuperCompress Architecture, How Query-Aware Prompt Compression Works" />
   <meta property="og:description" content="How a query-aware neural CPU policy keeps original answer lines and drops junk. Full architecture breakdown: segmentation, scoring, compilation, and verification." />
-  <meta property="og:url" content="https://supercompress.dev/supercompress-architecture" />
+  <meta property="og:url" content="https://www.supercompress.dev/supercompress-architecture" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
@@ -24,7 +24,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="SuperCompress Architecture, Query-Aware Prompt Compression" />
   <meta name="twitter:description" content="How the query-aware neural policy works: segmentation, scoring, compilation, and verification." />
-  <link rel="canonical" href="https://supercompress.dev/supercompress-architecture" />
+  <link rel="canonical" href="https://www.supercompress.dev/supercompress-architecture" />
   <script type="application/ld+json">{
     "@context": "https://schema.org",
     "@type": "TechArticle",
@@ -32,14 +32,14 @@
     "description": "Technical deep dive into SuperCompress's query-aware compression architecture: query-aware neural policy, segment-then-score pipeline, compiler mode, and verifier.",
     "datePublished": "2026-07-03",
     "author": { "@type": "Organization", "name": "SuperCompress" },
-    "publisher": { "@type": "Organization", "name": "SuperCompress", "url": "https://supercompress.dev" }
+    "publisher": { "@type": "Organization", "name": "SuperCompress", "url": "https://www.supercompress.dev" }
   }</script>
   <script type="application/ld+json">{
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://supercompress.dev/" },
-      { "@type": "ListItem", "position": 2, "name": "Architecture", "item": "https://supercompress.dev/supercompress-architecture" }
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.supercompress.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "Architecture", "item": "https://www.supercompress.dev/supercompress-architecture" }
     ]
   }</script>
   <style>
@@ -127,6 +127,7 @@
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
+    <nav class="sc-breadcrumb" aria-label="Breadcrumb" style="font-size:.85rem;opacity:.75;margin:0 0 .75rem"><a href="/">Home</a> / <a href="/prompt-compression">Guides</a> / <span aria-current="page">SuperCompress Architecture</span></nav>
     <h1>SuperCompress Architecture</h1>
     <p class="meta">Last updated July 3, 2026 · 10 min read</p>
     <p class="subtitle">How query-aware compression keeps original answer-critical lines and drops junk before inference, a technical deep dive. Measure original_tokens / kept_tokens on your traffic.</p>
@@ -366,7 +367,8 @@
       <a href="https://github.com/Supercompress/Supercompress" class="btn btn-outline" target="_blank">GitHub</a>
       <a href="/dashboard" class="btn btn-outline">Get an API key</a>
     </div>
-  </main>
+  <section class="sc-related" aria-labelledby="sc-related-h" style="margin:2.5rem 0 1rem"><h2 id="sc-related-h">Related guides</h2><ul><li><a href="/what-is-context-compression-for-ai-agents">What is context compression for AI agents?</a></li><li><a href="/context-rot">What is context rot?</a></li><li><a href="/extractive-vs-abstractive-context-compression">Extractive vs abstractive context compression</a></li><li><a href="/llm-context-window-too-long">LLM context window too long: six ways to shrink it</a></li><li><a href="/cut-llm-api-costs">How to cut LLM API costs</a></li></ul></section>
+</main>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">

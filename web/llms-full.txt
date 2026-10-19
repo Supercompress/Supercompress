@@ -722,6 +722,74 @@ Every tool in this space publishes its own headline numbers, and independent stu
 
 Provider-specific guides: reduce OpenAI costs, reduce Claude costs, reduce Gemini costs, reduce Claude Code token usage, reduce Cursor token usage.
 
+## Context compression guides
+
+### What is context compression for AI agents?
+
+URL: https://www.supercompress.dev/what-is-context-compression-for-ai-agents
+
+Context compression for AI agents shrinks what an agent sends to the model while keeping what matters. Definition, methods, tradeoffs and when to use it.
+
+### Extractive vs abstractive context compression
+
+URL: https://www.supercompress.dev/extractive-vs-abstractive-context-compression
+
+Extractive compression keeps original lines; abstractive compression rewrites them. How each works, where each fails, and which to use for code and logs.
+
+### What is context rot?
+
+URL: https://www.supercompress.dev/context-rot
+
+Context rot is the decline in LLM output quality as the context fills with stale or irrelevant text. What causes it and practical ways to prevent it.
+
+### LLM context window too long: six ways to shrink it
+
+URL: https://www.supercompress.dev/llm-context-window-too-long
+
+Hit a context length error or watching costs climb? Six ways to shorten an LLM prompt: trim history, limit retrieval, offload outputs, compress by question.
+
+### Compress Claude Code tool output with hooks and MCP
+
+URL: https://www.supercompress.dev/compress-claude-code-tool-output
+
+Set up SuperCompress in Claude Code so large tool output is compressed against your request through PostToolUse hooks and an MCP tool. Step-by-step guide.
+
+### Claude Code /compact vs /clear vs context compression
+
+URL: https://www.supercompress.dev/claude-code-compact-vs-clear-vs-compression
+
+When to use /clear, /compact, or question-aware compression in Claude Code to control context size and token costs. A decision guide with honest tradeoffs.
+
+### Cursor MCP context compression: setup guide
+
+URL: https://www.supercompress.dev/cursor-mcp-context-compression
+
+Add query-aware context compression to Cursor with one command. SuperCompress installs an MCP server, hooks and a rule so bulky context is cut to relevant lines.
+
+### MCP context bloat: what fills your context window and how to fix it
+
+URL: https://www.supercompress.dev/mcp-context-bloat
+
+MCP context bloat is tool definitions and tool results filling your agent's context window. Learn where the tokens go and how to fix both sides.
+
+### How to reduce tokens in tool call output
+
+URL: https://www.supercompress.dev/reduce-tool-call-output-tokens
+
+Practical ways to cut tool call output tokens in AI agents: limits, truncation contracts, offloading, and question-aware compression of logs, diffs and JSON.
+
+### Context compression tools for AI agents compared
+
+URL: https://www.supercompress.dev/context-compression-tools-compared
+
+An honest comparison of context compression tools for AI agents: SuperCompress, Headroom, Caveman, RTK, LLMLingua, plus built-in compaction and truncation.
+
+### Headroom vs Caveman
+
+URL: https://www.supercompress.dev/headroom-vs-caveman
+
+Headroom vs Caveman compared honestly: what each one compresses, where it runs, how you install it, and when a hosted query-aware option fits better.
+
 ## Links
 
 - Homepage: https://www.supercompress.dev/
