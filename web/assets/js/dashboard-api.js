@@ -995,7 +995,8 @@ function renderPaygNudge(sub) {
   const banner = $("dash-payg-banner");
   if (!banner) return;
   const payg = !!(sub?.payg_enabled || sub?.unlimited || (sub?.plan && sub.plan !== "free"));
-  const limitHit = !!(sub?.limit_reached || sub?.paywall || (sub?.free_tokens_remaining === 0 && !payg));
+  const limitHit = !!(sub?.limit_reached || sub?.paywall || (sub?.free_tokens_remaining === 0 && !payg))
+    && !(Number(sub?.credit_balance_usd) > 0);
 
   if (payg && !limitHit) {
     banner.classList.add("hidden");
@@ -1143,7 +1144,8 @@ function renderSubscription(sub) {
   const creditWallet = !!(sub.credit_wallet || (payg && sub.credit_balance_usd != null));
   const creditBalance = Number(sub.credit_balance_usd);
   const hasCreditBalance = Number.isFinite(creditBalance);
-  const limitHit = !!(sub.limit_reached || sub.paywall) && !payg;
+  // Prepaid balance left means compress still works past the free allowance — not paused.
+  const limitHit = !!(sub.limit_reached || sub.paywall) && !payg && !(hasCreditBalance && creditBalance > 0);
   const overageUsd = Number(sub.estimated_overage_usd || 0);
   const billable = sub.billable_tokens || Math.max(0, used - freeCap);
 

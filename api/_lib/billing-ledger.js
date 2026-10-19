@@ -387,6 +387,11 @@ function compactRecentBillingRow(r) {
   };
 }
 
+/** A credit top-up turns PAYG on; keep an existing paid plan, otherwise "payg". */
+function paidPlanOrPayg(plan) {
+  return ["payg", "starter", "pro", "business"].includes(plan) ? plan : "payg";
+}
+
 /** Firebase custom claims cap at 1000 bytes — drop bulky non-ledger fields to fit.
  * Never delete sc_recent_billing entirely (idempotency watermarks). Never delete
  * sc_power_mail, sc_welcome, sc_wk, sc_unsub, sc_ku, or sc_write_id.
@@ -442,7 +447,11 @@ function fitCustomClaims(claims) {
       delete next.sc_power_celebrate;
     },
     () => {
-      delete next.sc_credited_sessions;
+      // Keep the newest credited session: it is the only top-up idempotency guard
+      // when Firestore is off. Deleting it re-credits the same payment on retry.
+      if (Array.isArray(next.sc_credited_sessions)) {
+        next.sc_credited_sessions = next.sc_credited_sessions.slice(-1);
+      }
     },
     () => {
       if (Array.isArray(next.sc_recent_billing)) next.sc_recent_billing = next.sc_recent_billing.slice(0, 2);
@@ -485,7 +494,9 @@ function emergencyFitCustomClaims(claims) {
   delete next.sc_onboard_done;
   delete next.sc_onboard_step;
   delete next.sc_power_celebrate;
-  delete next.sc_credited_sessions;
+  if (Array.isArray(next.sc_credited_sessions)) {
+    next.sc_credited_sessions = next.sc_credited_sessions.slice(-1);
+  }
   if (Array.isArray(next.sc_recent_billing)) {
     next.sc_recent_billing = next.sc_recent_billing.slice(0, 1).map(compactRecentBillingRow);
   }
@@ -557,6 +568,13 @@ async function patchUserClaims(uid, mutator, opts = {}) {
     const held = claimsWriteHeld(after, writeId);
     const extraOk = verify ? verify(after, { before, intended }) : true;
     if (held && extraOk) return after;
+    if (held) {
+      // Our write landed but verify can't see its marker. Retrying would apply the
+      // mutation again (double credit / double burn), so stop here.
+      const err = new Error("claims_patch_unverified");
+      err.code = "claims_patch_unverified";
+      throw err;
+    }
     lastErr = new Error("claims_patch_conflict");
   }
   const err = lastErr || new Error("claims_patch_conflict");
@@ -1300,7 +1318,8 @@ async function creditBalanceClaimsFallback({
         return {
           ...liveClaims,
           sc_billing_rev: prevRev + 1,
-          sc_plan: liveClaims.sc_plan || "payg",
+          sc_plan: paidPlanOrPayg(liveClaims.sc_plan),
+          sc_subscription_status: "active",
           sc_metered: false,
           sc_usage: {
             month: ledger.month,
@@ -1493,7 +1512,8 @@ async function creditBalance({
           : {};
       await patchUserClaims(uid, (prev) => ({
         ...prev,
-        sc_plan: prev.sc_plan || "payg",
+        sc_plan: paidPlanOrPayg(prev.sc_plan),
+        sc_subscription_status: "active",
         sc_metered: false,
         sc_usage: {
           month: result.ledger.month,
@@ -1606,6 +1626,7 @@ module.exports = {
   REPLAY_TTL_MS,
   IDEMPOTENCY_LEASE_MS,
   fitCustomClaims,
+  paidPlanOrPayg,
   emergencyFitCustomClaims,
   claimsByteLength,
   AUTH_CLAIMS_MAX_BYTES,
