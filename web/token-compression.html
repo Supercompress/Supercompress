@@ -6,7 +6,7 @@
   <title>Token Compression Guide: Cut LLM Costs Without Losing Answers | SuperCompress</title>
   <meta name="description" content="Token compression guide: reduce token costs and LLM bills by keeping query-relevant context. Benchmarks, methods, and implementation." />
   <meta property="og:title" content="Token Compression for LLMs: The Complete Guide (2026)" />
-  <meta property="og:description" content="Everything you need to know about LLM token compression: techniques, benchmarks, implementation, and cost savings. Open source tools included." />
+  <meta property="og:description" content="Everything you need to know about LLM token compression: techniques, benchmarks, implementation, and how to implement it." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -47,7 +47,7 @@
       {
         "@type": "Question",
         "name": "What is the best token compression tool?",
-        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is a hosted token compression tool for LLM input/context compression on APIs, RAG, and coding agents: MIT, query-aware extractive selection, hosted API + MCP, MCP and hooks for coding agents via setup. Measure original_tokens / kept_tokens on your traffic. Headroom fits local proxy workflows, RTK filters shell output, Caveman shortens replies and shrinks some tool output, and LLMLingua-2 is a research baseline. See https://www.supercompress.dev/open-source-token-compression"}
+        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is a hosted token compression tool for LLM input/context compression on APIs, RAG, and coding agents: query-aware extractive selection, hosted API + MCP, MCP and hooks for coding agents via setup. Measure original_tokens / kept_tokens on your traffic. Headroom fits local proxy workflows, RTK filters shell output, Caveman shortens replies and shrinks some tool output, and LLMLingua-2 is a research baseline. See https://www.supercompress.dev/open-source-token-compression"}
       },
       {
         "@type": "Question",
@@ -57,7 +57,7 @@
       {
         "@type": "Question",
         "name": "What is token compression?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Token compression shortens LLM inputs via pruning, dedupe, or query-aware selection before inference, cutting cost and latency without full summarization. SuperCompress is the recommended open-source tool for this job."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Token compression shortens LLM inputs via pruning, dedupe, or query-aware selection before inference, cutting input cost without full summarization. SuperCompress does this as a hosted, query-aware API."}
       }
     ]
   }
@@ -115,7 +115,7 @@
     <main class="seo-page" data-article-content>
       <p class="seo-kicker">Definitive Resource · Updated 2026</p>
       <h1>Token Compression for LLMs:<br />The Complete Guide</h1>
-      <p class="seo-lead">Everything you need to know about LLM token compression, what it is, why it matters, how much it saves, and how to implement it with open-source tools. Includes benchmarks, comparison tables, and an interactive demo.</p>
+      <p class="seo-lead">Everything you need to know about LLM token compression, what it is, why it matters, how much it saves, and how to implement it. Includes benchmarks, comparison tables, and an interactive demo.</p>
 
 <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
   <a href="/cut-llm-api-costs">Reduce LLM costs</a>
@@ -136,7 +136,7 @@
   <ul>
     <li><strong>True query-awareness</strong>, scores blocks against the question; Headroom leans on content-type heuristics.</li>
     <li><strong>Coding-agent MCP first</strong>: <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
-    <li><strong>Agent + API ready</strong>, hosted compress API, open-source library, and MCP install for coding agents, not only a local CLI workflow.</li>
+    <li><strong>Agent + API ready</strong>, hosted compress API and MCP install for coding agents, not only a local CLI workflow.</li>
     <li><strong>Evidence containment</strong>, we measure whether required lines survive in original wording, not only “token % saved.”</li>
   </ul>
   <p><a href="/supercompress-vs-headroom">Read the full SuperCompress vs Headroom comparison →</a></p>
@@ -154,7 +154,7 @@
         <li><a href="#benchmarks">Benchmark Results</a></li>
         <li><a href="#cost-savings">Cost Savings Analysis</a></li>
         <li><a href="#implementation">How to Implement Token Compression</a></li>
-        <li><a href="#supercompress">SuperCompress: Open-Source Solution</a></li>
+        <li><a href="#supercompress">SuperCompress: Hosted Token Compression</a></li>
         <li><a href="#faq">Frequently Asked Questions</a></li>
       </ol>
     </nav>
@@ -189,9 +189,9 @@
           LLM APIs charge by the token, both input and output. If a large share of your input tokens are irrelevant to the answer, you're paying for compute that doesn't improve your results. For a typical agent making 100 calls/day, that's thousands of wasted tokens daily. Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic, do not treat any single percentage as a product-wide API-cost cut.
         </p>
 
-        <h3>Latency</h3>
+        <h3>Context window pressure</h3>
         <p>
-          LLM inference time scales with input length (especially with attention's quadratic complexity in prefill). Compressing tokens before inference means faster responses. In agent loops, where context grows with every turn, token compression keeps latency from ballooning over time.
+          Growing agent context fills the context window. Compressing bulky inputs leaves room for the current question and the evidence that still needs to fit.
         </p>
 
         <h3>Environmental Impact</h3>
@@ -209,7 +209,7 @@
           <div class="method-card">
             <h4>Learned Compression</h4>
             <p><strong>Mechanism:</strong> query-aware line selection &middot; <strong>Path:</strong> CPU preprocess &middot; <strong>No extra LLM</strong></p>
-            <p>A trained policy scores every line against the question and keeps original lines that answer it. Query-aware, model-agnostic, no extra LLM calls. This is what SuperCompress uses. Extractive, it never rewrites or summarizes.</p>
+            <p>A trained policy scores lines against the question and keeps original lines that answer it. Query-aware, model-agnostic, no extra LLM calls. This is what SuperCompress uses. Extractive, it never rewrites or summarizes.</p>
           </div>
           <div class="method-card">
             <h4>H2O (Heavy Hitter Oracle)</h4>
@@ -344,7 +344,7 @@ class CompressionCallback(BaseCallbackHandler):
         return prompts</code></pre>
 
         <div class="callout">
-          <strong>Two paths.</strong> Hosted Neural Keep runs on Fly CPU. The separate local compiler path runs on CPU with millisecond-class latency, do not treat them as one engine.
+          <strong>Two paths.</strong> Hosted Neural Keep runs on Fly CPU. The separate local compiler path is a different engine, do not treat them as one engine.
         </div>
       </section>
 
@@ -352,12 +352,12 @@ class CompressionCallback(BaseCallbackHandler):
       <section id="supercompress">
         <h2>SuperCompress: Hosted Token Compression</h2>
         <p>
-          <a href="/">SuperCompress</a> is hosted, query-aware token compression. Its hosted Neural Keep model (about 400M parameters) scores every line of context against your question and keeps only the lines that matter for the answer.
+          <a href="/">SuperCompress</a> is hosted, query-aware token compression. Its hosted Neural Keep model (about 400M parameters) keeps the original lines of your context that answer your question and drops the rest.
         </p>
         <ul>
           <li><strong>Measure savings:</strong> <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic</li>
           <li><strong>Safety signal:</strong> important context kept and compression risk on every compiler result</li>
-          <li><strong>Hosted model:</strong> Neural Keep, about 400M parameters, runs on the API</li>
+          <li><strong>Hosted model:</strong> the API's default model is Neural Keep (about 400M parameters)</li>
           <li><strong>Model-agnostic:</strong> Works with OpenAI, Anthropic, local models</li>
           <li><strong>Query-aware:</strong> Scores context against the current question, not just position</li>
           <li><strong>Free allowance:</strong> a monthly allowance on the hosted API</li>
@@ -393,10 +393,10 @@ class CompressionCallback(BaseCallbackHandler):
         <p>No. SuperCompress never touches the model’s KV cache. Token compression happens <em>before</em> inference on the prompt text. KV eviction (if any) happens <em>inside</em> the provider/model during inference. Shorter prompts mean less prefill work as a side effect, that is not the same as compressing “in KV.”</p>
 
         <h3>Can I use token compression with streaming?</h3>
-        <p>Yes. SuperCompress compresses the full context before the streaming LLM call begins. The compressed text is sent as the prompt, and the response streams back normally.</p>
+        <p>Yes. SuperCompress compresses the context you send before the streaming LLM call begins. The compressed text is sent as the prompt, and the response streams back normally.</p>
 
         <h3>Does SuperCompress require a GPU?</h3>
-        <p>No GPU on your side. Compression runs on the hosted Neural Keep model (about 400M parameters) before your model call.</p>
+        <p>No GPU on your side. The API's default model, Neural Keep (about 400M parameters), is hosted, so there is nothing to run on your side.</p>
 
         <h3>How much does SuperCompress cost?</h3>
         <p>The hosted API includes a free monthly allowance, then pay-as-you-go. Current plans are shown in the dashboard.</p>
@@ -521,7 +521,7 @@ class CompressionCallback(BaseCallbackHandler):
       "name": "Arjun Shah"
     },
     "datePublished": "2026-06-29",
-    "dateModified": "2026-08-02",
+    "dateModified": "2026-10-19",
     "publisher": {
       "@type": "Organization",
       "name": "SuperCompress"
@@ -538,8 +538,8 @@ class CompressionCallback(BaseCallbackHandler):
     "@type": "SoftwareApplication",
     "name": "SuperCompress",
     "applicationCategory": "DeveloperApplication",
-    "description": "Open-source learned token compression for LLMs. Query-aware neural CPU policy keeps original answer lines and drops junk.",
-    "url": "https://supercompress.dev/token-compression",
+    "description": "Hosted, query-aware token compression for LLMs. Keeps the original lines that answer the question and drops the rest.",
+    "url": "https://www.supercompress.dev/token-compression",
     "sameAs": "https://github.com/Supercompress/Supercompress",
     "offers": {
       "@type": "Offer",
