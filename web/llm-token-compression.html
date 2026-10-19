@@ -35,8 +35,8 @@
     "headline": "LLM Token Compression: Reduce Context Size Before Inference",
     "description": "LLM token compression reduces prompt size before inference. Compare learned compression, truncation, and summarization with implementation examples.",
     "datePublished": "2026-07-02",
-    "dateModified": "2026-07-03",
-    "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.linkedin.com/in/arjunkshah", "url": "https://www.linkedin.com/in/arjunkshah"},
+    "dateModified": "2026-10-19",
+    "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.arjunshah.xyz/", "url": "https://www.arjunshah.xyz/"},
     "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://supercompress.dev/assets/img/logo-chevrons.png"}},
     "mainEntityOfPage": "https://supercompress.dev/llm-token-compression"
   }
@@ -49,7 +49,7 @@
             {
         "@type": "Question",
         "name": "Does token compression require a model download?",
-        "acceptedAnswer": {"@type": "Answer", "text": "No. Compression runs on the hosted Neural Keep model (about 400M parameters), so there is nothing to download or run yourself."}
+        "acceptedAnswer": {"@type": "Answer", "text": "No. The API's default model, Neural Keep (about 400M parameters), is hosted, so there is nothing to download or run yourself."}
       },
       {
         "@type": "Question",
@@ -108,7 +108,7 @@
     <p class="seo-kicker">Token compression guide</p>
     <h1>LLM token compression before inference</h1>
     <p class="seo-lead">LLM token compression removes waste before the model spends compute on it. The goal is to preserve the evidence needed for the answer while cutting everything else.</p>
-    <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
+    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
 <section class="seo-section">
         <h2>What is LLM token compression?</h2>
         <p><strong>LLM token compression</strong> reduces the number of tokens sent to a language model during inference while preserving the information needed to answer the current query.</p>
@@ -131,7 +131,7 @@
     <section class="seo-section">
       <h2>Frequently asked questions</h2>
             <h3>Does token compression require a model download?</h3>
-      <p>No. Compression runs on the hosted Neural Keep model (about 400M parameters), so there is nothing to download or run yourself.</p>
+      <p>No. The API's default model, Neural Keep (about 400M parameters), is hosted, so there is nothing to download or run yourself.</p>
       <h3>Does it work with local models?</h3>
       <p>Yes. Compression is model-agnostic and works before any model call.</p>
     </section>
