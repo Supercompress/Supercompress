@@ -1143,7 +1143,8 @@ function renderSubscription(sub) {
   const creditWallet = !!(sub.credit_wallet || (payg && sub.credit_balance_usd != null));
   const creditBalance = Number(sub.credit_balance_usd);
   const hasCreditBalance = Number.isFinite(creditBalance);
-  const limitHit = !!(sub.limit_reached || sub.paywall) && !payg;
+  // Prepaid balance left means compress still works past the free allowance — not paused.
+  const limitHit = !!(sub.limit_reached || sub.paywall) && !payg && !(hasCreditBalance && creditBalance > 0);
   const overageUsd = Number(sub.estimated_overage_usd || 0);
   const billable = sub.billable_tokens || Math.max(0, used - freeCap);
 
