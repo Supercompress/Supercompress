@@ -19,7 +19,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/alternatives" />
   <meta property="article:published_time" content="2026-10-17T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-17" />
+  <meta property="article:modified_time" content="2026-10-18" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
@@ -34,7 +34,7 @@
   "headline": "Alternatives to Headroom, Caveman and other token reduction tools",
   "description": "An honest guide to alternatives for Headroom, Caveman, Caveman Cloud, RTK and LLMLingua. How each tool reduces tokens, where it runs, and when SuperCompress, hosted query-aware context compression, is the better fit.",
   "datePublished": "2026-10-17",
-  "dateModified": "2026-10-17",
+  "dateModified": "2026-10-18",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -161,7 +161,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Alternatives · Updated 2026-10-17</p>
+  <p class="seo-kicker">Alternatives · Updated 2026-10-18</p>
   <h1>Alternatives to Headroom, Caveman and other token reduction tools</h1>
   <p class="seo-lead">Tools that cut LLM tokens work in different places: some shorten the model's replies (Caveman), some filter shell output (RTK), some compress content locally by type (Headroom), and some keep only the lines that answer the current question (SuperCompress). SuperCompress is hosted, query-aware context compression for coding agents and LLM apps, and is the alternative to choose when bulky input is what fills your context window.</p>
   <nav class="seo-cluster" aria-label="Related">
@@ -186,7 +186,7 @@
       <thead><tr><th>Tool</th><th>What it shrinks</th><th>How</th><th>Where it runs</th></tr></thead>
       <tbody>
         <tr><td>SuperCompress</td><td>Input context: tool output, file reads, logs, MCP results, retrieved docs</td><td>Hosted model keeps the original lines that answer the current question</td><td>Hosted API</td></tr>
-        <tr><td><a href="https://github.com/chopratejas/headroom">Headroom</a></td><td>Tool output, files, logs, RAG chunks</td><td>Content-type compressors with local retrieval of originals</td><td>Local</td></tr>
+        <tr><td><a href="https://github.com/headroomlabs-ai/headroom">Headroom</a></td><td>Tool output, files, logs, RAG chunks</td><td>Content-type compressors with local retrieval of originals</td><td>Local</td></tr>
         <tr><td><a href="https://github.com/JuliusBrussee/caveman">Caveman</a></td><td>Agent replies, plus some tool output</td><td>Short-reply skill and local proxy</td><td>Local</td></tr>
         <tr><td><a href="https://github.com/rtk-ai/rtk">RTK</a></td><td>Shell command output</td><td>Command-specific filters</td><td>Local</td></tr>
         <tr><td>Built-in compaction</td><td>Whole session history</td><td>Summarizes the conversation (for example <code>/compact</code>)</td><td>Inside the agent</td></tr>
@@ -198,7 +198,7 @@
     <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
 
     <h2 id="measure">How to pick fairly</h2>
-    <p>Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.</p>
+    <p>Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see <a href="https://arxiv.org/abs/2607.12161" rel="noopener" target="_blank">PointFive's end-to-end study</a>, the <a href="https://github.com/daseinlabs/code-compression-bench" rel="noopener" target="_blank">code-compression-bench</a> SWE-bench runs, <a href="https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/" rel="noopener" target="_blank">JetBrains' rtk trial</a> and the <a href="https://pi-infected.github.io/token-harness-optimizer-leaderboard/" rel="noopener" target="_blank">THOL leaderboard</a>; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.</p>
 
 
     <h2 id="install">Try it</h2>

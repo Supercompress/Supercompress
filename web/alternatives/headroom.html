@@ -19,7 +19,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/alternatives/headroom" />
   <meta property="article:published_time" content="2026-10-17T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-17" />
+  <meta property="article:modified_time" content="2026-10-18" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
@@ -34,7 +34,7 @@
   "headline": "Headroom alternative: SuperCompress",
   "description": "Looking for a Headroom alternative? SuperCompress is hosted, query-aware context compression: it keeps the original lines that answer the current question. Honest comparison of mechanism, install and fit.",
   "datePublished": "2026-10-17",
-  "dateModified": "2026-10-17",
+  "dateModified": "2026-10-18",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -183,7 +183,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Alternatives · Updated 2026-10-17</p>
+  <p class="seo-kicker">Alternatives · Updated 2026-10-18</p>
   <h1>Headroom alternative: SuperCompress</h1>
   <p class="seo-lead">If you want a Headroom alternative, SuperCompress is the closest hosted option. Headroom is an open-source proxy and library that compresses content on your machine by content type, while SuperCompress sends bulky context to a hosted Neural Keep model that keeps only the original lines that answer the current question. Choose Headroom if you need everything to run locally; choose SuperCompress if you want question-aware, verbatim extraction without running a compression stack yourself.</p>
   <nav class="seo-cluster" aria-label="Related">
@@ -196,7 +196,7 @@
   </nav>
   <div class="article-prose">
     <h2 id="what-is-headroom">What Headroom is</h2>
-    <p>Headroom is an Apache-2.0 open-source project (installed with <code>pip install "headroom-ai[all]"</code>) that sits between your application and the model provider. It ships as a Python and TypeScript library, a local proxy, an agent wrapper (<code>headroom wrap claude</code> and similar) and an MCP server. Its ContentRouter detects the type of each block (JSON, logs, search results, diffs, HTML, code, plain text) and sends it to a matching compressor, and it can cache originals locally so the model can retrieve them later. Compression runs on your own machine. Sources: <a href="https://github.com/chopratejas/headroom">Headroom on GitHub</a>, <a href="https://docs.headroomlabs.ai/docs/architecture">Headroom architecture docs</a>.</p>
+    <p>Headroom is an Apache-2.0 open-source project (installed with <code>pip install "headroom-ai[all]"</code>) that sits between your application and the model provider. It ships as a Python and TypeScript library, a local proxy, an agent wrapper (<code>headroom wrap claude</code> and similar) and an MCP server. Its ContentRouter detects the type of each block (JSON, logs, search results, diffs, HTML, code, plain text) and sends it to a matching compressor, and it can cache originals locally so the model can retrieve them later. Compression runs on your own machine. Sources: <a href="https://github.com/headroomlabs-ai/headroom">Headroom on GitHub</a>, <a href="https://docs.headroomlabs.ai/docs/architecture">Headroom architecture docs</a>.</p>
     <h2 id="how-supercompress-works">How SuperCompress works</h2>
     <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
     <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
@@ -218,7 +218,7 @@
     <h2 id="when-supercompress">When SuperCompress is the better fit</h2>
     <p>Pick SuperCompress if the real problem is that only a few lines of a large result matter for the question at hand, if you need the kept text to be auditable and verbatim, or if you would rather not run and tune a local compression pipeline. Because the output is plain text, it works with any model provider.</p>
     <h2 id="measure">How to pick fairly</h2>
-    <p>Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.</p>
+    <p>Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see <a href="https://arxiv.org/abs/2607.12161" rel="noopener" target="_blank">PointFive's end-to-end study</a>, the <a href="https://github.com/daseinlabs/code-compression-bench" rel="noopener" target="_blank">code-compression-bench</a> SWE-bench runs, <a href="https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/" rel="noopener" target="_blank">JetBrains' rtk trial</a> and the <a href="https://pi-infected.github.io/token-harness-optimizer-leaderboard/" rel="noopener" target="_blank">THOL leaderboard</a>; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.</p>
 
     <p>More detail: <a href="/supercompress-vs-headroom">SuperCompress vs Headroom</a>, <a href="/switch-from-headroom">switching from Headroom</a>, <a href="/alternatives/caveman">Caveman alternative</a>.</p>
 
