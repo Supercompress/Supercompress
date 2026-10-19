@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>What Is Context Rot in LLMs and Coding Agents?</title>
+  <meta name="description" content="Context rot is the decline in LLM output quality as the context fills with stale or irrelevant text. What causes it and practical ways to prevent it." />
+  <meta name="keywords" content="context rot, what is context rot, LLM context degradation, long context quality, Claude Code context rot" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="What Is Context Rot in LLMs and Coding Agents?" />
+  <meta property="og:description" content="Context rot is the decline in LLM output quality as the context fills with stale or irrelevant text. What causes it and practical ways to prevent it." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/context-rot" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="What Is Context Rot in LLMs and Coding Agents?" />
+  <meta name="twitter:description" content="Context rot is the decline in LLM output quality as the context fills with stale or irrelevant text. What causes it and practical ways to prevent it." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/context-rot" />
+  <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "What is context rot?",
+  "description": "Context rot is the decline in LLM output quality as the context fills with stale or irrelevant text. What causes it and practical ways to prevent it.",
+  "datePublished": "2026-10-19",
+  "dateModified": "2026-10-19",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/context-rot"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "context rot, what is context rot, LLM context degradation, long context quality, Claude Code context rot"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is context rot?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It is the decline in LLM output quality as the context window fills with stale or irrelevant material that competes with the current task."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does a larger context window prevent context rot?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not by itself. A bigger window can hold more irrelevant text. Relevance of the context matters more than size."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I fix context rot in Claude Code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use /clear between tasks, steer /compact when continuing, and keep bulky tool output out of the window by filtering or compressing it."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can compression cause problems of its own?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, if it drops a line the task needed. Extractive compression keeps original text, which makes omissions easier to spot, but test on your own work."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "What is context rot?",
+      "item": "https://www.supercompress.dev/context-rot"
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Glossary · Updated 2026-10-19</p>
+  <h1>What is context rot?</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">Context rot is the gradual drop in a model&#x27;s output quality as its context window fills with stale, repetitive or irrelevant text. Old tool output, abandoned approaches and long logs compete with the current task for attention. Prevent it by clearing between tasks, keeping inputs relevant, and compressing bulky results before they enter the window.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/claude-code-compact-vs-clear-vs-compression">Compact vs clear vs compression</a>
+    <a href="/llm-context-window-too-long">Context window too long</a>
+    <a href="/what-is-context-compression-for-ai-agents">What is context compression</a>
+    <a href="/agent-memory-compression">Agent memory compression</a>
+  </nav>
+  <div class="article-prose">
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#cause">What causes context rot?</a></li><li><a href="#signs">What are the signs of context rot?</a></li><li><a href="#prevent">How do you prevent context rot?</a></li><li><a href="#vs">Is context rot the same as hitting the context limit?</a></li><li><a href="#try">How do I try compression against context rot?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <h2 id="cause">What causes context rot?</h2>
+    <p>Every turn of an agent session adds text: file reads, test runs, failed attempts, corrections. The model must find the relevant part among all of it. As the share of relevant text falls, the model is more likely to follow an outdated instruction, reuse a stale value or lose track of the goal. The term is widely used by practitioners, for example in <a href="https://towardsdatascience.com/governed-context-managing-context-rot-in-claude-code/">this Towards Data Science piece on Claude Code</a>.</p>
+    <h2 id="signs">What are the signs of context rot?</h2>
+    <ul><li>The agent repeats a fix it already tried.</li><li>It refers to files or errors from an earlier task.</li><li>It ignores a recent instruction in favor of an older one.</li><li>Answers get vaguer as the session gets longer.</li></ul>
+    <h2 id="prevent">How do you prevent context rot?</h2>
+    <ol><li><strong>Reset between tasks.</strong> In Claude Code that is <code>/clear</code>.</li>
+<li><strong>Summarize deliberately.</strong> Steer <code>/compact</code> with focus instructions, or write a short state file and start fresh.</li>
+<li><strong>Keep inputs relevant.</strong> Read file ranges, filter command output, paginate tool results.</li>
+<li><strong>Compress bulky results by question.</strong> A hosted query-aware model such as SuperCompress keeps only the original lines of a large output that answer the current request, so less irrelevant text accumulates.</li></ol>
+    <h2 id="vs">Is context rot the same as hitting the context limit?</h2>
+    <p>No. The limit is a hard ceiling. Context rot can start well before it, since quality depends on how much of the context is relevant, not just how full it is. See <a href="/llm-context-window-too-long">LLM context window too long</a>.</p>
+    <h2 id="try">How do I try compression against context rot?</h2>
+    <p>Install the CLI and let setup wire your coding agents:</p><pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>What is context rot?</h3>
+    <p>It is the decline in LLM output quality as the context window fills with stale or irrelevant material that competes with the current task.</p>
+    <h3>Does a larger context window prevent context rot?</h3>
+    <p>Not by itself. A bigger window can hold more irrelevant text. Relevance of the context matters more than size.</p>
+    <h3>How do I fix context rot in Claude Code?</h3>
+    <p>Use /clear between tasks, steer /compact when continuing, and keep bulky tool output out of the window by filtering or compressing it.</p>
+    <h3>Can compression cause problems of its own?</h3>
+    <p>Yes, if it drops a line the task needed. Extractive compression keeps original text, which makes omissions easier to spot, but test on your own work.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

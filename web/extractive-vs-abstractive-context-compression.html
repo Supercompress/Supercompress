@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Extractive vs Abstractive Context Compression for LLMs</title>
+  <meta name="description" content="Extractive compression keeps original lines; abstractive compression rewrites them. How each works, where each fails, and which to use for code and logs." />
+  <meta name="keywords" content="extractive vs abstractive compression, extractive context compression, summarization vs extraction LLM, query-aware extractive compression" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Extractive vs Abstractive Context Compression for LLMs" />
+  <meta property="og:description" content="Extractive compression keeps original lines; abstractive compression rewrites them. How each works, where each fails, and which to use for code and logs." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/extractive-vs-abstractive-context-compression" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Extractive vs Abstractive Context Compression for LLMs" />
+  <meta name="twitter:description" content="Extractive compression keeps original lines; abstractive compression rewrites them. How each works, where each fails, and which to use for code and logs." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/extractive-vs-abstractive-context-compression" />
+  <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Extractive vs abstractive context compression",
+  "description": "Extractive compression keeps original lines; abstractive compression rewrites them. How each works, where each fails, and which to use for code and logs.",
+  "datePublished": "2026-10-19",
+  "dateModified": "2026-10-19",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/extractive-vs-abstractive-context-compression"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "extractive vs abstractive compression, extractive context compression, summarization vs extraction LLM, query-aware extractive compression"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is extractive compression?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It shortens text by keeping selected original units, such as lines or sentences, and dropping the rest, with no rewriting."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is abstractive compression?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It shortens text by generating a new, shorter version, usually with an LLM, as in summarization."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is SuperCompress extractive or abstractive?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Extractive. It keeps original lines chosen against your question and never rewrites or summarizes them."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can extractive compression hallucinate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It cannot add text that was not in the input, but it can drop a line that mattered, so evaluate it on your own tasks."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Extractive vs abstractive context compression",
+      "item": "https://www.supercompress.dev/extractive-vs-abstractive-context-compression"
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Glossary · Updated 2026-10-19</p>
+  <h1>Extractive vs abstractive context compression</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">Extractive compression shortens context by selecting original sentences or lines and dropping the rest, so kept text is exact. Abstractive compression rewrites context into a shorter summary, which can be denser but may lose or alter details. For code, logs and identifiers, extractive methods are usually safer; for narrative history, abstractive summaries can work.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/supercompress-vs-summarization">SuperCompress vs summarization</a>
+    <a href="/supercompress-vs-truncation">SuperCompress vs truncation</a>
+    <a href="/how-prompt-compression-works">How prompt compression works</a>
+    <a href="/what-is-context-compression-for-ai-agents">What is context compression</a>
+  </nav>
+  <div class="article-prose">
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#extractive">How does extractive compression work?</a></li><li><a href="#abstractive">How does abstractive compression work?</a></li><li><a href="#failures">How does each one fail?</a></li><li><a href="#which">Which should you use?</a></li><li><a href="#pruning">Where does token pruning fit?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <h2 id="extractive">How does extractive compression work?</h2>
+    <p>A scorer rates each unit of text (token, sentence or line) and keeps the highest scoring units in their original form. Query-aware extractive compression scores units against the current question, so the same log yields different kept lines for different questions. SuperCompress works this way: the hosted Neural Keep model keeps the original lines that answer the question and drops the others.</p>
+    <h2 id="abstractive">How does abstractive compression work?</h2>
+    <p>An LLM reads the context and writes a shorter version. Conversation compaction in coding agents, such as Claude Code's <code>/compact</code>, is abstractive. It can merge scattered facts into a tight recap, which extraction cannot do.</p>
+    <h2 id="failures">How does each one fail?</h2>
+    <table><thead><tr><th></th><th>Extractive</th><th>Abstractive</th></tr></thead><tbody>
+<tr><td>Typical failure</td><td>Drops a relevant line</td><td>Paraphrases a value wrongly, or invents a detail</td></tr>
+<tr><td>Exact strings (paths, IDs, errors)</td><td>Preserved when kept</td><td>Can be altered</td></tr>
+<tr><td>Auditability</td><td>Kept text is a subset of the input</td><td>Must compare summary to source</td></tr>
+<tr><td>Cost to run</td><td>A scoring model</td><td>An extra LLM generation</td></tr></tbody></table>
+    <h2 id="which">Which should you use?</h2>
+    <p>Use extractive compression for tool output, stack traces, diffs, config, JSON and retrieved documents where exact wording matters. Use abstractive summaries for long conversational history when the gist is enough. Many agents use both: extract at the tool boundary, summarize old history.</p>
+    <h2 id="pruning">Where does token pruning fit?</h2>
+    <p>Token-level pruning, as in Microsoft's <a href="https://github.com/microsoft/LLMLingua/">LLMLingua</a>, is extractive at the token level. It can leave text that is ungrammatical but readable to a model. Line-level extraction keeps whole lines, which tends to suit code and logs. See <a href="/supercompress-vs-llmlingua">SuperCompress vs LLMLingua</a>.</p><pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>What is extractive compression?</h3>
+    <p>It shortens text by keeping selected original units, such as lines or sentences, and dropping the rest, with no rewriting.</p>
+    <h3>What is abstractive compression?</h3>
+    <p>It shortens text by generating a new, shorter version, usually with an LLM, as in summarization.</p>
+    <h3>Is SuperCompress extractive or abstractive?</h3>
+    <p>Extractive. It keeps original lines chosen against your question and never rewrites or summarizes them.</p>
+    <h3>Can extractive compression hallucinate?</h3>
+    <p>It cannot add text that was not in the input, but it can drop a line that mattered, so evaluate it on your own tasks.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

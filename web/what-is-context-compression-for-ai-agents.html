@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>What Is Context Compression for AI Agents?</title>
+  <meta name="description" content="Context compression for AI agents shrinks what an agent sends to the model while keeping what matters. Definition, methods, tradeoffs and when to use it." />
+  <meta name="keywords" content="context compression for AI agents, what is context compression, agent context management, LLM context compression" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="What Is Context Compression for AI Agents?" />
+  <meta property="og:description" content="Context compression for AI agents shrinks what an agent sends to the model while keeping what matters. Definition, methods, tradeoffs and when to use it." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/what-is-context-compression-for-ai-agents" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="What Is Context Compression for AI Agents?" />
+  <meta name="twitter:description" content="Context compression for AI agents shrinks what an agent sends to the model while keeping what matters. Definition, methods, tradeoffs and when to use it." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/what-is-context-compression-for-ai-agents" />
+  <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "What is context compression for AI agents?",
+  "description": "Context compression for AI agents shrinks what an agent sends to the model while keeping what matters. Definition, methods, tradeoffs and when to use it.",
+  "datePublished": "2026-10-19",
+  "dateModified": "2026-10-19",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/what-is-context-compression-for-ai-agents"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "context compression for AI agents, what is context compression, agent context management, LLM context compression"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is context compression?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It is reducing the amount of text sent to an LLM while keeping the parts the task needs, by methods such as truncation, summarization, pruning or extraction."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is context compression the same as prompt compression?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "They overlap. Prompt compression usually refers to a single prompt, while context compression for agents also covers tool output and history across steps."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does context compression change the answer?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It can, if a needed line is dropped. Evaluate on your own tasks before relying on it."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is query-aware compression?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Compression that depends on the question being asked, so different questions keep different parts of the same text."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "What is context compression for AI agents?",
+      "item": "https://www.supercompress.dev/what-is-context-compression-for-ai-agents"
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Glossary · Updated 2026-10-19</p>
+  <h1>What is context compression for AI agents?</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">Context compression for AI agents is any technique that shrinks the text an agent sends to its model, such as tool output, file contents, history and retrieved documents, while keeping what the current task needs. Methods include truncation, summarization, token pruning, offloading, and query-aware extraction of relevant lines.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/context-compression">Context compression</a>
+    <a href="/context-compression-for-coding-agents">For coding agents</a>
+    <a href="/prompt-compression">Prompt compression</a>
+    <a href="/llm-token-compression">LLM token compression</a>
+  </nav>
+  <div class="article-prose">
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why do agents need it?</a></li><li><a href="#methods">What are the main methods?</a></li><li><a href="#supercompress">How does SuperCompress approach it?</a></li><li><a href="#tradeoffs">What are the tradeoffs?</a></li><li><a href="#when">When should you use it?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <h2 id="why">Why do agents need it?</h2>
+    <p>An agent loop re-sends its accumulated context on every step. Each tool result therefore costs tokens many times, and long contexts raise the odds of errors and hit window limits. Compression attacks the size of what gets re-sent.</p>
+    <h2 id="methods">What are the main methods?</h2>
+    <ul><li><strong>Truncation:</strong> keep the head, tail or both. Cheap, ignores relevance.</li>
+<li><strong>Summarization:</strong> an LLM rewrites history or results. Compact but lossy, and can introduce errors.</li>
+<li><strong>Token pruning:</strong> a small model drops low-information tokens. LLMLingua from Microsoft is the best known example; it uses a small language model to score tokens. Source: <a href="https://github.com/microsoft/LLMLingua/">LLMLingua on GitHub</a>.</li>
+<li><strong>Rule-based filters:</strong> content-type reducers for logs, JSON, diffs and command output, as in Headroom and RTK.</li>
+<li><strong>Offloading:</strong> store the full payload and keep a preview plus handle.</li>
+<li><strong>Query-aware extraction:</strong> keep original lines selected against the current question.</li></ul>
+    <h2 id="supercompress">How does SuperCompress approach it?</h2>
+    <p>SuperCompress is hosted, query-aware and extractive. The hosted Neural Keep model reads the question and the bulky context, keeps the original lines that answer it, and drops the rest. It never paraphrases, which matters for code, paths and error messages. Coding agents reach it through the <code>compress_context</code> MCP tool and hooks; apps call <code>POST /api/v1/compress</code>.</p>
+    <h2 id="tradeoffs">What are the tradeoffs?</h2>
+    <p>Any compression can remove something the task needed. Extractive methods fail by omission, not by invention, which is easier to audit, but still a risk. Always test on your own tasks and compare bill per finished task rather than tokens saved. See <a href="/extractive-vs-abstractive-context-compression">extractive vs abstractive compression</a>.</p>
+    <h2 id="when">When should you use it?</h2>
+    <p>Use it when single inputs are large and mostly irrelevant to the question: failing test output, build logs, large diffs, scraped pages, retrieved document chunks and MCP results. Skip it for short prompts, where there is little to save.</p><pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>What is context compression?</h3>
+    <p>It is reducing the amount of text sent to an LLM while keeping the parts the task needs, by methods such as truncation, summarization, pruning or extraction.</p>
+    <h3>Is context compression the same as prompt compression?</h3>
+    <p>They overlap. Prompt compression usually refers to a single prompt, while context compression for agents also covers tool output and history across steps.</p>
+    <h3>Does context compression change the answer?</h3>
+    <p>It can, if a needed line is dropped. Evaluate on your own tasks before relying on it.</p>
+    <h3>What is query-aware compression?</h3>
+    <p>Compression that depends on the question being asked, so different questions keep different parts of the same text.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

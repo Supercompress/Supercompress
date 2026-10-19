@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>MCP Context Bloat: Causes, Measurements and Fixes</title>
+  <meta name="description" content="MCP context bloat is tool definitions and tool results filling your agent&#x27;s context window. Learn where the tokens go and how to fix both sides." />
+  <meta name="keywords" content="MCP context bloat, MCP token overhead, reduce MCP token usage, MCP tool output too large, too many MCP servers context window" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="MCP Context Bloat: Causes, Measurements and Fixes" />
+  <meta property="og:description" content="MCP context bloat is tool definitions and tool results filling your agent&#x27;s context window. Learn where the tokens go and how to fix both sides." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/mcp-context-bloat" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="MCP Context Bloat: Causes, Measurements and Fixes" />
+  <meta name="twitter:description" content="MCP context bloat is tool definitions and tool results filling your agent&#x27;s context window. Learn where the tokens go and how to fix both sides." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/mcp-context-bloat" />
+  <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "MCP context bloat: what fills your context window and how to fix it",
+  "description": "MCP context bloat is tool definitions and tool results filling your agent's context window. Learn where the tokens go and how to fix both sides.",
+  "datePublished": "2026-10-19",
+  "dateModified": "2026-10-19",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/mcp-context-bloat"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "MCP context bloat, MCP token overhead, reduce MCP token usage, MCP tool output too large, too many MCP servers context window"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is MCP context bloat?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It is the context window space used by MCP servers: tool definitions that load before your first prompt, and tool results that accumulate as the agent works. Both are re-read by the model on later turns."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress reduce MCP tool definition tokens?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. SuperCompress compresses text blocks such as tool results, logs, file reads and documents. To reduce definition overhead, connect fewer servers or use progressive tool discovery."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is truncating MCP output enough?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Truncation caps size but does not look at your question, so it can cut the useful part. Question-aware compression keeps the lines that match the task instead of the first or last lines."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How many MCP servers is too many?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "There is no fixed number. Cost depends on the schemas, not just the count. Check how much of your context window definitions use at the start of a session."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "MCP context bloat: what fills your context window and how to fix it",
+      "item": "https://www.supercompress.dev/mcp-context-bloat"
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Guide · Updated 2026-10-19</p>
+  <h1>MCP context bloat: what fills your context window and how to fix it</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">MCP context bloat is the tokens that Model Context Protocol servers add to an agent&#x27;s context window: tool definitions loaded before your first message, plus every tool result afterwards. Fix definitions by loading fewer or on-demand tools. Fix results by cutting each response down to the lines that answer the current question.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/reduce-tool-call-output-tokens">Reduce tool call output tokens</a>
+    <a href="/mcp-token-reduction">MCP token reduction</a>
+    <a href="/mcp-tool-output-compression">MCP tool output compression</a>
+    <a href="/claude-code-mcp-output-too-large">Claude Code MCP output too large</a>
+  </nav>
+  <div class="article-prose">
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#two-costs">What are the two kinds of MCP context bloat?</a></li><li><a href="#measured">How big is the problem in practice?</a></li><li><a href="#definitions">How do you reduce tool definition overhead?</a></li><li><a href="#results">How do you reduce MCP tool result size?</a></li><li><a href="#setup">How do you add SuperCompress to an MCP-based agent?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <h2 id="two-costs">What are the two kinds of MCP context bloat?</h2>
+    <p>An MCP server costs context in two separate places, and the fixes differ.</p>
+<ul><li><strong>Tool definitions.</strong> When an agent connects to a server it usually puts every tool's name, description and JSON schema into the model's context. That happens on every turn, before you type anything.</li>
+<li><strong>Tool results.</strong> Each tool call returns text that is appended to the conversation and re-read on every later turn. A page snapshot, a database dump or a long search result can outweigh all the definitions combined.</li></ul>
+    <h2 id="measured">How big is the problem in practice?</h2>
+    <p>Independent measurements vary by server, so treat any single number as an example. One October 2026 write-up counted the definitions of six popular servers (95 tools) at 15,950 tokens with OpenAI's <code>o200k_base</code> tokenizer, and found that a single Playwright page snapshot of one Wikipedia article returned 31,565 tokens, about twice all the definitions together. Source: <a href="https://doccraft.dev/blog/mcp-context-cost">Doccraft, MCP's context problem, measured</a>. Another analysis of ten servers found that about 81 percent of definition tokens were JSON Schema rather than prose descriptions, and that tool count was only a loose predictor of cost. Source: <a href="https://leanzero.net/blog/mcp-tool-definitions-context-cost">LeanZero</a>.</p>
+<p>These are other people's numbers on their setups. Measure your own: most agents show a context breakdown, and the MCP project's client guidance suggests switching strategy once definitions take roughly 1 to 5 percent of the window.</p>
+    <h2 id="definitions">How do you reduce tool definition overhead?</h2>
+    <ul><li>Disconnect servers you are not using in the current project.</li>
+<li>Use progressive discovery: expose a small search tool and load a full schema only when the model picks that tool. The <a href="https://modelcontextprotocol.io/docs/draft/develop/clients/client-best-practices">MCP client best practices</a> describe this pattern.</li>
+<li>Prefer servers with trimmed schemas. Repeated <code>$defs</code> blocks and long enum descriptions are common waste.</li></ul>
+<p>These are client and server side changes. SuperCompress does not shrink tool definitions, so be clear about which problem you actually have.</p>
+    <h2 id="results">How do you reduce MCP tool result size?</h2>
+    <p>Results are where compression helps most, because a result is a block of text and only part of it usually answers your question. Options, from simplest to most involved:</p>
+<ol><li>Ask the server for less: filters, limits, pagination, field selection.</li>
+<li>Truncate with a clear marker so the agent knows output was cut and can ask for more.</li>
+<li>Offload the full payload to a file and return a preview plus a handle.</li>
+<li>Compress against the question: keep the original lines that answer what the agent is doing and drop the rest.</li></ol>
+<p>The last option is what SuperCompress does. Your agent sends the bulky result and the current question to the hosted Neural Keep model through the <code>compress_context</code> MCP tool or the hooks installed by setup. It keeps matching lines verbatim, so file paths, IDs and error text are not paraphrased. Because it is extractive, a line the model scores as irrelevant is dropped, so check results on your own traces before relying on it.</p>
+    <h2 id="setup">How do you add SuperCompress to an MCP-based agent?</h2>
+    <p>One command links your account and writes the MCP entry for each coding agent it detects, with hooks where the agent supports them.</p><pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre><p>Run <code>supercompress doctor</code> afterwards for a per-agent health check, and restart the agent so it loads the new server. See the <a href="https://docs.supercompress.dev/coding-agents">coding agents guide</a>. Each API response reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see the effect on your own tool calls.</p>
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>What is MCP context bloat?</h3>
+    <p>It is the context window space used by MCP servers: tool definitions that load before your first prompt, and tool results that accumulate as the agent works. Both are re-read by the model on later turns.</p>
+    <h3>Does SuperCompress reduce MCP tool definition tokens?</h3>
+    <p>No. SuperCompress compresses text blocks such as tool results, logs, file reads and documents. To reduce definition overhead, connect fewer servers or use progressive tool discovery.</p>
+    <h3>Is truncating MCP output enough?</h3>
+    <p>Truncation caps size but does not look at your question, so it can cut the useful part. Question-aware compression keeps the lines that match the task instead of the first or last lines.</p>
+    <h3>How many MCP servers is too many?</h3>
+    <p>There is no fixed number. Cost depends on the schemas, not just the count. Check how much of your context window definitions use at the start of a session.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>
