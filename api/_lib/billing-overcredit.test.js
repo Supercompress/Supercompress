@@ -21,9 +21,36 @@ const fakeAdmin = {
     },
   }),
 };
+// In-memory Stripe: Checkout sessions + PaymentIntents with mutable metadata.
+const stripeObjs = new Map();
+const stripeApi = (prefix) => ({
+  retrieve: async (id) => clone(stripeObjs.get(id) || { id, metadata: {} }),
+  update: async (id, { metadata }) => {
+    const o = stripeObjs.get(id) || { id, metadata: {} };
+    o.metadata = { ...o.metadata, ...metadata };
+    stripeObjs.set(id, o);
+    return clone(o);
+  },
+});
+const fakeStripeClient = {
+  checkout: { sessions: stripeApi("cs") },
+  paymentIntents: stripeApi("pi"),
+  customers: { update: async () => ({}), retrieve: async (id) => ({ id, metadata: {} }) },
+};
+function FakeStripe() {
+  return fakeStripeClient; // `new Stripe(key)` returns this object
+}
+// Store mirror + thank-you mail are side effects outside the ledger; stub them.
+const fakeStore = { mutateStore: async (fn) => fn({ subscriptions: {} }), loadStore: async () => ({}) };
+const fakeThankYou = { schedulePaymentThankYou: () => {}, firstNameFromUser: () => "" };
+process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "sk_test_fake";
+
 const realLoad = Module._load;
 Module._load = function load(request, ...rest) {
   if (request === "firebase-admin") return fakeAdmin;
+  if (request === "stripe") return FakeStripe;
+  if (request === "./store") return fakeStore;
+  if (request === "./payment-thank-you") return fakeThankYou;
   return realLoad.call(this, request, ...rest);
 };
 delete process.env.SUPERCOMPRESS_USE_FIRESTORE;
@@ -83,6 +110,40 @@ const heavyClaims = () => ({
   assert.strictEqual(paidPlanOrPayg("free"), "payg");
   assert.strictEqual(paidPlanOrPayg(undefined), "payg");
   assert.strictEqual(paidPlanOrPayg("pro"), "pro");
+
+  // Older payment replayed after a newer one pushed it out of sc_credited_sessions:
+  // the live PaymentIntent stamp must block it (webhook events carry stale metadata).
+  {
+    const { applyCreditTopUp } = require("./credit-topup");
+    const uid = "uid_two_topups";
+    users.set(uid, heavyClaims());
+    const mk = (n) => {
+      const session = {
+        id: `cs_live_TEST${n}${"0".repeat(56)}`,
+        payment_intent: `pi_TEST${n}`,
+        customer: "cus_TEST00000000",
+        payment_status: "paid",
+        status: "complete",
+        amount_total: 1000,
+        currency: "usd",
+        created: 1791000000,
+        metadata: { user_id: uid, kind: "credit_topup", credit_usd: "10", auto_recharge: "false", plan_id: "payg" },
+      };
+      stripeObjs.set(session.id, clone(session));
+      stripeObjs.set(session.payment_intent, { id: session.payment_intent, metadata: {} });
+      return session;
+    };
+    const a = mk("A");
+    const b = mk("B");
+    await applyCreditTopUp(clone(a));
+    await applyCreditTopUp(clone(b));
+    assert.strictEqual(stripeObjs.get(a.payment_intent).metadata.sc_credited, "true", "PI must be stamped");
+    const before = users.get(uid).sc_credit_balance_usd;
+    const replay = await applyCreditTopUp(clone(a)); // stale event metadata, no sc_credited
+    assert.strictEqual(replay.already, true, "replayed older session must be a no-op");
+    assert.strictEqual(users.get(uid).sc_credit_balance_usd, before);
+    assert.strictEqual(before, 20.1, "two $10 top-ups + one $0.10 first-pay bonus");
+  }
 
   console.log("billing-overcredit.test.js: ok");
 })().catch((err) => {

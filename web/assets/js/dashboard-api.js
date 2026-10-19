@@ -995,7 +995,8 @@ function renderPaygNudge(sub) {
   const banner = $("dash-payg-banner");
   if (!banner) return;
   const payg = !!(sub?.payg_enabled || sub?.unlimited || (sub?.plan && sub.plan !== "free"));
-  const limitHit = !!(sub?.limit_reached || sub?.paywall || (sub?.free_tokens_remaining === 0 && !payg));
+  const limitHit = !!(sub?.limit_reached || sub?.paywall || (sub?.free_tokens_remaining === 0 && !payg))
+    && !(Number(sub?.credit_balance_usd) > 0);
 
   if (payg && !limitHit) {
     banner.classList.add("hidden");
