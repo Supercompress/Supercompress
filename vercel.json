@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
+  "git": {
+    "deploymentEnabled": {
+      "fix/mcp-firestore-required": false
+    }
+  },
   "installCommand": "npm ci --omit=optional --ignore-scripts --no-audit --no-fund",
   "buildCommand": "node scripts/generate-firebase-config.js 2>&1 || echo 'warn: firebase config skipped' && cp web/assets/js/compress-engine.js api/_lib/ 2>&1 || true && cp web/assets/data/model.json api/_lib/ 2>&1 || true && echo \"static site + serverless API\"",
   "outputDirectory": "web",
