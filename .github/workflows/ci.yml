@@ -143,3 +143,4 @@ jobs:
         run: |
           node scripts/check-api-host-routes.test.js
           node scripts/check-api-host-routes.js
+          node scripts/check-firebase-auth-proxy.js

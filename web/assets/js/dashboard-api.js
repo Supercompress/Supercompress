@@ -56,6 +56,27 @@ function normalizeFirebaseConfig(source = {}) {
   };
 }
 
+/**
+ * Prefer first-party authDomain on our hosts so Google sign-in does not depend on
+ * third-party cookies against *.firebaseapp.com (Chrome / Safari intermittent fails).
+ * Requires Vercel rewrite: /__/auth/:path* → https://supercompress.firebaseapp.com/__/auth/:path*
+ */
+function preferFirstPartyAuthDomain(config) {
+  const cfg = normalizeFirebaseConfig(config || {});
+  if (typeof window === "undefined") return cfg;
+  const host = String(window.location.hostname || "").toLowerCase();
+  const firstParty =
+    host === "www.supercompress.dev" ||
+    host === "supercompress.dev" ||
+    host === "docs.supercompress.dev" ||
+    host === "iusetokens.supercompress.dev" ||
+    (host.endsWith(".vercel.app") && host.includes("supercompress"));
+  if (!firstParty) return cfg;
+  // Apex redirects to www; keep auth handler on the canonical host.
+  cfg.authDomain = host === "supercompress.dev" ? "www.supercompress.dev" : host;
+  return cfg;
+}
+
 let cfg = normalizeFirebaseConfig(window.SC_FIREBASE_CONFIG || {});
 
 const $ = (id) => document.getElementById(id);
@@ -290,6 +311,16 @@ function friendlyAuthError(err, { intent = "auth" } = {}) {
     case "auth/popup-closed-by-user":
     case "auth/cancelled-popup-request":
       return "Sign-in was cancelled.";
+    case "auth/popup-blocked":
+      return "Your browser blocked the Google sign-in window. Allow pop-ups for supercompress.dev, then try again.";
+    case "auth/unauthorized-domain":
+      return "This site isn’t authorized for Google sign-in yet. Refresh and try again — if it persists, reply to support.";
+    case "auth/operation-not-allowed":
+      return "Google sign-in is temporarily unavailable. Try email and password, or refresh and retry.";
+    case "auth/internal-error":
+    case "auth/operation-not-supported-in-this-environment":
+    case "auth/web-storage-unsupported":
+      return "Google sign-in couldn’t start in this browser. Allow pop-ups for supercompress.dev, disable strict blockers, then try again — or use email and password.";
     case "auth/account-exists-with-different-credential":
       return "That email is already registered with a different sign-in method. Try Log in with email or Continue with Google.";
     default:
@@ -300,9 +331,42 @@ function friendlyAuthError(err, { intent = "auth" } = {}) {
     return "Too many sign-in attempts. Wait a few minutes, then try again — or use Continue with Google.";
   }
   if (/^Firebase:\s*Error\s*\(auth\//i.test(raw) || /\(auth\//i.test(raw)) {
-    return "Sign-in failed. Check your email and password, or try Continue with Google.";
+    return intent === "google"
+      ? "Google sign-in failed. Refresh and try Continue with Google again — or use email and password."
+      : "Sign-in failed. Check your email and password, or try Continue with Google.";
   }
   return raw || "Sign-in failed. Try again.";
+}
+
+function shouldFallbackGoogleRedirect(err) {
+  const code = authErrorCode(err);
+  return (
+    code === "auth/popup-blocked" ||
+    code === "auth/operation-not-supported-in-this-environment" ||
+    code === "auth/web-storage-unsupported" ||
+    code === "auth/internal-error" ||
+    isAuthNetworkError(err)
+  );
+}
+
+async function signInWithGoogleResilient(authInstance, provider) {
+  let lastErr;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await signInWithPopup(authInstance, provider);
+    } catch (err) {
+      lastErr = err;
+      if (shouldFallbackGoogleRedirect(err)) break;
+      if (isAuthNetworkError(err) && attempt === 0) {
+        await sleep(400);
+        continue;
+      }
+      throw err;
+    }
+  }
+  // Popup / storage / network flake → full-page redirect (first-party authDomain).
+  await signInWithRedirect(authInstance, provider);
+  return null;
 }
 
 async function getUserToken(user, retries = 2) {
@@ -2407,7 +2471,7 @@ async function initFirebaseAuth() {
   hide($("dev-auth-area"));
   show($("firebase-auth-area"));
 
-  cfg = normalizeFirebaseConfig(cfg);
+  cfg = preferFirstPartyAuthDomain(normalizeFirebaseConfig(cfg));
   const app = initializeApp(cfg);
   auth = getAuth(app);
   await setPersistence(auth, browserLocalPersistence);
@@ -2519,19 +2583,24 @@ async function initFirebaseAuth() {
     const pendingOauth = oauthAuthorizeFromUrl();
     if (pendingOauth) stashOauthAuthorize(pendingOauth);
     try {
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithGoogleResilient(auth, provider);
       if (result?.user) {
         const isNewUser = Boolean(getAdditionalUserInfo(result)?.isNewUser);
         await enterDashboard(result.user, { isNewUser });
       }
+      // null result ⇒ redirected; page will resume via getRedirectResult
     } catch (err) {
-      const code = String(err?.code || "");
-      if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment") {
-        if (pendingOauth) stashOauthAuthorize(pendingOauth);
-        await signInWithRedirect(auth, provider);
-        return;
+      if (pendingOauth) stashOauthAuthorize(pendingOauth);
+      if (shouldFallbackGoogleRedirect(err)) {
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirectErr) {
+          setError(friendlyAuthError(redirectErr, { intent: "google" }));
+          return;
+        }
       }
-      setError(friendlyAuthError(err));
+      setError(friendlyAuthError(err, { intent: "google" }));
     }
   });
 
@@ -2601,14 +2670,14 @@ function firebaseConfigReady(source) {
 }
 
 async function loadFirebaseConfig() {
-  cfg = normalizeFirebaseConfig(cfg);
+  cfg = preferFirstPartyAuthDomain(normalizeFirebaseConfig(cfg));
   if (firebaseConfigReady(cfg)) return true;
 
   try {
     const base = apiBaseUrl();
     const res = await fetch(`${base}/api/firebase-config`, { cache: "no-store" });
     if (res.ok) {
-      const remote = normalizeFirebaseConfig(await res.json());
+      const remote = preferFirstPartyAuthDomain(normalizeFirebaseConfig(await res.json()));
       if (firebaseConfigReady(remote)) {
         cfg = remote;
         return true;
@@ -2617,6 +2686,7 @@ async function loadFirebaseConfig() {
   } catch (_) {
     /* fall back to baked config */
   }
+  cfg = preferFirstPartyAuthDomain(cfg);
   return firebaseConfigReady(cfg);
 }
 

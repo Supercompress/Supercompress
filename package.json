@@ -10,6 +10,7 @@
     "prod:smoke": "bash scripts/prod-smoke.sh",
     "prod:domains": "bash scripts/ensure-prod-domains.sh",
     "check:api-host": "node scripts/check-api-host-routes.js",
+    "check:firebase-auth": "node scripts/check-firebase-auth-proxy.js",
     "check:stylesheet-paths": "node scripts/check-stylesheet-paths.test.js && node scripts/check-stylesheet-paths.js",
     "check:assets": "node scripts/sync-compress-assets.js --check",
     "release:check": "bash scripts/release-check.sh",
