@@ -1,0 +1,56 @@
+# SuperCompress hosted API on Fly (compress, billing, MCP, account).
+# Deploy from repo root: fly deploy --config fly.api.toml
+# Website stays on Vercel.
+
+app = "supercompress-api"
+primary_region = "sjc"
+kill_signal = "SIGTERM"
+kill_timeout = 180
+
+[build]
+  dockerfile = "services/api/Dockerfile"
+  ignorefile = "services/api/Dockerfile.dockerignore"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  SUPERCOMPRESS_USE_FIRESTORE = "0"
+  SC_CP_LEDGER = "0"
+  SC_CP_TRACE = "0"
+  SC_CP_RESERVE = "0"
+  SC_CP_GATEWAY = "0"
+  SC_CP_ROUTE = "0"
+  SC_CP_ENTERPRISE = "0"
+  SC_CP_OPS = "0"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Stay warm — stop+HTTP-health death spiral took api.supercompress.dev offline
+  # when compress piled up waiting on Neural Keep.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    # Neural Keep is serial (inflight=1). Keep API concurrency tight so long
+    # compress waits cannot fill the machine and starve /health.
+    hard_limit = 24
+    soft_limit = 12
+
+[[vm]]
+  memory = "2gb"
+  cpu_kind = "shared"
+  cpus = 2
+
+# TCP liveness — HTTP /health used to time out while Node was busy on neural /
+# auth / billing waits → Fly marked the machine critical → proxy stopped routing.
+[checks]
+  [checks.alive]
+    type = "tcp"
+    port = 8080
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "20s"
