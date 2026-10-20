@@ -34,7 +34,7 @@
   "headline": "Headroom alternative: SuperCompress",
   "description": "Looking for a Headroom alternative? SuperCompress is hosted, query-aware context compression: it keeps the original lines that answer the current question. Honest comparison of mechanism, install and fit.",
   "datePublished": "2026-10-17",
-  "dateModified": "2026-10-18",
+  "dateModified": "2026-10-20",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -55,7 +55,7 @@
     "url": "https://www.supercompress.dev/",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "macOS, Linux, Windows",
-    "description": "Hosted query-aware context compression for coding agents and LLM apps. The hosted Neural Keep model (about 400M parameters) keeps the original lines that answer the current question and drops the rest.",
+    "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
     "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
     "sameAs": [
       "https://github.com/Supercompress/Supercompress"
@@ -71,7 +71,7 @@
   "url": "https://www.supercompress.dev/",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS, Linux, Windows",
-  "description": "Hosted query-aware context compression for coding agents and LLM apps. The hosted Neural Keep model (about 400M parameters) keeps the original lines that answer the current question and drops the rest.",
+  "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
   "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
   "sameAs": [
     "https://github.com/Supercompress/Supercompress"
@@ -130,7 +130,7 @@
       "name": "How is SuperCompress different from Headroom?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Headroom compresses locally with content-type specific compressors. SuperCompress sends the bulky context and the current question to a hosted model of about 400M parameters that keeps only the relevant original lines, verbatim."
+        "text": "Headroom compresses locally with content-type specific compressors. SuperCompress sends the bulky context and the current question to a hosted, query-aware model that keeps only the relevant original lines, verbatim."
       }
     },
     {
@@ -198,7 +198,7 @@
     <h2 id="what-is-headroom">What Headroom is</h2>
     <p>Headroom is an Apache-2.0 open-source project (installed with <code>pip install "headroom-ai[all]"</code>) that sits between your application and the model provider. It ships as a Python and TypeScript library, a local proxy, an agent wrapper (<code>headroom wrap claude</code> and similar) and an MCP server. Its ContentRouter detects the type of each block (JSON, logs, search results, diffs, HTML, code, plain text) and sends it to a matching compressor, and it can cache originals locally so the model can retrieve them later. Compression runs on your own machine. Sources: <a href="https://github.com/headroomlabs-ai/headroom">Headroom on GitHub</a>, <a href="https://docs.headroomlabs.ai/docs/architecture">Headroom architecture docs</a>.</p>
     <h2 id="how-supercompress-works">How SuperCompress works</h2>
-    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
+    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
     <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
 
     <h2 id="comparison">Headroom vs SuperCompress</h2>
@@ -206,7 +206,7 @@
       <thead><tr><th></th><th>Headroom</th><th>SuperCompress</th></tr></thead>
       <tbody>
         <tr><td>Where compression runs</td><td>Locally, on your machine</td><td>Hosted API (Neural Keep model)</td></tr>
-        <tr><td>How it decides what to keep</td><td>Content-type compressors chosen per block (JSON, logs, diffs, HTML and more)</td><td>Scores each line against the current question</td></tr>
+        <tr><td>How it decides what to keep</td><td>Content-type compressors chosen per block (JSON, logs, diffs, HTML and more)</td><td>Keeps the original lines that answer the current question</td></tr>
         <tr><td>Output</td><td>Compressed content, with originals retrievable from a local cache</td><td>Original lines kept verbatim; nothing is rewritten</td></tr>
         <tr><td>How you connect</td><td>Python or TypeScript library, local proxy, agent wrap, MCP server</td><td><code>supercompress setup</code> (MCP for detected agents, hooks where supported), hosted MCP endpoint, HTTP API</td></tr>
         <tr><td>Runtime to maintain</td><td>Python environment and proxy process</td><td>Node CLI for setup; compression itself is hosted</td></tr>
@@ -232,7 +232,7 @@
     <h3>Is Headroom free and open source?</h3>
     <p>Yes. Headroom is published under the Apache-2.0 license on GitHub and runs locally.</p>
     <h3>How is SuperCompress different from Headroom?</h3>
-    <p>Headroom compresses locally with content-type specific compressors. SuperCompress sends the bulky context and the current question to a hosted model of about 400M parameters that keeps only the relevant original lines, verbatim.</p>
+    <p>Headroom compresses locally with content-type specific compressors. SuperCompress sends the bulky context and the current question to a hosted, query-aware model that keeps only the relevant original lines, verbatim.</p>
     <h3>Does SuperCompress work with Claude Code, Cursor and Codex?</h3>
     <p>Yes. Running npm install -g supercompress-proxy and then supercompress setup installs an MCP server for each detected coding agent, plus hooks where supported, including Claude Code, Cursor and Codex.</p>
     <h3>Can I use SuperCompress and Headroom together?</h3>

@@ -34,7 +34,7 @@
   "headline": "Reduce Cursor token usage: keep the lines your agent needs",
   "description": "Where Cursor tokens go (long agent threads, tool output, attached files, rules and MCP tools) and how to cut them: better habits, plus SuperCompress, which keeps the lines that answer the current question.",
   "datePublished": "2026-10-08",
-  "dateModified": "2026-10-08",
+  "dateModified": "2026-10-20",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -259,6 +259,8 @@
     <p>Every compress response reports <code>original_tokens</code> and <code>kept_tokens</code>. The <code>usage_summary</code> MCP tool shows totals for your account.</p>
     <h3>How do I undo the Cursor setup?</h3>
     <p>Run <code>supercompress uninstall</code>. Setup only adds its own entries to Cursor's <code>mcp.json</code> and <code>hooks.json</code>, and uninstall removes only those, so unrelated hooks and servers stay as they were.</p>
+
+    <p>Related: <a href="/cursor-mcp-context-compression">Cursor MCP context compression</a>.</p>
 
     <p class="seo-cta-row">
       <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>

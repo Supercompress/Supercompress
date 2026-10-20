@@ -6,7 +6,7 @@
   <title>SuperCompress v2 is live | hosted Neural Keep</title>
   <meta name="description" content="SuperCompress v2 is live: hosted query-aware Neural Keep. It reads the question, keeps the original context lines that answer it, and drops the rest. Hosted API plus MCP and hooks for coding agents." />
   <meta property="og:title" content="SuperCompress v2 is live, hosted Neural Keep" />
-  <meta property="og:description" content="Hosted query-aware Neural Keep is live. Reads the question, keeps original answer lines, drops irrelevant log and tool-output. Hosted API + MCP." />
+  <meta property="og:description" content="SuperCompress v2: hosted query-aware compression. Reads the question, keeps original answer lines, drops irrelevant log and tool output. Hosted API plus MCP." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/engine-v2-launch" />
   <meta property="og:type" content="article" />
@@ -119,9 +119,9 @@
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": "SuperCompress v2 is live, hosted Neural Keep",
-    "description": "SuperCompress v2 hosted query-aware Neural Keep is live. It reads the question, keeps original answer lines, and drops the rest. Hosted API plus MCP and hooks for coding agents.",
+    "description": "SuperCompress v2: hosted query-aware compression. Reads the question, keeps original answer lines, drops irrelevant log and tool output. Hosted API plus MCP.",
     "datePublished": "2026-09-29T09:00:00-07:00",
-    "dateModified": "2026-09-30T00:00:00-07:00",
+    "dateModified": "2026-10-20T00:00:00-07:00",
     "author": {
       "@type": "Person",
       "name": "Arjun Shah",
@@ -218,7 +218,7 @@
 
     <section class="seo-section">
       <h2>Why v2 is different from v1</h2>
-      <p>v1 was a tiny / lightweight compiler: a local CPU path, good at aggressive drop with answer-keep gates. v2 is the hosted <strong>query-aware Neural Keep</strong> model. It scores every line against <em>this</em> query and keeps original wording.</p>
+      <p>v1 was a tiny / lightweight compiler: a local CPU path, good at aggressive drop with answer-keep gates. v2 is the hosted <strong>query-aware Neural Keep</strong> model. It scores lines against this query and keeps original wording.</p>
       <p>Critically, it knows when <strong>not</strong> to compress. Across the full 390-case public suite many dense needle and LongBench slices keep nearly everything. Query-aware keep shines on coding-agent dumps, where most lines are irrelevant log or tool output. Mixing those results with compiler-era local-CPU claims is wrong, they are different engines.</p>
     </section>
 
@@ -230,7 +230,7 @@
 
     <section class="seo-section">
       <h2>What v2 does</h2>
-      <p><strong>Neural Keep</strong> is the default on <code>POST https://api.supercompress.dev/compress</code>. Hosted requests use the query-aware engine: it scores each line against <em>this</em> query, keeps original wording, and drops the noise. It does not paraphrase the stack trace. The question itself is never compressed.</p>
+      <p><strong>Neural Keep</strong> is the default on <code>POST https://api.supercompress.dev/compress</code>. Hosted requests use the query-aware engine: it scores lines against this query, keeps original wording, and drops the noise. It does not paraphrase the stack trace. The question itself is never compressed.</p>
       <p>That is strongest on coding-agent turns. It also helps on RAG chunks and long support threads when most of the text is not about the ask in front of you.</p>
       <div class="launch-example" aria-label="Illustrative keep and drop">
         <p class="ex-label">Illustrative · keep vs drop</p>

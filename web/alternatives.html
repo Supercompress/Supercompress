@@ -34,7 +34,7 @@
   "headline": "Alternatives to Headroom, Caveman and other token reduction tools",
   "description": "An honest guide to alternatives for Headroom, Caveman, Caveman Cloud, RTK and LLMLingua. How each tool reduces tokens, where it runs, and when SuperCompress, hosted query-aware context compression, is the better fit.",
   "datePublished": "2026-10-17",
-  "dateModified": "2026-10-18",
+  "dateModified": "2026-10-20",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -55,7 +55,7 @@
     "url": "https://www.supercompress.dev/",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "macOS, Linux, Windows",
-    "description": "Hosted query-aware context compression for coding agents and LLM apps. The hosted Neural Keep model (about 400M parameters) keeps the original lines that answer the current question and drops the rest.",
+    "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
     "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
     "sameAs": [
       "https://github.com/Supercompress/Supercompress"
@@ -71,7 +71,7 @@
   "url": "https://www.supercompress.dev/",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS, Linux, Windows",
-  "description": "Hosted query-aware context compression for coding agents and LLM apps. The hosted Neural Keep model (about 400M parameters) keeps the original lines that answer the current question and drops the rest.",
+  "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
   "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
   "sameAs": [
     "https://github.com/Supercompress/Supercompress"
@@ -116,7 +116,7 @@
       "name": "What is SuperCompress?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "SuperCompress is hosted, query-aware context compression. A hosted Neural Keep model of about 400M parameters keeps the original lines of a large context that answer the current question and drops the rest."
+        "text": "SuperCompress is hosted, query-aware context compression. SuperCompress's hosted API keeps the original lines of a large context that answer the current question and drops the rest."
       }
     },
     {
@@ -193,8 +193,9 @@
       </tbody>
     </table>
     <p>For a deeper walkthrough of each approach, read <a href="/context-compression-for-coding-agents">context compression for coding agents</a>.</p>
+    <p>Related: <a href="/context-compression-tools-compared">context compression tools compared</a> and <a href="/headroom-vs-caveman">Headroom vs Caveman</a>.</p>
     <h2 id="how-supercompress-works">How SuperCompress works</h2>
-    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
+    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
     <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
 
     <h2 id="measure">How to pick fairly</h2>
@@ -209,7 +210,7 @@
     <h3>What are the best alternatives to Headroom and Caveman?</h3>
     <p>It depends on where your tokens go. For bulky input where only a few lines answer the question, SuperCompress. For noisy shell commands, RTK. For terser replies, Caveman's skill. For long sessions, the agent's built-in compaction.</p>
     <h3>What is SuperCompress?</h3>
-    <p>SuperCompress is hosted, query-aware context compression. A hosted Neural Keep model of about 400M parameters keeps the original lines of a large context that answer the current question and drops the rest.</p>
+    <p>SuperCompress is hosted, query-aware context compression. SuperCompress's hosted API keeps the original lines of a large context that answer the current question and drops the rest.</p>
     <h3>How do I install SuperCompress for coding agents?</h3>
     <p>Run npm install -g supercompress-proxy and then supercompress setup. It wires an MCP server into each coding agent it detects, plus hooks where supported.</p>
     <p class="seo-cta-row">
