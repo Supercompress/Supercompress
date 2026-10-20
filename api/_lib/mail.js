@@ -377,7 +377,7 @@ const WEEKLY_TIPS_FALLBACK = [
     tipTitle: "Stop paying for every log dump in Cursor / Claude Code",
     tipBody:
       "Agents re-send huge context every turn. SuperCompress installs as MCP, keeps your login, and compresses dumps before they hit the model — typically 64% less context on our coding-agent benchmark with 24/24 benchmark evidence-retention passes on our held-out suites.",
-    proof: "Install once. Works with Cursor, Claude Code, Codex, and more.",
+    proof: "Install once. Works with Cursor, Claude Code, Codex, Grok Bot, and more.",
     ctaLabel: "Install coding agent plugin →",
     ctaUrl: `${SITE}/docs/coding-agents`,
     command: "npm install -g supercompress-proxy && supercompress setup",

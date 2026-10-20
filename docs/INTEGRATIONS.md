@@ -17,7 +17,7 @@ npm install -g supercompress-proxy && supercompress setup
 | Agent | Install |
 |-------|---------|
 | **Laptop agents (Cursor / Claude Code / Codex / …)** | `npm install -g supercompress-proxy && supercompress setup` (browser sign-in; a coding-agent key is created and saved automatically) |
-| **Grok Bot / cloud MCP** | `npm install -g supercompress-proxy && supercompress setup` on a machine that can open a browser, then connect the host to `https://www.supercompress.dev/api/mcp` with that coding-agent key set as `SUPERCOMPRESS_API_KEY` |
+| **Grok Bot / cloud MCP** | `supercompress setup` always offers Grok Bot and writes `~/.supercompress/hosts/grok-bot/` (`Add this MCP server: https://www.supercompress.dev/api/mcp`). Paste that URL in Grok Bot MCP settings, then complete Google OAuth (or set `SUPERCOMPRESS_API_KEY`) |
 | **Claude Code marketplace** | `npm install -g supercompress-proxy && supercompress setup`. Optionally `/plugin marketplace add Supercompress/Supercompress` then `/plugin install supercompress@supercompress` |
 | **Codex marketplace** | `npm install -g supercompress-proxy && supercompress setup`. Optionally `codex plugin marketplace add Supercompress/Supercompress` then `codex plugin add supercompress@supercompress` |
 | **Cursor** | `npm install -g supercompress-proxy && supercompress setup`. Optionally [Cursor Marketplace](https://cursor.com/marketplace) → search "SuperCompress" |

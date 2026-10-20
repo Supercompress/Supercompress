@@ -22,7 +22,7 @@ const QUEST_COPY = {
   },
   plugin: {
     title: "Install the coding agent plugin",
-    meta: "One setup command for Cursor, Claude Code, Codex, Grok Build…",
+    meta: "One setup command for Cursor, Claude Code, Codex, Grok Build, Grok Bot…",
   },
 };
 
