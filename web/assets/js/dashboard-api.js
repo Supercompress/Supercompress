@@ -514,6 +514,10 @@ async function apiFetch(path, opts = {}, retry = true) {
     }
 
     if (!res.ok) throw new Error(data.detail || res.statusText || `Request failed (HTTP ${res.status})`);
+    // www used to rewrite unknown /api/keys/:id to soft-probe (HTTP 200). Never treat that as success.
+    if (data && data.probe === true) {
+      throw new Error(data.detail || "API route not found");
+    }
     return data;
   } catch (err) {
     clearTimeout(timeoutId);
@@ -2019,7 +2023,15 @@ async function revokeKey(keyId) {
   const key = keysData.find((k) => k.id === keyId);
   if (!confirm(`Revoke "${key?.name}"? This cannot be undone.`)) return;
   try {
-    await apiFetch(`/api/keys/${keyId}`, { method: "DELETE" });
+    const data = await apiFetch(`/api/keys/${encodeURIComponent(keyId)}`, { method: "DELETE" });
+    if (!data || data.revoked !== true) {
+      throw new Error(data?.detail || "Revoke failed — key was not removed");
+    }
+    keysData = keysData.filter((k) => k.id !== keyId);
+    delete usageData[keyId];
+    renderKeys();
+    renderUsage();
+    updateStats();
     await loadKeys();
   } catch (err) {
     alert(err.message);

@@ -392,15 +392,20 @@
           const t = keys.length <= 1 ? 1 : (i + 1) / keys.length;
           return t * t;
         }
-        // Tiny residual so the gap isn't a single needle, but peaks stay readable.
-        return 0.12;
+        // Unused calendar days stay at 0 — do not invent a ~flat baseline.
+        return 0;
       });
       const wSum = weights.reduce((s, w) => s + w, 0) || keys.length || 1;
       let usedS = 0;
       let usedI = 0;
       let usedR = 0;
+      const lastWeighted = (() => {
+        for (let i = keys.length - 1; i >= 0; i--) if (weights[i] > 0) return i;
+        return keys.length - 1;
+      })();
       keys.forEach((iso, i) => {
-        const last = i === keys.length - 1;
+        if (weights[i] <= 0) return;
+        const last = i === lastWeighted;
         const share = weights[i] / wSum;
         const addS = last ? gapSaved - usedS : Math.round(gapSaved * share);
         const addI = last ? gapIn - usedI : Math.round(gapIn * share);

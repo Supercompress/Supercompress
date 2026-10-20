@@ -100,7 +100,7 @@ assert.strictEqual(s2.totalSaved, 2000);
 assert.strictEqual(s2.totalIn, 5000);
 assert.strictEqual(s2.totalReq, 10);
 
-// Month meter ahead of partial by_day — chart catches up across the month.
+// Month meter ahead of partial by_day — fold gap onto activity days only (no flat baseline).
 const partial = aggregateUsage({
   keys: [{ id: "k1", name: "Production" }],
   usage: {
@@ -109,11 +109,8 @@ const partial = aggregateUsage({
       total_tokens_in: 100000,
       total_tokens_saved: 50000,
       by_day: {
-        [new Date().toISOString().slice(0, 10)]: {
-          tokens_saved: 10000,
-          tokens_in: 20000,
-          requests: 2,
-        },
+        "2026-08-05": { tokens_saved: 8000, tokens_in: 16000, requests: 2 },
+        "2026-08-12": { tokens_saved: 12000, tokens_in: 24000, requests: 3 },
       },
     },
   },
@@ -133,9 +130,11 @@ assert.strictEqual(
   250000,
   "chart area matches month meter after gap fold"
 );
+const positive = s3.areaData.filter((d) => d.y > 0);
+assert.ok(positive.length >= 2, "gap folds onto known activity days");
 assert.ok(
-  s3.areaData.filter((d) => d.y > 0).length > 1,
-  "gap is not dumped onto today only"
+  positive.every((d) => d.iso === "2026-08-05" || d.iso === "2026-08-12"),
+  "unused calendar days stay at 0 (no invented baseline)"
 );
 
 console.log("analytics-data.test.js: ok");
