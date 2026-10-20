@@ -1928,6 +1928,10 @@
       "destination": "/assets/img/icon-192.png"
     },
     {
+      "source": "/api/keys/:id",
+      "destination": "/api/key?id=:id"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/soft-probe"
     },

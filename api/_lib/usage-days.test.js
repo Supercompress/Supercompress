@@ -62,4 +62,21 @@ const claims = accountDaysFromClaims(
 assert.ok(claims.by_day["2026-08-03"].tokens_in >= 1000);
 assert.ok(Object.values(claims.by_day).reduce((s, d) => s + d.tokens_in, 0) >= 5000);
 
+
+const mixed = fillMonthGap(
+  {
+    "2026-08-03": { tokens_in: 1000, tokens_saved: 400, tokens_out: 600, requests: 1 },
+    "2026-08-09": { tokens_in: 2000, tokens_saved: 800, tokens_out: 1200, requests: 2 },
+  },
+  { tokens_in: 10000, tokens_saved: 4000, requests: 20 },
+  "2026-08",
+  "2026-08-10"
+);
+assert.strictEqual(mixed.source, "mixed");
+assert.strictEqual(mixed.by_day["2026-08-01"]?.tokens_saved || 0, 0, "idle days stay zero");
+assert.ok(mixed.by_day["2026-08-03"].tokens_saved > 400);
+assert.ok(mixed.by_day["2026-08-09"].tokens_saved > 800);
+const mixedSum = Object.values(mixed.by_day).reduce((s, d) => s + d.tokens_saved, 0);
+assert.strictEqual(mixedSum, 4000);
+
 console.log("usage-days.test.js: ok");
