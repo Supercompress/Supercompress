@@ -353,9 +353,42 @@ function formatNum(n) {
   return String(n);
 }
 
+/** Parse API dates in the viewer's local calendar (date-only strings are not UTC midnight). */
+function parseUserDate(iso) {
+  if (iso == null || iso === "") return null;
+  if (iso instanceof Date) return Number.isFinite(iso.getTime()) ? iso : null;
+  const s = String(iso).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split("-").map(Number);
+    const local = new Date(y, m - 1, d);
+    return Number.isFinite(local.getTime()) ? local : null;
+  }
+  if (/^\d{10}$/.test(s)) return new Date(Number(s) * 1000);
+  if (/^\d{13}$/.test(s)) return new Date(Number(s));
+  const d = new Date(s);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
 function formatDate(iso) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const d = parseUserDate(iso);
+  if (!d) return "—";
+  const raw = String(iso).trim();
+  const hasTime =
+    /T\d{2}:\d{2}/.test(raw) ||
+    /^\d{10,13}$/.test(raw) ||
+    (iso instanceof Date && (d.getHours() || d.getMinutes() || d.getSeconds()));
+  if (!hasTime) {
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  }
+  // Full timestamps: local date + time + short zone (e.g. PDT) so the dashboard matches the viewer.
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
 }
 
 function localStoreKey() {
