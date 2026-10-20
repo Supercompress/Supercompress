@@ -825,23 +825,77 @@ function connectCodeFromUrl() {
   return (params.get("connect") || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+const OAUTH_PENDING_KEY = "sc_oauth_pending_v1";
+let enterDashboardPromise = null;
+
+function stashOauthAuthorize(params) {
+  if (!params?.client_id || !params?.redirect_uri || !params?.code_challenge) return;
+  try {
+    sessionStorage.setItem(
+      OAUTH_PENDING_KEY,
+      JSON.stringify({ ...params, stashed_at: Date.now() })
+    );
+  } catch {
+    /* private mode / blocked storage */
+  }
+}
+
+function clearStashedOauthAuthorize() {
+  try {
+    sessionStorage.removeItem(OAUTH_PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function readStashedOauthAuthorize() {
+  try {
+    const raw = sessionStorage.getItem(OAUTH_PENDING_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data?.client_id || !data?.redirect_uri || !data?.code_challenge) return null;
+    if (data.stashed_at && Date.now() - Number(data.stashed_at) > 30 * 60 * 1000) {
+      clearStashedOauthAuthorize();
+      return null;
+    }
+    return {
+      client_id: String(data.client_id),
+      redirect_uri: String(data.redirect_uri),
+      code_challenge: String(data.code_challenge),
+      code_challenge_method: String(data.code_challenge_method || "S256"),
+      state: String(data.state || ""),
+      resource: String(data.resource || "https://www.supercompress.dev/api/mcp"),
+      scope: String(data.scope || "mcp"),
+      response_type: "code",
+    };
+  } catch {
+    return null;
+  }
+}
+
 function oauthAuthorizeFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get("oauth") !== "1" && params.get("response_type") !== "code") return null;
-  const clientId = (params.get("client_id") || "").trim();
-  const redirectUri = (params.get("redirect_uri") || "").trim();
-  const challenge = (params.get("code_challenge") || "").trim();
-  if (!clientId || !redirectUri || !challenge) return null;
-  return {
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    code_challenge: challenge,
-    code_challenge_method: (params.get("code_challenge_method") || "S256").trim() || "S256",
-    state: params.get("state") || "",
-    resource: params.get("resource") || "https://www.supercompress.dev/api/mcp",
-    scope: params.get("scope") || "mcp",
-    response_type: "code",
-  };
+  if (params.get("oauth") === "1" || params.get("response_type") === "code") {
+    const clientId = (params.get("client_id") || "").trim();
+    const redirectUri = (params.get("redirect_uri") || "").trim();
+    const challenge = (params.get("code_challenge") || "").trim();
+    if (clientId && redirectUri && challenge) {
+      const oauth = {
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        code_challenge: challenge,
+        code_challenge_method: (params.get("code_challenge_method") || "S256").trim() || "S256",
+        state: params.get("state") || "",
+        resource: params.get("resource") || "https://www.supercompress.dev/api/mcp",
+        scope: params.get("scope") || "mcp",
+        response_type: "code",
+      };
+      // Survive Google signInWithRedirect round-trips that drop query params.
+      stashOauthAuthorize(oauth);
+      return oauth;
+    }
+  }
+  return readStashedOauthAuthorize();
 }
 
 async function completeOauthAuthorize(params) {
@@ -851,6 +905,7 @@ async function completeOauthAuthorize(params) {
     body: JSON.stringify(params),
   });
   if (res?.redirect_to) {
+    clearStashedOauthAuthorize();
     window.location.href = res.redirect_to;
     return res;
   }
@@ -898,64 +953,72 @@ async function triggerWelcomeEmail(user, { isNewUser = false } = {}) {
 }
 
 async function enterDashboard(user, { isNewUser = false } = {}) {
-  authResolved = true;
-  const prevUid = keysCacheUid();
-  const nextUid = user?.uid || null;
-  if (prevUid && nextUid && prevUid !== nextUid) clearKeysCache();
-  idToken = await getUserToken(user);
-  currentUser = user;
-  saveSession({
-    mode: "firebase",
-    uid: user.uid,
-    email: user.email || "",
-    displayName: user.displayName || user.email?.split("@")[0] || "User",
-  });
-  const connectCode = connectCodeFromUrl();
-  const oauthParams = oauthAuthorizeFromUrl();
-  let deviceLinked = false;
-  if (oauthParams) {
-    try {
-      await completeOauthAuthorize(oauthParams);
-      return; // browser navigates to client redirect
-    } catch (err) {
-      console.warn("OAuth approve failed", err);
-      setError(err.message || "Could not authorize MCP client — try again.");
-    }
-  } else if (connectCode) {
-    for (let attempt = 0; attempt < 3 && !deviceLinked; attempt++) {
+  // getRedirectResult + onAuthStateChanged both fire after Google redirect —
+  // serialize so we only approve / paint once.
+  if (enterDashboardPromise) return enterDashboardPromise;
+  enterDashboardPromise = (async () => {
+    authResolved = true;
+    const prevUid = keysCacheUid();
+    const nextUid = user?.uid || null;
+    if (prevUid && nextUid && prevUid !== nextUid) clearKeysCache();
+    idToken = await getUserToken(user);
+    currentUser = user;
+    saveSession({
+      mode: "firebase",
+      uid: user.uid,
+      email: user.email || "",
+      displayName: user.displayName || user.email?.split("@")[0] || "User",
+    });
+    const connectCode = connectCodeFromUrl();
+    const oauthParams = oauthAuthorizeFromUrl();
+    let deviceLinked = false;
+    if (oauthParams) {
       try {
-        await completeDeviceConnect(connectCode);
-        deviceLinked = true;
-        const ok = $("auth-error");
-        if (ok) {
-          ok.textContent = "Coding agent linked. You can return to the terminal — connect finished automatically.";
-          ok.style.color = "#166534";
-          show(ok);
-          setTimeout(() => {
-            ok.style.color = "";
-            hide(ok);
-          }, 8000);
-        }
+        await completeOauthAuthorize(oauthParams);
+        return; // browser navigates to client redirect
       } catch (err) {
-        console.warn("Device connect failed", err);
-        if (attempt === 2) {
-          setError(err.message || "Account connection failed — refresh this page or re-run connect.");
-        } else {
-          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        console.warn("OAuth approve failed", err);
+        setError(err.message || "Could not authorize MCP client — try again.");
+      }
+    } else if (connectCode) {
+      for (let attempt = 0; attempt < 3 && !deviceLinked; attempt++) {
+        try {
+          await completeDeviceConnect(connectCode);
+          deviceLinked = true;
+          const ok = $("auth-error");
+          if (ok) {
+            ok.textContent = "Coding agent linked. You can return to the terminal — connect finished automatically.";
+            ok.style.color = "#166534";
+            show(ok);
+            setTimeout(() => {
+              ok.style.color = "";
+              hide(ok);
+            }, 8000);
+          }
+        } catch (err) {
+          console.warn("Device connect failed", err);
+          if (attempt === 2) {
+            setError(err.message || "Account connection failed — refresh this page or re-run connect.");
+          } else {
+            await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+          }
         }
       }
+      // Keep ?connect= on failure so a refresh can retry auto-link.
+      if (!deviceLinked) {
+        /* leave URL */
+      }
+    } else {
+      cleanAuthQuery();
+      setError("");
     }
-    // Keep ?connect= on failure so a refresh can retry auto-link.
-    if (!deviceLinked) {
-      /* leave URL */
-    }
-  } else {
-    cleanAuthQuery();
-    setError("");
-  }
-  // Fire-and-forget founder welcome for new signups (deduped server-side).
-  void triggerWelcomeEmail(user, { isNewUser });
-  await showDashboard(user, { isNewUser });
+    // Fire-and-forget founder welcome for new signups (deduped server-side).
+    void triggerWelcomeEmail(user, { isNewUser });
+    await showDashboard(user, { isNewUser });
+  })().finally(() => {
+    enterDashboardPromise = null;
+  });
+  return enterDashboardPromise;
 }
 
 /* ── Billing / Plans ── */
@@ -2304,8 +2367,15 @@ async function initFirebaseAuth() {
   auth = getAuth(app);
   await setPersistence(auth, browserLocalPersistence);
 
+  // Stash early so a Google redirect that drops ?oauth=… still completes DCR.
+  oauthAuthorizeFromUrl();
+
   const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
+  // Account picker is fine for normal dashboard login; during MCP authorize it
+  // forces a second Google prompt even when the browser already has a session.
+  if (!oauthAuthorizeFromUrl()) {
+    provider.setCustomParameters({ prompt: "select_account" });
+  }
 
   try {
     const redirectResult = await getRedirectResult(auth);
@@ -2401,6 +2471,8 @@ async function initFirebaseAuth() {
 
   $("btn-google").addEventListener("click", async () => {
     setError("");
+    const pendingOauth = oauthAuthorizeFromUrl();
+    if (pendingOauth) stashOauthAuthorize(pendingOauth);
     try {
       const result = await signInWithPopup(auth, provider);
       if (result?.user) {
@@ -2410,6 +2482,7 @@ async function initFirebaseAuth() {
     } catch (err) {
       const code = String(err?.code || "");
       if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment") {
+        if (pendingOauth) stashOauthAuthorize(pendingOauth);
         await signInWithRedirect(auth, provider);
         return;
       }
