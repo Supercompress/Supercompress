@@ -4,6 +4,11 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.39] — 2026-10-20
+
+### Added
+- **Grok Bot** in CLI auto-detect / auto-plugin: `setup` and `plugin` always write a paste-ready hosted MCP snippet (`Add this MCP server: https://www.supercompress.dev/api/mcp`) under `~/.supercompress/hosts/grok-bot/` and list Grok Bot with other auto MCP hosts.
+
 ### Fixed
 - **uninstall no longer wipes MCP servers / settings added after install.** Only SuperCompress's own entries are removed; every other config is edited in place (TOML/JSON/JSONC/YAML formatting and comments preserved). Previously every backed-up file except JSON with an `mcpServers`/`mcp` key was rewound to its install-time snapshot (Codex and Grok Build `config.toml`, Gemini/Zed/Continue/Goose/Hermes/OpenClaw configs), and configs setup had created were deleted outright.
 - Overwritten settings (provider base URLs, Grok `[mcp] max_output_bytes`, shell-profile `ANTHROPIC_BASE_URL`) are restored key-by-key from the pre-install value, and only while they still hold SuperCompress's value.

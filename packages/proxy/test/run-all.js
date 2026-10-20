@@ -13,6 +13,7 @@ const suites = [
   ["agent-plugins", "test/agent-plugins.js"],
   ["harness-writers", "test/harness-writers.js"],
   ["grok-build", "test/grok-build.js"],
+  ["grok-bot", "test/grok-bot.js"],
   ["fx-build", "test/fx-build.js"],
   ["uninstall-clean", "test/uninstall-clean.js"],
   ["uninstall-preserves-user-config", "test/uninstall-preserves-user-config.js"],

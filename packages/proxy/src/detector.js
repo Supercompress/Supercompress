@@ -14,6 +14,7 @@
  *                     (context_servers MCP — not Cursor-style mcpServers)
  *   - fx (Vercel)     ~/.fx/mcp.json (trusted profile only) + ~/.fx/AGENTS.md + skills
  *   - OpenCode        ~/.config/opencode/opencode.json(c) mcp block
+ *   - Grok Bot        hosted Streamable HTTP MCP (cloud) — always offered by setup/plugin
  *   - Any custom      `supercompress agents connect` / Agent Plugins pack / agents add
  */
 
@@ -30,6 +31,8 @@ const SC_ANTHROPIC_BASE = PROXY_BASE.replace(/\/v1$/, "");
 const MCP_SERVER_PATH = path.join(__dirname, "mcp.js");
 const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(HOME, ".supercompress");
 const BACKUP_PATH = path.join(CONFIG_DIR, "agent-config-backups.json");
+/** Cloud-reachable MCP for Grok Bot / marketplace HTTP hosts (stdio is not reachable). */
+const HOSTED_MCP_URL = "https://www.supercompress.dev/api/mcp";
 
 function loadBackups() {
   try {
@@ -446,6 +449,61 @@ function grokHome() {
 
 function grokInstalled() {
   return commandExists("grok") || fs.existsSync(grokHome());
+}
+
+function grokBotHome() {
+  return path.join(CONFIG_DIR, "hosts", "grok-bot");
+}
+
+function grokBotMcpPath() {
+  return path.join(grokBotHome(), "mcp.json");
+}
+
+/** Always offered — Grok Bot is cloud-hosted; setup writes a paste-ready hosted MCP snippet. */
+function grokBotAvailable() {
+  return true;
+}
+
+function writeGrokBotHostedMcp() {
+  const dir = grokBotHome();
+  fs.mkdirSync(dir, { recursive: true });
+  const file = grokBotMcpPath();
+  backupFile(file);
+  const payload = {
+    mcpServers: {
+      supercompress: {
+        url: HOSTED_MCP_URL,
+      },
+    },
+    install: `Add this MCP server: ${HOSTED_MCP_URL}`,
+    note:
+      "Grok Bot runs in the cloud — paste the URL in Grok Bot MCP settings, then complete Google OAuth once. Local stdio MCP is not reachable from Grok Bot.",
+  };
+  fs.writeFileSync(file, `${JSON.stringify(payload, null, 2)}\n`);
+  fs.writeFileSync(
+    path.join(dir, "INSTALL.txt"),
+    `Add this MCP server: ${HOSTED_MCP_URL}\n`
+  );
+  return file;
+}
+
+function removeGrokBotHostedMcp() {
+  const dir = grokBotHome();
+  if (!fs.existsSync(dir)) return false;
+  try {
+    for (const name of ["mcp.json", "INSTALL.txt"]) {
+      const p = path.join(dir, name);
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    }
+    try {
+      fs.rmdirSync(dir);
+    } catch {
+      /* keep parent hosts/ */
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function fxHome() {
@@ -1042,6 +1100,15 @@ function configureMcp() {
     }
   }
 
+  // Grok Bot (xAI cloud) — hosted Streamable HTTP MCP (stdio is unreachable from the bot)
+  try {
+    writeGrokBotHostedMcp();
+    configured.push("Grok Bot");
+    console.log(`  → Grok Bot: Add this MCP server: ${HOSTED_MCP_URL}`);
+  } catch (err) {
+    console.error(`  ✗ Failed to configure Grok Bot hosted MCP: ${err.message}`);
+  }
+
   // fx (Vercel Labs) — trusted profile only at ~/.fx/mcp.json
   if (fxInstalled()) {
     try {
@@ -1202,6 +1269,12 @@ function removeMcp() {
     restoreGrokMcpOutputCap(grokPath);
   } catch (err) {
     console.error(`  ✗ Failed to remove Grok Build MCP registration: ${err.message}`);
+  }
+
+  try {
+    if (removeGrokBotHostedMcp()) removed.push("Grok Bot");
+  } catch (err) {
+    console.error(`  ✗ Failed to remove Grok Bot hosted MCP: ${err.message}`);
   }
 
   for (const name of agentPlugins.removePluginAgents()) {
@@ -1531,6 +1604,7 @@ const AUTO_MCP_AGENTS = new Set([
   "Hermes",
   "OpenClaw",
   "Grok Build",
+  "Grok Bot",
   "fx",
 ]);
 
@@ -1583,6 +1657,8 @@ const EXTRA_AGENTS = [
   ["Hermes", ["hermes"], [".hermes"]],
   ["OpenClaw", ["openclaw", "claw"], [".openclaw"]],
   ["Grok Build", ["grok"], [".grok"]],
+  // Marker dir under CONFIG_DIR is relative to HOME via detectAll special-case.
+  ["Grok Bot", [], [".supercompress/hosts/grok-bot"]],
   ["fx", ["fx"], [".fx"]],
   ["Trae", ["trae"], [".trae"]],
   ["Antigravity", ["antigravity"], [".antigravity"]],
@@ -1627,6 +1703,12 @@ function buildAgentCatalog() {
       "Grok Build MCP via ~/.grok/config.toml + hooks + ~/.grok/AGENTS.md (auto-configured by setup/plugin)";
     grokHit.autoMcp = true;
   }
+  const grokBotHit = base.find((a) => a.name === "Grok Bot");
+  if (grokBotHit) {
+    grokBotHit.description =
+      `Grok Bot hosted MCP ${HOSTED_MCP_URL} (cloud OAuth — auto-offered by setup/plugin)`;
+    grokBotHit.autoMcp = true;
+  }
   const fxHit = base.find((a) => a.name === "fx");
   if (fxHit) {
     fxHit.description =
@@ -1651,6 +1733,7 @@ function mcpPathMap() {
     ],
     Codex: [path.join(HOME, ".codex", "config.toml")],
     "Grok Build": [path.join(process.env.GROK_HOME || path.join(HOME, ".grok"), "config.toml")],
+    "Grok Bot": [grokBotMcpPath()],
     fx: [path.join(HOME, ".fx", "mcp.json")],
     Hermes: [path.join(HOME, ".hermes", "config.yaml")],
     OpenClaw: [path.join(HOME, ".openclaw", "openclaw.json")],
@@ -1705,6 +1788,7 @@ const INSTALL_CHECKS = {
   Codex: () => commandExists("codex"),
   Zed: () => zedInstalled(),
   "Grok Build": () => grokInstalled(),
+  "Grok Bot": () => grokBotAvailable(),
   fx: () => fxInstalled(),
 };
 
@@ -1815,14 +1899,22 @@ function detectAll() {
       : agent.commands.find((candidate) => commandExists(candidate));
     const installedExtra = agent.name === "Zed"
       ? zedInstalled()
+      : agent.name === "Grok Bot"
+        ? grokBotAvailable()
       : Boolean(directory || command);
     if (installedExtra) {
       found.push({
         name: agent.name,
-        configPath: directory || (agent.name === "Zed" ? path.dirname(resolveZedSettingsPath()) : null),
+        configPath:
+          agent.name === "Grok Bot"
+            ? grokBotHome()
+            : directory || (agent.name === "Zed" ? path.dirname(resolveZedSettingsPath()) : null),
         installed: true,
         autoConfigurable:
-          agent.name === "Zed" || Boolean(agent.autoMcp) || AUTO_MCP_AGENTS.has(agent.name),
+          agent.name === "Zed" ||
+          agent.name === "Grok Bot" ||
+          Boolean(agent.autoMcp) ||
+          AUTO_MCP_AGENTS.has(agent.name),
         description: agent.name === "Zed"
           ? "Zed Agent MCP via settings.json context_servers (auto-configured by setup/plugin)"
           : agent.description,

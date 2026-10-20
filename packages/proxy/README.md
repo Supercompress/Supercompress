@@ -20,7 +20,7 @@ Requires Node.js 18+.
 
 ## Quick start (recommended)
 
-One command links your account and **auto-adds MCP + hooks** across **40+ harnesses** (25+ get a native auto MCP plugin — Cursor, Claude Code, Codex, Goose, Zed, OpenCode, fx, Hermes, OpenClaw, Grok, Gemini, Windsurf, Continue, and more):
+One command links your account and **auto-adds MCP + hooks** across **40+ harnesses** (25+ get a native auto MCP plugin — Cursor, Claude Code, Codex, Goose, Zed, OpenCode, fx, Hermes, OpenClaw, Grok Build, **Grok Bot** (hosted MCP URL), Gemini, Windsurf, Continue, and more):
 
 ```bash
 supercompress setup
