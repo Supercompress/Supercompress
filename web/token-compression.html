@@ -352,12 +352,12 @@ class CompressionCallback(BaseCallbackHandler):
       <section id="supercompress">
         <h2>SuperCompress: Hosted Token Compression</h2>
         <p>
-          <a href="/">SuperCompress</a> is hosted, query-aware token compression. Its hosted Neural Keep model (about 400M parameters) keeps the original lines of your context that answer your question and drops the rest.
+          SuperCompress is hosted, query-aware token compression. SuperCompress's hosted API keeps the original lines of your context that answer your question and drops the rest.
         </p>
         <ul>
           <li><strong>Measure savings:</strong> <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic</li>
           <li><strong>Safety signal:</strong> important context kept and compression risk on every compiler result</li>
-          <li><strong>Hosted model:</strong> the API's default model is Neural Keep (about 400M parameters)</li>
+          <li><strong>Hosted model:</strong> a hosted, query-aware compression API</li>
           <li><strong>Model-agnostic:</strong> Works with OpenAI, Anthropic, local models</li>
           <li><strong>Query-aware:</strong> Scores context against the current question, not just position</li>
           <li><strong>Free allowance:</strong> a monthly allowance on the hosted API</li>
@@ -396,7 +396,7 @@ class CompressionCallback(BaseCallbackHandler):
         <p>Yes. SuperCompress compresses the context you send before the streaming LLM call begins. The compressed text is sent as the prompt, and the response streams back normally.</p>
 
         <h3>Does SuperCompress require a GPU?</h3>
-        <p>No GPU on your side. The API's default model, Neural Keep (about 400M parameters), is hosted, so there is nothing to run on your side.</p>
+        <p>No GPU on your side. Compression runs on the hosted API, so there is nothing to run on your side.</p>
 
         <h3>How much does SuperCompress cost?</h3>
         <p>The hosted API includes a free monthly allowance, then pay-as-you-go. Current plans are shown in the dashboard.</p>
@@ -521,7 +521,7 @@ class CompressionCallback(BaseCallbackHandler):
       "name": "Arjun Shah"
     },
     "datePublished": "2026-06-29",
-    "dateModified": "2026-10-19",
+    "dateModified": "2026-10-20",
     "publisher": {
       "@type": "Organization",
       "name": "SuperCompress"

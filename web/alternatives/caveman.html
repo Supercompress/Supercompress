@@ -34,7 +34,7 @@
   "headline": "Caveman alternative: SuperCompress",
   "description": "Looking for a Caveman alternative? Caveman shortens agent replies and filters tool output locally. SuperCompress keeps only the original input lines that answer the current question, using a hosted model. Fair comparison.",
   "datePublished": "2026-10-17",
-  "dateModified": "2026-10-18",
+  "dateModified": "2026-10-20",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -55,7 +55,7 @@
     "url": "https://www.supercompress.dev/",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "macOS, Linux, Windows",
-    "description": "Hosted query-aware context compression for coding agents and LLM apps. The hosted Neural Keep model (about 400M parameters) keeps the original lines that answer the current question and drops the rest.",
+    "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
     "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
     "sameAs": [
       "https://github.com/Supercompress/Supercompress"
@@ -71,7 +71,7 @@
   "url": "https://www.supercompress.dev/",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS, Linux, Windows",
-  "description": "Hosted query-aware context compression for coding agents and LLM apps. The hosted Neural Keep model (about 400M parameters) keeps the original lines that answer the current question and drops the rest.",
+  "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
   "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
   "sameAs": [
     "https://github.com/Supercompress/Supercompress"
@@ -114,7 +114,7 @@
       "name": "What is the best Caveman alternative?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "If you want to cut what your coding agent reads rather than how it talks, SuperCompress is a strong alternative. It keeps the original input lines that answer the current question using a hosted model of about 400M parameters."
+        "text": "If you want to cut what your coding agent reads rather than how it talks, SuperCompress is a strong alternative. It keeps the original input lines that answer the current question using a hosted, query-aware model."
       }
     },
     {
@@ -199,7 +199,7 @@
     <p>Caveman (Apache-2.0) started as a Claude Code skill that tells the agent to reply in short, caveman-style sentences while leaving code exact. It has grown into a CLI (<code>@caveman-ai/cli</code>) with several parts: shorter replies, a local proxy that shrinks logs, JSON, test output and web pages before the model reads them, and middleware for apps you build. Its local tools run on your machine with your own provider keys. Sources: <a href="https://github.com/JuliusBrussee/caveman">Caveman on GitHub</a>, <a href="https://caveman.so/">caveman.so</a>, <a href="https://docs.caveman.so/caveman">Caveman docs</a>.</p>
     <p>One thing worth knowing: shorter replies cut output tokens, but in long agent sessions most tokens are input, meaning the files, logs and history the model rereads every turn. Caveman's own site says the output style alone is not a large cost saving on long coding tasks, which is why its newer versions also compress input.</p>
     <h2 id="how-supercompress-works">How SuperCompress works</h2>
-    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
+    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
     <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
 
     <h2 id="comparison">Caveman vs SuperCompress</h2>
@@ -207,7 +207,7 @@
       <thead><tr><th></th><th>Caveman</th><th>SuperCompress</th></tr></thead>
       <tbody>
         <tr><td>Main target</td><td>Agent replies (shorter output), plus local shrinking of tool output</td><td>Input context: tool output, file reads, logs, diffs, MCP results, retrieved docs</td></tr>
-        <tr><td>Mechanism</td><td>A response style skill and a local proxy with format-specific reducers</td><td>A hosted model scores each line against the current question and keeps the relevant ones verbatim</td></tr>
+        <tr><td>Mechanism</td><td>A response style skill and a local proxy with format-specific reducers</td><td>A hosted API keeps the original lines that answer the current question, verbatim</td></tr>
         <tr><td>Where it runs</td><td>Locally</td><td>Hosted API</td></tr>
         <tr><td>Changes how the agent talks</td><td>Yes, that is the point of the skill</td><td>No, replies are untouched</td></tr>
         <tr><td>Install</td><td><code>npm i -g @caveman-ai/cli</code>, or the skill alone</td><td><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></td></tr>
@@ -228,7 +228,7 @@
     <p>Building your own app instead? Call the <a href="https://docs.supercompress.dev/api-reference">hosted API</a> with a key from the <a href="/dashboard?signup=1">dashboard</a>.</p>
     <h2 id="faq">FAQ</h2>
     <h3>What is the best Caveman alternative?</h3>
-    <p>If you want to cut what your coding agent reads rather than how it talks, SuperCompress is a strong alternative. It keeps the original input lines that answer the current question using a hosted model of about 400M parameters.</p>
+    <p>If you want to cut what your coding agent reads rather than how it talks, SuperCompress is a strong alternative. It keeps the original input lines that answer the current question using a hosted, query-aware model.</p>
     <h3>What does Caveman do?</h3>
     <p>Caveman is an open-source skill and CLI that makes AI agents reply in fewer words and, in newer versions, shrinks logs, JSON and other tool output locally before the model reads them.</p>
     <h3>Does SuperCompress make the agent talk differently?</h3>

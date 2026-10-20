@@ -540,7 +540,7 @@ For a deeper walkthrough of each approach, read context compression for coding a
 
 #### How SuperCompress works
 
-SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
+SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
 Coding agents reach it through an MCP tool (compress_context) plus hooks that the setup command installs where the agent supports them. Apps reach it through POST /api/v1/compress, which returns the kept text along with original_tokens and kept_tokens so you can see what changed on your own traffic. See the benchmarks page for the published methodology.
 
 #### How to pick fairly
@@ -559,7 +559,7 @@ Headroom is an Apache-2.0 open-source project (installed with pip install "headr
 
 #### How SuperCompress works
 
-SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
+SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
 Coding agents reach it through an MCP tool (compress_context) plus hooks that the setup command installs where the agent supports them. Apps reach it through POST /api/v1/compress, which returns the kept text along with original_tokens and kept_tokens so you can see what changed on your own traffic. See the benchmarks page for the published methodology.
 
 #### Headroom vs SuperCompress
@@ -568,7 +568,7 @@ Coding agents reach it through an MCP tool (compress_context) plus hooks that th
 
 Where compression runs | Locally, on your machine | Hosted API (Neural Keep model) |
 
-How it decides what to keep | Content-type compressors chosen per block (JSON, logs, diffs, HTML and more) | Scores each line against the current question |
+How it decides what to keep | Content-type compressors chosen per block (JSON, logs, diffs, HTML and more) | Keeps the original lines that answer the current question |
 
 Output | Compressed content, with originals retrievable from a local cache | Original lines kept verbatim; nothing is rewritten |
 
@@ -605,7 +605,7 @@ One thing worth knowing: shorter replies cut output tokens, but in long agent se
 
 #### How SuperCompress works
 
-SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
+SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
 Coding agents reach it through an MCP tool (compress_context) plus hooks that the setup command installs where the agent supports them. Apps reach it through POST /api/v1/compress, which returns the kept text along with original_tokens and kept_tokens so you can see what changed on your own traffic. See the benchmarks page for the published methodology.
 
 #### Caveman vs SuperCompress
@@ -614,7 +614,7 @@ Coding agents reach it through an MCP tool (compress_context) plus hooks that th
 
 Main target | Agent replies (shorter output), plus local shrinking of tool output | Input context: tool output, file reads, logs, diffs, MCP results, retrieved docs |
 
-Mechanism | A response style skill and a local proxy with format-specific reducers | A hosted model scores each line against the current question and keeps the relevant ones verbatim |
+Mechanism | A response style skill and a local proxy with format-specific reducers | A hosted API keeps the original lines that answer the current question, verbatim |
 
 Where it runs | Locally | Hosted API |
 
@@ -652,7 +652,7 @@ Caveman Cloud is about seeing and governing agent spend across a team. SuperComp
 
 #### How SuperCompress works
 
-SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
+SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
 Coding agents reach it through an MCP tool (compress_context) plus hooks that the setup command installs where the agent supports them. Apps reach it through POST /api/v1/compress, which returns the kept text along with original_tokens and kept_tokens so you can see what changed on your own traffic. See the benchmarks page for the published methodology.
 
 #### Caveman Cloud vs SuperCompress
@@ -701,7 +701,7 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
 
 #### How SuperCompress works
 
-SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
+SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.
 Coding agents reach it through an MCP tool (compress_context) plus hooks that the setup command installs where the agent supports them. Apps reach it through POST /api/v1/compress, which returns the kept text along with original_tokens and kept_tokens so you can see what changed on your own traffic. See the benchmarks page for the published methodology.
 
 #### Compression vs other cost tools

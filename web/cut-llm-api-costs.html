@@ -34,7 +34,7 @@
   "headline": "How to cut LLM API costs",
   "description": "Practical ways to cut LLM API costs: send fewer input tokens, use prompt caching, trim history, and compress bulky context with SuperCompress, which keeps only the lines that answer the current question.",
   "datePublished": "2026-10-17",
-  "dateModified": "2026-10-18",
+  "dateModified": "2026-10-20",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -55,7 +55,7 @@
     "url": "https://www.supercompress.dev/",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "macOS, Linux, Windows",
-    "description": "Hosted query-aware context compression for coding agents and LLM apps. The hosted Neural Keep model (about 400M parameters) keeps the original lines that answer the current question and drops the rest.",
+    "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
     "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
     "sameAs": [
       "https://github.com/Supercompress/Supercompress"
@@ -71,7 +71,7 @@
   "url": "https://www.supercompress.dev/",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS, Linux, Windows",
-  "description": "Hosted query-aware context compression for coding agents and LLM apps. The hosted Neural Keep model (about 400M parameters) keeps the original lines that answer the current question and drops the rest.",
+  "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
   "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
   "sameAs": [
     "https://github.com/Supercompress/Supercompress"
@@ -204,7 +204,7 @@
   -H "Content-Type: application/json" \
   -d '{"context":"&lt;large context&gt;","query":"&lt;the user question&gt;"}'</code></pre>
     <h2 id="how-supercompress-works">How SuperCompress works</h2>
-    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted Neural Keep model, a model of roughly 400M parameters, scores each line against that question, keeps the original lines that answer it word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
+    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
     <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
 
     <h2 id="compare">Compression vs other cost tools</h2>
