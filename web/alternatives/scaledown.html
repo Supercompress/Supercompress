@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>ScaleDown Alternative: Line-Level Verbatim Extraction | SuperCompress</title>
+  <meta name="description" content="Looking for a ScaleDown alternative? ScaleDown is a hosted, query-aware Compress API. SuperCompress is also hosted and query-aware, but extractive at the line level: it returns original lines verbatim and never rewrites. Fair comparison." />
+  <meta name="keywords" content="scaledown alternative, scaledown alternatives, scaledown vs supercompress, scaledown vs, langchain scaledown alternative" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="ScaleDown alternative: SuperCompress" />
+  <meta property="og:description" content="Looking for a ScaleDown alternative? ScaleDown is a hosted, query-aware Compress API. SuperCompress is also hosted and query-aware, but extractive at the line level: it returns original lines verbatim and never rewrites. Fair comparison." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/alternatives/scaledown" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ScaleDown alternative: SuperCompress" />
+  <meta name="twitter:description" content="Looking for a ScaleDown alternative? ScaleDown is a hosted, query-aware Compress API. SuperCompress is also hosted and query-aware, but extractive at the line level: it returns original lines verbatim and never rewrites. Fair comparison." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/alternatives/scaledown" />
+  <meta property="article:published_time" content="2026-10-21T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-21" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ScaleDown alternative: SuperCompress",
+  "description": "Looking for a ScaleDown alternative? ScaleDown is a hosted, query-aware Compress API. SuperCompress is also hosted and query-aware, but extractive at the line level: it returns original lines verbatim and never rewrites. Fair comparison.",
+  "datePublished": "2026-10-21",
+  "dateModified": "2026-10-21",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/alternatives/scaledown"
+  },
+  "about": {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Linux, Windows",
+    "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
+    "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
+    "sameAs": [
+      "https://github.com/Supercompress/Supercompress"
+    ]
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SuperCompress",
+  "url": "https://www.supercompress.dev/",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Linux, Windows",
+  "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
+  "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
+  "sameAs": [
+    "https://github.com/Supercompress/Supercompress"
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Alternatives",
+      "item": "https://www.supercompress.dev/alternatives"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "ScaleDown alternative",
+      "item": "https://www.supercompress.dev/alternatives/scaledown"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is ScaleDown extractive?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ScaleDown's engineering post describes an extractive model that scores tokens and returns the top-scoring sentences. Its Compress docs describe the output as a semantically equivalent version that is lossless in intent. Check a sample against your input if you need a verbatim subset."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress change my code or error messages?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. SuperCompress returns original lines copied verbatim from the input and drops the rest. It never rewrites or summarizes, so code, paths and error text stay as they were."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I use SuperCompress with MCP tool output?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The setup command wires the compress_context MCP tool and hooks for detected coding agents, so bulky tool results can be compressed against the current question before the model reads them."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When is ScaleDown the better fit?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ScaleDown is a reasonable choice if you build on LangChain or Deep Agents, your context is mostly prose such as RAG documents or chat history, or you also want Summarize, Extract and Classify from one vendor."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When is SuperCompress the better fit?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "SuperCompress is the better fit for coding-agent tool output (logs, stack traces, diffs, file reads, JSON lines, shell output) where line granularity and verbatim kept text matter."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Alternatives · Updated 2026-10-21</p>
+  <h1>ScaleDown alternative: SuperCompress</h1>
+  <p class="seo-byline">By Arjun Shah</p>
+  <p class="seo-lead">ScaleDown is a hosted, query-aware Compress API: you send context plus a prompt and get a shorter context back. SuperCompress is also hosted and query-aware, but it is extractive at the line level. It returns original lines copied verbatim from the input and drops the rest. It never rewrites. If your context is coding-agent tool output (logs, stack traces, diffs, file reads, shell output) where the unit that matters is a line, SuperCompress is the alternative to try.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/alternatives">All alternatives</a>
+    <a href="/alternatives/headroom">Headroom alternative</a>
+    <a href="/alternatives/caveman">Caveman alternative</a>
+    <a href="/alternatives/scaledown" aria-current="page">ScaleDown alternative</a>
+    <a href="/cut-llm-api-costs">Cut LLM API costs</a>
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+  <div class="article-prose">
+    <h2 id="what-is-scaledown">What is ScaleDown?</h2>
+    <p>ScaleDown publishes a hosted Compress endpoint, <code>POST /compress/raw/</code>, that takes supporting <code>context</code> plus a <code>prompt</code> and returns a compressed context. Its docs say compression is applied mainly to <code>context</code>, and that the <code>prompt</code> (the question or instruction) is kept intact. Compress is one of a set of task models: Summarize, Compress, Extract and Classify. Sources: <a href="https://docs.scaledown.ai/api-reference/compress-overview" rel="noopener" target="_blank">ScaleDown Compress overview</a>, <a href="https://www.langchain.com/blog/building-long-running-agents-with-scaledown-and-deep-agents" rel="noopener" target="_blank">LangChain on ScaleDown and Deep Agents</a>.</p>
+    <p>The same vendor ships <a href="https://pypi.org/project/langchain-scaledown/" rel="noopener" target="_blank">langchain-scaledown</a>, a LangChain and Deep Agents package. Its <code>ScaledownToolCompressionMiddleware</code> adds an optional <code>compression_query</code> on a tool call. When the model fills that in, the tool result is compressed before the model sees it. Compress is also listed in LiteLLM as <code>scaledown/compress</code> (<a href="https://models.litellm.ai/models/compress" rel="noopener" target="_blank">LiteLLM Compress listing</a>).</p>
+
+    <h2 id="how-scaledown-keeps">How does ScaleDown decide what to keep?</h2>
+    <p>ScaleDown describes the Compress output in two ways, both quoted here with attribution.</p>
+    <p>The <a href="https://docs.scaledown.ai/api-reference/compress-overview" rel="noopener" target="_blank">Compress overview</a> calls the result "a semantically equivalent version" of the input and says the compression is "lossless in intent": the downstream model is meant to receive the same information, expressed more efficiently.</p>
+    <p>A ScaleDown engineering post, <a href="https://tinyml.substack.com/p/how-we-train-small-language-models" rel="noopener" target="_blank">How We Train SLMs for Context Compression</a>, describes an extractive model that does not generate text. In that post, the model scores tokens, aggregates those scores to sentence-level relevance, and returns the top-scoring sentences as the compressed output. The post's takeaway is that the model selects sentences and does not rewrite them.</p>
+    <p>Those are ScaleDown's own descriptions. This page does not claim that ScaleDown rewrites, paraphrases or invents text. If you need the returned text to be a verbatim subset of your input, send a sample through Compress and diff the kept text against the original.</p>
+
+    <h2 id="how-supercompress-differs">How does SuperCompress differ?</h2>
+    <p>SuperCompress is hosted, query-aware and extractive at the line level. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted model keeps original lines copied verbatim from the input and drops the rest. It never rewrites or summarizes. Error messages, file paths, identifiers and code come through exactly as they were.</p>
+    <p>Line granularity matters for coding-agent context. Stack traces, log lines, diffs, file reads, JSON lines and shell output often have no sentence structure. A sentence is the wrong unit when a traceback, a unified diff hunk or a JSON object is split across lines, or when one physical line is the whole record. The model also needs to quote exact paths, identifiers and error text when it writes a patch.</p>
+    <p><a href="https://arxiv.org/abs/2610.21073" rel="noopener" target="_blank">Skip the Compressor (arXiv 2610.21073)</a> found that compressors that alter text make fewer patches apply, because an edit has to quote the code it changes. That study did not test SuperCompress or ScaleDown. It is cited only for the point that verbatim text matters for edits.</p>
+
+    <h2 id="where-they-plug-in">Where does each one plug in?</h2>
+    <table>
+      <thead><tr><th></th><th>ScaleDown</th><th>SuperCompress</th></tr></thead>
+      <tbody>
+        <tr><td>What you send</td><td><code>context</code> plus <code>prompt</code> to <code>POST /compress/raw/</code></td><td>Context plus the current question to <code>POST /api/v1/compress</code></td></tr>
+        <tr><td>How it describes keep</td><td>Docs: semantically equivalent, lossless in intent. Engineering post: extractive top-sentence selection</td><td>Original lines copied verbatim from the input; the rest dropped</td></tr>
+        <tr><td>Granularity</td><td>Sentence-level in the engineering post</td><td>Line-level</td></tr>
+        <tr><td>Where it runs</td><td>Hosted API</td><td>Hosted API</td></tr>
+        <tr><td>How you connect</td><td>HTTP API, LangChain / Deep Agents middleware, LiteLLM</td><td><code>supercompress setup</code> (MCP tool and hooks for detected agents), HTTP API</td></tr>
+      </tbody>
+    </table>
+    <p>ScaleDown plugs in as an HTTP API, as LangChain and Deep Agents middleware (including <code>ScaledownToolCompressionMiddleware</code>), and as the LiteLLM model <code>scaledown/compress</code>.</p>
+    <p>SuperCompress plugs into coding agents through <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>, which wires the <code>compress_context</code> MCP tool and hooks for detected agents (Claude Code, Cursor, Codex, Windsurf, Cline, Gemini CLI, OpenCode and more). Apps call <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code>.</p>
+
+    <h2 id="when-scaledown">When is ScaleDown the right choice?</h2>
+    <p>ScaleDown is a reasonable choice if you already build on LangChain or Deep Agents and want tool-result compression as middleware, if your context is mostly prose (RAG documents, chat history, long articles), or if you also want Summarize, Extract and Classify from one vendor. Those jobs sit next to Compress in ScaleDown's own model set.</p>
+
+    <h2 id="when-supercompress">When is SuperCompress the right choice?</h2>
+    <p>SuperCompress is the better fit when the context is coding-agent tool output: logs, stack traces, diffs, file reads, JSON lines and shell output. In those traces the unit that matters is a line, and the kept text needs to be a verbatim copy of the original so the model can quote paths, identifiers and error messages.</p>
+
+    <h2 id="compare-fairly">How do you compare them fairly?</h2>
+    <p>Run the same real trace through both tools. Diff the kept text against the original so you can see what each one returned. Measure end-to-end cost per solved task, not token counts alone.</p>
+    <p><a href="https://arxiv.org/abs/2609.32961" rel="noopener" target="_blank">Beyond Token Savings (arXiv 2609.32961)</a> found that fewer tokens do not always mean cheaper or faster runs. The <a href="https://github.com/daseinlabs/code-compression-bench" rel="noopener" target="_blank">daseinlabs/code-compression-bench</a> ranks compressors by cost per solved task. Neither study tested SuperCompress or ScaleDown.</p>
+
+    <p>See also: <a href="/alternatives">all alternatives</a>, <a href="/alternatives/headroom">Headroom alternative</a>, <a href="/alternatives/caveman">Caveman alternative</a>, <a href="/context-compression-tools-compared">context compression tools compared</a>.</p>
+
+    <h2 id="sources">Sources</h2>
+    <ul>
+      <li><a href="https://docs.scaledown.ai/api-reference/compress-overview" rel="noopener" target="_blank">ScaleDown Compress overview</a></li>
+      <li><a href="https://www.langchain.com/blog/building-long-running-agents-with-scaledown-and-deep-agents" rel="noopener" target="_blank">Building long-running agents with ScaleDown and Deep Agents</a> (LangChain)</li>
+      <li><a href="https://tinyml.substack.com/p/how-we-train-small-language-models" rel="noopener" target="_blank">How We Train SLMs for Context Compression</a> (ScaleDown engineering post)</li>
+      <li><a href="https://pypi.org/project/langchain-scaledown/" rel="noopener" target="_blank">langchain-scaledown on PyPI</a></li>
+      <li><a href="https://models.litellm.ai/models/compress" rel="noopener" target="_blank">LiteLLM Compress listing</a></li>
+      <li><a href="https://arxiv.org/abs/2610.21073" rel="noopener" target="_blank">Skip the Compressor (arXiv 2610.21073)</a></li>
+      <li><a href="https://arxiv.org/abs/2609.32961" rel="noopener" target="_blank">Beyond Token Savings (arXiv 2609.32961)</a></li>
+      <li><a href="https://github.com/daseinlabs/code-compression-bench" rel="noopener" target="_blank">daseinlabs/code-compression-bench</a></li>
+    </ul>
+
+    <h2 id="install">Try it</h2>
+    <p>One command installs the CLI and wires the hosted compressor into every coding agent it finds on your machine (Claude Code, Cursor, Codex, Windsurf, Cline, Gemini CLI, OpenCode and more). Then <code>supercompress doctor</code> shows a health check per agent.</p>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <p>Building your own app instead? Call the <a href="https://docs.supercompress.dev/api-reference">hosted API</a> with a key from the <a href="/dashboard?signup=1">dashboard</a>.</p>
+    <h2 id="faq">FAQ</h2>
+    <h3>Is ScaleDown extractive?</h3>
+    <p>ScaleDown's engineering post describes an extractive model that scores tokens and returns the top-scoring sentences. Its Compress docs describe the output as a semantically equivalent version that is lossless in intent. Check a sample against your input if you need a verbatim subset.</p>
+    <h3>Does SuperCompress change my code or error messages?</h3>
+    <p>No. SuperCompress returns original lines copied verbatim from the input and drops the rest. It never rewrites or summarizes, so code, paths and error text stay as they were.</p>
+    <h3>Can I use SuperCompress with MCP tool output?</h3>
+    <p>Yes. The setup command wires the <code>compress_context</code> MCP tool and hooks for detected coding agents, so bulky tool results can be compressed against the current question before the model reads them.</p>
+    <h3>When is ScaleDown the better fit?</h3>
+    <p>ScaleDown is a reasonable choice if you build on LangChain or Deep Agents, your context is mostly prose such as RAG documents or chat history, or you also want Summarize, Extract and Classify from one vendor.</p>
+    <h3>When is SuperCompress the better fit?</h3>
+    <p>SuperCompress is the better fit for coding-agent tool output (logs, stack traces, diffs, file reads, JSON lines, shell output) where line granularity and verbatim kept text matter.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

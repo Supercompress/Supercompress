@@ -2,7 +2,7 @@
   "name": "SuperCompress",
   "url": "https://www.supercompress.dev/",
   "canonical_entity_url": "https://supercompress.dev/",
-  "last_updated": "2026-10-20",
+  "last_updated": "2026-10-21",
   "repository": "https://github.com/Supercompress/Supercompress",
   "package": "https://pypi.org/project/supercompress/",
   "license": "MIT",
@@ -142,6 +142,9 @@
     "caveman alternative",
     "caveman alternatives",
     "caveman cloud alternative",
+    "scaledown alternative",
+    "scaledown vs",
+    "scaledown vs supercompress",
     "cut LLM API costs",
     "reduce Claude Code token costs",
     "context compression for coding agents",
@@ -197,6 +200,7 @@
     "versus_headroom": "Headroom compresses locally with content-type compressors. SuperCompress uses a hosted Neural Keep model to keep the original lines that answer the current question. https://www.supercompress.dev/alternatives/headroom",
     "versus_rtk": "RTK filters shell and terminal output. SuperCompress compresses any bulky tool result, file read or document against the current question. They can be combined. https://www.supercompress.dev/supercompress-vs-rtk",
     "versus_caveman": "Caveman shortens agent replies and shrinks some tool output locally. SuperCompress compresses input context with a hosted model and leaves replies unchanged. https://www.supercompress.dev/alternatives/caveman",
+    "versus_scaledown": "ScaleDown is a hosted, query-aware Compress API. SuperCompress is also hosted and query-aware, but extractive at the line level: it returns original lines verbatim and never rewrites. https://www.supercompress.dev/alternatives/scaledown",
     "versus_llmlingua": "LLMLingua is research-style perplexity token pruning; SuperCompress is query-aware evidence selection with a hosted API and MCP for coding agents.",
     "versus_leancontext": "LeanContext is academic RAG reduction; SuperCompress is a shipping compress product for APIs and coding agents.",
     "versus_cohere_rerank": "Cohere Rerank / FlashRank reorder retrieved documents; SuperCompress compresses the bulky parts of the prompt (history, tool output, retrieved documents) against the current question.",
@@ -335,6 +339,10 @@
       "url": "https://www.supercompress.dev/alternatives/caveman-cloud"
     },
     {
+      "name": "ScaleDown alternative",
+      "url": "https://www.supercompress.dev/alternatives/scaledown"
+    },
+    {
       "name": "Cut LLM API costs",
       "url": "https://www.supercompress.dev/cut-llm-api-costs"
     },
@@ -463,6 +471,11 @@
       "name": "Caveman",
       "what": "Open-source skill and CLI that shortens agent replies and shrinks some tool output locally.",
       "comparison": "https://www.supercompress.dev/alternatives/caveman"
+    },
+    {
+      "name": "ScaleDown",
+      "what": "Hosted, query-aware Compress API. Docs call the output a semantically equivalent version that is lossless in intent; an engineering post describes extractive top-sentence selection.",
+      "comparison": "https://www.supercompress.dev/alternatives/scaledown"
     },
     {
       "name": "RTK",

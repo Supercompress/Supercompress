@@ -20,7 +20,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/alternatives/headroom</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -116,7 +116,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/context-compression</loc>
-    <lastmod>2026-10-19</lastmod>
+    <lastmod>2026-10-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -164,7 +164,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/mcp-tool-output-compression</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -278,7 +278,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/alternatives</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -392,13 +392,19 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/alternatives/caveman</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.supercompress.dev/alternatives/caveman-cloud</loc>
     <lastmod>2026-10-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/alternatives/scaledown</loc>
+    <lastmod>2026-10-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -458,7 +464,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/context-compression-tools-compared</loc>
-    <lastmod>2026-10-19</lastmod>
+    <lastmod>2026-10-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
