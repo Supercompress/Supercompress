@@ -13,6 +13,8 @@ const {
   persistSubscription,
 } = require("./_lib/credit-topup");
 
+const { recordPayment } = require("./_lib/billing-funnel");
+
 module.exports.config = { api: { bodyParser: false } };
 
 /** Stripe events are small; refuse anything larger before concat. */
@@ -70,7 +72,8 @@ module.exports = async (req, res) => {
         const session = event.data.object;
         const kind = session.metadata?.kind || "";
         if (kind.startsWith("credit_")) {
-          await applyCreditTopUp(session);
+          const credited = await applyCreditTopUp(session);
+          if (credited.applied) await recordPayment(session, event.created);
           break;
         }
 
@@ -151,7 +154,10 @@ module.exports = async (req, res) => {
         // Auto-recharge credits balance when charged off-session (idempotent via PI id in credited list)
         const pi = event.data.object;
         if (pi.metadata?.kind === "credit_auto_recharge" && pi.metadata?.user_id) {
-          if (pi.metadata?.sc_credited === "true") break;
+          if (pi.metadata?.sc_credited === "true") {
+            await recordPayment({ ...pi, payment_status: "paid", amount_total: pi.amount }, event.created);
+            break;
+          }
           const fakeSession = {
             id: `pi_${pi.id}`,
             metadata: {
@@ -166,7 +172,8 @@ module.exports = async (req, res) => {
             payment_intent: pi.id,
             amount_total: pi.amount,
           };
-          await applyCreditTopUp(fakeSession);
+          const credited = await applyCreditTopUp(fakeSession);
+          if (credited.applied) await recordPayment(fakeSession, event.created);
         }
         break;
       }

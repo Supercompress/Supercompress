@@ -40,6 +40,8 @@ const {
 const { loadStore, mutateStore } = require("./_lib/store");
 
 const BASE_URL = "https://www.supercompress.dev";
+const { record: recordBillingStage, read: readBillingStage } = require("./_lib/billing-funnel");
+const { billingAccess } = require("./_lib/billing-access");
 
 async function loadStoreOrEmpty() {
   try {
@@ -255,6 +257,10 @@ async function handleGet(req, res, user) {
     auto_recharge: sub?.auto_recharge,
     customer_id: claims.sc_customer_id || sub?.stripe_customer_id,
   });
+  const access = billingAccess({
+    freeRemaining, creditBalance, comped: isComped(claims), legacyMetered,
+    blockedThisMonth: await readBillingStage(user.uid, "quota_blocked"),
+  });
 
   return json(res, 200, {
     plan: plan.id,
@@ -293,13 +299,13 @@ async function handleGet(req, res, user) {
     default_credit_limit_usd: DEFAULT_CREDIT_LIMIT_USD,
     min_credit_limit_usd: MIN_CREDIT_LIMIT_USD,
     max_credit_limit_usd: MAX_CREDIT_LIMIT_USD,
-    limit_reached: !payg && !isComped(claims) && !legacyMetered && freeRemaining === 0 && !(creditBalance > 0),
+    ...access,
     upgrade_url: "https://www.supercompress.dev/dashboard#billing",
     paywall:
-      !payg && !isComped(claims) && !legacyMetered && freeRemaining === 0 && !(creditBalance > 0)
+      access.limit_reached
         ? {
-            title: "Compression paused — free allowance used",
-            detail: "You've hit your free 5M tokens this month. Add a payment method to unlock.",
+            title: "Compression paused — allowance or credits used",
+            detail: "Your free allowance is used and no prepaid credits remain. Add credits to continue.",
             cta: "Unlock compression",
             price: "$0.10 / 1M tokens after free",
           }
@@ -377,6 +383,8 @@ async function startCreditCheckout(req, res, user, body, existingSub, stripeBill
     kind,
   });
 
+  await recordBillingStage(user.uid, "checkout_created");
+
   return json(res, 200, {
     url: session.url,
     session_id: session.id,
@@ -388,6 +396,10 @@ async function startCreditCheckout(req, res, user, body, existingSub, stripeBill
 /* ── POST: create checkout or portal session ── */
 async function handlePost(req, res, user) {
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  if (body.action === "billing_opened") {
+    const recorded = await recordBillingStage(user.uid, "billing_opened");
+    return json(res, 200, { ok: true, recorded });
+  }
   const store = await loadStoreOrEmpty();
   const storedSub = store.subscriptions?.[user.uid];
   let stripeBilling = { customer: null, subscription: null };
@@ -573,8 +585,8 @@ module.exports = async (req, res) => {
   try {
     const user = await verifyUser(req);
 
-    if (req.method === "GET") return handleGet(req, res, user);
-    if (req.method === "POST") return handlePost(req, res, user);
+    if (req.method === "GET") return await handleGet(req, res, user);
+    if (req.method === "POST") return await handlePost(req, res, user);
 
     return json(res, 405, { detail: "Method not allowed", allow: "GET, POST" });
   } catch (err) {

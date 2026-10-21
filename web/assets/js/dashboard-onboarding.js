@@ -3,6 +3,8 @@
  * Skippable; dither branding; 10,000 free tokens per quest.
  */
 
+import { dashboardPanel, dashboardDestination } from "./dashboard-navigation.js?v=1";
+
 const HEARD = [
   { id: "x", label: "X" },
   { id: "reddit", label: "Reddit" },
@@ -150,7 +152,7 @@ export function createOnboardingController({
       onComplete();
       return;
     }
-    window.location.replace("/dashboard");
+    window.location.replace(dashboardDestination(window.location));
   }
 
   function open() {
@@ -617,6 +619,8 @@ export function createOnboardingController({
 
     // Full-page onboarding — leave dashboard before content paints.
     const q = new URLSearchParams();
+    const panel = dashboardPanel(window.location);
+    if (panel) q.set("panel", panel);
     if (forceNew) q.set("new", "1");
     if (forceOnboardQa) q.set("onboard", "1");
     const qs = q.toString();

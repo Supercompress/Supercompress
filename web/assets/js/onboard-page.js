@@ -8,7 +8,8 @@ import {
   setPersistence,
   browserLocalPersistence,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import { createOnboardingController } from "./dashboard-onboarding.js?v=4";
+import { createOnboardingController } from "./dashboard-onboarding.js?v=6";
+import { dashboardDestination } from "./dashboard-navigation.js?v=1";
 
 const API_BASE = window.SC_API_BASE || "";
 
@@ -57,7 +58,7 @@ const onboarding = createOnboardingController({
   variant: "page",
   mountSelector: "#sc-onboard-mount",
   onComplete: () => {
-    window.location.replace("/dashboard");
+    window.location.replace(dashboardDestination(window.location));
   },
 });
 
@@ -74,7 +75,7 @@ async function start() {
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.location.replace("/dashboard?login=1");
+      window.location.replace(dashboardDestination(window.location, true));
       return;
     }
     try {

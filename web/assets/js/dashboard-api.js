@@ -16,7 +16,8 @@ import {
   browserLocalPersistence,
   getAdditionalUserInfo,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import { createOnboardingController } from "./dashboard-onboarding.js?v=4";
+import { createOnboardingController } from "./dashboard-onboarding.js?v=6";
+import { dashboardPanel, dashboardPanelUrl } from "./dashboard-navigation.js?v=1";
 
 const API_BASE = window.SC_API_BASE || "";
 const SESSION_KEY = "sc_dash_session";
@@ -880,7 +881,7 @@ async function showDashboard(user, { isNewUser = false } = {}) {
   } catch (_) {}
   // Deep-link: /dashboard?panel=analytics (and friends)
   try {
-    const panel = (new URLSearchParams(window.location.search).get("panel") || "").trim().toLowerCase();
+    const panel = dashboardPanel(window.location);
     if (panel && panel !== "keys") openDashboardPanel(panel, { updateUrl: false });
   } catch (_) {}
   if (celebrateAfter) {
@@ -1159,7 +1160,7 @@ function renderPaygNudge(sub) {
   const banner = $("dash-payg-banner");
   if (!banner) return;
   const payg = !!(sub?.payg_enabled || sub?.unlimited || (sub?.plan && sub.plan !== "free"));
-  const limitHit = !!(sub?.limit_reached || sub?.paywall || (sub?.free_tokens_remaining === 0 && !payg))
+  const limitHit = !!(sub?.limit_reached || sub?.paywall || sub?.request_blocked_this_month || (sub?.free_tokens_remaining === 0 && !payg))
     && !(Number(sub?.credit_balance_usd) > 0);
 
   if (payg && !limitHit) {
@@ -1180,10 +1181,12 @@ function renderPaygNudge(sub) {
 
   if (limitHit) {
     tone = "dash-payg-banner--blocked";
-    title = "Compression paused — free 5M used";
+    title = sub.request_blocked_this_month && !sub.limit_reached
+      ? "A request exceeded your allowance"
+      : "Compression paused — allowance or credits used";
     copy =
-      `You've hit your free ${formatNum(freeCap)} tokens this month (${formatNum(used)} used). ` +
-      `Add credits to unlock again — $0.10 per 1M tokens after free.`;
+      `${formatNum(sub.free_tokens_remaining || 0)} free tokens remaining this month. ` +
+      `Add credits to fit larger requests — $0.10 per 1M tokens after free.`;
     cta = "Add credits";
   } else if (pct >= 80) {
     tone = "dash-payg-banner--urgent";
@@ -1307,18 +1310,22 @@ function renderSubscription(sub) {
   const payg = !!(sub.payg_enabled || sub.unlimited || (sub.plan && sub.plan !== "free"));
   const creditWallet = !!(sub.credit_wallet || (payg && sub.credit_balance_usd != null));
   const creditBalance = Number(sub.credit_balance_usd);
-  const hasCreditBalance = Number.isFinite(creditBalance);
+  const hasCreditBalance = sub.credit_balance_usd != null && Number.isFinite(creditBalance);
   // Prepaid balance left means compress still works past the free allowance — not paused.
-  const limitHit = !!(sub.limit_reached || sub.paywall) && !payg && !(hasCreditBalance && creditBalance > 0);
+  const limitHit = !!(sub.limit_reached || sub.paywall || sub.request_blocked_this_month) && !(hasCreditBalance && creditBalance > 0);
   const overageUsd = Number(sub.estimated_overage_usd || 0);
   const billable = sub.billable_tokens || Math.max(0, used - freeCap);
 
-  const title = payg || creditWallet
+  const title = limitHit
+    ? "Add credits to continue"
+    : payg || creditWallet
     ? "Pay as you go"
     : limitHit
       ? "Paused — free allowance used"
       : "Free allowance";
-  const badge = payg || creditWallet
+  const badge = limitHit
+    ? "ADD CREDITS"
+    : payg || creditWallet
     ? (sub.cancel_at_period_end ? "cancels at period end" : (sub.status || "active"))
     : limitHit
       ? "LOCKED"
@@ -1328,8 +1335,8 @@ function renderSubscription(sub) {
     ${limitHit ? `
       <div class="dash-paywall-lock" role="alert">
         <div class="dash-paywall-lock-kicker">Paywall</div>
-        <h2>Compression is paused</h2>
-        <p>You used your free <strong>${formatNum(freeCap)}</strong> tokens this month (<strong>${formatNum(used)}</strong> in). Add credits to unlock — <strong>$0.10 / 1M</strong> after free.</p>
+        <h2>${sub.limit_reached ? "Allowance or credits used" : "A request exceeded your remaining allowance"}</h2>
+        <p><strong>${formatNum(sub.free_tokens_remaining || 0)}</strong> free tokens remaining this month. Add credits for larger requests — <strong>$0.10 / 1M</strong> after free.</p>
         <button type="button" class="btn-brand dash-paywall-lock-cta" id="btn-paywall-unlock">Add credits</button>
       </div>
     ` : ""}
@@ -2136,6 +2143,7 @@ async function createKey() {
 }
 
 function openDashboardPanel(panel, { updateUrl = true } = {}) {
+  if (!["keys", "agents", "analytics", "billing"].includes(panel)) return false;
   const btn = document.querySelector(`.dash-topnav-item[data-panel="${panel}"]`);
   if (!btn) return false;
   document.querySelectorAll(".dash-topnav-item[data-panel]").forEach((b) => b.classList.remove("active"));
@@ -2145,6 +2153,7 @@ function openDashboardPanel(panel, { updateUrl = true } = {}) {
   if (panelEl) panelEl.classList.remove("hidden");
 
   if (panel === "billing") {
+    apiFetch("/api/billing", { method: "POST", body: JSON.stringify({ action: "billing_opened" }) }).catch(() => {});
     loadSubscription();
     const track = document.querySelector("#panel-billing .dash-billing-usage-track");
     if (track) paintBillingUsageMeter(track);
@@ -2167,16 +2176,18 @@ function openDashboardPanel(panel, { updateUrl = true } = {}) {
   }
 
   if (updateUrl && window.history?.replaceState) {
-    const url = new URL(window.location.href);
-    if (panel === "keys") url.searchParams.delete("panel");
-    else url.searchParams.set("panel", panel);
-    const next = `${url.pathname}${url.search}${url.hash}`;
+    const next = dashboardPanelUrl(window.location.href, panel);
     window.history.replaceState({}, "", next || "/dashboard");
   }
   return true;
 }
 
 function initPanels() {
+  window.addEventListener("hashchange", () => {
+    if (!currentUser) return;
+    const panel = dashboardPanel({ search: "", hash: window.location.hash });
+    if (panel) openDashboardPanel(panel);
+  });
   document.querySelectorAll(".dash-topnav-item[data-panel]").forEach((btn) => {
     btn.addEventListener("click", () => {
       openDashboardPanel(btn.dataset.panel);

@@ -194,9 +194,10 @@ async function handleToolCall(name, args, apiKey) {
     });
     if (response.status === 402 || body.paywall) {
       return toolError(
-        body.detail ||
+        (body.detail ||
           body.notice ||
-          "PAYWALL: Free quota used. Add credits at https://www.supercompress.dev/dashboard#billing"
+          "Compression paused: free allowance or credits used.") +
+          `\nOpen ${body.checkout_url || body.upgrade_url || `${SITE}/dashboard#billing`} to add credits or complete payment, then retry compress_context.`
       );
     }
     if (!response.ok) {

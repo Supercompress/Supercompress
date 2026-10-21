@@ -4,6 +4,7 @@
 const { json } = require("./_lib/http");
 const { verifyUser, initFirebaseAdmin } = require("./_lib/auth");
 const { isFounderUser } = require("./_lib/founder");
+const { summarizeFunnel } = require("./_lib/billing-funnel");
 const {
   monthKey,
   isHumanUser,
@@ -25,16 +26,18 @@ async function scanAuthRows(month) {
     throw err;
   }
   const rows = [];
+  const funnelUsers = [];
   let pageToken;
   do {
     const page = await admin.auth().listUsers(1000, pageToken);
     for (const user of page.users) {
+      if (user.uid.startsWith("sc_fnl_")) funnelUsers.push(user);
       if (!isHumanUser(user)) continue;
       rows.push(rowFromUser(user, month));
     }
     pageToken = page.pageToken;
   } while (pageToken);
-  return rows;
+  return { rows, funnel: summarizeFunnel(funnelUsers, month) };
 }
 
 module.exports = async (req, res) => {
@@ -52,7 +55,7 @@ module.exports = async (req, res) => {
     }
 
     const month = monthKey();
-    const rows = await scanAuthRows(month);
+    const { rows, funnel } = await scanAuthRows(month);
     const summary = summarizeRows(rows, month);
 
     let byDay = mergeRowDays(rows);
@@ -66,6 +69,7 @@ module.exports = async (req, res) => {
     const payload = {
       ok: true,
       ...summary,
+      funnel,
       by_day: byDay,
       analytics: analyticsBundle({
         totals: summary.totals,

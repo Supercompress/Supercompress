@@ -20,6 +20,7 @@ const {
   roundUsd,
 } = require("../_lib/stripe");
 const crypto = require("crypto");
+const { record: recordBillingStage } = require("../_lib/billing-funnel");
 const {
   sanitizeRequestId,
   computeCompressFingerprint,
@@ -260,6 +261,7 @@ module.exports = async (req, res) => {
   let requestId = null;
   let leaseHeld = false;
   let leaseOwnerUid = null;
+  let billingOwnerUid = null;
 
   try {
     const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization);
@@ -355,6 +357,7 @@ module.exports = async (req, res) => {
     }
 
     const authenticated = await withTimeout(authenticateKey(raw), 8000, "authenticate");
+    billingOwnerUid = authenticated.ownerUid;
 
     // Single-flight lease BEFORE compress so concurrent identical Idempotency-Keys
     // cannot run the engine N times. Completed rows replay; in-flight returns 409.
@@ -638,6 +641,9 @@ module.exports = async (req, res) => {
     res.setHeader("Idempotency-Key", requestId);
     return jsonWithRateLimit(res, 200, responseBody, rl);
   } catch (err) {
+    if (billingOwnerUid && (err.paywall || err.status === 402)) {
+      await recordBillingStage(billingOwnerUid, "quota_blocked");
+    }
     if (leaseHeld && leaseOwnerUid && requestId) {
       try {
         await releaseIdempotencyLease(leaseOwnerUid, requestId);
@@ -653,6 +659,7 @@ module.exports = async (req, res) => {
     if (err.paywall && err.payload) {
       return json(res, status, {
         ...err.payload,
+        upgrade_url: err.payload.checkout_url || err.payload.upgrade_url || "https://www.supercompress.dev/dashboard#billing",
         detail: err.payload.detail || err.message || String(err),
         ...(requestId ? { request_id: requestId } : {}),
       }, idHeaders);
@@ -660,7 +667,11 @@ module.exports = async (req, res) => {
     return json(res, status, {
       detail: err.message || String(err),
       ...(err.code ? { code: err.code } : {}),
-      ...(err.paywall ? { paywall: true } : {}),
+      ...(err.paywall || status === 402 ? {
+        paywall: true,
+        upgrade_url: "https://www.supercompress.dev/dashboard#billing",
+        action: "open_billing",
+      } : {}),
       ...(requestId ? { request_id: requestId } : {}),
     }, idHeaders);
   }

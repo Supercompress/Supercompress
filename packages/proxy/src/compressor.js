@@ -12,6 +12,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
+const { paywallError } = require("./paywall");
 
 const SUPERCOMPRESS_API =
   process.env.SUPERCOMPRESS_API_URL || "https://www.supercompress.dev/api/v1/compress";
@@ -235,6 +236,8 @@ async function compress(messages, agentName) {
         signal: controller.signal,
       });
       if (!response.ok) {
+        const error = paywallError(response.status, await response.text().catch(() => ""));
+        if (error) throw error;
         const words = messageText(JSON.stringify(messages)).split(/\s+/).length;
         return passThrough(messages, words, "structured_protocol");
       }
@@ -262,7 +265,8 @@ async function compress(messages, agentName) {
         savings_pct: data.tokens_saved_pct || 0,
         skip_reason: null,
       };
-    } catch {
+    } catch (err) {
+      if (err.paywall) throw err;
       const words = messageText(JSON.stringify(messages)).split(/\s+/).length;
       return passThrough(messages, words, "structured_protocol");
     } finally {
@@ -324,35 +328,10 @@ async function compress(messages, agentName) {
           "or get a new key at https://www.supercompress.dev/dashboard"
       );
     }
-    const paywalled =
-      response.status === 402 ||
-      /PAYWALL|free_quota_exhausted|credits_exhausted/i.test(errorBody);
-    if (paywalled) {
-      let checkoutUrl = "";
-      let upgradeUrl = "https://www.supercompress.dev/dashboard#billing";
-      try {
-        const parsed = JSON.parse(errorBody || "{}");
-        checkoutUrl = String(parsed.checkout_url || parsed.upgrade_url || "").trim();
-        if (checkoutUrl.startsWith("http")) upgradeUrl = checkoutUrl;
-      } catch (_) {
-        const m = String(errorBody || "").match(/https:\/\/checkout\.stripe\.com\/[^\s"'<>]+/);
-        if (m) {
-          checkoutUrl = m[0];
-          upgradeUrl = checkoutUrl;
-        }
-      }
-      const msg =
-        checkoutUrl
-          ? `PAYWALL: Auto-recharge needs confirm. Open ${upgradeUrl}`
-          : "PAYWALL: Free tokens used (or credits empty). Compression paused. " +
-            "Add credits at https://www.supercompress.dev/dashboard#billing — $0.10/1M after free ($10 min).";
-      console.error(`[supercompress] ${msg}`);
-      const err = new Error(msg);
-      err.status = 402;
-      err.paywall = true;
-      err.upgrade_url = upgradeUrl;
-      err.checkout_url = checkoutUrl || null;
-      throw err;
+    const error = paywallError(response.status, errorBody);
+    if (error) {
+      console.error(`[supercompress] ${error.message}`);
+      throw error;
     }
     if (response.status === 429) {
       console.error("[supercompress] Rate limit reached — passing through uncompressed");

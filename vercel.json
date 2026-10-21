@@ -3,7 +3,8 @@
   "framework": null,
   "git": {
     "deploymentEnabled": {
-      "fix/mcp-firestore-required": false
+      "fix/mcp-firestore-required": false,
+      "fix/billing-upgrade-funnel": false
     }
   },
   "installCommand": "npm ci --omit=optional --ignore-scripts --no-audit --no-fund",

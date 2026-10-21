@@ -72,6 +72,20 @@ async function main() {
   });
   assert.equal(noQueryKey, "");
 
+  const previousFetch = global.fetch;
+  try {
+    for (const extra of [{}, { checkout_url: "https://checkout.stripe.com/c/pay/test" }]) {
+      global.fetch = async () => new Response(JSON.stringify({ detail: "Allowance exceeded", ...extra }), { status: 402 });
+      const blocked = await handleToolCall("compress_context", { context: "context", query: "query" }, "sc_test_key");
+      assert.equal(blocked.isError, true);
+      assert.match(blocked.content[0].text, /Allowance exceeded/);
+      assert.ok(blocked.content[0].text.includes(extra.checkout_url || "https://www.supercompress.dev/dashboard#billing"));
+      assert.match(blocked.content[0].text, /retry compress_context/);
+    }
+  } finally {
+    global.fetch = previousFetch;
+  }
+
   console.log("✔ mcp-http unit");
 }
 
