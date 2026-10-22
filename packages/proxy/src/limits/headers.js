@@ -116,7 +116,8 @@ function snapshotFromResponse(provider, { status, headers } = {}, now = new Date
       // Mark the window that is actually out as exhausted.
       const tightest = windows.reduce((a, b) => (remainingFraction(a) <= remainingFraction(b) ? a : b));
       tightest.exhausted = true;
-      if (retry && !tightest.resetAt) tightest.resetAt = retry;
+      // Never reopen before the server's retry deadline.
+      if (retry && (!tightest.resetAt || new Date(retry) > new Date(tightest.resetAt))) tightest.resetAt = retry;
     } else if (retry) {
       windows.push({ name: "rate limit", usedPercent: 100, exhausted: true, windowMinutes: 1, resetAt: retry });
     }

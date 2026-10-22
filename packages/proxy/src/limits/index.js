@@ -7,6 +7,7 @@
  *   capture()  record upstream rate-limit headers seen by the local proxy
  */
 
+const { createHash } = require("crypto");
 const { normalizeProvider, normalizeSnapshot } = require("./normalize");
 const { snapshotFromResponse } = require("./headers");
 const { planRunway, fmtDuration } = require("./runway");
@@ -130,16 +131,22 @@ function ingest(raw, providerHint) {
 const CAPTURE_MIN_INTERVAL_MS = 2000;
 const lastCapture = new Map();
 
-/** Record headers from an upstream provider response. Never throws. */
-function capture(provider, response) {
+/**
+ * Record headers from an upstream provider response. Never throws.
+ * `apiKey` only feeds a one-way fingerprint so separate accounts keep
+ * separate readings; the key itself is never stored.
+ */
+function capture(provider, response, { apiKey } = {}) {
   if (disabled()) return null;
   try {
     // Hot path: at most one disk write per provider every 2s, except 429s.
     const nowMs = Date.now();
-    if (response?.status !== 429 && nowMs - (lastCapture.get(provider) ?? 0) < CAPTURE_MIN_INTERVAL_MS) return null;
+    const account = apiKey ? createHash("sha256").update(String(apiKey)).digest("hex").slice(0, 10) : undefined;
+    const throttleKey = `${provider}:${account ?? ""}`;
+    if (response?.status !== 429 && nowMs - (lastCapture.get(throttleKey) ?? 0) < CAPTURE_MIN_INTERVAL_MS) return null;
     const raw = snapshotFromResponse(provider, response);
-    if (raw) lastCapture.set(provider, nowMs);
-    return raw ? store.recordSnapshot(raw, provider) : null;
+    if (raw) lastCapture.set(throttleKey, nowMs);
+    return raw ? store.recordSnapshot(raw, provider, { account }) : null;
   } catch {
     return null;
   }

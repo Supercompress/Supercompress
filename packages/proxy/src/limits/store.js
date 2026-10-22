@@ -26,12 +26,18 @@ function safeName(provider) {
   return normalizeProvider(provider).replace(/[^a-z0-9._-]/g, "_") || "generic";
 }
 
-function snapshotPath(provider) {
-  return path.join(limitsDir(), "snapshots", `${safeName(provider)}.json`);
+/** `account` is a short key fingerprint so two API keys never share a reading. */
+function fileStem(provider, account) {
+  const acct = account ? `.${String(account).replace(/[^a-z0-9]/gi, "").slice(0, 16)}` : "";
+  return `${safeName(provider)}${acct}`;
 }
 
-function historyPath(provider) {
-  return path.join(limitsDir(), "history", `${safeName(provider)}.jsonl`);
+function snapshotPath(provider, account) {
+  return path.join(limitsDir(), "snapshots", `${fileStem(provider, account)}.json`);
+}
+
+function historyPath(provider, account) {
+  return path.join(limitsDir(), "history", `${fileStem(provider, account)}.jsonl`);
 }
 
 function writeAtomic(file, text) {
@@ -41,9 +47,9 @@ function writeAtomic(file, text) {
   fs.renameSync(tmp, file);
 }
 
-function readSnapshot(provider) {
+function readSnapshot(provider, account) {
   try {
-    return JSON.parse(fs.readFileSync(snapshotPath(provider), "utf8"));
+    return JSON.parse(fs.readFileSync(snapshotPath(provider, account), "utf8"));
   } catch {
     return null;
   }
@@ -75,10 +81,10 @@ function toPoint(snapshot) {
   };
 }
 
-function readHistory(provider) {
+function readHistory(provider, account) {
   let text = "";
   try {
-    text = fs.readFileSync(historyPath(provider), "utf8");
+    text = fs.readFileSync(historyPath(provider, account), "utf8");
   } catch {
     return [];
   }
@@ -96,10 +102,10 @@ function readHistory(provider) {
 }
 
 function appendHistory(provider, snapshot) {
-  const file = historyPath(provider);
+  const file = historyPath(provider, snapshot.account);
   const point = toPoint(snapshot);
   if (!lastPoints.has(file)) {
-    const history = readHistory(provider);
+    const history = readHistory(provider, snapshot.account);
     lastPoints.set(file, history[history.length - 1] ?? null);
   }
   const last = lastPoints.get(file);
@@ -114,7 +120,7 @@ function appendHistory(provider, snapshot) {
   lastPoints.set(file, point);
   try {
     if (fs.statSync(file).size > MAX_HISTORY_BYTES) {
-      const kept = readHistory(provider).slice(-KEEP_HISTORY_LINES);
+      const kept = readHistory(provider, snapshot.account).slice(-KEEP_HISTORY_LINES);
       writeAtomic(file, kept.map((p) => JSON.stringify(p)).join("\n") + "\n");
     }
   } catch {}
@@ -126,14 +132,15 @@ function appendHistory(provider, snapshot) {
  * null if the payload had no usable windows. Older snapshots never overwrite
  * newer ones.
  */
-function recordSnapshot(raw, providerHint) {
+function recordSnapshot(raw, providerHint, { account } = {}) {
   const snapshot = tryNormalizeSnapshot(raw, providerHint);
   if (!snapshot) return null;
-  const existing = readSnapshot(snapshot.provider);
+  if (account) snapshot.account = account;
+  const existing = readSnapshot(snapshot.provider, account);
   if (existing && new Date(existing.checkedAt).getTime() > new Date(snapshot.checkedAt).getTime()) {
     return existing;
   }
-  writeAtomic(snapshotPath(snapshot.provider), JSON.stringify(snapshot, null, 2) + "\n");
+  writeAtomic(snapshotPath(snapshot.provider, account), JSON.stringify(snapshot, null, 2) + "\n");
   appendHistory(snapshot.provider, snapshot);
   return snapshot;
 }

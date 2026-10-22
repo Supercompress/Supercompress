@@ -1,6 +1,6 @@
 ---
 name: supercompress
-description: Always-on context compression for coding agents. Use whenever tool output, file reads, logs, diffs, search results, or pasted docs get large (~2K+ tokens): compress them with compress_context, never the user's request. Also check rate-limit runway before large work.
+description: "Always-on context compression for coding agents. Use whenever tool output, file reads, logs, diffs, search results, or pasted docs get large (~2K+ tokens): compress them with compress_context, never the user's request. Also check rate-limit runway before large work."
 ---
 
 # SuperCompress

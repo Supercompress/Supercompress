@@ -364,7 +364,7 @@ test("CLI: connect/disconnect wraps and restores the Claude statusline", () => {
   const env = { CLAUDE_CONFIG_DIR: claudeDir };
   assert.strictEqual(cli(["limits", "connect", "claude-code"], undefined, env).status, 0);
   const wrapped = JSON.parse(fs.readFileSync(settings, "utf8"));
-  assert.match(wrapped.statusLine.command, /^\(.*runway\/run\.js" ingest --provider claude-code --passthrough 2>\/dev\/null \|\| cat\) \| node \/x\/status\.mjs$/);
+  assert.match(wrapped.statusLine.command, /^\(SUPERCOMPRESS_CONFIG_DIR='[^']+' .*runway\/run\.js' ingest --provider claude-code --passthrough 2>\/dev\/null \|\| cat\) \| \( node \/x\/status\.mjs\n\)$/);
   assert.strictEqual(wrapped.theme, "dark");
   assert.ok(fs.existsSync(path.join(process.env.SUPERCOMPRESS_CONFIG_DIR, "runway", "run.js")), "runtime copied out of the package");
   cli(["limits", "connect", "claude-code"], undefined, env); // idempotent
@@ -374,7 +374,7 @@ test("CLI: connect/disconnect wraps and restores the Claude statusline", () => {
   // No prior statusline → ours is added, then removed cleanly.
   fs.writeFileSync(settings, JSON.stringify({ theme: "dark" }));
   cli(["limits", "connect"], undefined, env);
-  assert.match(JSON.parse(fs.readFileSync(settings, "utf8")).statusLine.command, /run\.js" statusline 2>\/dev\/null \|\| true$/);
+  assert.match(JSON.parse(fs.readFileSync(settings, "utf8")).statusLine.command, /run\.js' statusline 2>\/dev\/null \|\| true$/);
   cli(["limits", "disconnect"], undefined, env);
   assert.deepStrictEqual(JSON.parse(fs.readFileSync(settings, "utf8")), { theme: "dark" });
 });
@@ -411,7 +411,7 @@ test("setup (installAutoPlugin) wires runway and uninstall removes it", () => {
   assert.strictEqual(plugin.status, 0, plugin.stderr);
   assert.match(plugin.stdout, /Runway \(limits\)/);
   const after = JSON.parse(fs.readFileSync(path.join(home, ".claude", "settings.json"), "utf8"));
-  assert.match(after.statusLine.command, /ingest --provider claude-code --passthrough 2>\/dev\/null \|\| cat\) \| node ~\/my-statusline\.js$/);
+  assert.match(after.statusLine.command, /ingest --provider claude-code --passthrough 2>\/dev\/null \|\| cat\) \| \( node ~\/my-statusline\.js\n\)$/);
   assert.ok(after.hooks, "existing SuperCompress hooks still installed alongside");
   assert.ok(fs.existsSync(path.join(home, ".supercompress", "runway", "run.js")));
   const instructions = fs.readFileSync(path.join(home, ".claude", "CLAUDE.md"), "utf8");
@@ -435,25 +435,99 @@ test("SUPERCOMPRESS_RUNWAY=0 setup leaves the statusline alone", () => {
   fs.rmSync(home, { recursive: true, force: true });
 });
 
+test("compound statuslines stay whole; custom config dir is pinned", () => {
+  const claudeDir = path.join(tmp, "claude-compound");
+  const workDir = path.join(tmp, "status-work");
+  fs.mkdirSync(claudeDir, { recursive: true });
+  fs.mkdirSync(workDir, { recursive: true });
+  const settings = path.join(claudeDir, "settings.json");
+  const original = `cd ${JSON.stringify(workDir)} && cat > sink.json && echo compound-ok`;
+  fs.writeFileSync(settings, JSON.stringify({ statusLine: { type: "command", command: original } }));
+  const customDir = path.join(tmp, "custom-sc");
+  cli(["limits", "connect"], undefined, { CLAUDE_CONFIG_DIR: claudeDir, SUPERCOMPRESS_CONFIG_DIR: customDir });
+  const command = JSON.parse(fs.readFileSync(settings, "utf8")).statusLine.command;
+  const payload = JSON.stringify({ session_id: "c", rate_limits: { five_hour: { used_percentage: 33, resets_at: Math.floor(Date.now() / 1000) + 3600 } } });
+  // Run with NO config-dir env: the pinned dir must still be used.
+  const env = { ...process.env };
+  delete env.SUPERCOMPRESS_CONFIG_DIR;
+  const res = spawnSync("/bin/sh", ["-c", command], { input: payload, encoding: "utf8", env });
+  assert.strictEqual(res.stdout.trim(), "compound-ok");
+  assert.strictEqual(fs.readFileSync(path.join(workDir, "sink.json"), "utf8"), payload, "every part of a compound statusline gets stdin");
+  assert.ok(fs.existsSync(path.join(customDir, "limits", "snapshots", "claude-code.json")), "wrote the pinned config dir");
+  cli(["limits", "disconnect"], undefined, { CLAUDE_CONFIG_DIR: claudeDir, SUPERCOMPRESS_CONFIG_DIR: customDir });
+  assert.strictEqual(JSON.parse(fs.readFileSync(settings, "utf8")).statusLine.command, original);
+});
+
+test("harness detection ignores storage settings like CODEX_HOME", () => {
+  assert.strictEqual(sources.detectHarness({ CODEX_HOME: "/x", CURSOR_AGENT: "1" }), "cursor");
+  assert.strictEqual(sources.detectHarness({ CODEX_HOME: "/x" }), null);
+  assert.strictEqual(sources.detectHarness({ SUPERCOMPRESS_AGENT_NAME: "Claude Code", CURSOR_AGENT: "1" }), "claude-code");
+  assert.strictEqual(sources.detectHarness({ CODEX_THREAD_ID: "t" }), "codex");
+});
+
+test("429 never reopens before retry-after", () => {
+  const raw = snapshotFromResponse("openai", { status: 429, headers: {
+    "x-ratelimit-limit-requests": "10", "x-ratelimit-remaining-requests": "0", "x-ratelimit-reset-requests": "60s", "retry-after": "120",
+  } }, NOW);
+  const plan = planRunway(normalizeSnapshot(raw), { now: NOW });
+  assert.strictEqual(plan.action, "wait");
+  assert.strictEqual(plan.waitMinutes, 2);
+});
+
+test("separate API keys keep separate readings and history", () => {
+  const ok = { status: 200, headers: { "x-ratelimit-limit-requests": "100", "x-ratelimit-remaining-requests": "90" } };
+  const low = { status: 200, headers: { "x-ratelimit-limit-requests": "100", "x-ratelimit-remaining-requests": "5" } };
+  const a = limits.capture("openrouter", ok, { apiKey: "key-a" });
+  const b = limits.capture("openrouter", low, { apiKey: "key-b" });
+  assert.ok(a.account && b.account && a.account !== b.account);
+  assert.strictEqual(store.readSnapshot("openrouter", a.account).windows[0].remainingPercent, 90);
+  assert.strictEqual(store.readSnapshot("openrouter", b.account).windows[0].remainingPercent, 5);
+  assert.strictEqual(store.readHistory("openrouter", a.account).length, 1);
+});
+
+test("ingest without a payload fails clearly", () => {
+  const res = cli(["limits", "ingest"], "");
+  assert.strictEqual(res.status, 2);
+  assert.match(res.stderr, /No usage JSON on stdin/);
+});
+
+test("every shipped skill has valid, quoted frontmatter", () => {
+  for (const rel of [
+    "agent-plugin/skills/supercompress/SKILL.md",
+    "src/grok-hooks/skills/supercompress/SKILL.md",
+    "src/openclaw-hooks/skills/supercompress/SKILL.md",
+    "../../integrations/plugins/supercompress/skills/supercompress/SKILL.md",
+  ]) {
+    const text = fs.readFileSync(path.join(ROOT, rel), "utf8");
+    const desc = text.match(/^description: (.*)$/m)[1];
+    assert.ok(desc.startsWith('"') && desc.endsWith('"'), `${rel}: description must be quoted`);
+    assert.ok(JSON.parse(desc).length > 40, rel);
+  }
+});
+
 // ── MCP + proxy capture ───────────────────────────────────────────────────
 test("MCP: runway_check is listed and answers locally", async () => {
   const child = spawn(process.execPath, [path.join(ROOT, "src/mcp.js")], { env: process.env, stdio: ["pipe", "pipe", "ignore"] });
   let buf = "";
-  const done = new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("mcp timeout: " + buf)), 10000);
-    child.stdout.on("data", (d) => {
-      buf += d;
-      if (buf.includes('"id":2')) {
-        clearTimeout(timer);
-        resolve();
-      }
+  const complete = () => buf.split("\n").slice(0, -1).filter((l) => l.startsWith("{")).map((l) => JSON.parse(l));
+  try {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("mcp timeout: " + buf)), 10000);
+      child.stdout.on("data", (d) => {
+        buf += d;
+        const ids = complete().map((m) => m.id);
+        if (ids.includes(1) && ids.includes(2)) {
+          clearTimeout(timer);
+          resolve();
+        }
+      });
+      child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }) + "\n");
+      child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "runway_check", arguments: { provider: "codex" } } }) + "\n");
     });
-  });
-  child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }) + "\n");
-  child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "runway_check", arguments: { provider: "codex" } } }) + "\n");
-  await done;
-  child.kill();
-  const msgs = buf.split("\n").filter((l) => l.startsWith("{")).map((l) => JSON.parse(l));
+  } finally {
+    child.kill();
+  }
+  const msgs = complete();
   assert.ok(msgs.find((m) => m.id === 1).result.tools.some((t) => t.name === "runway_check"));
   const body = JSON.parse(msgs.find((m) => m.id === 2).result.content[0].text);
   assert.strictEqual(body.provider, "codex");
@@ -484,7 +558,8 @@ test("proxy forwarder records upstream rate-limit headers", async () => {
     fw.forwardAnthropic("claude-x", { messages: [{ role: "user", content: "hi" }] }, "", {}, res, null, "sk-test", {})
       .then(() => {
         const store = require(${JSON.stringify(path.join(ROOT, "src/limits/store.js"))});
-        process.stdout.write(JSON.stringify(store.readSnapshot("anthropic")));
+        const acct = require("crypto").createHash("sha256").update("sk-test").digest("hex").slice(0, 10);
+        process.stdout.write(JSON.stringify(store.readSnapshot("anthropic", acct)));
       })
       .catch((e) => { console.error(e); process.exit(1); });
   `;
@@ -502,6 +577,7 @@ test("proxy forwarder records upstream rate-limit headers", async () => {
   const s = JSON.parse(out);
   assert.strictEqual(s.provider, "anthropic");
   assert.strictEqual(s.source, "proxy-headers");
+  assert.ok(s.account && !out.includes("sk-test"), "fingerprint only, never the key");
   const five = s.windows.find((w) => w.name === "5h window");
   assert.strictEqual(five.usedPercent, 97);
   const plan = planRunway(s, { now: new Date() });

@@ -75,17 +75,29 @@ function nodeCommand() {
   }
 }
 
-function runtimeCommand() {
-  return `${nodeCommand()} ${JSON.stringify(path.join(runtimeDir(), "run.js"))}`;
+function shq(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
-/** `(tee || cat) | original` — if the runtime is ever missing, stdin still reaches the user's statusline. */
-function teePrefix() {
-  return `(${runtimeCommand()} ${TEE_ARGS} 2>/dev/null || cat) | `;
+/** Pins the config dir so the statusline writes the same cache the MCP server reads. */
+function runtimeCommand() {
+  const configDir = path.dirname(store.limitsDir());
+  return `SUPERCOMPRESS_CONFIG_DIR=${shq(configDir)} ${nodeCommand()} ${shq(path.join(runtimeDir(), "run.js"))}`;
 }
+
+/**
+ * `(tee || cat) | ( original )` — the subshell keeps compound statuslines
+ * (`cd x && node y`) whole, and if the runtime is ever missing, stdin still
+ * reaches the user's statusline.
+ */
+function wrapStatusline(original) {
+  return `(${runtimeCommand()} ${TEE_ARGS} 2>/dev/null || cat) | ( ${original}\n)`;
+}
+
+const WRAPPED_RE = /^\(.*? ingest --provider claude-code --passthrough 2>\/dev\/null \|\| cat\) \| \( ([\s\S]*)\n\)$/;
 
 function isOurs(command) {
-  return typeof command === "string" && (command.includes(TEE_ARGS) || /(?:limits|run\.js") statusline/.test(command));
+  return typeof command === "string" && (command.includes(TEE_ARGS) || /(?:limits|run\.js['"]?) statusline/.test(command));
 }
 
 function connectClaude() {
@@ -107,7 +119,7 @@ function connectClaude() {
   fs.writeFileSync(connectionRecordPath(), JSON.stringify({ original: current ?? null, connectedAt: new Date().toISOString() }, null, 2) + "\n");
   settings.statusLine =
     current && current.type === "command" && current.command
-      ? { ...current, command: `${teePrefix()}${current.command}` }
+      ? { ...current, command: wrapStatusline(current.command) }
       : { type: "command", command: `${runtimeCommand()} statusline 2>/dev/null || true`, padding: 0 };
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(settings, null, 2) + "\n");
@@ -129,7 +141,7 @@ function disconnectClaude() {
   try {
     record = JSON.parse(fs.readFileSync(connectionRecordPath(), "utf8"));
   } catch {}
-  const wrapped = current.command.match(/^\(.*? ingest --provider claude-code --passthrough 2>\/dev\/null \|\| cat\) \| ([\s\S]*)$/);
+  const wrapped = current.command.match(WRAPPED_RE);
   if (wrapped) {
     // Unwrap in place so later edits to the wrapped command survive.
     settings.statusLine = { ...current, command: wrapped[1] };
@@ -175,6 +187,7 @@ async function run(args) {
     } else if (sub === "statusline") {
       process.stdout.write(snapshot ? statusLineText(snapshot) : "runway: waiting for first reply");
     } else {
+      if (!snapshot) throw new Error("No usage JSON on stdin. Pipe a payload, e.g. `echo '{...}' | supercompress limits ingest`.");
       process.stdout.write(`${JSON.stringify({ ok: true, provider: snapshot.provider, windows: snapshot.windows.length })}\n`);
     }
     return;

@@ -1,6 +1,6 @@
 ---
 name: supercompress
-description: Always-on context compression for Grok Build. Use whenever tool output, file reads, logs, diffs, or pasted docs get large: use the PostToolUse-replaced result or ~/.supercompress/inbox/latest.md, else supercompress__compress_context. Never compress the user's request. Check rate-limit runway before large work.
+description: "Always-on context compression for Grok Build. Use whenever tool output, file reads, logs, diffs, or pasted docs get large: use the PostToolUse-replaced result or ~/.supercompress/inbox/latest.md, else supercompress__compress_context. Never compress the user's request. Check rate-limit runway before large work."
 ---
 
 # SuperCompress (Grok Build)

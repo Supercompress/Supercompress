@@ -139,11 +139,15 @@ function readCodex({ sessionsRoot = codexSessionsRoot() } = {}) {
 
 /** Detect which harness is running this process (best effort). */
 function detectHarness(env = process.env) {
+  // Explicit identity first (SuperCompress hooks set SUPERCOMPRESS_AGENT_NAME).
+  if (env.SUPERCOMPRESS_AGENT_NAME) return normalizeProvider(env.SUPERCOMPRESS_AGENT_NAME);
+  // Active-session markers only — never storage settings like CODEX_HOME,
+  // which a user may export globally while running a different agent.
   if (env.CLAUDECODE === "1" || env.CLAUDE_CODE_ENTRYPOINT) return "claude-code";
-  if (env.CODEX_THREAD_ID || env.CODEX_SANDBOX || env.CODEX_MANAGED_BY_NPM || env.CODEX_HOME) return "codex";
   if (env.CURSOR_AGENT || env.CURSOR_TRACE_ID) return "cursor";
+  if (env.CODEX_THREAD_ID || env.CODEX_SANDBOX) return "codex";
   if (env.OPENCODE || env.OPENCODE_SESSION) return "opencode";
-  if (env.GROK_HOME || env.GROK_SESSION_ID) return "grok-build";
+  if (env.GROK_SESSION_ID) return "grok-build";
   if (env.GEMINI_CLI) return "gemini-cli";
   return null;
 }
@@ -168,7 +172,7 @@ function collect({ raw, provider, sessionsRoot } = {}) {
     if (wanted && snapshot.provider !== wanted && wanted !== "generic") return;
     const prior = results.get(snapshot.provider);
     if (prior && new Date(prior.snapshot.checkedAt) >= new Date(snapshot.checkedAt)) return;
-    results.set(snapshot.provider, { snapshot, points: points ?? store.readHistory(snapshot.provider) });
+    results.set(snapshot.provider, { snapshot, points: points ?? store.readHistory(snapshot.provider, snapshot.account) });
   };
 
   const explicit = explicitPayload({ raw, provider });

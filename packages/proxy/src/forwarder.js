@@ -20,7 +20,8 @@ const ANTHROPIC_BASE = process.env.SUPERCOMPRESS_ANTHROPIC_BASE || "https://api.
 /** fetch() to a provider, recording any rate-limit headers for runway checks. */
 async function providerFetch(provider, url, init) {
   const response = await fetch(url, init);
-  limits.capture(provider, response);
+  const headers = (init && init.headers) || {};
+  limits.capture(provider, response, { apiKey: headers["x-api-key"] || extractBearer(headers.Authorization) });
   return response;
 }
 
