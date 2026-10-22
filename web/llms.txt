@@ -66,6 +66,9 @@ The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Ho
 - [Headroom alternative](https://www.supercompress.dev/alternatives/headroom): Headroom compresses locally by content type; SuperCompress keeps the lines that answer the question, hosted.
 - [Caveman alternative](https://www.supercompress.dev/alternatives/caveman): Caveman shortens agent replies and shrinks some tool output locally; SuperCompress compresses input and leaves replies alone.
 - [Caveman Cloud alternative](https://www.supercompress.dev/alternatives/caveman-cloud): Team spend console vs a per-request compression API.
+- [Best Headroom alternatives](https://www.supercompress.dev/alternatives/best-headroom-alternatives): SuperCompress, Context Mode, RTK, NeuralMind, Caveman, LLMLingua-2, Compresr, The Token Company and /compact compared.
+- [Best Caveman alternatives](https://www.supercompress.dev/alternatives/best-caveman-alternatives): Tools that cut what an agent reads (SuperCompress, Headroom, Context Mode, RTK) plus simple output limits.
+- [Best Caveman Cloud alternatives](https://www.supercompress.dev/alternatives/best-caveman-cloud-alternatives): Token reduction (SuperCompress, Headroom, RTK) vs spend visibility (Langfuse, provider consoles).
 - [Context compression for coding agents](https://www.supercompress.dev/context-compression-for-coding-agents): Command filters, MCP proxies, compaction and query-aware extraction compared.
 - [SuperCompress vs RTK](https://www.supercompress.dev/supercompress-vs-rtk): Shell output filters vs compression of any tool result.
 - [SuperCompress vs summarization](https://www.supercompress.dev/supercompress-vs-summarization): Verbatim extraction vs rewriting.
