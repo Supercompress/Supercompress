@@ -208,7 +208,7 @@ COMPRESR = {
     "id": "compresr", "name": "Compresr", "url": "https://pypi.org/project/compresr",
     "facts": [
         ("Best for", "a hosted compression API from a second vendor, to benchmark against"),
-        ("How it works", "query-aware compression through a Python SDK; the default model is called <code>latte_v1</code>"),
+        ("How it works", "query-aware compression through a Python SDK"),
         ("Runs", "hosted, with an API key from its dashboard"),
     ],
 }
@@ -216,8 +216,8 @@ COMPACT = {
     "id": "built-in-compaction", "name": "Built-in compaction (/compact)", "url": "https://docs.anthropic.com/en/docs/claude-code",
     "facts": [
         ("Best for", "sessions that have simply grown too long"),
-        ("How it works", "the agent summarizes the conversation so far and continues from the summary"),
-        ("Watch out for", "summaries rewrite the original lines, so exact errors, paths and IDs can be lost"),
+        ("How it works", "the agent asks the model to summarize the conversation so far, then continues from the summary"),
+        ("Watch out for", "writing the summary is itself a model call, and summaries rewrite the original lines, so exact errors, paths and IDs can be lost"),
     ],
 }
 CONTEXT_MODE = {
@@ -279,10 +279,10 @@ PAGES = [
         "keywords": "caveman cloud alternatives, best caveman cloud alternatives, caveman cloud alternative, caveman cloud competitors, caveman cloud vs",
         "description": "The best Caveman Cloud alternatives, split by the job you need done: cutting tokens per request (SuperCompress, Headroom, RTK) or seeing and governing agent spend (Langfuse, provider consoles). What each does, what it costs, and how to test them fairly.",
         "lead": "Caveman Cloud bundles two jobs: it shows a team what its agents cost, and it adds tools to bring that cost down. Most teams need one of those more than the other, so the right alternative depends on which. This guide splits the options by job.",
-        "answer": "If you want to <strong>send fewer tokens per request</strong>, the strongest alternatives are SuperCompress (hosted, keeps only the lines that answer the question), Headroom (open source, runs locally) and RTK (shell output only). If you want to <strong>see and govern agent spend</strong>, Langfuse (open source, MIT) or your provider's own usage console. The free, open-source Caveman skill remains an option if you only want shorter replies.",
+        "answer": "If you want to <strong>send fewer tokens per request</strong>, the strongest alternatives are SuperCompress (hosted, keeps only the lines that answer the question), Headroom (open source, runs locally) and RTK (shell output only). If you only need to <strong>see agent spend</strong>, Langfuse (open source, MIT) or your provider's own usage console; for caps and governance across a team, Caveman Cloud itself remains the more complete option. The free, open-source Caveman skill remains an option if you only want shorter replies.",
         "about_h": "What Caveman Cloud is",
         "about": 'Caveman Cloud is the hosted team product from the makers of the open-source Caveman skill. Per <a href="https://caveman.so/pricing" rel="noopener" target="_blank">its pricing page</a>, it includes cost-per-task observability across agents, evals, monitors, an inbox, an "Autopilot" for suggested fixes, model routing and a semantic cache (the cache on the Team plan). There is a free plan for one person and a Team plan at $300 a month that includes $300 of usage, with no per-seat charge. Its docs and pricing page do not agree on every allowance, so check the current numbers there.',
-        "criteria": "We picked tools that replace a real part of what Caveman Cloud does, can be tried in an afternoon, and publish enough documentation to describe accurately. Four reduce tokens; two give you spend visibility. We left out anything we could not verify from the vendor's own docs.",
+        "criteria": "We picked tools that replace a real part of what Caveman Cloud does, can be tried in an afternoon, and publish enough documentation to describe accurately. Four reduce tokens; two give you spend visibility, though neither adds team caps or governance. We left out anything we could not verify from the vendor's own docs.",
         "tools": numbered(
             [SC, HEADROOM, RTK, CAVEMAN, LANGFUSE, PROVIDER],
             [
@@ -336,7 +336,7 @@ PAGES = [
                 "LLMLingua-2 from Microsoft Research is the reference point for learned prompt compression. It prunes individual tokens with a small classifier. It is a good fit for natural-language prompts in a pipeline you control, and a poorer fit for code and logs, where deleting characters can break meaning.",
                 "Compresr is another hosted, query-aware compression API, reached through a Python SDK. If you are choosing a hosted service, benchmark it against SuperCompress on the same traffic.",
                 "The Token Company's bear-1.1 is a hosted compression endpoint aimed at long prompts. Like Compresr, it is worth running against your own traffic if you are comparing hosted services.",
-                "Every major coding agent can summarize its own history (<code>/compact</code> in Claude Code). It costs nothing and helps with very long sessions, but it rewrites rather than extracts, so precise details can be lost.",
+                "Every major coding agent can summarize its own history (<code>/compact</code> in Claude Code). It is built in and helps with very long sessions, but writing the summary is an extra model call, and it rewrites rather than extracts, so precise details can be lost.",
             ],
         ),
         "table": {
@@ -385,7 +385,7 @@ PAGES = [
                 "Headroom is the open-source way to compress the same input locally, with the originals kept retrievable. Choose it if you want everything on your own machine.",
                 "Context Mode keeps large tool and MCP results out of the conversation, handing the agent a compact, searchable version instead. A good free option if your agent uses many MCP tools.",
                 "RTK filters noisy shell output from commands such as <code>git status</code> and test runners. It is free and quick to install alongside anything else.",
-                "Built-in compaction summarizes long sessions so they fit again. Free, but it rewrites the history, so exact details can be lost.",
+                "Built-in compaction summarizes long sessions so they fit again. It needs no install, but the summary is an extra model call and it rewrites the history, so exact details can be lost.",
                 "If short replies are all you want, you may not need a skill at all. A token limit in your app, or one concise-style line in the agent's instructions, gets you most of the way with nothing to install.",
                 "If you like Caveman and want it for a whole team, its makers offer Caveman Cloud, a hosted console for agent spend, evals and governance.",
             ],
@@ -398,7 +398,7 @@ PAGES = [
                 ["Headroom", "Input context", "Local", "Free"],
                 ["Context Mode", "Tool and MCP output", "Local", "Free"],
                 ["RTK", "Shell output", "Local", "Free"],
-                ["/compact", "Session history", "Inside the agent", "Free"],
+                ["/compact", "Session history", "Inside the agent", "No install; one model call per compaction"],
                 ["Output limits", "Output", "Your app or prompt", "Free"],
                 ["Caveman Cloud", "Spend visibility, governance", "Hosted", "Free for one person"],
             ],
