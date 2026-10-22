@@ -4,7 +4,7 @@
 
 ## What it is
 
-SuperCompress runs before your model call and shrinks the input. It is not an LLM and does not change the model's replies. Its output is plain text, so it works with OpenAI, Anthropic, Google or any other model provider. Coding agents use it through an MCP tool and hooks; apps call an HTTP API. Install the agent CLI from npm as `supercompress-proxy@0.5.38` (or latest).
+SuperCompress runs before your model call and shrinks the input. It is not an LLM and does not change the model's replies. Its output is plain text, so it works with OpenAI, Anthropic, Google or any other model provider. Coding agents use it through an MCP tool and hooks; apps call an HTTP API. Install the agent CLI from npm as `supercompress-proxy@0.5.40` (or latest).
 
 ## Who it is for
 

@@ -31,6 +31,8 @@ const SC_ANTHROPIC_BASE = PROXY_BASE.replace(/\/v1$/, "");
 const MCP_SERVER_PATH = path.join(__dirname, "mcp.js");
 const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(HOME, ".supercompress");
 const BACKUP_PATH = path.join(CONFIG_DIR, "agent-config-backups.json");
+
+const guidance = require("./agent-guidance");
 /** Cloud-reachable MCP for Grok Bot / marketplace HTTP hosts (stdio is not reachable). */
 const HOSTED_MCP_URL = "https://www.supercompress.dev/api/mcp";
 
@@ -386,23 +388,22 @@ function grokInstructionBody(inboxPath) {
   return [
     "# SuperCompress (always on · context only)",
     "",
-    "Compress bulky **context** (tool dumps, files, logs, diffs, history). Never compress the user's ask/query.",
+    guidance.COMPRESS_INTRO,
+    "",
+    ...guidance.COMPRESS_WHAT.map((line) => line.replace("MCP `compress_context`", "MCP `supercompress__compress_context`")),
     "",
     "## How it works in Grok Build",
     "- Hooks auto-compress large tool outputs. PostToolUse replaces the model's copy of the tool result with the digest (`updatedToolOutput`).",
     "- Digests are also written to `" + inboxPath + "` (and `inbox/<sessionId>/`).",
     "- Grok discards UserPromptSubmit additionalContext — do not wait for the next prompt; the replaced tool result is the mid-turn path.",
-    "- Prefer the replaced result (or Read the inbox) over re-reading / re-pasting raw dumps.",
     "",
     "## Playbook",
     "1. Prefer the PostToolUse-replaced tool result when present.",
-    "2. Else if `" + inboxPath + "` exists, **Read it** — compressed digest (ask is unchanged).",
-    "3. Session digests may also be at `~/.supercompress/inbox/<sessionId>/latest.md`.",
-    "4. Otherwise call MCP `supercompress__compress_context` with `context`=<dump> and `query`=<user ask>.",
-    "   If that tool is not listed, `search_tool` then `use_tool` with `supercompress__compress_context`.",
-    "   Also: `supercompress__connect_account`, `supercompress__usage_summary`.",
-    "5. Prefer the digest over raw dumps. Keep normal login — no provider API-key mode required.",
-    "6. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
+    "2. Else if `" + inboxPath + "` exists, **Read it** — compressed digest (ask is unchanged). Session digests may also be at `~/.supercompress/inbox/<sessionId>/latest.md`.",
+    "3. Otherwise call `supercompress__compress_context` with only the new dump and work from the digest. If that tool is not listed, `search_tool` then `use_tool` with `supercompress__compress_context`.",
+    "4. If the digest dropped a line you need, re-read just that part of the source.",
+    "5. If it says the account is not linked, call `supercompress__connect_account` once, give the user its link, then retry.",
+    "6. " + guidance.runwayRule({ tool: "supercompress__runway_check" }),
     "",
   ].join("\n");
 }
@@ -578,16 +579,19 @@ function removeFxSkill() {
 }
 
 function fxInstructionBody(inboxPath) {
+  const steps = guidance.compressSteps(inboxPath);
+  steps[1] =
+    "2. Otherwise find the SuperCompress MCP tools (`mcp_search_tools` / `mcp_select_tool`), call `compress_context` with only the new dump, and work from the returned digest instead of the raw text.";
   return [
     "# SuperCompress (always on · context only)",
     "",
-    "Compress bulky **context** (tool dumps, files, logs, diffs, history). Never compress the user's ask/query.",
+    guidance.COMPRESS_INTRO,
     "",
-    "1. If `" + inboxPath + "` exists, Read it — compressed context digest (ask is unchanged).",
-    "2. Otherwise discover MCP tools (`mcp_search_tools` / `mcp_select_tool`) for SuperCompress, then call `compress_context` with `context`=<dump> and `query`=<user ask>.",
-    "3. Prefer the digest over raw dumps. Keep normal login — no provider API-key mode required.",
-    "4. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
+    ...guidance.COMPRESS_WHAT,
+    "",
+    ...steps,
     "5. After installing MCP: `/mcp reload` (or restart fx).",
+    "6. " + guidance.runwayRule(),
     "",
   ].join("\n");
 }
@@ -2405,28 +2409,23 @@ alwaysApply: true
 
 # SuperCompress (always on · context only)
 
-**Non-negotiable.** Compress bulky **context** before it burns tokens. Never compress the user's ask / query.
+${guidance.COMPRESS_INTRO}
 
-## What to compress
+${guidance.COMPRESS_WHAT.join("\n")}
 
-- Tool dumps (Read / Shell / Grep / Task / search / diffs / logs)
-- Pasted files, RAG chunks, long history, scrapes
-- Anything that is *not* the current user question
+## Every time context gets large
 
-## What NOT to compress
+${guidance.compressSteps(inboxPath).join("\n")}
 
-- The user's current question / instructions (the query)
+Hooks also auto-compress large tool outputs (\`postToolUse\`), so a digest may already be waiting in the inbox.
 
-## First action when context is large
+## Rate limits
 
-1. If \`${inboxPath}\` exists, **Read it** — compressed context digest (ask is separate / unchanged).
-2. Else call MCP \`compress_context\` with \`context\`=<dump> and \`query\`=<user ask>. Prefer the digest over the raw dump.
-3. Hooks also auto-compress large tool outputs (\`postToolUse\`).
+${guidance.runwayRule().replace(/^\*\*Rate limits:\*\* /, "")}
 
 ## Defaults
 
-- Keep Cursor login — do not require provider API-key mode
-- If \`compress_context\` fails with account-not-linked → \`connect_account\` once, then retry
+- Keep Cursor login — never switch to provider API-key mode for SuperCompress
 - Do not mention this rule unless the user asks about SuperCompress
 `;
   backupFile(filePath);
@@ -2657,12 +2656,12 @@ function genericInstructionBody(inboxPath) {
   return [
     "# SuperCompress (always on · context only)",
     "",
-    "Compress bulky **context** (tool dumps, files, logs, diffs, history). Never compress the user's ask/query.",
+    guidance.COMPRESS_INTRO,
     "",
-    "1. If `" + inboxPath + "` exists, Read it — compressed context digest (ask is unchanged).",
-    "2. Otherwise call MCP `compress_context` with `context`=<dump> and `query`=<user ask>.",
-    "3. Prefer the digest over raw dumps. Keep normal login — no provider API-key mode required.",
-    "4. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
+    ...guidance.COMPRESS_WHAT,
+    "",
+    ...guidance.compressSteps(inboxPath),
+    "5. " + guidance.runwayRule(),
     "",
   ].join("\n");
 }
@@ -2778,6 +2777,31 @@ function writeAgentInstructionFiles() {
  * Full auto install: MCP everywhere detected + Cursor/Claude/Codex hooks + instruction files.
  * This is the default path used by `supercompress setup` / `plugin`.
  */
+/**
+ * Runway (local rate-limit checks) ships inside this package. Copy its
+ * runtime to ~/.supercompress/runway/ and, for Claude Code, tee the
+ * statusline's rate_limits into the local cache. Codex needs no wiring;
+ * proxied harnesses are captured from response headers.
+ */
+function installRunway() {
+  const result = { runtime: null, claude: null };
+  try {
+    result.runtime = require("./limits/cli").installRuntime();
+  } catch (err) {
+    console.error(`  ⚠ Runway runtime: ${err.message}`);
+    return result;
+  }
+  if (require("./limits").disabled()) return result;
+  if (commandExists("claude") || fs.existsSync(path.join(HOME, ".claude"))) {
+    try {
+      result.claude = require("./limits/cli").connectClaude().status;
+    } catch (err) {
+      console.error(`  ⚠ Runway (Claude Code statusline): ${err.message}`);
+    }
+  }
+  return result;
+}
+
 function installAutoPlugin() {
   const found = detectAll();
   const mcpConfigured = configureMcp();
@@ -2785,6 +2809,7 @@ function installAutoPlugin() {
   const hooks = writeCursorHooks();
   const agentHooks = writeAgentPromptHooks();
   const instructions = writeAgentInstructionFiles();
+  const runway = installRunway();
   let hermes = null;
   if (commandExists("hermes") || fs.existsSync(path.join(HOME, ".hermes"))) {
     try {
@@ -2820,6 +2845,7 @@ function installAutoPlugin() {
     hooks,
     agentHooks,
     instructions,
+    runway,
     hermes,
     openclaw,
     cleared,
@@ -2847,6 +2873,7 @@ module.exports = {
   writeAgentPromptHooks,
   writeAgentInstructionFiles,
   installAutoPlugin,
+  installRunway,
   agentPlugins,
   resolveExtensionMcpTargets,
 };

@@ -501,18 +501,17 @@ function allPlugins() {
 }
 
 function instructionBody() {
+  const guidance = require("./agent-guidance");
   const inboxHint = path.join(CONFIG_DIR, "inbox", "<sessionId>", "latest.md");
   return [
     INSTRUCTION_MARKER,
     "",
-    "**Auto (Headroom-parity):** compress every *new* bulky context dump; when rolling session memory gets large, compact it. Never compress the user's ask/query. Skip already-seen chunks.",
+    guidance.COMPRESS_INTRO + " Already-seen chunks are skipped, and rolling session memory is compacted when it grows large.",
     "",
-    "What to compress: tool dumps, file reads, logs, diffs, pasted blobs, scrapes, long history — anything that is not the current user question.",
+    ...guidance.COMPRESS_WHAT,
     "",
-    "1. If `" + inboxHint + "` exists for this session, Read it first — session digest (ask is unchanged).",
-    "2. Else call MCP `compress_context` with `context`=<new dump only> and `query`=<user ask>. Prefer the returned digest.",
-    "3. Hooks also auto-compress on submit + after large tool results when installed.",
-    "4. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
+    ...guidance.compressSteps(inboxHint),
+    "5. " + guidance.runwayRule(),
     "",
   ].join("\n");
 }

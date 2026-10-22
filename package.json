@@ -30,7 +30,7 @@
     "firebase-admin": "^13.10.0",
     "playwright": "^1.64.0",
     "stripe": "^22.6.2",
-    "supercompress-proxy": "^0.5.38"
+    "supercompress-proxy": "^0.5.40"
   },
   "overrides": {
     "ip-address": "10.3.1"
