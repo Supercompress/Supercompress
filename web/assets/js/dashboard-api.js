@@ -56,27 +56,6 @@ function normalizeFirebaseConfig(source = {}) {
   };
 }
 
-/**
- * Prefer first-party authDomain on our hosts so Google sign-in does not depend on
- * third-party cookies against *.firebaseapp.com (Chrome / Safari intermittent fails).
- * Requires Vercel rewrite: /__/auth/:path* → https://supercompress.firebaseapp.com/__/auth/:path*
- */
-function preferFirstPartyAuthDomain(config) {
-  const cfg = normalizeFirebaseConfig(config || {});
-  if (typeof window === "undefined") return cfg;
-  const host = String(window.location.hostname || "").toLowerCase();
-  const firstParty =
-    host === "www.supercompress.dev" ||
-    host === "supercompress.dev" ||
-    host === "docs.supercompress.dev" ||
-    host === "iusetokens.supercompress.dev" ||
-    (host.endsWith(".vercel.app") && host.includes("supercompress"));
-  if (!firstParty) return cfg;
-  // Apex redirects to www; keep auth handler on the canonical host.
-  cfg.authDomain = host === "supercompress.dev" ? "www.supercompress.dev" : host;
-  return cfg;
-}
-
 let cfg = normalizeFirebaseConfig(window.SC_FIREBASE_CONFIG || {});
 
 const $ = (id) => document.getElementById(id);
@@ -350,21 +329,11 @@ function shouldFallbackGoogleRedirect(err) {
 }
 
 async function signInWithGoogleResilient(authInstance, provider) {
-  let lastErr;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      return await signInWithPopup(authInstance, provider);
-    } catch (err) {
-      lastErr = err;
-      if (shouldFallbackGoogleRedirect(err)) break;
-      if (isAuthNetworkError(err) && attempt === 0) {
-        await sleep(400);
-        continue;
-      }
-      throw err;
-    }
+  try {
+    return await signInWithPopup(authInstance, provider);
+  } catch (err) {
+    if (!shouldFallbackGoogleRedirect(err)) throw err;
   }
-  // Popup / storage / network flake → full-page redirect (first-party authDomain).
   await signInWithRedirect(authInstance, provider);
   return null;
 }
@@ -2471,7 +2440,7 @@ async function initFirebaseAuth() {
   hide($("dev-auth-area"));
   show($("firebase-auth-area"));
 
-  cfg = preferFirstPartyAuthDomain(normalizeFirebaseConfig(cfg));
+  cfg = normalizeFirebaseConfig(cfg);
   const app = initializeApp(cfg);
   auth = getAuth(app);
   await setPersistence(auth, browserLocalPersistence);
@@ -2579,6 +2548,9 @@ async function initFirebaseAuth() {
   }
 
   $("btn-google").addEventListener("click", async () => {
+    const button = $("btn-google");
+    if (button.disabled) return;
+    button.disabled = true;
     setError("");
     const pendingOauth = oauthAuthorizeFromUrl();
     if (pendingOauth) stashOauthAuthorize(pendingOauth);
@@ -2591,16 +2563,9 @@ async function initFirebaseAuth() {
       // null result ⇒ redirected; page will resume via getRedirectResult
     } catch (err) {
       if (pendingOauth) stashOauthAuthorize(pendingOauth);
-      if (shouldFallbackGoogleRedirect(err)) {
-        try {
-          await signInWithRedirect(auth, provider);
-          return;
-        } catch (redirectErr) {
-          setError(friendlyAuthError(redirectErr, { intent: "google" }));
-          return;
-        }
-      }
       setError(friendlyAuthError(err, { intent: "google" }));
+    } finally {
+      button.disabled = false;
     }
   });
 
@@ -2670,14 +2635,14 @@ function firebaseConfigReady(source) {
 }
 
 async function loadFirebaseConfig() {
-  cfg = preferFirstPartyAuthDomain(normalizeFirebaseConfig(cfg));
+  cfg = normalizeFirebaseConfig(cfg);
   if (firebaseConfigReady(cfg)) return true;
 
   try {
     const base = apiBaseUrl();
     const res = await fetch(`${base}/api/firebase-config`, { cache: "no-store" });
     if (res.ok) {
-      const remote = preferFirstPartyAuthDomain(normalizeFirebaseConfig(await res.json()));
+      const remote = normalizeFirebaseConfig(await res.json());
       if (firebaseConfigReady(remote)) {
         cfg = remote;
         return true;
@@ -2686,7 +2651,7 @@ async function loadFirebaseConfig() {
   } catch (_) {
     /* fall back to baked config */
   }
-  cfg = preferFirstPartyAuthDomain(cfg);
+  cfg = normalizeFirebaseConfig(cfg);
   return firebaseConfigReady(cfg);
 }
 
