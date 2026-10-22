@@ -88,12 +88,12 @@ const TOOLS = [
   {
     name: "compress_context",
     description:
-      "Compress *new* coding context into rolling session memory (Headroom-parity). Already-seen chunks are skipped; when memory grows large it is compacted. Pass only the new dump — not the whole history. Preserve code and facts relevant to the query.",
+      "Compress bulky new context before you reason over it: tool output, logs, stack traces, test/build runs, diffs over ~150 lines (~2K tokens), long file reads, search results, docs, pasted documents. Pass only the new text as `context` (not the whole history) and the user's request verbatim as `query`; work from the returned digest. Never compress the request itself or code you are about to edit. Already-seen chunks are skipped and rolling session memory is compacted automatically.",
     inputSchema: {
       type: "object",
       properties: {
-        context: { type: "string", description: "New context to compress (not previously seen this session)" },
-        query: { type: "string", description: "The coding task or question (never compressed)" },
+        context: { type: "string", description: "Only the new bulky text to compress (not previously sent this session)" },
+        query: { type: "string", description: "The user's request, verbatim — used to decide what to keep; never compressed" },
         session_id: { type: "string", description: "Optional session id for rolling memory (defaults to mcp)" },
       },
       required: ["context", "query"],
@@ -104,9 +104,37 @@ const TOOLS = [
     description: "Fetch per-coding-agent token savings tracked for the connected SuperCompress account.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
+  {
+    name: "runway_check",
+    description:
+      "Check provider rate-limit runway (5h / weekly / monthly windows) before large or multi-step work. Returns `action`: go (proceed; scope large = quota would go unused, take on more) | land (keep working, checkpoint before each step — never stop a 5h window early, it resets on its own) | wait (actually used up: checkpoint, wait `waitMinutes` or use `alternatives`) | unknown (no data; never guess). Runs locally.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        provider: { type: "string", description: "Optional harness/provider (claude-code, codex, cursor, anthropic, openai, …). Defaults to the running harness." },
+        policy: { type: "string", enum: ["max", "balanced", "conservative"], description: "max (default) drains short windows fully; conservative = 25%/10% thresholds." },
+      },
+      additionalProperties: false,
+    },
+  },
 ];
 
+function runwayCheck(args = {}) {
+  const limits = require("./limits");
+  try {
+    const result = limits.status({
+      provider: args.provider ? String(args.provider) : undefined,
+      policy: args.policy ? String(args.policy) : undefined,
+    });
+    const { providers, ...compact } = result;
+    return toolText(JSON.stringify(compact));
+  } catch (err) {
+    return toolError(`runway_check failed: ${err.message}`);
+  }
+}
+
 async function handleToolCall(name, args = {}) {
+  if (name === "runway_check") return runwayCheck(args);
   if (!["compress_context", "connect_account", "usage_summary"].includes(name)) {
     return toolError(`Unknown tool: ${name}`);
   }

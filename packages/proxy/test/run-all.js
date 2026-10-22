@@ -11,6 +11,8 @@ const suites = [
   ["protocol-safety", "test/protocol-safety.js"],
   ["sse-stream", "test/sse-stream.js"],
   ["agent-plugins", "test/agent-plugins.js"],
+  ["limits", "test/limits.js"],
+  ["runway-sim", "test/runway-sim.js"],
   ["harness-writers", "test/harness-writers.js"],
   ["grok-build", "test/grok-build.js"],
   ["grok-bot", "test/grok-bot.js"],
