@@ -131,7 +131,7 @@
     <div class="seo-verdict">
       <strong>In short:</strong> send SuperCompress the tool result plus the current question. It keeps the original lines that answer that question and drops the rest. It never rewrites or summarizes, and every response reports <code>original_tokens</code> and <code>kept_tokens</code>.
     </div>
-    <p>Related: <a href="/alternatives">compare context compression tools</a> that sit on tool output, including <a href="/alternatives/headroom">Headroom alternatives</a> and <a href="/alternatives/caveman">Caveman alternatives</a>. See also <a href="/mcp-context-bloat">MCP context bloat</a> and <a href="/reduce-tool-call-output-tokens">how to reduce tool call output tokens</a>.</p>
+    <p>Related: <a href="/alternatives">compare context compression tools</a> that sit on tool output, including <a href="/alternatives/headroom">Headroom alternatives</a>, <a href="/alternatives/caveman">Caveman alternatives</a> and <a href="/alternatives/scaledown">ScaleDown alternatives</a>. See also <a href="/mcp-context-bloat">MCP context bloat</a> and <a href="/reduce-tool-call-output-tokens">how to reduce tool call output tokens</a>.</p>
 
     <h2 id="why-mcp-token-usage-grows">Why MCP token usage grows</h2>
     <p>Most MCP servers wrap an API and pass its response straight through. A single call can return dozens of records with every field filled in, a full build log, or an entire file when the agent needed one function. The model has to read all of it to find the part that matters, and the tool result keeps riding along in the conversation on later turns.</p>
