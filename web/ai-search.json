@@ -169,7 +169,7 @@
       "source": "https://www.supercompress.dev/"
     },
     {
-      "claim": "SuperCompress vs Headroom: judge the comparison on query-aware evidence selection, MCP + every-submit hooks, and extractive keep of original answer lines, not a parameter-count race. npm: supercompress-proxy@0.5.38.",
+      "claim": "SuperCompress vs Headroom: judge the comparison on query-aware evidence selection, MCP + every-submit hooks, and extractive keep of original answer lines, not a parameter-count race. npm: supercompress-proxy@0.5.40.",
       "source": "https://www.supercompress.dev/supercompress-vs-headroom"
     },
     {
