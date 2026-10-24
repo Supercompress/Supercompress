@@ -105,6 +105,7 @@
             <li><a href="#tools">MCP tools</a></li>
             <li><a href="#dashboard">Dashboard</a></li>
             <li><a href="#proxy">Optional API proxy</a></li>
+            <li><a href="#runway">Rate-limit runway</a></li>
             <li><a href="#uninstall">Uninstall</a></li>
           </ol>
         </div>
@@ -216,8 +217,27 @@
             <tr><td><code>compress_context</code></td><td>Compress bulky coding context for a query. Returns compressed text + savings.</td></tr>
             <tr><td><code>connect_account</code></td><td>Open the dashboard to link this install if you skipped setup.</td></tr>
             <tr><td><code>usage_summary</code></td><td>Per-agent token savings for the connected SuperCompress account.</td></tr>
+            <tr><td><code>runway_check</code></td><td>Provider rate-limit runway for this agent (local plugin only, no account needed): <code>go</code>, <code>pace</code> (balanced policy only), <code>land</code>, <code>wait</code> or <code>unknown</code>.</td></tr>
           </tbody>
         </table>
+
+        <h2 id="runway">Rate-limit runway</h2>
+        <p><code>supercompress limits</code> (alias <code>runway</code>, or <code>supercompress limits --json</code> for agents) and the local MCP tool <code>runway_check</code> tell the agent how much provider quota is left and what to do with it: <code>go</code> (keep working), <code>pace</code> (balanced policy only), <code>land</code> (keep working, but commit or write a handoff note before each step), <code>wait</code> (the window is exhausted, retry after the reset) or <code>unknown</code> (no data source yet; a limit is never invented).</p>
+        <pre><code><span class="kw">supercompress</span> limits
+<span class="kw">supercompress</span> limits --json
+<span class="kw">supercompress</span> runway</code></pre>
+        <table>
+          <thead>
+            <tr><th>Source</th><th>Harnesses</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>~/.codex/sessions</code> rate-limit events (zero config)</td><td>Codex</td></tr>
+            <tr><td>Statusline tee, wired by <code>setup</code> or <code>supercompress limits connect claude-code</code> (your own statusline keeps working)</td><td>Claude Code</td></tr>
+            <tr><td>Rate-limit headers seen by the optional local proxy</td><td>Aider, Continue, Cline, OpenCode, Goose via <code>localhost:8080</code></td></tr>
+            <tr><td><code>supercompress limits ingest --provider &lt;id&gt;</code></td><td>Cursor, Windsurf, Grok Build, Gemini CLI, custom hooks</td></tr>
+          </tbody>
+        </table>
+        <p><code>setup</code> and <code>plugin</code> wire Runway automatically and <code>uninstall</code> reverses it. Set <code>SUPERCOMPRESS_RUNWAY=0</code> to opt out. Runway runs in the local plugin; the hosted MCP URL does not have it. Guide: <a href="https://www.supercompress.dev/coding-agent-rate-limits">check Codex and Claude Code rate limits from the terminal</a>.</p>
 
         <h2 id="dashboard">Dashboard tracking</h2>
         <p>After agents start compressing, your <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a> shows per-agent requests, tokens in/out/saved, and last-used time. Only usage metadata is sent, never prompt contents.</p>
@@ -236,7 +256,7 @@
         <h2 id="uninstall">Uninstall</h2>
         <pre><code><span class="kw">supercompress</span> uninstall
 <span class="kw">npm uninstall</span> -g supercompress-proxy</code></pre>
-        <p>Uninstall removes MCP registrations, restores backed-up configs, and cleans <code>~/.supercompress</code>.</p>
+        <p>Uninstall removes only SuperCompress's own entries (MCP registrations, hooks, instructions, the runway statusline hook) and leaves everything else in your configs, including MCP servers you added after install, then cleans <code>~/.supercompress</code>.</p>
 
         <div class="doc-footer">
           <p>Next: <a href="https://docs.supercompress.dev/usage">Usage →</a></p>

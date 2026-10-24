@@ -47,7 +47,8 @@ The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Ho
 
 ## Integrations
 
-- [Coding agents guide](https://docs.supercompress.dev/coding-agents): `setup`, `doctor`, supported agents, MCP tools and uninstall.
+- [Coding agents guide](https://docs.supercompress.dev/coding-agents): `setup`, `doctor`, supported agents, MCP tools, rate-limit runway and uninstall.
+- [Check Codex and Claude Code rate limits](https://www.supercompress.dev/coding-agent-rate-limits): `supercompress limits` and MCP `runway_check` tell the agent to go, pace, land or wait.
 - [MCP integration](https://www.supercompress.dev/mcp-integration): Remote MCP setup for Claude Code, Claude Desktop, Cursor and other hosts.
 - [Reduce Claude Code token usage](https://www.supercompress.dev/reduce-claude-code-token-usage): Where Claude Code tokens go and how to cut them.
 - [Reduce Cursor token usage](https://www.supercompress.dev/reduce-cursor-token-usage): What setup adds to Cursor (MCP server, rule and hooks).
