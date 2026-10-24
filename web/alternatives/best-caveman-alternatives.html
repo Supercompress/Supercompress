@@ -68,7 +68,7 @@
       "@type": "ListItem",
       "position": 2,
       "name": "Headroom",
-      "url": "https://github.com/chopratejas/headroom"
+      "url": "https://github.com/headroomlabs-ai/headroom"
     },
     {
       "@type": "ListItem",
@@ -215,7 +215,7 @@
     <h3 id="supercompress">1. SuperCompress</h3>
     <p>SuperCompress attacks the input side. Before a large log, diff or tool result reaches the model, the hosted API keeps only the original lines that answer the current question. Because input usually dwarfs output in agent sessions, this is often where the bigger saving is, and replies stay as detailed as you like.</p>
     <ul><li><strong>Best for:</strong> cutting the input tokens an agent or app sends: tool output, file reads, logs, MCP results, retrieved docs</li><li><strong>How it works:</strong> a hosted, query-aware model keeps the original lines that answer the current question, word for word, and drops the rest</li><li><strong>Runs:</strong> hosted API (<code>POST /api/v1/compress</code>) plus an MCP tool and hooks for coding agents</li><li><strong>Price:</strong> 5M free tokens a month, then $0.10 per million, per <a href="/dashboard?signup=1">the site</a></li></ul>
-<h3 id="headroom">2. <a href="https://github.com/chopratejas/headroom" rel="noopener" target="_blank">Headroom</a></h3>
+<h3 id="headroom">2. <a href="https://github.com/headroomlabs-ai/headroom" rel="noopener" target="_blank">Headroom</a></h3>
     <p>Headroom is the open-source way to compress the same input locally, with the originals kept retrievable. Choose it if you want everything on your own machine.</p>
     <ul><li><strong>Best for:</strong> teams that want an open-source compression layer they run themselves</li><li><strong>How it works:</strong> content-type compressors for JSON, logs, code, search results and history, with the originals kept so the model can ask for them back</li><li><strong>Runs:</strong> locally, as a Python or TypeScript library, a proxy, an MCP server or an agent wrapper (<code>headroom wrap claude</code>)</li><li><strong>Licence:</strong> Apache 2.0</li></ul>
 <h3 id="context-mode">3. <a href="https://github.com/mksglu/context-mode" rel="noopener" target="_blank">Context Mode</a></h3>

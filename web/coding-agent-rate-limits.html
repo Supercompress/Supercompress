@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>How to Check Codex and Claude Code Rate Limits from Your Terminal | SuperCompress</title>
+  <meta name="description" content="supercompress limits and the local MCP tool runway_check read Codex and Claude Code rate-limit data and return go, pace, land, wait or unknown so the agent can act." />
+  <meta name="keywords" content="check Codex rate limits, Claude Code usage limit terminal, supercompress limits, runway_check, coding agent rate limits, Claude Code statusline limits" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="How to check Codex and Claude Code rate limits from your terminal" />
+  <meta property="og:description" content="supercompress limits and the local MCP tool runway_check read Codex and Claude Code rate-limit data and return go, pace, land, wait or unknown so the agent can act." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/coding-agent-rate-limits" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="How to check Codex and Claude Code rate limits from your terminal" />
+  <meta name="twitter:description" content="supercompress limits and the local MCP tool runway_check read Codex and Claude Code rate-limit data and return go, pace, land, wait or unknown so the agent can act." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/coding-agent-rate-limits" />
+  <meta property="article:published_time" content="2026-10-24T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-24" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How to check Codex and Claude Code rate limits from your terminal (and let the agent act on them)",
+  "description": "supercompress limits and the local MCP tool runway_check read Codex and Claude Code rate-limit data and return go, pace, land, wait or unknown so the agent can act.",
+  "datePublished": "2026-10-24",
+  "dateModified": "2026-10-24",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.supercompress.dev/assets/img/icon-chevron-192.png"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/coding-agent-rate-limits"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Blog",
+      "item": "https://www.supercompress.dev/blog"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Coding agent guides",
+      "item": "https://www.supercompress.dev/coding-agent-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Coding agent rate limits",
+      "item": "https://www.supercompress.dev/coding-agent-rate-limits"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Do I need a SuperCompress account to use Runway?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. runway_check runs in the local plugin and does not need an account. supercompress limits reads the same local sources."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Runway work with Claude Code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. setup connects Claude Code's statusline as a tee so rate_limits events are recorded. Your own statusline keeps working. If you skipped that step, run supercompress limits connect claude-code once."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I turn it off?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Set SUPERCOMPRESS_RUNWAY=0. That stops setup from touching the statusline and turns off proxy header capture. uninstall also reverses the wiring."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does the hosted MCP include runway_check?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Runway runs in the local plugin. The hosted MCP URL does not have runway_check. Use the local MCP server or supercompress limits --json."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What if there is no usage data yet?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The action is unknown. Carry on, and never invent a limit. Codex writes rate-limit events after the first model turn. Claude Code reports them through its statusline after the first reply."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Guide · Updated 2026-10-24</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">Guide</span>
+    <span class="seo-tag">Coding agents</span>
+    <span class="seo-tag">Rate limits</span>
+  </div>
+  <h1>How to check Codex and Claude Code rate limits from your terminal (and let the agent act on them)</h1>
+  <p class="seo-byline">By Arjun Shah</p>
+  <p class="seo-lead">A 5-hour or weekly provider window can close while a coding agent is still mid-task. SuperCompress 0.5.40 ships Runway: <code>supercompress limits</code> (alias <code>runway</code>) and the local MCP tool <code>runway_check</code>. They read provider rate-limit data and return an action the agent can follow: go, pace, land, wait, or unknown.</p>
+  <p class="seo-author">October 24, 2026 · Guide</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="/coding-agent-token-usage">All coding agents</a>
+    <a href="/reduce-claude-code-token-usage">Claude Code</a>
+    <a href="/reduce-codex-token-usage">Codex</a>
+    <a href="/claude-code-context-limit">Claude Code context limit</a>
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="https://docs.supercompress.dev/coding-agents">Coding agents docs</a>
+  </nav>
+
+  <div class="article-prose">
+    <nav aria-label="On this page">
+      <p><strong>On this page</strong></p>
+      <ul>
+        <li><a href="#why">Why do rate limits matter in long agent sessions?</a></li>
+        <li><a href="#limits">What does <code>supercompress limits</code> show?</a></li>
+        <li><a href="#sources">Where does the data come from?</a></li>
+        <li><a href="#agent">How does the agent use Runway?</a></li>
+        <li><a href="#vs-clis">How is this different from usage-display CLIs?</a></li>
+        <li><a href="#install">How do I install Runway?</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+    </nav>
+
+    <h2 id="why">Why do rate limits matter in long agent sessions?</h2>
+    <p>Coding agents often spend a whole provider window on one job: a refactor, a failing test, a multi-file edit. Codex and Claude Code both expose 5-hour windows and longer weekly (or monthly) caps. When that window closes mid-task, the model stops. The working tree may have uncommitted edits, a half-written handoff, or a test run that never finished.</p>
+    <p>Knowing the runway does not add quota. It tells the agent whether to keep going, shrink the next step and write a checkpoint, or stop and wait for the reset. That is the difference between a clean landing and a session that dies on a hard cutoff. Weekly and monthly windows work the same way over a longer stretch: the agent still needs an instruction, not only a remaining-quota number on screen.</p>
+
+    <h2 id="limits">What does <code>supercompress limits</code> show?</h2>
+    <p>Run it in a terminal. <code>runway</code> is an alias for <code>limits</code>. Human-readable text is the default. <code>--json</code> prints one JSON object on stdout so an agent can parse <code>action</code>, <code>proceed</code>, <code>scope</code>, <code>waitMinutes</code>, and <code>alternatives</code>.</p>
+    <pre><code>supercompress limits
+supercompress limits --json
+supercompress runway</code></pre>
+    <p>Each answer is one of these actions:</p>
+    <table class="seo-table">
+      <thead><tr><th>Action</th><th>What the agent should do</th></tr></thead>
+      <tbody>
+        <tr><td><code>go</code></td><td>Keep working. <code>scope</code> may be <code>large</code> when a short window would otherwise reset with unused quota, so the agent can take on more in this window.</td></tr>
+        <tr><td><code>pace</code></td><td>Returned under <code>--policy balanced</code> when a long window is ahead of pace. Prefer cheaper steps until it catches up. The default policy is <code>max</code>, which does not switch to <code>pace</code>.</td></tr>
+        <tr><td><code>land</code></td><td>Keep working, but commit or write a handoff note before each step. A 5-hour window resets on its own. Unused quota in that window is lost, so the agent should not stop early.</td></tr>
+        <tr><td><code>wait</code></td><td>A window is exhausted. Checkpoint, then wait <code>waitMinutes</code> or switch to a provider listed in <code>alternatives</code>.</td></tr>
+        <tr><td><code>unknown</code></td><td>No data source yet. Carry on, and never invent a limit.</td></tr>
+      </tbody>
+    </table>
+    <p>The text formatter in the plugin prints a header, one line per window, then guidance. Placeholder values only:</p>
+    <pre><code>runway · codex · GO
+  5h window         … left · resets in &lt;duration&gt; · ok
+  weekly            … left · resets in &lt;duration&gt; · ok
+  → Plenty of runway. Proceed; checkpoint before long multi-step operations.</code></pre>
+    <p>The JSON <code>summary</code> field is the same idea in one line, for example <code>codex go · 5h window … left, resets in &lt;duration&gt;</code>. When there is no source, the header is <code>runway · unknown · no usage data for this agent yet</code> plus a hint that names the missing source (Codex after the first turn, Claude Code after the first statusline reply, or an ingest/proxy path).</p>
+
+    <h2 id="sources">Where does the data come from?</h2>
+    <p>Runway reads local rate-limit sources. It does not guess a number when none of these have data.</p>
+    <table class="seo-table">
+      <thead><tr><th>Source</th><th>Harnesses</th></tr></thead>
+      <tbody>
+        <tr><td><code>~/.codex/sessions</code> rate-limit events (zero config)</td><td>Codex</td></tr>
+        <tr><td>Statusline tee, wired by <code>setup</code> or <code>supercompress limits connect claude-code</code>. Your own statusline keeps working.</td><td>Claude Code</td></tr>
+        <tr><td>Upstream rate-limit headers seen by the local proxy (Anthropic, OpenAI, xAI, OpenRouter, Codex)</td><td>Harnesses routed through <code>localhost:8080</code> (Aider, Continue, Cline, OpenCode, Goose)</td></tr>
+        <tr><td><code>supercompress limits ingest --provider &lt;id&gt;</code>, or <code>SUPERCOMPRESS_LIMITS_SNAPSHOT</code></td><td>Cursor, Windsurf, Grok Build, Gemini CLI, custom hooks</td></tr>
+      </tbody>
+    </table>
+    <p>Codex needs no extra wiring: after the first model turn in a session, rate-limit events are already in <code>~/.codex/sessions</code>. Claude Code reports <code>rate_limits</code> on its statusline JSON after the first reply. <code>setup</code> wraps that statusline as <code>(tee || cat) | &lt;your statusline&gt;</code>, so the existing command still runs. If you skipped setup, <code>supercompress limits connect claude-code</code> does the same wrap once.</p>
+    <p>The optional local proxy records provider rate-limit headers (and <code>retry-after</code> on 429) for traffic sent through <code>localhost:8080</code>. Harnesses that have no local quota telemetry can pipe a usage JSON payload to <code>supercompress limits ingest --provider &lt;id&gt;</code>.</p>
+
+    <h2 id="agent">How does the agent use Runway?</h2>
+    <p>The local MCP server registers <code>runway_check</code>. Call it before large or multi-step work. Optional arguments: <code>provider</code> (for example <code>codex</code> or <code>claude-code</code>) and <code>policy</code> (<code>max</code>, <code>balanced</code>, or <code>conservative</code>). The tool returns the same fields as <code>supercompress limits --json</code>. It runs in the local plugin. The hosted MCP URL does not have <code>runway_check</code>.</p>
+    <p><code>setup</code> and <code>plugin</code> add the runway rule to agent instructions and skills automatically, register <code>runway_check</code> on the local MCP, copy a standalone runtime to <code>~/.supercompress/runway/</code>, and connect the Claude Code statusline. <code>uninstall</code> reverses that wiring. Set <code>SUPERCOMPRESS_RUNWAY=0</code> to opt out: setup will not touch the statusline, and the proxy will not capture rate-limit headers.</p>
+    <p>The rule the plugin writes is short: on <code>go</code>, proceed (<code>scope: large</code> means take on more); on <code>land</code>, keep working and checkpoint before each step; on <code>wait</code>, checkpoint and wait <code>waitMinutes</code> or use <code>alternatives</code>; on <code>unknown</code>, carry on and never guess a limit.</p>
+
+    <h2 id="vs-clis">How is this different from usage-display CLIs?</h2>
+    <p>Tools such as ai-usage-cli, aistat, aiquota and cclimits show remaining quota to a person. Runway turns the same kind of data into an instruction the agent can follow. You can still read the text output yourself. The extra piece is <code>action</code> (and <code>--json</code> / <code>runway_check</code>) so the session can go, land, or wait without you watching the meter.</p>
+
+    <h2 id="install">How do I install Runway?</h2>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <p>Setup detects the coding agents on the machine and wires Runway with the rest of the plugin. Restart the agent so it loads the local MCP server. Then:</p>
+    <pre><code>supercompress doctor
+supercompress limits</code></pre>
+    <p><code>doctor</code> prints a per-agent health matrix, including a Runway line when the runtime is present. <code>supercompress uninstall</code> removes only SuperCompress entries (MCP registrations, hooks, instructions, the runway statusline wrap) and leaves other MCP servers in your configs.</p>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>Do I need a SuperCompress account to use Runway?</h3>
+    <p>No. <code>runway_check</code> runs in the local plugin and does not need an account. <code>supercompress limits</code> reads the same local sources.</p>
+    <h3>Does Runway work with Claude Code?</h3>
+    <p>Yes. <code>setup</code> connects Claude Code's statusline as a tee so <code>rate_limits</code> events are recorded. Your own statusline keeps working. If you skipped that step, run <code>supercompress limits connect claude-code</code> once.</p>
+    <h3>How do I turn it off?</h3>
+    <p>Set <code>SUPERCOMPRESS_RUNWAY=0</code>. That stops <code>setup</code> from touching the statusline and turns off proxy header capture. <code>uninstall</code> also reverses the wiring.</p>
+    <h3>Does the hosted MCP include <code>runway_check</code>?</h3>
+    <p>No. Runway runs in the local plugin. The hosted MCP URL does not have <code>runway_check</code>. Use the local MCP server or <code>supercompress limits --json</code>.</p>
+    <h3>What if there is no usage data yet?</h3>
+    <p>The action is <code>unknown</code>. Carry on, and never invent a limit. Codex writes rate-limit events after the first model turn. Claude Code reports them through its statusline after the first reply.</p>
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/coding-agent-token-usage">All coding agents</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/coding-agent-rate-limits">Coding agent rate limits</a></li>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>
