@@ -4,22 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Reduce Coding Agent Token Usage: Claude Code, Cursor, Codex and More | SuperCompress</title>
-  <meta name="description" content="Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent." />
+  <meta name="description" content="Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, OpenCode and Goose, plus what SuperCompress setup adds to each agent." />
   <meta name="keywords" content="reduce coding agent token usage, coding agent tokens, Claude Code Cursor Codex token usage, AI coding agent context compression, SuperCompress coding agents" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
   <meta property="og:title" content="Reduce coding agent token usage" />
-  <meta property="og:description" content="Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent." />
+  <meta property="og:description" content="Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, OpenCode and Goose, plus what SuperCompress setup adds to each agent." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/coding-agent-token-usage" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Reduce coding agent token usage" />
-  <meta name="twitter:description" content="Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent." />
+  <meta name="twitter:description" content="Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, OpenCode and Goose, plus what SuperCompress setup adds to each agent." />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/coding-agent-token-usage" />
   <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-18" />
+  <meta property="article:modified_time" content="2026-10-25" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -33,9 +33,9 @@
   "@context": "https://schema.org",
   "@type": "CollectionPage",
   "headline": "Reduce coding agent token usage",
-  "description": "Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent.",
+  "description": "Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, OpenCode and Goose, plus what SuperCompress setup adds to each agent.",
   "datePublished": "2026-10-09",
-  "dateModified": "2026-10-18",
+  "dateModified": "2026-10-25",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -132,36 +132,42 @@
     {
       "@type": "ListItem",
       "position": 9,
+      "name": "Goose",
+      "url": "https://www.supercompress.dev/reduce-goose-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 10,
       "name": "Context compression for coding agents: approaches compared",
       "url": "https://www.supercompress.dev/context-compression-for-coding-agents"
     },
     {
       "@type": "ListItem",
-      "position": 10,
+      "position": 11,
       "name": "MCP token reduction",
       "url": "https://www.supercompress.dev/mcp-token-reduction"
     },
     {
       "@type": "ListItem",
-      "position": 11,
+      "position": 12,
       "name": "MCP tool output compression",
       "url": "https://www.supercompress.dev/mcp-tool-output-compression"
     },
     {
       "@type": "ListItem",
-      "position": 12,
+      "position": 13,
       "name": "Claude Code context limit",
       "url": "https://www.supercompress.dev/claude-code-context-limit"
     },
     {
       "@type": "ListItem",
-      "position": 13,
+      "position": 14,
       "name": "Claude Code MCP output too large",
       "url": "https://www.supercompress.dev/claude-code-mcp-output-too-large"
     },
     {
       "@type": "ListItem",
-      "position": 14,
+      "position": 15,
       "name": "SuperCompress FAQ",
       "url": "https://www.supercompress.dev/faq"
     }
@@ -223,7 +229,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Coding agents · Updated 2026-10-18</p>
+  <p class="seo-kicker">Coding agents · Updated 2026-10-25</p>
   <div class="seo-tags">
     <span class="seo-tag seo-tag--accent">Coding agents</span>
     <span class="seo-tag">Token usage</span>
@@ -260,9 +266,10 @@
         <tr><td><a href="/reduce-gemini-cli-token-usage"><strong>Gemini CLI</strong></a></td><td>MCP server in settings.json.</td></tr>
         <tr><td><a href="/reduce-cline-token-usage"><strong>Cline, Roo Code and Kilo Code</strong></a></td><td>MCP server in each extension&#x27;s settings.</td></tr>
         <tr><td><a href="/reduce-opencode-token-usage"><strong>OpenCode</strong></a></td><td>MCP server and AGENTS.md instructions.</td></tr>
+        <tr><td><a href="/reduce-goose-token-usage"><strong>Goose</strong></a></td><td>MCP server in config.yaml and AGENTS.md instructions. No SuperCompress hooks.</td></tr>
       </tbody>
     </table>
-    <p>Setup also detects Zed, Goose, Continue, Amp, Crush, GitHub Copilot in VS Code, Claude Desktop, Grok Build, OpenClaw and more. Run <code>supercompress doctor</code> to see what it found on your machine.</p>
+    <p>Setup also detects Zed, Continue, Amp, Crush, GitHub Copilot in VS Code, Claude Desktop, Grok Build, OpenClaw and more. Run <code>supercompress doctor</code> to see what it found on your machine.</p>
 
     <h2 id="guides">Guides</h2>
     <ul>
@@ -314,6 +321,7 @@
             <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
             <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
             <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/reduce-goose-token-usage">Goose</a></li>
             <li><a href="/coding-agent-token-usage">All coding agents</a></li>
           </ul>
         </div>

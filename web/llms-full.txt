@@ -380,6 +380,21 @@ A: No. It is extractive. The lines it keeps are copied from the original output,
 Q: How do I undo the OpenCode setup?
 A: Run supercompress uninstall. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.
 
+### Reduce Goose Token Usage: Compress Tool Output
+
+URL: https://www.supercompress.dev/reduce-goose-token-usage
+
+Where Goose tokens go (developer-extension shell output, file reads, test runs, MCP results) and how SuperCompress adds an MCP extension and instructions to Goose so the agent keeps the original lines that answer your question. Goose gets the MCP tool and instructions; there are no SuperCompress hooks for Goose. Setup writes the macOS and Linux path.
+
+Q: Does SuperCompress change my other Goose extensions?
+A: No. It adds one supercompress entry beside them in ~/.config/goose/config.yaml. supercompress uninstall removes only that entry.
+
+Q: How do I undo the Goose setup?
+A: Run supercompress uninstall. It removes only the supercompress block from Goose config.yaml and the SuperCompress block from ~/.config/goose/AGENTS.md.
+
+Q: Does it work on Windows?
+A: Setup writes the macOS and Linux path (~/.config/goose/config.yaml) today. It does not write Goose's Windows config path.
+
 ### Claude Code context limit: why you run out and what to do
 
 URL: https://www.supercompress.dev/claude-code-context-limit
@@ -450,7 +465,7 @@ A: Yes. They act at different points and can be combined.
 
 URL: https://www.supercompress.dev/coding-agent-token-usage
 
-Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent.
+Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, OpenCode and Goose, plus what SuperCompress setup adds to each agent.
 
 Q: Which coding agents does SuperCompress support?
 A: Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, Continue and more. supercompress setup detects them and supercompress doctor lists what it found.

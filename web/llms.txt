@@ -52,6 +52,7 @@ The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Ho
 - [Reduce Claude Code token usage](https://www.supercompress.dev/reduce-claude-code-token-usage): Where Claude Code tokens go and how to cut them.
 - [Reduce Cursor token usage](https://www.supercompress.dev/reduce-cursor-token-usage): What setup adds to Cursor (MCP server, rule and hooks).
 - [Reduce Codex token usage](https://www.supercompress.dev/reduce-codex-token-usage): Compress shell output and MCP results in Codex CLI.
+- [Reduce Goose token usage](https://www.supercompress.dev/reduce-goose-token-usage): Compress developer-extension shell output, file reads and MCP results in Goose.
 - [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression): Compress large MCP results against the current question.
 - [All coding agents](https://www.supercompress.dev/coding-agent-token-usage): Guides for Windsurf, Gemini CLI, Cline, OpenCode, Hermes Agent and more.
 - [Compress Claude Code tool output](https://www.supercompress.dev/compress-claude-code-tool-output): Set up SuperCompress in Claude Code so large tool output is compressed against your request through PostToolUse hooks and an MCP tool.
