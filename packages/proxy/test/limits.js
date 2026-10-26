@@ -535,9 +535,31 @@ test("ping: sends only verdict + surface, and every opt-out stops it", async () 
       assert.strictEqual(await ping({ action: "go", surface: "cli" }, { ...env, SUPERCOMPRESS_LIMITCHECK_URL: url }), false);
     }
     assert.strictEqual(hits.length, 1);
+    // Unsupported protocol and a garbage URL: resolve false, never throw.
+    assert.strictEqual(await ping({ action: "go", surface: "cli" }, { SUPERCOMPRESS_LIMITCHECK_URL: "ftp://localhost/count" }), false);
+    assert.strictEqual(await ping({ action: "go", surface: "cli" }, { SUPERCOMPRESS_LIMITCHECK_URL: "not a url" }), false);
     // Unreachable endpoint: resolves false, never throws.
     assert.strictEqual(await ping({ action: "go", surface: "cli" }, { SUPERCOMPRESS_LIMITCHECK_URL: "http://127.0.0.1:9/x" }), false);
   } finally {
+    server.close();
+  }
+});
+
+test("ping: a server that never finishes is cut off at the deadline", async () => {
+  const { ping } = require("../src/limits/ping");
+  const server = http.createServer((req, res) => {
+    res.writeHead(202);
+    const t = setInterval(() => res.write("."), 200);
+    res.on("close", () => clearInterval(t));
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const started = Date.now();
+  try {
+    const ok = await ping({ action: "go", surface: "cli" }, { SUPERCOMPRESS_LIMITCHECK_URL: `http://127.0.0.1:${server.address().port}/` });
+    assert.strictEqual(ok, false);
+    assert.ok(Date.now() - started < 2500, "gave up near the 1.5 s deadline");
+  } finally {
+    server.closeAllConnections();
     server.close();
   }
 });

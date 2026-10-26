@@ -1,18 +1,26 @@
 /**
  * Global limitcheck invocation counter for limitcheck.supercompress.dev.
  *
- * Firestore is off on this project, so counts live in disabled Auth stubs,
- * like global-token-stats.js. Writes are read-modify-write, so they are
- * spread over SHARDS stubs to keep concurrent pings from overwriting each
- * other; reads sum every shard in one getUsers call.
+ * Firestore is off and the project has no Storage bucket or Redis, so counts
+ * live in disabled Auth stubs, like global-token-stats.js. Auth claims are
+ * last-write-wins with no compare-and-swap, so a bump is made safe by hand:
+ * pings are spread over SHARDS stubs, each write records a nonce in a short
+ * list of recent writers, and the writer re-reads after VERIFY_MS. If its
+ * nonce is gone while fewer than RECENT writes have landed since, a
+ * concurrent writer overwrote it and the bump is retried. Reads sum every
+ * shard in one getUsers call.
  *
- * Stub uids: sc_stats_lc_0 … sc_stats_lc_7
- * Claims: { lc: { n, go, land, pace, wait, unknown, cli, mcp, at } }
+ * Stub uids: sc_stats_lc_0 … sc_stats_lc_15
+ * Claims: { lc: { n, go, land, pace, wait, unknown, cli, mcp, at, r: [nonce…] } }
  */
+const crypto = require("crypto");
 const admin = require("firebase-admin");
 const { initFirebaseAdmin } = require("./auth");
 
-const SHARDS = 8;
+const SHARDS = 16;
+const RECENT = 12;
+const VERIFY_MS = 300;
+const ATTEMPTS = 4;
 const SHARD_PREFIX = "sc_stats_lc_";
 const ACTIONS = ["go", "land", "pace", "wait", "unknown"];
 const SURFACES = ["cli", "mcp"];
@@ -52,8 +60,9 @@ function sumShards(claimsList) {
   return out;
 }
 
-function nextClaims(prev = {}, { action, surface }, at = new Date().toISOString()) {
+function nextClaims(prev = {}, { action, surface }, at = new Date().toISOString(), nonce = newNonce()) {
   const lc = prev.lc || {};
+  const recent = Array.isArray(lc.r) ? lc.r.filter((x) => typeof x === "string") : [];
   return {
     ...prev,
     lc: {
@@ -62,9 +71,23 @@ function nextClaims(prev = {}, { action, surface }, at = new Date().toISOString(
       [action]: count(lc[action]) + 1,
       [surface]: count(lc[surface]) + 1,
       at,
+      r: [nonce, ...recent].slice(0, RECENT),
     },
   };
 }
+
+function newNonce() {
+  return crypto.randomBytes(5).toString("hex");
+}
+
+/** True unless a concurrent writer replaced our write (see header). */
+function writeLanded(current = {}, written) {
+  const lc = current.lc || {};
+  if (Array.isArray(lc.r) && lc.r.includes(written.nonce)) return true;
+  return count(lc.n) - written.n >= RECENT;
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function ensureShard(uid) {
   try {
@@ -80,21 +103,31 @@ async function ensureShard(uid) {
   }
 }
 
-async function bumpLimitcheck({ action, surface }, shard = Math.floor(Math.random() * SHARDS)) {
-  const uid = SHARD_PREFIX + (count(shard) % SHARDS);
+async function bumpLimitcheck({ action, surface }, shard = Math.floor(Math.random() * SHARDS), opts = {}) {
+  const verifyMs = opts.verifyMs ?? VERIFY_MS;
   const event = {
     action: ACTIONS.includes(action) ? action : "unknown",
     surface: SURFACES.includes(surface) ? surface : "cli",
   };
-  for (let i = 0; ; i++) {
+  let lastErr = null;
+  for (let i = 0; i < ATTEMPTS; i++) {
+    // Retries move to another shard, away from whoever we collided with.
+    const uid = SHARD_PREFIX + ((count(shard) + i * 7) % SHARDS);
     try {
       const user = await ensureShard(uid);
-      await auth().setCustomUserClaims(uid, nextClaims(user.customClaims || {}, event));
-      return true;
+      const nonce = newNonce();
+      const claims = nextClaims(user.customClaims || {}, event, new Date().toISOString(), nonce);
+      await auth().setCustomUserClaims(uid, claims);
+      await sleep(verifyMs + Math.floor(Math.random() * 100));
+      const after = await auth().getUser(uid);
+      if (writeLanded(after.customClaims || {}, { nonce, n: claims.lc.n })) return true;
+      lastErr = new Error("concurrent write replaced this bump");
     } catch (err) {
-      if (i === 2) throw err;
+      lastErr = err;
     }
+    await sleep(Math.floor(Math.random() * 150) * (i + 1));
   }
+  throw lastErr || new Error("limitcheck bump failed");
 }
 
 async function readLimitcheck() {
@@ -111,6 +144,8 @@ module.exports = {
   emptyStats,
   sumShards,
   nextClaims,
+  writeLanded,
+  RECENT,
   bumpLimitcheck,
   readLimitcheck,
 };

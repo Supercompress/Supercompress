@@ -19,34 +19,45 @@ function pingDisabled(env = process.env) {
   return isOff(env.SUPERCOMPRESS_TELEMETRY) || isOn(env.DO_NOT_TRACK) || isOff(env.SUPERCOMPRESS_RUNWAY);
 }
 
-/** Resolves true when the count was accepted, false otherwise. */
+/** Resolves true when the count was accepted, false otherwise. Never rejects. */
 function ping({ action, surface }, env = process.env) {
   if (pingDisabled(env)) return Promise.resolve(false);
   return new Promise((resolve) => {
-    let url;
+    let req = null;
+    let settled = false;
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(deadline);
+      if (req && !ok) req.destroy();
+      resolve(ok);
+    };
+    // Hard cap on the whole exchange (DNS, connect, a slow-dribbling reply);
+    // the socket timeout alone only catches inactivity.
+    const deadline = setTimeout(() => finish(false), TIMEOUT_MS);
     try {
-      url = new URL(env.SUPERCOMPRESS_LIMITCHECK_URL || DEFAULT_URL);
+      const url = new URL(env.SUPERCOMPRESS_LIMITCHECK_URL || DEFAULT_URL);
+      if (url.protocol !== "https:" && url.protocol !== "http:") return finish(false);
+      const body = JSON.stringify({ action: String(action || "unknown"), surface: surface === "mcp" ? "mcp" : "cli" });
+      req = (url.protocol === "http:" ? http : https).request(
+        url,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) },
+          timeout: TIMEOUT_MS,
+        },
+        (res) => {
+          res.resume();
+          res.on("end", () => finish(res.statusCode >= 200 && res.statusCode < 300));
+          res.on("error", () => finish(false));
+        }
+      );
+      req.on("timeout", () => finish(false));
+      req.on("error", () => finish(false));
+      req.end(body);
     } catch {
-      resolve(false);
-      return;
+      finish(false);
     }
-    const body = JSON.stringify({ action: String(action || "unknown"), surface: surface === "mcp" ? "mcp" : "cli" });
-    const req = (url.protocol === "http:" ? http : https).request(
-      url,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) },
-        timeout: TIMEOUT_MS,
-      },
-      (res) => {
-        res.resume();
-        res.on("end", () => resolve(res.statusCode >= 200 && res.statusCode < 300));
-        res.on("error", () => resolve(false));
-      }
-    );
-    req.on("timeout", () => req.destroy());
-    req.on("error", () => resolve(false));
-    req.end(body);
   });
 }
 

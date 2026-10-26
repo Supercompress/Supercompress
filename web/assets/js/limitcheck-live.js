@@ -2,7 +2,7 @@
   "use strict";
   var POLL_MS = 3000;
   var fmt = new Intl.NumberFormat("en-US");
-  var shown = { total: 0, go: 0, land: 0, wait: 0, unknown: 0 };
+  var shown = { total: 0, go: 0, land: 0, pace: 0, wait: 0, unknown: 0 };
   var first = true;
 
   function el(id) { return document.getElementById(id); }
@@ -30,9 +30,10 @@
   function render(data) {
     var a = data.actions || {};
     tween("total", "lc-total", data.invocations || 0);
-    ["go", "land", "wait", "unknown"].forEach(function (k) { tween(k, "lc-" + k, a[k] || 0); });
-    var sum = (a.go || 0) + (a.land || 0) + (a.wait || 0) + (a.unknown || 0);
-    ["go", "land", "wait"].forEach(function (k) {
+    var keys = ["go", "land", "pace", "wait", "unknown"];
+    keys.forEach(function (k) { tween(k, "lc-" + k, a[k] || 0); });
+    var sum = keys.reduce(function (n, k) { return n + (a[k] || 0); }, 0);
+    ["go", "land", "pace", "wait"].forEach(function (k) {
       el("lc-bar-" + k).style.width = sum ? ((a[k] || 0) / sum) * 100 + "%" : "0";
     });
     if (data.updated_at) {

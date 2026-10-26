@@ -27,10 +27,11 @@
     h1 { margin-top: 96px; font-size: clamp(64px, 16vw, 216px); font-weight: 800; letter-spacing: -0.06em; line-height: 0.9; font-variant-numeric: tabular-nums; color: var(--acid); word-break: break-all; }
     .sub { margin-top: 20px; font-size: clamp(22px, 3vw, 36px); font-weight: 700; letter-spacing: -0.03em; }
     .note { margin-top: 10px; font-family: "JetBrains Mono", monospace; font-size: 14px; color: var(--dim); }
-    .split { margin-top: 64px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .split { margin-top: 64px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
     .cell { border-top: 6px solid var(--line); padding-top: 16px; }
     .cell.go { border-color: var(--acid); }
     .cell.land { border-color: var(--paper); }
+    .cell.pace { border-color: #6f8f12; }
     .cell.wait { border-color: var(--dim); }
     .verb { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; }
     .num { margin-top: 6px; font-family: "JetBrains Mono", monospace; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -63,10 +64,11 @@
     <p class="sub">limit checks run by coding agents, worldwide.</p>
     <p class="note" id="lc-updated">Counting since 25 Oct 2026. Anonymous counts only.</p>
 
-    <div class="bar" aria-hidden="true"><span id="lc-bar-go" style="background:var(--acid);width:0"></span><span id="lc-bar-land" style="background:var(--paper);width:0"></span><span id="lc-bar-wait" style="background:var(--dim);width:0"></span></div>
+    <div class="bar" aria-hidden="true"><span id="lc-bar-go" style="background:var(--acid);width:0"></span><span id="lc-bar-land" style="background:var(--paper);width:0"></span><span id="lc-bar-pace" style="background:#6f8f12;width:0"></span><span id="lc-bar-wait" style="background:var(--dim);width:0"></span></div>
     <div class="split">
       <div class="cell go"><div class="verb">Go</div><div class="num" id="lc-go">0</div><div class="what">Room left. Take on more.</div></div>
       <div class="cell land"><div class="verb">Land</div><div class="num" id="lc-land">0</div><div class="what">Almost spent. Commit each step, keep going.</div></div>
+      <div class="cell pace"><div class="verb">Pace</div><div class="num" id="lc-pace">0</div><div class="what">Weekly limit burning too fast. Smaller steps, keep going.</div></div>
       <div class="cell wait"><div class="verb">Wait</div><div class="num" id="lc-wait">0</div><div class="what">Spent. Wait for the reset, or switch provider.</div></div>
       <div class="cell"><div class="verb">Unknown</div><div class="num" id="lc-unknown">0</div><div class="what">No usage data yet. Carry on, never guess.</div></div>
     </div>
