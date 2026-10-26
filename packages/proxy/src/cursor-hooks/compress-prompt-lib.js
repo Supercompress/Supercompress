@@ -501,7 +501,8 @@ async function compressContext(context, query, codingAgent, opts = {}) {
   const warnings = [...new Set(chunkResults.map((r) => r.warning).filter(Boolean))];
   const quotaWarning = chunkResults.map((r) => r.quota_warning).filter(Boolean).pop() || null;
   const queryMode = chunkResults.some((r) => r.query_mode === "dump") ? "dump" : chunkResults[0]?.query_mode || null;
-  const notice = chunkResults.map((r) => r.notice).find(Boolean) || null;
+  // A passthrough chunk's "not billed" notice must not speak for chunks that were billed.
+  const notice = chunkResults.filter((r) => !r.passthrough).map((r) => r.notice).find(Boolean) || null;
   const partial = okChunks > 0 && failedChunks > 0;
   const allFailed = okChunks === 0 && failedChunks > 0;
   return {
