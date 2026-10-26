@@ -415,6 +415,12 @@ async function compressOnce(context, query, codingAgent, opts = {}) {
         savings_pct: pct,
         latency_ms: body.latency_ms || null,
         request_id: idempotencyKey,
+        // Server safety signals (0.5.41+ API): unchanged input, deep-cut and quota warnings.
+        passthrough: body.passthrough === true,
+        warning: body.compression_warning || null,
+        quota_warning: body.quota_warning || null,
+        notice: body.notice || null,
+        query_mode: body.query_mode || null,
       };
     } catch (err) {
       if (err?.name === "AbortError") {
@@ -457,6 +463,7 @@ async function compressContext(context, query, codingAgent, opts = {}) {
   }
 
   const parts = [];
+  const chunkResults = [];
   let totalIn = 0;
   let totalOut = 0;
   let lastSkip = null;
@@ -484,12 +491,18 @@ async function compressContext(context, query, codingAgent, opts = {}) {
       continue;
     }
     okChunks += 1;
+    chunkResults.push(r);
     parts.push(r.compressed);
     totalIn += r.original_tokens || Math.round(chunks[i].length / 4);
     totalOut += r.compressed_tokens || Math.round(r.compressed.length / 4);
   }
   const compressed = parts.join("\n\n");
   const pct = totalIn > 0 ? Math.round(((totalIn - totalOut) / totalIn) * 100) : 0;
+  const warnings = [...new Set(chunkResults.map((r) => r.warning).filter(Boolean))];
+  const quotaWarning = chunkResults.map((r) => r.quota_warning).filter(Boolean).pop() || null;
+  const queryMode = chunkResults.some((r) => r.query_mode === "dump") ? "dump" : chunkResults[0]?.query_mode || null;
+  // A passthrough chunk's "not billed" notice must not speak for chunks that were billed.
+  const notice = chunkResults.filter((r) => !r.passthrough).map((r) => r.notice).find(Boolean) || null;
   const partial = okChunks > 0 && failedChunks > 0;
   const allFailed = okChunks === 0 && failedChunks > 0;
   return {
@@ -504,6 +517,11 @@ async function compressContext(context, query, codingAgent, opts = {}) {
     chunks: chunks.length,
     chunks_ok: okChunks,
     chunks_failed: failedChunks,
+    passthrough: chunkResults.length > 0 && chunkResults.every((r) => r.passthrough),
+    warning: warnings.join(" ") || null,
+    quota_warning: quotaWarning,
+    query_mode: queryMode,
+    notice,
   };
 }
 
@@ -603,6 +621,7 @@ async function compressIncremental({ context, query, codingAgent, sessionId, kin
   return {
     compressed: state.memory,
     delta: deltaResult.compressed,
+    delta_tokens: deltaResult.compressed_tokens || Math.round(String(deltaResult.compressed || "").length / 4),
     original_tokens: inTok,
     compressed_tokens: outTok,
     savings_pct: pct,
@@ -610,6 +629,12 @@ async function compressIncremental({ context, query, codingAgent, sessionId, kin
     compacted,
     compact: compactMeta,
     skipped: null,
+    passthrough: deltaResult.passthrough === true,
+    warning: [deltaResult.warning, compactMeta?.warning].filter(Boolean).join(" ") || null,
+    // Compaction bills after the delta, so its quota state is the latest one.
+    quota_warning: compactMeta?.quota_warning || deltaResult.quota_warning || null,
+    notice: deltaResult.notice || null,
+    query_mode: deltaResult.query_mode || null,
   };
 }
 
@@ -631,9 +656,11 @@ async function compactSessionMemory(sessionId, query, opts = {}) {
   }
 
   const codingAgent = opts.codingAgent || "OpenClaw";
-  const compactQuery =
-    `${query || "coding task"} | Compact this session memory. ` +
-    "Keep decisions, file paths, errors, APIs, open TODOs, and key code. Drop chatter and duplicates.";
+  // Without a real ask, compact in dump mode (budgeted) rather than anchoring on filler words.
+  const compactQuery = query
+    ? `${query} | Compact this session memory. ` +
+      "Keep decisions, file paths, errors, APIs, open TODOs, and key code. Drop chatter and duplicates."
+    : "Compact this session memory.";
   const compactResult = await compressContext(memory, compactQuery, codingAgent, {
     source: opts.kind === "mcp" ? "mcp" : opts.kind || "openclaw:compact",
     sessionId: sid,

@@ -20,6 +20,7 @@ const {
   roundUsd,
 } = require("../_lib/stripe");
 const crypto = require("crypto");
+const { DUMP_KEEP_RATIO, isGenericQuery, assessResult, quotaStatus } = require("../_lib/compress-safety");
 const {
   sanitizeRequestId,
   computeCompressFingerprint,
@@ -333,10 +334,14 @@ module.exports = async (req, res) => {
     rl.limit = V1_RPM;
 
     const context = body.context || "";
-    const query = body.query || "Summarize this context.";
+    const query = (typeof body.query === "string" && body.query.trim()) || "Summarize this context.";
     const mode = body.mode || "neural";
     const budgetRatio = mode === "fixed" ? (body.budget_ratio ?? 0.35) : 0.35;
     const ccr = body.ccr === true || body.ccr === "true";
+    // No query, or one that names no target ("Summarize this context."): query-anchored
+    // extraction has nothing to anchor on and can keep only a header. Use the budgeted digest.
+    // (CCR keeps its own query path; it is not labelled dump mode.)
+    const dumpMode = isGenericQuery(body.query) && !ccr;
     const cache_prefix = body.cache_prefix === true || body.cache_prefix === "true";
     const coding_agent = body.coding_agent || null;
     const skipLog = body.log === false || body.log === "false";
@@ -410,7 +415,11 @@ module.exports = async (req, res) => {
       throw err;
     }
 
-    const result = await (ccr ? compressCCR(context, query) : compressAdaptive(context, query));
+    const result = ccr
+      ? await compressCCR(context, query)
+      : dumpMode
+        ? { ...compress(context, query, DUMP_KEEP_RATIO), mode: "dump" }
+        : await compressAdaptive(context, query);
     // Neural Keep historically returned only compressed_tokens — normalize so
     // billing / response / meters never see undefined kept_tokens.
     if (result && result.kept_tokens == null && result.compressed_tokens != null) {
@@ -510,6 +519,44 @@ module.exports = async (req, res) => {
     const keptTokens =
       result.kept_tokens ?? result.compressed_tokens ?? result.tokens_out ?? 0;
     const originalTokens = result.original_tokens ?? 0;
+
+    // Never hand back something no smaller than the input, and never bill for it.
+    const safety = assessResult({
+      originalTokens,
+      keptTokens,
+      originalChars: context.length,
+      deliveredChars: finalText.length,
+      dumpMode,
+    });
+    if (safety.passthrough) {
+      if (leaseHeld && leaseOwnerUid && requestId) {
+        try {
+          await releaseIdempotencyLease(leaseOwnerUid, requestId);
+        } catch (_) {}
+        leaseHeld = false;
+      }
+      res.setHeader("Idempotency-Key", requestId);
+      return jsonWithRateLimit(res, 200, {
+        compressed_text: context,
+        original_tokens: originalTokens,
+        kept_tokens: originalTokens,
+        tokens_saved: 0,
+        tokens_saved_pct: 0,
+        kv_savings_pct: 0,
+        passthrough: true,
+        passthrough_reason: safety.reason,
+        notice:
+          `Returned the input unchanged: compression would have saved ${safety.saved_pct}% ` +
+          `(${keptTokens} vs ${originalTokens} tokens). Not billed.`,
+        billed: false,
+        mode: dumpMode ? "dump" : result.mode || "compiler",
+        query_mode: dumpMode ? "dump" : "query",
+        latency_ms: latencyMs,
+        coding_agent: coding_agent || null,
+        source: inferredSource,
+        request_id: requestId,
+      }, rl);
+    }
     const responseBody = {
       compressed_text: finalText,
       original_tokens: originalTokens,
@@ -543,12 +590,34 @@ module.exports = async (req, res) => {
       threshold: result.threshold ?? null,
       neural_keep_fallback: result.neural_keep_fallback === true,
       fallback_reason: result.fallback_reason || null,
+      query_mode: dumpMode ? "dump" : "query",
+      ...(dumpMode
+        ? {
+            notice:
+              "Dump mode (no specific query): kept about half of the input by structure and salience. " +
+              "Pass the user's question as `query` for a targeted, much smaller digest.",
+          }
+        : {}),
+      ...(safety.warning ? { compression_warning: safety.warning } : {}),
     };
 
     // Billing is fail-closed: never return compressed text without a durable charge/quota write.
     // Persist responseBody so identical Idempotency-Key retries replay instead of recomputing.
+    // Persist safety + an estimated quota state with the billed response, so an
+    // Idempotency-Key replay carries the same warnings. Replaced with the exact state below.
+    const ownerClaims = authenticated.owner?.customClaims || {};
+    const quotaFor = (tokensUsed) =>
+      quotaStatus({ tokensUsed, allowance: freeAllowance(ownerClaims), comped: isComped(ownerClaims) });
     try {
-      await withTimeout(
+      const month = new Date().toISOString().slice(0, 7);
+      const prior = ownerClaims.sc_usage?.month === month ? Number(ownerClaims.sc_usage.tokens_in || 0) : 0;
+      responseBody.quota = quotaFor(prior + originalTokens);
+      if (responseBody.quota.warning) responseBody.quota_warning = responseBody.quota.warning;
+    } catch (_) {}
+
+    let billedUsage = null;
+    try {
+      billedUsage = await withTimeout(
         recordUsage(authenticated.user, authenticated.owner, result, {
           requestId,
           fingerprint,
@@ -568,6 +637,17 @@ module.exports = async (req, res) => {
       e.code = err.code || "billing_unavailable";
       e.requestId = requestId;
       throw e;
+    }
+
+    // Quota state on every billed response so agents see the free tier running out.
+    try {
+      if (Number.isFinite(Number(billedUsage?.tokens_in))) {
+        responseBody.quota = quotaFor(Number(billedUsage.tokens_in));
+        delete responseBody.quota_warning;
+        if (responseBody.quota.warning) responseBody.quota_warning = responseBody.quota.warning;
+      }
+    } catch (err) {
+      console.warn("quota status skipped:", err.message || err);
     }
 
     // Analytics / agent meters ONLY after immutable successful billing — never credit
