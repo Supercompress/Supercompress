@@ -106,9 +106,11 @@ codex plugin add supercompress@supercompress
 
 | Tool | Arguments | What it does |
 | --- | --- | --- |
-| `compress_context` | `context` (string, required): the bulky dump, never the user's ask. `query` (string, required): the user's ask, never compressed, guides what to keep. `session_id` (string, optional): attribution. | Compresses tool dumps, logs, diffs and files against the query and returns a shorter digest that keeps the answer evidence, plus savings stats. |
+| `compress_context` | `context` (string, required): the bulky dump, never the user's ask. `query` (string, optional): the user's ask, never compressed, guides what to keep. Omit it or send a generic ask for dump mode (about half kept). `session_id` (string, optional): attribution. | Compresses tool dumps, logs, diffs and files. With a query, returns a targeted digest; without one, dump mode. Read `warning` / `compression_warning`; `passthrough` means keep your original text. |
 | `connect_account` | none | Connects SuperCompress. Returns a dashboard link where you sign in, create an `sc_` key and add it to the host config. |
 | `usage_summary` | none | Returns token savings and quota for the connected account. |
+
+On the hosted MCP endpoint, `query` is optional. The local npm plugin (supercompress-proxy 0.5.40) still requires `query` until the next proxy release.
 
 A GET request to https://www.supercompress.dev/api/mcp returns server metadata: name, version, transport, protocol version, auth methods and tool names.
 
@@ -175,9 +177,11 @@ The body can be JSON or form-encoded (`curl -d "context=...&query=..."`).
 | Field | Type | Notes |
 | --- | --- | --- |
 | `context` | string | Required. The material to compress. Must be non-empty and at most 120,000 characters. |
-| `query` | string | The user's question. It decides what is kept, so always send it. |
+| `query` | string | Optional. The user's question. Omit it, or send a generic ask, for a dump-mode digest that keeps about half of the input. |
 | `session_id` | string | Optional. Groups requests for usage attribution. |
 | `cache_prefix` | boolean | Optional. Wraps the output in a stable prefix for provider prompt caching. This is text-level only. SuperCompress never touches model KV cache. |
+
+A missing or generic `query` runs dump mode (`query_mode: "dump"` plus a `notice`). Results that would save under 5%, or come back larger than the input, return as passthrough (`passthrough: true`, `passthrough_reason`, `billed: false`). Very deep cuts on large inputs may include `compression_warning`. Billed responses include a `quota` object (`tokens_used_this_period`, `free_allowance`, `free_tokens_remaining`, `billing`) and sometimes `quota_warning`. CCR requests (`ccr: true`) keep their own query path and are not labelled dump mode.
 
 Optional header: `Idempotency-Key`. A retry with the same key and the same body replays the stored response instead of compressing and billing again. While the first request is still running, a retry returns `409`.
 

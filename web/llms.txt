@@ -32,7 +32,7 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
   -d '{"context":"<large context>","query":"<the user question>"}'
 ```
 
-The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Hosted MCP endpoint (Streamable HTTP): https://www.supercompress.dev/api/mcp with tools `compress_context` (args `context`, `query`), `connect_account` and `usage_summary`.
+The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Hosted MCP endpoint (Streamable HTTP): https://www.supercompress.dev/api/mcp with tools `compress_context` (args `context`, optional `query`), `connect_account` and `usage_summary`.
 
 ## How it works
 
