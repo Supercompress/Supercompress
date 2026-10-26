@@ -40,6 +40,14 @@ try {
       ], { cwd: isolatedHome, env, encoding: "utf8", timeout: 30000 });
       assert.strictEqual(result.status, 0, `${name}: ${result.error || result.stderr}`);
     };
+    const helperPaths = [...new Set(destinations.map(destination => path.resolve(isolatedHome, destination, "..", "mcp-response.js")))];
+    const originals = new Map();
+    for (const helper of helperPaths) {
+      fs.mkdirSync(path.dirname(helper), { recursive: true });
+      const original = `user helper for ${name}\n`;
+      fs.writeFileSync(helper, original);
+      originals.set(helper, original);
+    }
     install();
     for (const destination of destinations) {
       const filename = destination === ".openclaw/extensions/supercompress" ? "compress-prompt-lib.cjs" : "compress-prompt-lib.js";
@@ -78,7 +86,14 @@ try {
       const helper = path.resolve(isolatedHome, destination, "..", "mcp-response.js");
       assert.strictEqual(fs.readFileSync(helper, "utf8"), fs.readFileSync(path.join(ROOT, "src", "mcp-response.js"), "utf8"), `${name} refreshes helper`);
     }
-    console.log(`PASS ${name}: standalone require and helper refresh`);
+    const uninstall = spawnSync(process.execPath, ["-e",
+      `require(${JSON.stringify(path.join(ROOT, "src", "detector"))}).revertAll();`,
+    ], { cwd: isolatedHome, env, encoding: "utf8", timeout: 30000 });
+    assert.strictEqual(uninstall.status, 0, `${name} uninstall: ${uninstall.error || uninstall.stderr}`);
+    for (const [helper, original] of originals) {
+      assert.strictEqual(fs.readFileSync(helper, "utf8"), original, `${name} restores pre-existing helper`);
+    }
+    console.log(`PASS ${name}: standalone require, helper refresh and uninstall restore`);
   }
 } finally {
   fs.rmSync(home, { recursive: true, force: true });

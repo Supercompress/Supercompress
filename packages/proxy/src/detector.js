@@ -77,6 +77,7 @@ function currentBackups() {
 function isOwnedArtifact(filePath) {
   const rel = path.relative(HOME, filePath);
   if (rel.startsWith("..") || path.isAbsolute(rel)) return false;
+  if ([".cursor/hooks/mcp-response.js", ".hermes/agent-hooks/mcp-response.js", ".hermes/plugins/mcp-response.js", ".openclaw/hooks/mcp-response.js", ".openclaw/extensions/mcp-response.js"].includes(rel.split(path.sep).join("/"))) return true;
   return rel.split(/[\\/]/).some((seg) => /^supercompress(?:\.[a-z]+)?$/i.test(seg));
 }
 
@@ -2441,6 +2442,7 @@ function writeCursorHooks() {
   const cursorDir = path.join(HOME, ".cursor");
   const hooksDir = path.join(cursorDir, "hooks", "supercompress");
   fs.mkdirSync(hooksDir, { recursive: true });
+  backupFile(path.join(hooksDir, "..", "mcp-response.js"));
   fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(hooksDir, "..", "mcp-response.js"));
 
   const srcDir = path.join(__dirname, "cursor-hooks");
@@ -2519,6 +2521,7 @@ function writeCursorHooks() {
 function syncHookScripts() {
   const hooksDir = path.join(HOME, ".cursor", "hooks", "supercompress");
   fs.mkdirSync(hooksDir, { recursive: true });
+  backupFile(path.join(hooksDir, "..", "mcp-response.js"));
   fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(hooksDir, "..", "mcp-response.js"));
   const srcDir = path.join(__dirname, "cursor-hooks");
   for (const name of [
