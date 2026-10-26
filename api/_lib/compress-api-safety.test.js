@@ -9,6 +9,7 @@ let wrapped;
 let billed;
 let recordedUsage;
 let engineQuery;
+let dumpBudget;
 let replay;
 let stores = 0;
 let wraps = 0;
@@ -30,6 +31,7 @@ const mocks = {
     recordUsage: async (user, owner, result, options) => { billed = { result, response: options.response }; return recordedUsage; },
   },
   "../_lib/engine": {
+    compress: (context, query, budget) => { engineQuery = query; dumpBudget = budget; return candidate; },
     compressAdaptive: async (context, query) => { engineQuery = query; return candidate; },
     compressCCR: async (context, query) => { engineQuery = query; return candidate; },
     storeCcrBlocks: async () => { stores++; return { stored, stored_hashes: [], full_stored: stored }; },
@@ -87,8 +89,11 @@ test("API rejects collapse, bloat and 3% savings before billing or CCR/cache dec
   const context = Array(11376).fill("evidence").join(" ");
   for (const text of ["# SuperCompress context digest", context + " bloat", Array(11035).fill("evidence").join(" ")]) {
     candidate = { compressed_text: text, original_tokens: 11376, kept_tokens: 20, tokens_saved_pct: 99.8 };
-    assertPassthrough(await request(context, { ccr: true, cache_prefix: true }), context);
-    assert.ok(billed);
+    const body = await request(context, { ccr: true, cache_prefix: true });
+    assertPassthrough(body, context);
+    assert.equal(body.billed, false);
+    assert.equal(body.passthrough, true);
+    assert.equal(billed, null);
     assert.equal(stores, 0);
     assert.equal(wraps, 0);
   }
@@ -177,8 +182,10 @@ test("API forwards raw dump mode without inventing a query", async () => {
   const context = Array(100).fill("evidence").join(" ");
   candidate = { compressed_text: Array(50).fill("evidence").join(" ") };
   for (const query of [undefined, "", "   "]) {
-    await request(context, { query });
+    const body = await request(context, { query });
     assert.equal(engineQuery, "");
+    assert.equal(dumpBudget, 0.5);
+    assert.equal(body.query_mode, "dump");
   }
   await request(context, { query: "Preserve specific findings" });
   assert.equal(engineQuery, "Preserve specific findings");

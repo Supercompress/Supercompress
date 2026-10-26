@@ -7,10 +7,14 @@ function responseMetadata(body = {}) {
     "free_tokens_remaining", "free_tokens_per_month", "tokens_used_this_period",
     "tokens_remaining", "limit_reached", "unlimited", "payg_enabled", "credit_wallet",
     "credit_balance_usd", "auto_recharge", "upgrade_url", "code", "notice", "detail", "paywall",
+    "passthrough", "passthrough_reason", "billed", "query_mode", "compression_warning", "quota", "quota_warning",
   ]) {
     if (body[key] !== undefined) metadata[key] = body[key];
   }
   const warnings = Array.isArray(body.warnings) ? [...body.warnings] : [];
+  for (const warning of [body.compression_warning, body.quota_warning]) {
+    if (typeof warning === "string" && warning) warnings.push(warning);
+  }
   const billing = typeof body.upgrade_url === "string" && body.upgrade_url ? body.upgrade_url : BILLING_URL;
   const remaining = body.free_tokens_remaining;
   const balance = body.credit_balance_usd;

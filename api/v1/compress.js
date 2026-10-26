@@ -22,6 +22,7 @@ const {
   roundUsd,
 } = require("../_lib/stripe");
 const crypto = require("crypto");
+const { DUMP_KEEP_RATIO, isGenericQuery, assessResult } = require("../_lib/compress-safety");
 const {
   sanitizeRequestId,
   computeCompressFingerprint,
@@ -339,6 +340,10 @@ module.exports = async (req, res) => {
     const mode = body.mode || "neural";
     const budgetRatio = mode === "fixed" ? (body.budget_ratio ?? 0.35) : 0.35;
     const ccr = body.ccr === true || body.ccr === "true";
+    // No query, or one that names no target ("Summarize this context."): query-anchored
+    // extraction has nothing to anchor on and can keep only a header. Use the budgeted digest.
+    // (CCR keeps its own query path; it is not labelled dump mode.)
+    const dumpMode = isGenericQuery(body.query) && !ccr;
     const cache_prefix = body.cache_prefix === true || body.cache_prefix === "true";
     const coding_agent = body.coding_agent || null;
     const skipLog = body.log === false || body.log === "false";
@@ -426,7 +431,11 @@ module.exports = async (req, res) => {
 
     let result = enforceCompressionSafety(
       context,
-      await (ccr ? compressCCR(context, query) : compressAdaptive(context, query))
+      await (ccr
+        ? compressCCR(context, query)
+        : dumpMode
+          ? { ...compress(context, query, DUMP_KEEP_RATIO), mode: "dump" }
+          : compressAdaptive(context, query))
     );
     const latencyMs = Math.max(0, Date.now() - compressStarted);
 
@@ -527,6 +536,49 @@ module.exports = async (req, res) => {
     const keptTokens =
       result.kept_tokens ?? result.compressed_tokens ?? result.tokens_out ?? 0;
     const originalTokens = result.original_tokens ?? 0;
+
+    // Never hand back something no smaller than the input, and never bill for it.
+    const safety = assessResult({
+      originalTokens,
+      keptTokens,
+      originalChars: context.length,
+      deliveredChars: finalText.length,
+      dumpMode,
+    });
+    if (safety.passthrough) {
+      if (leaseHeld && leaseOwnerUid && requestId) {
+        try {
+          await releaseIdempotencyLease(leaseOwnerUid, requestId);
+        } catch (_) {}
+        leaseHeld = false;
+      }
+      res.setHeader("Idempotency-Key", requestId);
+      return jsonWithRateLimit(res, 200, {
+        compressed_text: context,
+        original_tokens: originalTokens,
+        kept_tokens: originalTokens,
+        tokens_saved: 0,
+        tokens_saved_pct: 0,
+        kv_savings_pct: 0,
+        warnings: result.warnings || [],
+        compression_safety: result.compression_safety,
+        fallback_reason: result.fallback_reason || safety.reason,
+        cache_prefix_applied: false,
+        ccr: null,
+        passthrough: true,
+        passthrough_reason: safety.reason,
+        notice:
+          `Returned the input unchanged: compression would have saved ${safety.saved_pct}% ` +
+          `(${keptTokens} vs ${originalTokens} tokens). Not billed.`,
+        billed: false,
+        mode: result.mode || (dumpMode ? "dump" : "compiler"),
+        query_mode: dumpMode ? "dump" : "query",
+        latency_ms: latencyMs,
+        coding_agent: coding_agent || null,
+        source: inferredSource,
+        request_id: requestId,
+      }, rl);
+    }
     const responseBody = {
       compressed_text: finalText,
       original_tokens: originalTokens,
@@ -562,6 +614,15 @@ module.exports = async (req, res) => {
       fallback_reason: result.fallback_reason || null,
       warnings: result.warnings || [],
       compression_safety: result.compression_safety,
+      query_mode: dumpMode ? "dump" : "query",
+      ...(dumpMode
+        ? {
+            notice:
+              "Dump mode (no specific query): kept about half of the input by structure and salience. " +
+              "Pass the user's question as `query` for a targeted, much smaller digest.",
+          }
+        : {}),
+      ...(safety.warning ? { compression_warning: safety.warning } : {}),
     };
 
     // Billing is fail-closed: never return compressed text without a durable charge/quota write.

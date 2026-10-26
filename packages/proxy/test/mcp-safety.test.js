@@ -55,7 +55,9 @@ test("installed MCP schema permits raw dumps and surfaces real safety and quota 
   assert.deepEqual(Array.from(TOOLS.find(tool => tool.name === "compress_context").inputSchema.required), ["context"]);
   const result = await handleToolCall("compress_context", { context: "raw text" });
   const output = JSON.parse(result.content[0].text);
-  assert.equal(output.compressed_text, "raw text");
+  assert.equal(output.passthrough, true);
+  assert.equal(result.content[0].text.includes("raw text"), false);
+  assert.doesNotMatch(output.notice, /Not billed/);
   assert.deepEqual(output.compression_safety, safety);
   assert.match(output.warnings.join(" "), /Kept original/);
   assert.match(output.warnings.join(" "), /exhausted.*prepaid.*3/i);
@@ -118,14 +120,16 @@ test("automatic compaction reports the latest quota snapshot without stale quota
   await withApi(() => {
     calls++;
     return calls === 1
-      ? { compressed_text: "Retained evidence. ".repeat(1500), original_tokens: 15000, kept_tokens: 8000, free_tokens_remaining: 10, tokens_used_this_period: 90, warnings: ["Heuristic only"] }
-      : { compressed_text: "Compacted evidence", original_tokens: 8000, kept_tokens: 10, free_tokens_remaining: 0, tokens_used_this_period: 100 };
+      ? { compressed_text: "Retained evidence. ".repeat(1500), original_tokens: 15000, kept_tokens: 8000, free_tokens_remaining: 10, tokens_used_this_period: 90, warnings: ["Heuristic only"], quota: { free_tokens_remaining: 10 }, quota_warning: "Free token allowance is nearly exhausted: 10 tokens remain." }
+      : { compressed_text: "Compacted evidence", original_tokens: 8000, kept_tokens: 10, free_tokens_remaining: 0, tokens_used_this_period: 100, quota: { free_tokens_remaining: 0 }, quota_warning: "Free token allowance is exhausted." };
   }, async () => {
     const result = await hooks.compressIncremental({ context: "New diagnostics. ".repeat(3000), sessionId: "automatic-quota", kind: "mcp" });
     assert.equal(calls, 2);
     assert.equal(result.compacted, true);
     assert.equal(result.free_tokens_remaining, 0);
     assert.equal(result.tokens_used_this_period, 100);
+    assert.equal(result.quota.free_tokens_remaining, 0);
+    assert.equal(result.quota_warning, "Free token allowance is exhausted.");
     assert.ok(result.warnings.includes("Heuristic only"));
     assert.match(result.warnings.join(" "), /exhausted/);
     assert.doesNotMatch(result.warnings.join(" "), /10 free tokens remaining/);
@@ -203,10 +207,11 @@ test("compaction accounts for its persisted header before replacing memory", asy
 
 test("latest unlimited quota clears prior chunk billing warnings", async () => {
   let calls = 0;
-  await withApi(() => ({ compressed_text: "Retained evidence", free_tokens_remaining: 0, unlimited: ++calls === 2 }), async () => {
+  await withApi(() => ({ compressed_text: "Retained evidence", free_tokens_remaining: 0, unlimited: ++calls === 2, quota_warning: calls === 1 ? "Free token allowance is exhausted." : null }), async () => {
     const result = await hooks.compressContext("evidence ".repeat(15000), "", "test");
     assert.equal(calls, 2);
     assert.equal(result.unlimited, true);
     assert.deepEqual(result.warnings, []);
+    assert.equal(result.quota_warning, null);
   });
 });

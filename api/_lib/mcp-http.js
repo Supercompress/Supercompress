@@ -12,7 +12,7 @@ const ME_URL = `${SITE}/api/account?op=me`;
 const CONNECT_BASE = `${SITE}/dashboard?source=grok-bot&connect=`;
 const PROTOCOL_VERSION = "2025-03-26";
 const SERVER_NAME = "supercompress";
-const SERVER_VERSION = "0.5.29";
+const SERVER_VERSION = "0.5.30";
 
 const TOOLS = [
   {
@@ -24,7 +24,7 @@ const TOOLS = [
   {
     name: "compress_context",
     description:
-      "Compress bulky context (tool dumps, logs, diffs, files) guided by the user's query. Never pass the query as context — only the dump. Returns a shorter digest that keeps answer-critical evidence.",
+      "Compress bulky context (tool dumps, logs, diffs, files, pages). Pass only the dump as `context`, never the user's ask. With a `query`, keeps the evidence that answers it (smallest digest). Without one, dump mode keeps about half the input. Read any `warning` field before trusting the digest; a `passthrough` result means keep using your original text.",
     inputSchema: {
       type: "object",
       properties: {
@@ -34,7 +34,8 @@ const TOOLS = [
         },
         query: {
           type: "string",
-          description: "Optional user's ask / task (never compressed; guides what to keep). Omit for a raw dump.",
+          description:
+            "Optional. The user's ask, verbatim (never compressed; guides what to keep). Omit to shrink a raw dump with no question.",
         },
         session_id: {
           type: "string",
@@ -154,6 +155,12 @@ async function handleToolCall(name, args = {}, apiKey) {
           total_tokens_saved: body.total_tokens_saved,
           tokens_used_this_period: body.tokens_used_this_period,
           free_tokens_remaining: body.free_tokens_remaining,
+          ...(body.free_tokens_remaining === 0 && body.unlimited !== true
+            ? {
+                quota_warning:
+                  "Free monthly quota is used up. Requests now bill credits or pay-as-you-go, or stop with a paywall if neither is set up: https://www.supercompress.dev/dashboard#billing",
+              }
+            : {}),
           meter: body.meter || null,
           account_usage: body.account_usage || null,
           coding_agent_usage: body.coding_agent_usage,
@@ -186,7 +193,7 @@ async function handleToolCall(name, args = {}, apiKey) {
       },
       body: JSON.stringify({
         context,
-        query,
+        ...(query.trim() ? { query } : {}),
         coding_agent: "Grok Bot",
         source: "grok-bot-mcp",
         session_id: sessionId,
@@ -201,33 +208,9 @@ async function handleToolCall(name, args = {}, apiKey) {
     if (!response.ok) {
       return toolError(responseError(body, `Compression failed (${response.status})`));
     }
-    const compressed =
-      body.compressed_context || body.compressed_text || body.compressed || body.text || "";
-    if (!compressed) return toolError(responseError(body, "Compression returned an empty digest."));
-    const original = Number(body.original_tokens || body.tokens_in || 0);
-    const kept = Number(body.compressed_tokens || body.kept_tokens || body.tokens_out || 0);
-    const saved = Math.max(0, original - kept);
-    const pct =
-      body.savings_pct != null
-        ? body.savings_pct
-        : original > 0
-          ? Math.round((saved / original) * 100)
-          : 0;
-    return toolText(
-      JSON.stringify({
-        compressed_context: compressed,
-        compressed_text: compressed,
-        original_tokens: original,
-        compressed_tokens: kept,
-        kept_tokens: kept,
-        tokens_saved: saved,
-        savings_pct: pct,
-        tokens_saved_pct: pct,
-        session_id: sessionId,
-        source: "grok-bot-mcp",
-        ...responseMetadata(body),
-      })
-    );
+    const payload = mcpCompressPayload(body, sessionId);
+    if (!payload) return toolError(responseError(body, "Compression returned an empty digest."));
+    return toolText(JSON.stringify(payload));
   } catch (err) {
     const msg =
       err?.name === "AbortError"
@@ -235,6 +218,51 @@ async function handleToolCall(name, args = {}, apiKey) {
         : `SuperCompress error: ${err.message}`;
     return toolError(msg);
   }
+}
+
+/**
+ * One copy of the digest, warnings first. A passthrough is not echoed: the agent already
+ * holds the original, and echoing it doubled small results. Safety metadata (warnings,
+ * compression_safety, quota fields) is passed through unchanged. Returns null on an empty digest.
+ */
+function mcpCompressPayload(body, sessionId) {
+  const original = Number(body.original_tokens || body.tokens_in || 0);
+  const quotaWarning = body.quota_warning || body.quota?.warning || null;
+  const { mode: engineMode, notice: bodyNotice, ...metadata } = responseMetadata(body);
+  const mode = body.query_mode || engineMode || "query";
+  if (body.passthrough || body.compression_safety?.status === "passthrough") {
+    const notBilled = body.billed === false || (body.passthrough === true && body.billed == null);
+    return {
+      ...(body.compression_warning ? { warning: body.compression_warning } : {}),
+      ...(quotaWarning ? { quota_warning: quotaWarning } : {}),
+      ...metadata,
+      passthrough: true,
+      mode,
+      notice: bodyNotice || `Nothing to gain; keep using your original text.${notBilled ? " Not billed." : ""}`,
+      original_tokens: original,
+      session_id: sessionId,
+    };
+  }
+  const compressed = body.compressed_context || body.compressed_text || body.compressed || body.text || "";
+  if (!compressed) return null;
+  const kept = Number(body.compressed_tokens || body.kept_tokens || body.tokens_out || 0);
+  const saved = Math.max(0, original - kept);
+  const pct = body.tokens_saved_pct != null
+    ? Math.round(body.tokens_saved_pct * 10) / 10
+    : original > 0 ? Math.round((saved / original) * 1000) / 10 : 0;
+  return {
+    ...(body.compression_warning ? { warning: body.compression_warning } : {}),
+    ...(quotaWarning ? { quota_warning: quotaWarning } : {}),
+    ...metadata,
+    ...(bodyNotice ? { notice: bodyNotice } : {}),
+    mode,
+    original_tokens: original,
+    compressed_tokens: kept,
+    tokens_saved: saved,
+    savings_pct: pct,
+    compressed_context: compressed,
+    session_id: sessionId,
+  };
 }
 
 async function dispatchRpc(msg, apiKey) {
@@ -255,7 +283,7 @@ async function dispatchRpc(msg, apiKey) {
         capabilities: { tools: {} },
         serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
         instructions:
-          "Compress bulky context with compress_context(context, query). Never compress the user's ask. Prefer OAuth sign-in; call connect_account if the host has no token yet.",
+          "Compress bulky context with compress_context(context, query?). Never compress the user's ask. Read `warning` and `quota_warning` fields when present. Prefer OAuth sign-in; call connect_account if the host has no token yet.",
       },
     };
   }
@@ -299,4 +327,5 @@ module.exports = {
   rpcNeedsAuth,
   dispatchRpc,
   handleToolCall,
+  mcpCompressPayload,
 };

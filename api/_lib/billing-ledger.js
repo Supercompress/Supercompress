@@ -918,6 +918,8 @@ async function reserveIdempotencyLease(uid, requestId, fingerprint) {
 
 async function releaseIdempotencyLease(uid, requestId) {
   const rid = sanitizeRequestId(requestId);
+  // Claims-fallback leases live in memory; clear them too or a same-key retry 409s for 90s.
+  if (uid && rid) clearClaimsPendingLease(uid, rid);
   if (!uid || !rid || !initFirebaseAdmin()) return;
   try {
     const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
@@ -1018,6 +1020,12 @@ function sanitizeReplayResponse(response) {
     cache_prefix_applied: Boolean(response.cache_prefix_applied),
     ccr: response.ccr || null,
     latency_ms: Number(response.latency_ms) || 0,
+    // Safety and quota notices must survive an Idempotency-Key replay.
+    ...(response.query_mode ? { query_mode: String(response.query_mode) } : {}),
+    ...(response.notice ? { notice: String(response.notice).slice(0, 600) } : {}),
+    ...(response.compression_warning ? { compression_warning: String(response.compression_warning).slice(0, 600) } : {}),
+    ...(response.quota && typeof response.quota === "object" ? { quota: response.quota } : {}),
+    ...(response.quota_warning ? { quota_warning: String(response.quota_warning).slice(0, 600) } : {}),
   };
 }
 

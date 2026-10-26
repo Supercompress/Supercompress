@@ -57,7 +57,7 @@ test("hosted accepts omitted and blank queries as raw dumps", async () => {
   for (const query of [undefined, "", "   "]) {
     const { result, requests } = await hosted({ compressed_text: "digest" }, { context: "raw log dump", query });
     assert.notEqual(result.isError, true);
-    assert.equal(requests[0].body.query, "");
+    assert.equal(requests[0].body.query, undefined);
   }
 });
 
@@ -66,12 +66,28 @@ test("hosted preserves API warnings and bypass status outside digest", async () 
   const safety = { status: "passthrough", reason: "insufficient_savings", semantic_verification: "not_performed" };
   const { result } = await hosted({ compressed_text: "raw log dump", warnings, skip_reason: "quality_guard", compression_safety: safety, mode: "passthrough", original_tokens: 4, kept_tokens: 4 });
   const output = JSON.parse(result.content[0].text);
-  assert.equal(output.compressed_text, "raw log dump");
+  assert.equal(output.passthrough, true);
+  assert.equal(result.content[0].text.includes("raw log dump"), false);
   assert.deepEqual(output.warnings, warnings);
   assert.equal(output.skip_reason, "quality_guard");
   assert.equal(output.mode, "passthrough");
   assert.deepEqual(output.compression_safety, safety);
-  assert.equal(output.tokens_saved, 0);
+  // A safety passthrough on the billed path must not claim it was free.
+  assert.doesNotMatch(output.notice, /Not billed/);
+});
+
+test("hosted passes through per-request notices, query mode, and not-billed passthroughs", async () => {
+  const dump = JSON.parse((await hosted({ compressed_text: "digest", original_tokens: 100, kept_tokens: 50, query_mode: "dump", mode: "dump", notice: "Dump mode kept about half." })).result.content[0].text);
+  assert.equal(dump.mode, "dump");
+  assert.equal(dump.notice, "Dump mode kept about half.");
+  assert.equal(dump.compressed_context, "digest");
+  const notice = "Returned the input unchanged: compression would have saved 2% (98 vs 100 tokens). Not billed.";
+  const pass = JSON.parse((await hosted({ passthrough: true, billed: false, compressed_text: "raw log dump", query_mode: "query", notice })).result.content[0].text);
+  assert.equal(pass.passthrough, true);
+  assert.equal(pass.notice, notice);
+  assert.equal(pass.compressed_context, undefined);
+  const empty = await hosted({ original_tokens: 10, kept_tokens: 0 });
+  assert.equal(empty.result.isError, true);
 });
 
 test("hosted distinguishes remaining free quota, exhaustion and prepaid billing", async () => {

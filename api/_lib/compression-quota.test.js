@@ -11,6 +11,8 @@ test("quota warnings use recorded usage and preserve compression warnings", () =
   assert.equal(response.free_tokens_per_month, freeAllowance(owner.customClaims));
   assert.match(response.warnings.join("\n"), /exhausted/);
   assert.ok(response.warnings.includes("Safety passthrough"));
+  assert.equal(response.quota.free_tokens_remaining, 0);
+  assert.equal(response.quota_warning, response.quota.warning);
 });
 
 test("unknown usage is not invented; positive remaining allowance is accurate", () => {
@@ -28,5 +30,19 @@ test("unlimited accounts do not get a misleading exhausted warning", () => {
     const response = attachCompressionQuota({}, { customClaims: claims }, { tokens_in: 8886094 });
     assert.equal(response.unlimited, true);
     assert.equal(response.warnings, undefined);
+    assert.equal(response.quota.billing, "comped");
+    assert.equal(response.quota_warning, undefined);
   }
+});
+
+test("quota refresh replaces stale nested state and warns near exhaustion without quoting prices", () => {
+  const allowance = freeAllowance({});
+  const response = attachCompressionQuota({ quota: { free_tokens_remaining: 0 }, quota_warning: "stale" }, {}, { tokens_in: allowance - 1 });
+  assert.equal(response.quota.free_tokens_remaining, 1);
+  assert.match(response.quota_warning, /nearly exhausted/);
+  assert.doesNotMatch(response.quota_warning, /\$/);
+  attachCompressionQuota(response, { customClaims: { sc_comped: true } }, { tokens_in: allowance });
+  assert.equal(response.quota.free_tokens_remaining, 0);
+  assert.equal(response.quota_warning, undefined);
+  assert.equal(response.quota.warning, undefined);
 });
