@@ -3,6 +3,7 @@
  * Stateless JSON-RPC over POST. Auth: Authorization Bearer sc_… or X-API-Key.
  */
 const crypto = require("crypto");
+const { responseMetadata, responseError } = require("./mcp-response");
 
 const SITE = "https://www.supercompress.dev";
 const COMPRESS_URL = `${SITE}/api/v1/compress`;
@@ -33,14 +34,14 @@ const TOOLS = [
         },
         query: {
           type: "string",
-          description: "The user's ask / task (never compressed; guides what to keep)",
+          description: "Optional user's ask / task (never compressed; guides what to keep). Omit for a raw dump.",
         },
         session_id: {
           type: "string",
           description: "Optional session id for attribution (defaults to grok-bot)",
         },
       },
-      required: ["context", "query"],
+      required: ["context"],
     },
   },
   {
@@ -95,7 +96,7 @@ async function httpJson(url, options = {}) {
   }
 }
 
-async function handleToolCall(name, args, apiKey) {
+async function handleToolCall(name, args = {}, apiKey) {
   if (!["compress_context", "connect_account", "usage_summary"].includes(name)) {
     return toolError(`Unknown tool: ${name}`);
   }
@@ -156,6 +157,7 @@ async function handleToolCall(name, args, apiKey) {
           meter: body.meter || null,
           account_usage: body.account_usage || null,
           coding_agent_usage: body.coding_agent_usage,
+          ...responseMetadata(body),
         })
       );
     } catch (err) {
@@ -163,11 +165,10 @@ async function handleToolCall(name, args, apiKey) {
     }
   }
 
-  const context = String(args.context || "");
-  const query = String(args.query || "");
+  const context = String(args?.context || "");
+  const query = String(args?.query || "").trim() ? String(args.query) : "";
   const sessionId = String(args.session_id || "grok-bot").trim() || "grok-bot";
   if (!context.trim()) return toolError("context is required");
-  if (!query.trim()) return toolError("query is required (the user's ask — never compressed)");
   if (!apiKey) {
     return toolError(
       "Not connected. Complete OAuth (browser sign-in) or call connect_account and set Authorization: Bearer sc_…, then retry."
@@ -194,17 +195,15 @@ async function handleToolCall(name, args, apiKey) {
     });
     if (response.status === 402 || body.paywall) {
       return toolError(
-        body.detail ||
-          body.notice ||
-          "PAYWALL: Free quota used. Add credits at https://www.supercompress.dev/dashboard#billing"
+        responseError({ ...body, paywall: true }, "Compression paused. Review account billing.")
       );
     }
     if (!response.ok) {
-      return toolError(body.detail || body.message || `Compression failed (${response.status})`);
+      return toolError(responseError(body, `Compression failed (${response.status})`));
     }
     const compressed =
       body.compressed_context || body.compressed_text || body.compressed || body.text || "";
-    if (!compressed) return toolError("Compression returned an empty digest.");
+    if (!compressed) return toolError(responseError(body, "Compression returned an empty digest."));
     const original = Number(body.original_tokens || body.tokens_in || 0);
     const kept = Number(body.compressed_tokens || body.kept_tokens || body.tokens_out || 0);
     const saved = Math.max(0, original - kept);
@@ -226,6 +225,7 @@ async function handleToolCall(name, args, apiKey) {
         tokens_saved_pct: pct,
         session_id: sessionId,
         source: "grok-bot-mcp",
+        ...responseMetadata(body),
       })
     );
   } catch (err) {

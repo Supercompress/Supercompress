@@ -88,7 +88,7 @@ function computeCompressFingerprint(body = {}) {
   const mode = String(body.mode || "compiler");
   const normalized = JSON.stringify({
     context: String(body.context || ""),
-    query: String(body.query || "Summarize this context."),
+    query: String(body.query || "").trim() ? String(body.query) : "",
     mode,
     budget_ratio: mode === "fixed" ? Number(body.budget_ratio ?? 0.35) : 0.35,
     ccr: body.ccr === true || body.ccr === "true",

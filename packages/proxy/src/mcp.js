@@ -18,6 +18,7 @@ const API_URL = "https://www.supercompress.dev/api/v1/compress";
 const USAGE_URL = "https://www.supercompress.dev/api/usage";
 const ME_URL = process.env.SUPERCOMPRESS_ME_URL || "https://www.supercompress.dev/api/account?op=me";
 const CONNECT_URL = "https://www.supercompress.dev/dashboard?source=mcp&connect=";
+const { responseMetadata, responseError } = require("./mcp-response");
 const PROTOCOL_VERSION = "2024-11-05";
 
 function log(...args) {
@@ -93,10 +94,10 @@ const TOOLS = [
       type: "object",
       properties: {
         context: { type: "string", description: "Only the new bulky text to compress (not previously sent this session)" },
-        query: { type: "string", description: "The user's request, verbatim — used to decide what to keep; never compressed" },
+        query: { type: "string", description: "Optional user's request, verbatim — guides what to keep; never compressed. Omit for a raw dump." },
         session_id: { type: "string", description: "Optional session id for rolling memory (defaults to mcp)" },
       },
-      required: ["context", "query"],
+      required: ["context"],
     },
   },
   {
@@ -237,6 +238,7 @@ async function handleToolCall(name, args = {}) {
           meter: body.meter || null,
           account_usage: body.account_usage || null,
           coding_agent_usage: body.coding_agent_usage,
+          ...responseMetadata(body),
         })
       );
     } catch (err) {
@@ -267,28 +269,24 @@ async function handleToolCall(name, args = {}) {
     }
     if (result.paywall || result.skipped === "paywall") {
       return toolError(
-        result.notice ||
-          result.detail ||
-          "PAYWALL: Free 5M tokens used (or credits empty). Add credits at https://www.supercompress.dev/dashboard#billing — $0.10/1M after free."
+        responseError({ ...result, paywall: true }, "Compression paused. Review account billing.")
       );
     }
     if (String(result.skipped || "").startsWith("http_")) {
       return toolError(
-        result.detail
-          ? `Compression failed (${result.skipped}): ${result.detail}`
-          : `Compression failed (${result.skipped})`
+        responseError(result, `Compression failed (${result.skipped})`)
       );
     }
     if (result.partial || result.skipped === "partial_chunk_failure") {
       return toolError(
-        "Compression partially failed (some chunks). Retry — raw failed chunks are not published into context."
+        responseError(result, "Compression partially failed (some chunks). Retry — raw failed chunks are not published into context.")
       );
     }
     if (!result.compressed) {
-      return toolError("Nothing new to compress (empty or already in session memory).");
+      return toolError(responseError(result, "Nothing new to compress (empty or already in session memory)."));
     }
     if (!shouldPublishCompressedResult(result)) {
-      return toolError("Compression result is not safe to publish; retry.");
+      return toolError(responseError(result, "Compression result is not safe to publish; retry."));
     }
     const meta =
       result.skipped === "already_seen"
@@ -315,6 +313,7 @@ async function handleToolCall(name, args = {}) {
         session_id: sessionId,
         compacted: Boolean(result.compacted),
         skipped: result.skipped || null,
+        ...responseMetadata(result),
       })
     );
   } catch (err) {
