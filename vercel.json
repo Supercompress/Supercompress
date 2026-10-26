@@ -1400,6 +1400,16 @@
   ],
   "rewrites": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "limitcheck.supercompress.dev"
+        }
+      ],
+      "destination": "/limitcheck"
+    },
+    {
       "source": "/wp-login.php",
       "destination": "/api/soft-probe"
     },

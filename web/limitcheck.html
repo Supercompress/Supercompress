@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>limitcheck · live — every limit check run by coding agents</title>
+  <meta name="description" content="Live count of limitcheck runs. limitcheck lets coding agents use their whole 5-hour window instead of stopping at 90%. Runs locally inside Supercompress." />
+  <meta property="og:title" content="limitcheck · live" />
+  <meta property="og:description" content="Coding agents stop at 90% of their 5-hour limit. limitcheck spends every last percent. Live global count." />
+  <meta property="og:url" content="https://limitcheck.supercompress.dev/" />
+  <meta property="og:type" content="website" />
+  <link rel="canonical" href="https://limitcheck.supercompress.dev/" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --ink: #101010; --paper: #f2f2ee; --acid: #c6ff1a; --dim: #8d8e88; --line: #2a2a2a; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--ink); color: var(--paper); font-family: Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    main { max-width: 1180px; margin: 0 auto; padding: 56px 32px 72px; }
+    .top { display: flex; justify-content: space-between; align-items: center; font-family: "JetBrains Mono", monospace; font-size: 14px; color: var(--dim); }
+    .live { display: inline-flex; align-items: center; gap: 10px; color: var(--paper); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--acid); }
+    .dot.off { background: var(--dim); }
+    .top a { color: var(--dim); text-decoration: none; }
+    .top a:hover { color: var(--paper); }
+    h1 { margin-top: 96px; font-size: clamp(64px, 16vw, 216px); font-weight: 800; letter-spacing: -0.06em; line-height: 0.9; font-variant-numeric: tabular-nums; color: var(--acid); word-break: break-all; }
+    .sub { margin-top: 20px; font-size: clamp(22px, 3vw, 36px); font-weight: 700; letter-spacing: -0.03em; }
+    .note { margin-top: 10px; font-family: "JetBrains Mono", monospace; font-size: 14px; color: var(--dim); }
+    .split { margin-top: 64px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+    .cell { border-top: 6px solid var(--line); padding-top: 16px; }
+    .cell.go { border-color: var(--acid); }
+    .cell.land { border-color: var(--paper); }
+    .cell.pace { border-color: #6f8f12; }
+    .cell.wait { border-color: var(--dim); }
+    .verb { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; }
+    .num { margin-top: 6px; font-family: "JetBrains Mono", monospace; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .what { margin-top: 6px; color: var(--dim); font-size: 15px; line-height: 1.4; }
+    .bar { margin-top: 40px; height: 14px; display: flex; background: var(--line); }
+    .bar span { display: block; height: 100%; transition: width 0.8s cubic-bezier(.2,.8,.2,1); }
+    h2 { margin-top: 112px; font-size: clamp(36px, 6vw, 72px); font-weight: 800; letter-spacing: -0.05em; line-height: 1; }
+    h2 em { font-style: normal; color: var(--acid); }
+    .lede { margin-top: 20px; max-width: 760px; font-size: 20px; line-height: 1.5; color: #cfd0ca; }
+    .install { margin-top: 40px; display: grid; gap: 14px; }
+    .cmd { display: flex; justify-content: space-between; align-items: center; gap: 16px; background: #1a1a1a; border: 1px solid var(--line); padding: 18px 20px; font-family: "JetBrains Mono", monospace; font-size: 17px; }
+    .cmd code { white-space: pre-wrap; word-break: break-word; }
+    .cmd code b { color: var(--acid); font-weight: 700; }
+    .cmd button { flex: none; background: none; border: 1px solid var(--line); color: var(--paper); font: 500 13px "JetBrains Mono", monospace; padding: 8px 12px; cursor: pointer; }
+    .cmd button:hover { border-color: var(--acid); color: var(--acid); }
+    .label { font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--dim); margin-top: 8px; }
+    footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--dim); }
+    footer a { color: var(--paper); }
+    @media (max-width: 760px) { .split { grid-template-columns: repeat(2, 1fr); } h1 { margin-top: 64px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top">
+      <span class="live"><span class="dot off" id="lc-dot"></span><span id="lc-status">connecting…</span></span>
+      <a href="https://supercompress.dev/">supercompress.dev →</a>
+    </div>
+
+    <h1 id="lc-total">—</h1>
+    <p class="sub">limit checks run by coding agents, worldwide.</p>
+    <p class="note" id="lc-updated">Counting since 25 Oct 2026. Anonymous counts only.</p>
+
+    <div class="bar" aria-hidden="true"><span id="lc-bar-go" style="background:var(--acid);width:0"></span><span id="lc-bar-land" style="background:var(--paper);width:0"></span><span id="lc-bar-pace" style="background:#6f8f12;width:0"></span><span id="lc-bar-wait" style="background:var(--dim);width:0"></span></div>
+    <div class="split">
+      <div class="cell go"><div class="verb">Go</div><div class="num" id="lc-go">0</div><div class="what">Room left. Take on more.</div></div>
+      <div class="cell land"><div class="verb">Land</div><div class="num" id="lc-land">0</div><div class="what">Almost spent. Commit each step, keep going.</div></div>
+      <div class="cell pace"><div class="verb">Pace</div><div class="num" id="lc-pace">0</div><div class="what">Weekly limit burning too fast. Smaller steps, keep going.</div></div>
+      <div class="cell wait"><div class="verb">Wait</div><div class="num" id="lc-wait">0</div><div class="what">Spent. Wait for the reset, or switch provider.</div></div>
+      <div class="cell"><div class="verb">Unknown</div><div class="num" id="lc-unknown">0</div><div class="what">No usage data yet. Carry on, never guess.</div></div>
+    </div>
+
+    <h2>Use the <em>whole</em> window.</h2>
+    <p class="lede">Coding agents stop at about 90% of their 5-hour limit to be safe. Then the window resets and the last 10% expires unused. limitcheck tells the agent how much quota is really left, so it keeps working to the end and checkpoints before the cutoff. In 60 simulated heavy 5-hour windows it used 100% of each window instead of 91.5%: 7.8% more work done.</p>
+
+    <div class="install">
+      <div class="cmd"><code><b>$</b> npm install -g supercompress-proxy
+<b>$</b> supercompress setup</code><button type="button" data-copy="npm install -g supercompress-proxy && supercompress setup">copy</button></div>
+      <p class="label">Already on Supercompress: npm install -g supercompress-proxy@latest &amp;&amp; supercompress plugin</p>
+      <div class="cmd"><code><b>$</b> supercompress limits</code><button type="button" data-copy="supercompress limits">copy</button></div>
+      <p class="label">Check your own runway. Agents call it as the MCP tool runway_check.</p>
+    </div>
+
+    <footer>
+      <span>Checks run locally. Each one sends a single anonymous count (verdict + cli/mcp) to this page; no ids, prompts or usage numbers. Opt out with SUPERCOMPRESS_TELEMETRY=0 or DO_NOT_TRACK=1.</span>
+      <span>Built on <a href="https://github.com/arjunkshah12345-hash/limitcheck">limitcheck</a> · part of <a href="https://supercompress.dev/">Supercompress</a></span>
+    </footer>
+  </main>
+  <script src="/assets/js/limitcheck-live.js" defer></script>
+</body>
+</html>

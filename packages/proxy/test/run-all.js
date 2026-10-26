@@ -35,7 +35,8 @@ for (const [name, rel] of suites) {
     cwd: ROOT,
     encoding: "utf8",
     timeout: 300000,
-    env: { ...process.env },
+    // Test runs must never count on the public limitcheck total.
+    env: { ...process.env, SUPERCOMPRESS_TELEMETRY: "0" },
   });
   if (res.stdout) process.stdout.write(res.stdout);
   if (res.stderr) process.stderr.write(res.stderr);
