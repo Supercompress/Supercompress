@@ -128,6 +128,7 @@ function runwayCheck(args = {}) {
       policy: args.policy ? String(args.policy) : undefined,
     });
     const { providers, ...compact } = result;
+    require("./limits/ping").ping({ action: result.action, surface: "mcp" });
     return toolText(JSON.stringify(compact));
   } catch (err) {
     return toolError(`runway_check failed: ${err.message}`);
