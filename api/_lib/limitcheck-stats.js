@@ -119,8 +119,10 @@ async function bumpLimitcheck({ action, surface }, shard = Math.floor(Math.rando
       const claims = nextClaims(user.customClaims || {}, event, new Date().toISOString(), nonce);
       await auth().setCustomUserClaims(uid, claims);
       await sleep(verifyMs + Math.floor(Math.random() * 100));
-      const after = await auth().getUser(uid);
-      if (writeLanded(after.customClaims || {}, { nonce, n: claims.lc.n })) return true;
+      // Only retry on proof of an overwrite. If the check itself fails, the
+      // write may well have landed, and retrying could count this ping twice.
+      const after = await auth().getUser(uid).catch(() => null);
+      if (!after || writeLanded(after.customClaims || {}, { nonce, n: claims.lc.n })) return true;
       lastErr = new Error("concurrent write replaced this bump");
     } catch (err) {
       lastErr = err;
