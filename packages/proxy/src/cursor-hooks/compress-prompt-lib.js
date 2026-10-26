@@ -17,6 +17,10 @@ function isPassthrough(result) {
   return Boolean(result.skip_reason || result.mode === "passthrough" || result.compression_safety?.status === "passthrough");
 }
 
+function isQuotaWarning(warning) {
+  return typeof warning === "string" && /^(Quota:|Free token allowance is exhausted\.|Free token quota cannot cover|Prepaid credit is insufficient|Prepaid balance is \$)/.test(warning);
+}
+
 const COMPRESS_URL =
   process.env.SUPERCOMPRESS_COMPRESS_URL ||
   "https://www.supercompress.dev/api/v1/compress";
@@ -447,6 +451,9 @@ async function compressOnce(context, query, codingAgent, opts = {}) {
 
 /** Compress context against a query. Query is never sent as compressible context. */
 async function compressContext(context, query, codingAgent, opts = {}) {
+  if (String(context || "").length > HOOK_TOTAL_MAX_CHARS) {
+    return { compressed: context, skip_reason: "context_limit", warnings: ["Context exceeds the local compression limit; returned the original context."], original_tokens: Math.ceil(context.length / 4), compressed_tokens: Math.ceil(context.length / 4), savings_pct: 0 };
+  }
   const ctx = String(context || "").trim();
   const q = String(query || "").trim();
   if (!ctx) return { compressed: "", skipped: "empty" };
@@ -456,9 +463,6 @@ async function compressContext(context, query, codingAgent, opts = {}) {
   const apiKey = loadApiKey();
   if (!apiKey) return { compressed: ctx, skipped: "no_key" };
 
-  if (ctx.length > HOOK_TOTAL_MAX_CHARS) {
-    return { compressed: context, skip_reason: "context_limit", warnings: ["Context exceeds the local compression limit; returned the original context."], original_tokens: Math.ceil(context.length / 4), compressed_tokens: Math.ceil(context.length / 4), savings_pct: 0 };
-  }
   const bounded = ctx;
   const chunks = chunkText(bounded, API_MAX_CHARS);
   if (chunks.length === 1) {
@@ -472,7 +476,7 @@ async function compressContext(context, query, codingAgent, opts = {}) {
   let okChunks = 0;
   let failedChunks = 0;
   let metadata = {};
-  const warnings = [];
+  let warnings = [];
   let passthrough = false;
   for (let i = 0; i < chunks.length; i++) {
     const partQuery = q ? `${q} (part ${i + 1}/${chunks.length})` : "";
@@ -481,6 +485,9 @@ async function compressContext(context, query, codingAgent, opts = {}) {
       // Distinct keys per chunk so retries stay bound to that slice.
       sessionId: `${opts.sessionId || "default"}:chunk${i}`,
     });
+    if (Number.isFinite(r.free_tokens_remaining) || Number.isFinite(r.tokens_used_this_period)) {
+      warnings = warnings.filter(warning => !isQuotaWarning(warning));
+    }
     metadata = { ...metadata, ...responseMetadata(r) };
     warnings.push(...(r.warnings || []));
     passthrough ||= isPassthrough(r);
@@ -614,7 +621,7 @@ async function compressIncremental({ context, query, codingAgent, sessionId, kin
       for (const key of ["free_tokens_remaining", "free_tokens_per_month", "tokens_used_this_period", "tokens_remaining", "limit_reached", "unlimited", "payg_enabled", "credit_wallet", "credit_balance_usd", "auto_recharge"]) {
         if (compactResult[key] !== undefined) quotaMetadata[key] = compactResult[key];
       }
-      deltaWarnings = deltaWarnings.filter(warning => !/^Quota:|^Free token allowance is exhausted\./.test(warning));
+      deltaWarnings = deltaWarnings.filter(warning => !isQuotaWarning(warning));
     }
     if (compactResult.compacted) {
       compacted = true;
@@ -677,7 +684,12 @@ async function compactSessionMemory(sessionId, query, opts = {}) {
     return { ...compactResult, compressed: memory, session_id: sid, compacted: false };
   }
 
-  if (compactResult.compressed && compactResult.compressed.length >= memory.length) {
+  const candidateMemory = compactResult.compressed ? [
+    `# Session compact · ${new Date().toISOString().slice(0, 19)}`,
+    "",
+    compactResult.compressed.trim(),
+  ].join("\n") : "";
+  if (candidateMemory && candidateMemory.length >= memory.length) {
     return { ...compactResult, compressed: memory, skip_reason: "compaction_no_savings", warnings: [...(compactResult.warnings || []), "Session compaction did not reduce memory; retained the existing memory."], session_id: sid, compacted: false };
   }
 
@@ -691,11 +703,7 @@ async function compactSessionMemory(sessionId, query, opts = {}) {
     return { ...compactResult, session_id: sid, compacted: false };
   }
 
-  state.memory = [
-    `# Session compact · ${new Date().toISOString().slice(0, 19)}`,
-    "",
-    compactResult.compressed.trim(),
-  ].join("\n");
+  state.memory = candidateMemory;
   state.compacted_at = new Date().toISOString();
   markSeen(state, hashText(state.memory));
   saveSession(sid, state);

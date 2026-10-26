@@ -12,6 +12,7 @@ const suites = [
   ["mcp-safety", "test/mcp-safety.test.js"],
   ["sse-stream", "test/sse-stream.js"],
   ["agent-plugins", "test/agent-plugins.js"],
+  ["hook-packaging", "test/hook-packaging.js"],
   ["limits", "test/limits.js"],
   ["runway-sim", "test/runway-sim.js"],
   ["harness-writers", "test/harness-writers.js"],

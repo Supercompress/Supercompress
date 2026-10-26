@@ -167,3 +167,36 @@ test("oversized dumps are not silently truncated", async () => {
     assert.equal(requests.length, 0);
   });
 });
+
+test("raw whitespace counts toward the hook context limit", async () => {
+  const context = " ".repeat(1_200_000) + "evidence ".repeat(10);
+  await withApi({}, async requests => {
+    const result = await hooks.compressContext(context, "", "test");
+    assert.equal(result.compressed, context);
+    assert.equal(result.skip_reason, "context_limit");
+    assert.equal(requests.length, 0);
+  });
+});
+
+test("chunked compression retains safety warnings but only the latest quota notice", async () => {
+  let calls = 0;
+  await withApi(() => ({ compressed_text: "Retained evidence", free_tokens_remaining: ++calls === 1 ? 10 : 0, warnings: ["Heuristic only"] }), async () => {
+    const result = await hooks.compressContext("evidence ".repeat(15000), "", "test");
+    assert.equal(calls, 2);
+    assert.equal(result.free_tokens_remaining, 0);
+    assert.ok(result.warnings.includes("Heuristic only"));
+    assert.match(result.warnings.join(" "), /exhausted/);
+    assert.doesNotMatch(result.warnings.join(" "), /10 free tokens remaining/);
+  });
+});
+
+test("compaction accounts for its persisted header before replacing memory", async () => {
+  const memory = "evidence ".repeat(12).trim();
+  const state = { memory, seen: {}, seen_order: [] };
+  await withApi({ compressed_text: memory.slice(0, -10) }, async () => {
+    const result = await hooks.compactSessionMemory("header-growth", "task", { state, persistInbox: false });
+    assert.equal(result.compacted, false);
+    assert.equal(state.memory, memory);
+    assert.equal(result.skip_reason, "compaction_no_savings");
+  });
+});

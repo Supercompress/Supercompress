@@ -2441,6 +2441,7 @@ function writeCursorHooks() {
   const cursorDir = path.join(HOME, ".cursor");
   const hooksDir = path.join(cursorDir, "hooks", "supercompress");
   fs.mkdirSync(hooksDir, { recursive: true });
+  fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(hooksDir, "..", "mcp-response.js"));
 
   const srcDir = path.join(__dirname, "cursor-hooks");
   const scripts = [
@@ -2518,6 +2519,7 @@ function writeCursorHooks() {
 function syncHookScripts() {
   const hooksDir = path.join(HOME, ".cursor", "hooks", "supercompress");
   fs.mkdirSync(hooksDir, { recursive: true });
+  fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(hooksDir, "..", "mcp-response.js"));
   const srcDir = path.join(__dirname, "cursor-hooks");
   for (const name of [
     "session-start.js",

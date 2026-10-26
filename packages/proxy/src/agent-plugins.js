@@ -565,6 +565,7 @@ function writeHermesAutoCompress(hermesHome = path.join(HOME, ".hermes")) {
   const libSrc = path.join(__dirname, "cursor-hooks", "compress-prompt-lib.js");
   if (fs.existsSync(libSrc)) {
     fs.copyFileSync(libSrc, path.join(hooksDest, "compress-prompt-lib.js"));
+    fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(hooksDest, "..", "mcp-response.js"));
   }
   installed.push("agent-hooks");
 
@@ -585,6 +586,7 @@ function writeHermesAutoCompress(hermesHome = path.join(HOME, ".hermes")) {
         path.join(hooksDest, "compress-prompt-lib.js"),
         path.join(pluginDest, "compress-prompt-lib.js")
       );
+      fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(pluginDest, "..", "mcp-response.js"));
     }
     installed.push("plugin:transform_tool_result");
   }
@@ -785,6 +787,7 @@ function writeOpenClawAutoCompress(openclawHome = path.join(HOME, ".openclaw")) 
     if (copyTree(path.join(assetsRoot, "hooks", name), dest)) {
       if (fs.existsSync(libSrc)) {
         fs.copyFileSync(libSrc, path.join(dest, "compress-prompt-lib.js"));
+        fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(dest, "..", "mcp-response.js"));
       }
     }
   }
@@ -793,7 +796,11 @@ function writeOpenClawAutoCompress(openclawHome = path.join(HOME, ".openclaw")) 
   const pluginDest = path.join(openclawHome, "extensions", "supercompress");
   if (copyTree(path.join(assetsRoot, "plugin"), pluginDest)) {
     if (fs.existsSync(libSrc)) {
-      fs.copyFileSync(libSrc, path.join(pluginDest, "compress-prompt-lib.js"));
+      fs.copyFileSync(libSrc, path.join(pluginDest, "compress-prompt-lib.cjs"));
+      fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(pluginDest, "..", "mcp-response.js"));
+      const entryPath = path.join(pluginDest, "index.js");
+      const entry = fs.readFileSync(entryPath, "utf8");
+      fs.writeFileSync(entryPath, entry.replace('path.join(__dirname, "compress-prompt-lib.js")', 'path.join(__dirname, "compress-prompt-lib.cjs")'));
     }
     installed.push("plugin");
   }

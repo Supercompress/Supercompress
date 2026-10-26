@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const { test, after } = require("node:test");
 const Module = require("node:module");
+const { sanitizeReplayResponse } = require("./billing-ledger");
 const { countTokens } = require("./compression-safety");
 
 let candidate;
@@ -136,6 +137,22 @@ test("API safely replays previously stored unsafe compression without rebilling"
     const body = await request(context);
     assertPassthrough(body, context);
     assert.equal(body.idempotent_replay, true);
+    assert.equal(billed, null);
+  } finally {
+    replay = null;
+  }
+});
+
+test("persisted safety replays preserve the original fallback and warning", async () => {
+  const context = Array(11376).fill("evidence").join(" ");
+  candidate = { compressed_text: "# Header" };
+  const first = await request(context);
+  replay = sanitizeReplayResponse(first);
+  try {
+    const second = await request(context);
+    assert.equal(second.fallback_reason, first.fallback_reason);
+    assert.deepEqual(second.compression_safety, first.compression_safety);
+    assert.ok(first.warnings.every(warning => second.warnings.includes(warning)));
     assert.equal(billed, null);
   } finally {
     replay = null;
