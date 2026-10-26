@@ -200,3 +200,13 @@ test("compaction accounts for its persisted header before replacing memory", asy
     assert.equal(result.skip_reason, "compaction_no_savings");
   });
 });
+
+test("latest unlimited quota clears prior chunk billing warnings", async () => {
+  let calls = 0;
+  await withApi(() => ({ compressed_text: "Retained evidence", free_tokens_remaining: 0, unlimited: ++calls === 2 }), async () => {
+    const result = await hooks.compressContext("evidence ".repeat(15000), "", "test");
+    assert.equal(calls, 2);
+    assert.equal(result.unlimited, true);
+    assert.deepEqual(result.warnings, []);
+  });
+});

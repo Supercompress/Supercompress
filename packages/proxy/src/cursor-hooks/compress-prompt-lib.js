@@ -516,7 +516,7 @@ async function compressContext(context, query, codingAgent, opts = {}) {
   const allFailed = okChunks === 0 && failedChunks > 0;
   return {
     ...metadata,
-    ...(warnings.length ? { warnings: [...new Set(warnings)] } : {}),
+    warnings: [...new Set(warnings)],
     compressed: passthrough && !failedChunks ? context : compressed,
     original_tokens: totalIn,
     compressed_tokens: passthrough && !failedChunks ? totalIn : totalOut,
