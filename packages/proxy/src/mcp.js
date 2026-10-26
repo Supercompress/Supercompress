@@ -88,15 +88,19 @@ const TOOLS = [
   {
     name: "compress_context",
     description:
-      "Compress bulky new context before you reason over it: tool output, logs, stack traces, test/build runs, diffs over ~150 lines (~2K tokens), long file reads, search results, docs, pasted documents. Pass only the new text as `context` (not the whole history) and the user's request verbatim as `query`; work from the returned digest. Never compress the request itself or code you are about to edit. Already-seen chunks are skipped and rolling session memory is compacted automatically.",
+      "Compress bulky new context before you reason over it: tool output, logs, stack traces, test/build runs, diffs over ~150 lines (~2K tokens), long file reads, search results, docs, pasted documents. Pass only the new text as `context` (not the whole history) and, when there is one, the user's request verbatim as `query`; work from the returned digest. Without a query, dump mode keeps about half the input. Read any `warning` before trusting the digest; `passthrough` means keep using your original text. Never compress the request itself or code you are about to edit. Already-seen chunks are skipped and rolling session memory is compacted automatically.",
     inputSchema: {
       type: "object",
       properties: {
         context: { type: "string", description: "Only the new bulky text to compress (not previously sent this session)" },
-        query: { type: "string", description: "The user's request, verbatim — used to decide what to keep; never compressed" },
+        query: {
+          type: "string",
+          description:
+            "Optional. The user's request, verbatim — used to decide what to keep; never compressed. Omit to shrink a raw dump.",
+        },
         session_id: { type: "string", description: "Optional session id for rolling memory (defaults to mcp)" },
       },
-      required: ["context", "query"],
+      required: ["context"],
     },
   },
   {
@@ -235,6 +239,12 @@ async function handleToolCall(name, args = {}) {
           total_tokens_saved: body.total_tokens_saved,
           tokens_used_this_period: body.tokens_used_this_period,
           free_tokens_remaining: body.free_tokens_remaining,
+          ...(body.free_tokens_remaining === 0
+            ? {
+                quota_warning:
+                  "Free monthly quota is used up. Requests now bill credits or pay-as-you-go, or stop with a paywall if neither is set up: https://www.supercompress.dev/dashboard#billing",
+              }
+            : {}),
           meter: body.meter || null,
           account_usage: body.account_usage || null,
           coding_agent_usage: body.coding_agent_usage,
@@ -302,17 +312,33 @@ async function handleToolCall(name, args = {}) {
       session_id: sessionId,
       compacted: Boolean(result.compacted),
     });
+    // Return the digest of this call's new text, once. Rolling session memory stays in the
+    // inbox; returning all of it made small inputs come back larger than they went in.
+    const replay = result.skipped === "already_seen";
+    const digest = replay ? result.compressed : result.delta || result.compressed;
+    const digestTokens = replay ? result.compressed_tokens : result.delta_tokens ?? result.compressed_tokens;
+    if (result.passthrough || result.skipped === "too_small" || String(digest || "").length >= context.trim().length) {
+      // Nothing to gain: do not echo the agent's own text back at it.
+      return toolText(
+        JSON.stringify({
+          passthrough: true,
+          notice: "Nothing to gain; keep using your original text.",
+          ...(result.quota_warning ? { quota_warning: result.quota_warning } : {}),
+          session_id: sessionId,
+        })
+      );
+    }
     return toolText(
       JSON.stringify({
-        compressed_context: result.compressed,
-        compressed_text: result.compressed,
-        delta: result.delta || "",
+        ...(result.warning ? { warning: result.warning } : {}),
+        ...(result.quota_warning ? { quota_warning: result.quota_warning } : {}),
+        ...(result.notice ? { notice: result.notice } : {}),
+        mode: result.query_mode || (query.trim() ? "query" : "dump"),
         original_tokens: result.original_tokens,
-        compressed_tokens: result.compressed_tokens,
-        kept_tokens: result.compressed_tokens,
-        tokens_saved: Math.max(0, (result.original_tokens || 0) - (result.compressed_tokens || 0)),
+        compressed_tokens: digestTokens,
+        tokens_saved: Math.max(0, (result.original_tokens || 0) - (digestTokens || 0)),
         savings_pct: result.savings_pct,
-        tokens_saved_pct: result.savings_pct,
+        compressed_context: digest,
         session_id: sessionId,
         compacted: Boolean(result.compacted),
         skipped: result.skipped || null,

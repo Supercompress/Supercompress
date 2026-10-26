@@ -13,6 +13,13 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+### Fixed (API + hosted MCP)
+- **No more silent over-compression on queryless requests.** With no `query`, or a filler ask such as "Summarize this context.", `/api/v1/compress` used query-anchored extraction with nothing to anchor on and could return about 20 tokens of an 11,000-token page. Those requests now use dump mode, which keeps about half the input, and the response says so in `notice` and `query_mode: "dump"`.
+- **Deep cuts carry a warning.** When a query keeps under 3% of an input of 1,500 tokens or more, the response includes `compression_warning` with the exact numbers.
+- **Passthrough instead of bloat.** A result that saves less than 5%, or comes out larger than the input, returns the input unchanged with `passthrough: true` and is not billed.
+- **Quota warnings.** Billed responses include `quota` (tokens used, free allowance, free remaining) and `quota_warning` when under 10% of the free tier is left or it is used up. `usage_summary` warns at zero too.
+- **Hosted MCP:** `query` is optional on `compress_context`. Results return the digest once, warnings first, and a passthrough is not echoed back.
+
 ## [MCP OAuth launch] — 2026-10-01
 
 ### Added
