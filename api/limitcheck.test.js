@@ -42,3 +42,65 @@ test("writeLanded spots a concurrent overwrite", () => {
   // Far past the recent window: assume it landed.
   assert.equal(writeLanded({ lc: { n: 6 + RECENT, r: [] } }, { nonce: "mine", n: 6 }), true);
 });
+
+const { createHandler } = require("./limitcheck");
+const CTX = Symbol.for("@vercel/request-context");
+
+function fakeRes() {
+  return {
+    headers: {},
+    code: null,
+    body: null,
+    setHeader(k, v) { this.headers[k] = v; },
+    status(c) { this.code = c; return this; },
+    json(b) { this.body = b; return this; },
+    end() { return this; },
+  };
+}
+const post = (ip) => ({ method: "POST", headers: { "x-forwarded-for": ip }, body: { action: "go", surface: "cli" } });
+
+async function withContext(ctx, fn) {
+  const prev = globalThis[CTX];
+  globalThis[CTX] = ctx;
+  try { return await fn(); } finally { globalThis[CTX] = prev; }
+}
+
+test("POST on Vercel replies before the bump settles and hands it to waitUntil", async () => {
+  let release;
+  const gate = new Promise((r) => (release = r));
+  const handed = [];
+  const handler = createHandler({ bump: () => gate });
+  const res = fakeRes();
+  await withContext({ get: () => ({ waitUntil: (p) => handed.push(p) }) }, () => handler(post("10.0.0.1"), res));
+  assert.equal(res.code, 202);
+  assert.equal(handed.length, 1);
+  let settled = false;
+  handed[0].then(() => (settled = true));
+  await new Promise((r) => setImmediate(r));
+  assert.equal(settled, false, "bump still running after the reply");
+  release();
+  await handed[0];
+});
+
+test("POST on Vercel: a failed background bump is swallowed, not unhandled", async () => {
+  const handed = [];
+  const handler = createHandler({ bump: () => Promise.reject(new Error("boom")) });
+  const res = fakeRes();
+  await withContext({ get: () => ({ waitUntil: (p) => handed.push(p) }) }, () => handler(post("10.0.0.2"), res));
+  assert.equal(res.code, 202);
+  await handed[0]; // resolves: the rejection was caught
+});
+
+test("POST off Vercel waits for the bump and reports failure as 503", async () => {
+  let done = false;
+  const ok = createHandler({ bump: () => new Promise((r) => setTimeout(() => { done = true; r(); }, 20)) });
+  const res = fakeRes();
+  await withContext(undefined, () => ok(post("10.0.0.3"), res));
+  assert.equal(done, true);
+  assert.equal(res.code, 202);
+
+  const bad = createHandler({ bump: () => Promise.reject(new Error("boom")) });
+  const res2 = fakeRes();
+  await withContext(undefined, () => bad(post("10.0.0.4"), res2));
+  assert.equal(res2.code, 503);
+});
