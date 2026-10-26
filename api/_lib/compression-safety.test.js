@@ -52,3 +52,12 @@ test("rechecking passthrough preserves its reason without duplicate warnings", (
   assert.deepEqual(second, first);
   assert.equal(second.ccr, null);
 });
+
+test("extreme accepted reductions still warn that original evidence needs review", () => {
+  const context = Array(12997).fill("word").join(" ");
+  const result = enforceCompressionSafety(context, { compressed_text: Array(243).fill("word").join(" "), warnings: ["Existing warning"] });
+  assert.equal(result.compression_safety.status, "accepted");
+  assert.ok(result.warnings.includes("Existing warning"));
+  assert.match(result.warnings.join(" "), /retained less than 5%.*Semantic preservation has not been verified/);
+  assert.deepEqual(enforceCompressionSafety(context, result), result);
+});

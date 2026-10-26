@@ -53,7 +53,15 @@ function enforceCompressionSafety(context, candidate) {
       semantic_verification: "not_performed",
     },
   };
-  if (!reason) return normalized;
+  if (!reason) {
+    if (originalTokens >= MIN_COLLAPSE_INPUT_TOKENS && candidateTokens / originalTokens < 0.05) {
+      normalized.warnings = [...new Set([
+        ...(Array.isArray(result.warnings) ? result.warnings : []),
+        "Compression retained less than 5% of a large input. Semantic preservation has not been verified; check the original evidence before relying on this digest.",
+      ])];
+    }
+    return normalized;
+  }
 
   const warning = reason === "suspicious_compression_collapse"
     ? "Compression discarded over 99% of a large input into at most 64 estimated tokens; returned the original context. This heuristic does not verify semantic preservation."

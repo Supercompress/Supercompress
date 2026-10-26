@@ -71,7 +71,9 @@ wanted. Only `context` is required.
 Compression returns the original context with a warning when the candidate is
 empty, grows in characters, or saves less than 5% of estimated tokens. It also
 bypasses suspicious large-input collapses (at least 1,000 estimated input tokens,
-over 99% discarded, and at most 64 estimated output tokens). These are
+over 99% discarded, and at most 64 estimated output tokens). Other large-input
+reductions that retain less than 5% still carry an explicit warning to review
+the original evidence before relying on the digest. These are
 conservative heuristics, not semantic-preservation verification or model-token
 measurements. Delivered-text counters include cache/retrieval decoration.
 
