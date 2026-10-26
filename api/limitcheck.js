@@ -15,6 +15,17 @@ const PINGS_PER_MINUTE = 30;
 
 let cache = { at: 0, payload: null };
 
+/**
+ * Keep work running after the response, via the Vercel request context
+ * (what @vercel/functions' waitUntil reads). Returns false off-Vercel.
+ */
+function runAfterResponse(promise) {
+  const ctx = globalThis[Symbol.for("@vercel/request-context")]?.get?.();
+  if (typeof ctx?.waitUntil !== "function") return false;
+  ctx.waitUntil(promise);
+  return true;
+}
+
 function parseEvent(body) {
   const action = String(body?.action || "").toLowerCase();
   const surface = String(body?.surface || "").toLowerCase();
@@ -42,14 +53,14 @@ async function handler(req, res) {
     } catch {
       body = {};
     }
-    try {
-      await bumpLimitcheck(parseEvent(body));
-      cache.at = 0;
-      return json(res, 202, { ok: true });
-    } catch (err) {
-      console.warn("limitcheck bump failed:", err.message || err);
-      return json(res, 503, { ok: false });
-    }
+    // The CLI waits on this ping, so answer at once and do the verified
+    // bump (a few Auth round trips) after the response.
+    const bump = bumpLimitcheck(parseEvent(body)).then(
+      () => { cache.at = 0; },
+      (err) => { console.warn("limitcheck bump failed:", err.message || err); }
+    );
+    if (!runAfterResponse(bump)) await bump;
+    return json(res, 202, { ok: true });
   }
 
   if (req.method !== "GET") return json(res, 405, { ok: false, error: "method_not_allowed" });
