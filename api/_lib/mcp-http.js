@@ -154,7 +154,7 @@ async function handleToolCall(name, args, apiKey) {
           total_tokens_saved: body.total_tokens_saved,
           tokens_used_this_period: body.tokens_used_this_period,
           free_tokens_remaining: body.free_tokens_remaining,
-          ...(body.free_tokens_remaining === 0
+          ...(body.free_tokens_remaining === 0 && body.unlimited !== true
             ? {
                 quota_warning:
                   "Free monthly quota is used up. Requests now bill credits or pay-as-you-go, or stop with a paywall if neither is set up: https://www.supercompress.dev/dashboard#billing",

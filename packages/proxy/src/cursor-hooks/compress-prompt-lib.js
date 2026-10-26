@@ -500,6 +500,8 @@ async function compressContext(context, query, codingAgent, opts = {}) {
   const pct = totalIn > 0 ? Math.round(((totalIn - totalOut) / totalIn) * 100) : 0;
   const warnings = [...new Set(chunkResults.map((r) => r.warning).filter(Boolean))];
   const quotaWarning = chunkResults.map((r) => r.quota_warning).filter(Boolean).pop() || null;
+  const queryMode = chunkResults.some((r) => r.query_mode === "dump") ? "dump" : chunkResults[0]?.query_mode || null;
+  const notice = chunkResults.map((r) => r.notice).find(Boolean) || null;
   const partial = okChunks > 0 && failedChunks > 0;
   const allFailed = okChunks === 0 && failedChunks > 0;
   return {
@@ -517,6 +519,8 @@ async function compressContext(context, query, codingAgent, opts = {}) {
     passthrough: chunkResults.length > 0 && chunkResults.every((r) => r.passthrough),
     warning: warnings.join(" ") || null,
     quota_warning: quotaWarning,
+    query_mode: queryMode,
+    notice,
   };
 }
 
@@ -625,8 +629,9 @@ async function compressIncremental({ context, query, codingAgent, sessionId, kin
     compact: compactMeta,
     skipped: null,
     passthrough: deltaResult.passthrough === true,
-    warning: deltaResult.warning || null,
-    quota_warning: deltaResult.quota_warning || null,
+    warning: [deltaResult.warning, compactMeta?.warning].filter(Boolean).join(" ") || null,
+    // Compaction bills after the delta, so its quota state is the latest one.
+    quota_warning: compactMeta?.quota_warning || deltaResult.quota_warning || null,
     notice: deltaResult.notice || null,
     query_mode: deltaResult.query_mode || null,
   };

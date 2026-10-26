@@ -335,12 +335,13 @@ module.exports = async (req, res) => {
 
     const context = body.context || "";
     const query = (typeof body.query === "string" && body.query.trim()) || "Summarize this context.";
-    // No query, or one that names no target ("Summarize this context."): query-anchored
-    // extraction has nothing to anchor on and can keep only a header. Use the budgeted digest.
-    const dumpMode = isGenericQuery(body.query);
     const mode = body.mode || "neural";
     const budgetRatio = mode === "fixed" ? (body.budget_ratio ?? 0.35) : 0.35;
     const ccr = body.ccr === true || body.ccr === "true";
+    // No query, or one that names no target ("Summarize this context."): query-anchored
+    // extraction has nothing to anchor on and can keep only a header. Use the budgeted digest.
+    // (CCR keeps its own query path; it is not labelled dump mode.)
+    const dumpMode = isGenericQuery(body.query) && !ccr;
     const cache_prefix = body.cache_prefix === true || body.cache_prefix === "true";
     const coding_agent = body.coding_agent || null;
     const skipLog = body.log === false || body.log === "false";
@@ -520,7 +521,13 @@ module.exports = async (req, res) => {
     const originalTokens = result.original_tokens ?? 0;
 
     // Never hand back something no smaller than the input, and never bill for it.
-    const safety = ccr ? { passthrough: false } : assessResult({ originalTokens, keptTokens, dumpMode });
+    const safety = assessResult({
+      originalTokens,
+      keptTokens,
+      originalChars: context.length,
+      deliveredChars: finalText.length,
+      dumpMode,
+    });
     if (safety.passthrough) {
       if (leaseHeld && leaseOwnerUid && requestId) {
         try {
@@ -596,6 +603,18 @@ module.exports = async (req, res) => {
 
     // Billing is fail-closed: never return compressed text without a durable charge/quota write.
     // Persist responseBody so identical Idempotency-Key retries replay instead of recomputing.
+    // Persist safety + an estimated quota state with the billed response, so an
+    // Idempotency-Key replay carries the same warnings. Replaced with the exact state below.
+    const ownerClaims = authenticated.owner?.customClaims || {};
+    const quotaFor = (tokensUsed) =>
+      quotaStatus({ tokensUsed, allowance: freeAllowance(ownerClaims), comped: isComped(ownerClaims) });
+    try {
+      const month = new Date().toISOString().slice(0, 7);
+      const prior = ownerClaims.sc_usage?.month === month ? Number(ownerClaims.sc_usage.tokens_in || 0) : 0;
+      responseBody.quota = quotaFor(prior + originalTokens);
+      if (responseBody.quota.warning) responseBody.quota_warning = responseBody.quota.warning;
+    } catch (_) {}
+
     let billedUsage = null;
     try {
       billedUsage = await withTimeout(
@@ -622,13 +641,11 @@ module.exports = async (req, res) => {
 
     // Quota state on every billed response so agents see the free tier running out.
     try {
-      const claims = authenticated.owner?.customClaims || {};
-      responseBody.quota = quotaStatus({
-        tokensUsed: billedUsage?.tokens_in,
-        allowance: freeAllowance(claims),
-        comped: isComped(claims),
-      });
-      if (responseBody.quota.warning) responseBody.quota_warning = responseBody.quota.warning;
+      if (Number.isFinite(Number(billedUsage?.tokens_in))) {
+        responseBody.quota = quotaFor(Number(billedUsage.tokens_in));
+        delete responseBody.quota_warning;
+        if (responseBody.quota.warning) responseBody.quota_warning = responseBody.quota.warning;
+      }
     } catch (err) {
       console.warn("quota status skipped:", err.message || err);
     }

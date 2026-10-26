@@ -38,16 +38,23 @@ function pct(part, whole) {
   return whole > 0 ? Math.round((part / whole) * 1000) / 10 : 0;
 }
 
-/** Decide whether a compression result is safe and worth returning. */
-function assessResult({ originalTokens, keptTokens, dumpMode = false }) {
+/**
+ * Decide whether a compression result is safe and worth returning. Pass the delivered text's
+ * length (after CCR markers / cache wrapping) as well as engine token counts: engines can
+ * report savings for text that comes back whole, and wrappers add characters.
+ */
+function assessResult({ originalTokens, keptTokens, originalChars, deliveredChars, dumpMode = false }) {
   const original = Number(originalTokens) || 0;
   const kept = Number(keptTokens) || 0;
-  const savedPct = original > 0 ? 100 - pct(kept, original) : 0;
-  if (original <= 0 || kept >= original || savedPct < MIN_SAVINGS_PCT) {
+  const tokenSaved = original > 0 ? (original - kept) / original : 0;
+  const chars = Number(originalChars) || 0;
+  const charSaved = chars > 0 && deliveredChars != null ? (chars - Number(deliveredChars)) / chars : tokenSaved;
+  const saved = Math.min(tokenSaved, charSaved);
+  if (original <= 0 || saved * 100 < MIN_SAVINGS_PCT) {
     return {
       passthrough: true,
-      reason: kept > original ? "output_larger_than_input" : "no_meaningful_savings",
-      saved_pct: Math.max(0, Math.round(savedPct * 10) / 10),
+      reason: kept > original || (deliveredChars != null && deliveredChars > chars) ? "output_larger_than_input" : "no_meaningful_savings",
+      saved_pct: Math.max(0, Math.round(saved * 1000) / 10),
     };
   }
   if (!dumpMode && original >= DEEP_CUT_MIN_INPUT_TOKENS && kept / original < DEEP_CUT_MAX_KEPT_RATIO) {

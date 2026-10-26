@@ -82,3 +82,31 @@ test("hosted MCP returns one copy of the digest and does not echo passthroughs",
   assert.equal(pass.passthrough, true);
   assert.equal(JSON.stringify(pass).includes("x".repeat(50)), false);
 });
+
+test("savings are judged unrounded and on the delivered text", () => {
+  // 4.96% saved must not round up to the 5% bar.
+  assert.equal(assessResult({ originalTokens: 10000, keptTokens: 9504 }).passthrough, true);
+  // Engine claims 50% but the text came back whole (or wrapped larger): passthrough.
+  assert.equal(assessResult({ originalTokens: 1000, keptTokens: 500, originalChars: 4000, deliveredChars: 4000 }).passthrough, true);
+  assert.equal(
+    assessResult({ originalTokens: 1000, keptTokens: 500, originalChars: 4000, deliveredChars: 4300 }).reason,
+    "output_larger_than_input"
+  );
+  assert.equal(assessResult({ originalTokens: 1000, keptTokens: 500, originalChars: 4000, deliveredChars: 2000 }).passthrough, false);
+});
+
+test("idempotent replays keep safety and quota notices", () => {
+  const { sanitizeReplayResponse } = require("./billing-ledger");
+  const replay = sanitizeReplayResponse({
+    compressed_text: "digest",
+    query_mode: "dump",
+    notice: "Dump mode",
+    compression_warning: "Deep cut",
+    quota: { free_tokens_remaining: 0 },
+    quota_warning: "Free monthly quota used",
+  });
+  assert.equal(replay.query_mode, "dump");
+  assert.equal(replay.compression_warning, "Deep cut");
+  assert.equal(replay.quota_warning, "Free monthly quota used");
+  assert.deepEqual(replay.quota, { free_tokens_remaining: 0 });
+});

@@ -239,7 +239,7 @@ async function handleToolCall(name, args = {}) {
           total_tokens_saved: body.total_tokens_saved,
           tokens_used_this_period: body.tokens_used_this_period,
           free_tokens_remaining: body.free_tokens_remaining,
-          ...(body.free_tokens_remaining === 0
+          ...(body.free_tokens_remaining === 0 && body.unlimited !== true
             ? {
                 quota_warning:
                   "Free monthly quota is used up. Requests now bill credits or pay-as-you-go, or stop with a paywall if neither is set up: https://www.supercompress.dev/dashboard#billing",
@@ -317,12 +317,15 @@ async function handleToolCall(name, args = {}) {
     const replay = result.skipped === "already_seen";
     const digest = replay ? result.compressed : result.delta || result.compressed;
     const digestTokens = replay ? result.compressed_tokens : result.delta_tokens ?? result.compressed_tokens;
-    if (result.passthrough || result.skipped === "too_small" || String(digest || "").length >= context.trim().length) {
+    // Unbilled local cases (too small, or a memory replay no smaller than the input) and API
+    // passthroughs are reported, not echoed. A billed digest is always returned.
+    if (result.passthrough || result.skipped === "too_small" || (replay && String(digest || "").length >= context.trim().length)) {
       // Nothing to gain: do not echo the agent's own text back at it.
       return toolText(
         JSON.stringify({
           passthrough: true,
           notice: "Nothing to gain; keep using your original text.",
+          ...(result.warning ? { warning: result.warning } : {}),
           ...(result.quota_warning ? { quota_warning: result.quota_warning } : {}),
           session_id: sessionId,
         })
