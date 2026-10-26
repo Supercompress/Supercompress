@@ -4,6 +4,9 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+### Added
+- **Public limitcheck counter.** Each runway check (`supercompress limits` status or the MCP tool `runway_check`) sends one anonymous count to [limitcheck.supercompress.dev](https://limitcheck.supercompress.dev), which shows the global total live. The body is only the verdict (`go` / `land` / `pace` / `wait` / `unknown`) and `cli` or `mcp`: no ids, usage numbers, prompts or paths. Statusline updates and `limits ingest` never count. The ping times out after 1.5 s and never fails a check. Opt out with `SUPERCOMPRESS_TELEMETRY=0`, `DO_NOT_TRACK=1` or `SUPERCOMPRESS_RUNWAY=0`.
+
 ## [0.5.40] — 2026-10-22
 
 ### Added
