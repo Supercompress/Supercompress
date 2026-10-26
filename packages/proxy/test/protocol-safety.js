@@ -123,6 +123,47 @@ async function main() {
     );
   });
 
+  await test("server safety passthrough preserves the original conversation", async () => {
+    const originalFetch = global.fetch;
+    const originalKey = process.env.SUPERCOMPRESS_API_KEY;
+    process.env.SUPERCOMPRESS_API_KEY = "sc_live_test_safety_12345678901234567890";
+    global.fetch = async () => ({
+      ok: true,
+      json: async () => ({
+        compressed_text: "Original context",
+        original_tokens: 500,
+        compression_safety: { status: "passthrough", reason: "insufficient_savings" },
+      }),
+    });
+    try {
+      const messages = [
+        { role: "system", content: "Preserve instructions" },
+        { role: "user", content: "research finding ".repeat(150) },
+        { role: "assistant", content: "Previous response" },
+        { role: "user", content: "Summarize findings" },
+      ];
+      const result = await compressor.compress(messages, "test");
+      assert.deepEqual(result.messages, messages);
+      assert.equal(result.tokens_saved, 0);
+      assert.equal(result.skip_reason, "insufficient_savings");
+
+      const structured = [
+        ...Array.from({ length: 8 }, () => ({ role: "user", content: "research finding ".repeat(150) })),
+        { role: "assistant", content: null, tool_calls: [{ id: "safety-call" }] },
+        { role: "tool", tool_call_id: "safety-call", content: "result" },
+        { role: "user", content: "Continue" },
+      ];
+      const structuredResult = await compressor.compress(structured, "test");
+      assert.deepEqual(structuredResult.messages, structured);
+      assert.equal(structuredResult.tokens_saved, 0);
+      assert.equal(structuredResult.skip_reason, "insufficient_savings");
+    } finally {
+      global.fetch = originalFetch;
+      if (originalKey === undefined) delete process.env.SUPERCOMPRESS_API_KEY;
+      else process.env.SUPERCOMPRESS_API_KEY = originalKey;
+    }
+  });
+
   await test("PID helpers only match our process command", () => {
     const bin = require("fs").readFileSync(
       path.join(__dirname, "../bin/supercompress.js"),

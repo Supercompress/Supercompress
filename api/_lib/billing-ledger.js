@@ -88,7 +88,7 @@ function computeCompressFingerprint(body = {}) {
   const mode = String(body.mode || "compiler");
   const normalized = JSON.stringify({
     context: String(body.context || ""),
-    query: String(body.query || "Summarize this context."),
+    query: String(body.query || "").trim() ? String(body.query) : "",
     mode,
     budget_ratio: mode === "fixed" ? Number(body.budget_ratio ?? 0.35) : 0.35,
     ccr: body.ccr === true || body.ccr === "true",
@@ -1008,6 +1008,15 @@ function sanitizeReplayResponse(response) {
     keep_ratio: response.keep_ratio ?? null,
     coding_agent: response.coding_agent || null,
     source: response.source || null,
+    fallback_reason: typeof response.fallback_reason === "string" ? response.fallback_reason.slice(0, 200) : null,
+    warnings: Array.isArray(response.warnings)
+      ? response.warnings.filter(warning => typeof warning === "string").slice(0, 20).map(warning => warning.slice(0, 2000))
+      : [],
+    compression_safety: response.compression_safety && typeof response.compression_safety === "object"
+      ? Object.fromEntries(["status", "reason", "token_count_method", "semantic_verification"]
+        .filter(key => typeof response.compression_safety[key] === "string")
+        .map(key => [key, response.compression_safety[key].slice(0, 200)]))
+      : null,
     cache_prefix_applied: Boolean(response.cache_prefix_applied),
     ccr: response.ccr || null,
     latency_ms: Number(response.latency_ms) || 0,

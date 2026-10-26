@@ -239,6 +239,9 @@ async function compress(messages, agentName) {
         return passThrough(messages, words, "structured_protocol");
       }
       const data = await response.json();
+      if (data.compression_safety?.status === "passthrough") {
+        return passThrough(messages, data.original_tokens || wordCount, data.compression_safety.reason || "no_benefit");
+      }
       const digest = String(data.compressed_text || "").trim();
       const out = [
         ...split.systemMsgs,
@@ -366,6 +369,9 @@ async function compress(messages, agentName) {
   }
 
   const result = await response.json();
+  if (result.compression_safety?.status === "passthrough") {
+    return passThrough(messages, result.original_tokens || wordCount, result.compression_safety.reason || "no_benefit");
+  }
   const compressedText = result.compressed_text || "";
   const originalTokens = result.original_tokens || wordCount;
   const keptTokens = result.kept_tokens || compressedText.split(/\s+/).length;
