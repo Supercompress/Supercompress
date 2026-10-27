@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/extractive-vs-abstractive-context-compression" />
   <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:modified_time" content="2026-10-27" />
   <meta property="article:author" content="https://www.arjunshah.xyz/" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
@@ -36,7 +36,7 @@
   "headline": "Extractive vs abstractive context compression",
   "description": "Extractive compression keeps original lines; abstractive compression rewrites them. How each works, where each fails, and which to use for code and logs.",
   "datePublished": "2026-10-19",
-  "dateModified": "2026-10-19",
+  "dateModified": "2026-10-27",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah",
@@ -94,6 +94,14 @@
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "It cannot add text that was not in the input, but it can drop a line that mattered, so evaluate it on your own tasks."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do LLM summaries lose details in coding agent sessions?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Compact-Bench authors report that, across 14 summarizer models, LLM summaries of coding-agent history kept at most 16.0% of recurring details such as paths, commit SHAs and error types, compared with 79.1% for mechanical extraction, and that replacing history with a summary damaged between 5% and 64% of repairs that succeeded with full history."
       }
     }
   ]
@@ -161,7 +169,7 @@
     <a href="/what-is-context-compression-for-ai-agents">What is context compression</a>
   </nav>
   <div class="article-prose">
-    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#extractive">How does extractive compression work?</a></li><li><a href="#abstractive">How does abstractive compression work?</a></li><li><a href="#failures">How does each one fail?</a></li><li><a href="#which">Which should you use?</a></li><li><a href="#pruning">Where does token pruning fit?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#extractive">How does extractive compression work?</a></li><li><a href="#abstractive">How does abstractive compression work?</a></li><li><a href="#failures">How does each one fail?</a></li><li><a href="#research">What does 2026 research say about summaries vs extraction?</a></li><li><a href="#which">Which should you use?</a></li><li><a href="#pruning">Where does token pruning fit?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
     <h2 id="extractive">How does extractive compression work?</h2>
     <p>A scorer rates each unit of text (token, sentence or line) and keeps the highest scoring units in their original form. Query-aware extractive compression scores units against the current question, so the same log yields different kept lines for different questions. SuperCompress works this way: the hosted Neural Keep model keeps the original lines that answer the question and drops the others.</p>
     <h2 id="abstractive">How does abstractive compression work?</h2>
@@ -172,6 +180,13 @@
 <tr><td>Exact strings (paths, IDs, errors)</td><td>Preserved when kept</td><td>Can be altered</td></tr>
 <tr><td>Auditability</td><td>Kept text is a subset of the input</td><td>Must compare summary to source</td></tr>
 <tr><td>Cost to run</td><td>A scoring model</td><td>An extra LLM generation</td></tr></tbody></table>
+    <h2 id="research">What does 2026 research say about summaries vs extraction?</h2>
+    <p>Two October 2026 studies measured what happens when coding agents compact long histories with LLM summaries instead of keeping original text.</p>
+    <ul>
+      <li><a href="https://arxiv.org/abs/2610.31710" rel="noopener">Compact-Bench</a> (University of Science and Technology of China, arXiv 2610.31710): the authors report that, across 14 summarizer models, replacing a coding agent's history with an LLM summary damaged between 5% and 64% of repairs that succeeded with full history. They also report that LLM summaries kept at most 16.0% of recurring details such as paths, commit SHAs and error types, compared with 79.1% for mechanical extraction. Summaries can keep the target file and the right strings and still lose the progress needed to finish the fix.</li>
+      <li><a href="https://www.microsoft.com/en-us/research/publication/benchmarking-long-horizon-agent-context-compaction-with-compactionbench/" rel="noopener">CompactionBench</a> (Microsoft Research, October 2026): the authors report that, in 13.5M GitHub Copilot agent sessions, sessions that triggered compaction were 7.8% of sessions but 44.2% of token consumption. They also report that synchronous compaction delays the agent and breaks prefix-cache reuse.</li>
+    </ul>
+    <p>The takeaway is that extraction keeps exact identifiers verbatim, which is why line-level extractive compression suits code, logs and tool output.</p>
     <h2 id="which">Which should you use?</h2>
     <p>Use extractive compression for tool output, stack traces, diffs, config, JSON and retrieved documents where exact wording matters. Use abstractive summaries for long conversational history when the gist is enough. Many agents use both: extract at the tool boundary, summarize old history.</p>
     <h2 id="pruning">Where does token pruning fit?</h2>
@@ -185,6 +200,8 @@
     <p>Extractive. It keeps original lines chosen against your question and never rewrites or summarizes them.</p>
     <h3>Can extractive compression hallucinate?</h3>
     <p>It cannot add text that was not in the input, but it can drop a line that mattered, so evaluate it on your own tasks.</p>
+    <h3>Do LLM summaries lose details in coding agent sessions?</h3>
+    <p>Yes. Compact-Bench authors report that, across 14 summarizer models, LLM summaries of coding-agent history kept at most 16.0% of recurring details such as paths, commit SHAs and error types, compared with 79.1% for mechanical extraction, and that replacing history with a summary damaged between 5% and 64% of repairs that succeeded with full history.</p>
     <p class="seo-cta-row">
       <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
       <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
