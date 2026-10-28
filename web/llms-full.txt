@@ -395,6 +395,21 @@ A: Run supercompress uninstall. It removes only the supercompress block from Goo
 Q: Does it work on Windows?
 A: Setup writes the macOS and Linux path (~/.config/goose/config.yaml) today. It does not write Goose's Windows config path.
 
+### Reduce Zed Token Usage: Compress Tool Output in Zed's Agent Panel
+
+URL: https://www.supercompress.dev/reduce-zed-token-usage
+
+Where Zed Agent Panel tokens go (terminal output, file reads, MCP results) and how SuperCompress adds an MCP context server so the agent can call compress_context and keep the original lines relevant to your question. Zed gets MCP only: no hooks and no instructions file. Setup writes context_servers.supercompress (command supercompress-mcp) into settings.json on macOS, Linux and Windows, keeps existing keys and other context servers, and sets agent.enable_all_context_servers true.
+
+Q: Does SuperCompress change my other Zed settings or context servers?
+A: No. It adds one context_servers.supercompress entry and sets agent.enable_all_context_servers true. Existing keys and other context servers stay as they were. supercompress uninstall removes only the supercompress entry.
+
+Q: Does SuperCompress compress every tool result in Zed automatically?
+A: No. For Zed, SuperCompress wires MCP only: no hooks and no instructions file. The agent can call compress_context when output is large. Mentioning the supercompress server by name in the prompt helps the model pick the tool.
+
+Q: How do I undo the Zed setup?
+A: Run supercompress uninstall. It removes only the supercompress entry from Zed settings.json. Your other settings and context servers stay as they were.
+
 ### Claude Code context limit: why you run out and what to do
 
 URL: https://www.supercompress.dev/claude-code-context-limit
