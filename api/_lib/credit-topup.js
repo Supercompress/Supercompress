@@ -8,7 +8,6 @@ const {
   DEFAULT_CREDIT_LIMIT_USD,
   roundUsd,
   tokensToUsd,
-  TOKENS_PER_BILLING_UNIT,
 } = require("./stripe");
 const {
   paidCreditUsdFromSession,
@@ -18,8 +17,8 @@ const { mutateStore } = require("./store");
 const { initFirebaseAdmin } = require("./auth");
 const admin = require("firebase-admin");
 
-/** Thank-you grant on first successful credit top-up (1M tokens @ current PAYG rate). */
-const FIRST_PAY_BONUS_TOKENS = TOKENS_PER_BILLING_UNIT;
+/** Promotional grants are retired; existing credited balances remain unchanged. */
+const FIRST_PAY_BONUS_TOKENS = 0;
 const FIRST_PAY_BONUS_USD = tokensToUsd(FIRST_PAY_BONUS_TOKENS);
 
 function stripeAlreadyCredited(session) {

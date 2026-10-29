@@ -137,7 +137,7 @@
       "name": "Is there a free Caveman alternative?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Headroom, RTK, built-in compaction and output limits are all free, and SuperCompress has a free tier of 5M tokens a month."
+        "text": "Yes. Headroom, RTK, built-in compaction and output limits are all free, and SuperCompress has a free tier of 1M tokens a month."
       }
     }
   ]
@@ -214,7 +214,7 @@
     <h2 id="the-list">The alternatives</h2>
     <h3 id="supercompress">1. SuperCompress</h3>
     <p>SuperCompress attacks the input side. Before a large log, diff or tool result reaches the model, the hosted API keeps only the original lines that answer the current question. Because input usually dwarfs output in agent sessions, this is often where the bigger saving is, and replies stay as detailed as you like.</p>
-    <ul><li><strong>Best for:</strong> cutting the input tokens an agent or app sends: tool output, file reads, logs, MCP results, retrieved docs</li><li><strong>How it works:</strong> a hosted, query-aware model keeps the original lines that answer the current question, word for word, and drops the rest</li><li><strong>Runs:</strong> hosted API (<code>POST /api/v1/compress</code>) plus an MCP tool and hooks for coding agents</li><li><strong>Price:</strong> 5M free tokens a month, then $0.10 per million, per <a href="/dashboard?signup=1">the site</a></li></ul>
+    <ul><li><strong>Best for:</strong> cutting the input tokens an agent or app sends: tool output, file reads, logs, MCP results, retrieved docs</li><li><strong>How it works:</strong> a hosted, query-aware model keeps the original lines that answer the current question, word for word, and drops the rest</li><li><strong>Runs:</strong> hosted API (<code>POST /api/v1/compress</code>) plus an MCP tool and hooks for coding agents</li><li><strong>Price:</strong> 1M free tokens a month, then $0.10 per million, per <a href="/dashboard?signup=1">the site</a></li></ul>
 <h3 id="headroom">2. <a href="https://github.com/chopratejas/headroom" rel="noopener" target="_blank">Headroom</a></h3>
     <p>Headroom is the open-source way to compress the same input locally, with the originals kept retrievable. Choose it if you want everything on your own machine.</p>
     <ul><li><strong>Best for:</strong> teams that want an open-source compression layer they run themselves</li><li><strong>How it works:</strong> content-type compressors for JSON, logs, code, search results and history, with the originals kept so the model can ask for them back</li><li><strong>Runs:</strong> locally, as a Python or TypeScript library, a proxy, an MCP server or an agent wrapper (<code>headroom wrap claude</code>)</li><li><strong>Licence:</strong> Apache 2.0</li></ul>
@@ -254,7 +254,7 @@
     <h3>Can I use Caveman and SuperCompress together?</h3>
     <p>Yes. They work on different sides of the conversation: Caveman shortens replies, SuperCompress shrinks the context the agent reads.</p>
     <h3>Is there a free Caveman alternative?</h3>
-    <p>Yes. Headroom, RTK, built-in compaction and output limits are all free, and SuperCompress has a free tier of 5M tokens a month.</p>
+    <p>Yes. Headroom, RTK, built-in compaction and output limits are all free, and SuperCompress has a free tier of 1M tokens a month.</p>
     <p class="seo-cta-row">
       <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
       <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>

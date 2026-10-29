@@ -49,7 +49,7 @@ function resolveClientIdempotencyKey(req, body) {
 }
 
 /**
- * Free accounts hard-stop at the monthly free allowance (5M + onboard bonus).
+ * Free accounts hard-stop at the monthly free allowance (1M).
  * Legacy metered / comped PAYG may exceed freely.
  * Credit-wallet PAYG may exceed free only while prepaid balance > 0 (or auto-recharge succeeds).
  * Never fail-open for free users — billing down ⇒ 503, not free compress.

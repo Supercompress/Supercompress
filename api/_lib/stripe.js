@@ -3,7 +3,7 @@
  * Requires STRIPE_SECRET_KEY env var.
  *
  * Pricing model:
- *   Free:  5M tokens / month
+ *   Free:  1M tokens / month
  *   PAYG:  prepaid credit wallet — $0.10 per 1M tokens after free allowance
  *          (legacy metered subscriptions still supported via sc_metered)
  */
@@ -34,23 +34,22 @@ function envTrim(name, fallback) {
   return v != null && String(v).trim() ? String(v).trim() : fallback;
 }
 
-/** Free monthly allowance: 5M tokens. Launch promo: $0.10 / 1M after that.
+/** Free monthly allowance: 1M tokens. PAYG: $0.10 / 1M after that.
  *  Raising the rate is apply-pricing-30c.sh, and only after an explicit approval. */
-const FREE_TOKENS_PER_MONTH = 5_000_000;
+const FREE_TOKENS_PER_MONTH = 1_000_000;
 const USD_PER_MILLION = 0.1;
 const TOKENS_PER_BILLING_UNIT = 1_000_000; // 1M tokens @ $0.10
 const DEFAULT_CREDIT_LIMIT_USD = 10;
 const MIN_CREDIT_LIMIT_USD = 10;
 const MAX_CREDIT_LIMIT_USD = 1000;
 
-function onboardBonusTokens(claims = {}) {
-  const n = Number(claims?.sc_onboard_bonus) || 0;
-  return Math.max(0, Math.min(30_000, Math.floor(n)));
+function onboardBonusTokens() {
+  return 0;
 }
 
-/** Effective free allowance including onboarding quest bonuses (10,000 each). */
-function freeAllowance(claims = {}) {
-  return FREE_TOKENS_PER_MONTH + onboardBonusTokens(claims);
+/** Free allowance excludes retired promotional bonuses. */
+function freeAllowance() {
+  return FREE_TOKENS_PER_MONTH;
 }
 
 /**
@@ -282,7 +281,7 @@ async function createCreditTopUpCheckout({
           unit_amount: unitAmount,
           product_data: {
             name: "SuperCompress credit",
-            description: `$${amount.toFixed(2)} prepaid usage credit ($0.10 / 1M tokens after 5M free/mo)`,
+            description: `$${amount.toFixed(2)} prepaid usage credit ($0.10 / 1M tokens after 1M free/mo)`,
           },
         },
       },
