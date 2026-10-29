@@ -142,7 +142,7 @@ const heavyClaims = () => ({
     const replay = await applyCreditTopUp(clone(a)); // stale event metadata, no sc_credited
     assert.strictEqual(replay.already, true, "replayed older session must be a no-op");
     assert.strictEqual(users.get(uid).sc_credit_balance_usd, before);
-    assert.strictEqual(before, 20.1, "two $10 top-ups + one $0.10 first-pay bonus");
+    assert.strictEqual(before, 20, "two $10 top-ups without retired first-pay promotion");
   }
 
   console.log("billing-overcredit.test.js: ok");

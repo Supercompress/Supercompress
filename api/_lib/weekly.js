@@ -650,15 +650,22 @@ async function unsubscribeEmail(email, token, { confirmOnly = false } = {}) {
     err.status = 401;
     throw err;
   }
+  let authUnsubscribed = false;
+  let authUserMissing = false;
+  let storeUnsubscribed = false;
   try {
     const { initFirebaseAdmin } = require("./auth");
     const { stampOwnerClaim } = require("./billing-ledger");
-    if (initFirebaseAdmin()) {
-      const admin = require("firebase-admin");
-      const user = await admin.auth().getUserByEmail(clean).catch(() => null);
-      if (user) {
-        await stampOwnerClaim(user.uid, "sc_unsub", "1");
-      }
+    if (!initFirebaseAdmin()) throw new Error("unsubscribe_auth_unavailable");
+    const admin = require("firebase-admin");
+    const user = await admin.auth().getUserByEmail(clean).catch((err) => {
+      if (err.code !== "auth/user-not-found") throw err;
+      authUserMissing = true;
+      return null;
+    });
+    if (user) {
+      authUnsubscribed = await stampOwnerClaim(user.uid, "sc_unsub", "1");
+      if (!authUnsubscribed) throw new Error("unsubscribe_auth_stamp_failed");
     }
   } catch (err) {
     console.warn("unsubscribe: auth stamp skipped:", err.message);
@@ -678,8 +685,14 @@ async function unsubscribeEmail(email, token, { confirmOnly = false } = {}) {
       }
       return { ok: true };
     });
+    storeUnsubscribed = true;
   } catch (err) {
     console.warn("unsubscribe: store skipped:", err.message);
+  }
+  if (!authUnsubscribed && !(authUserMissing && storeUnsubscribed)) {
+    const err = new Error("Could not save your unsubscribe preference. Please retry.");
+    err.status = 503;
+    throw err;
   }
   return { ok: true, email: clean };
 }
@@ -856,6 +869,7 @@ async function runLaunchT0({ force = false } = {}) {
 }
 
 module.exports = {
+  isHardBlockedRecipient,
   drainSecretOk,
   isoWeekCampaignId,
   tipCampaignId,

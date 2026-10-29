@@ -1,6 +1,6 @@
 /**
  * Signup onboarding (full page) + power-user celebrate (dashboard overlay).
- * Skippable; dither branding; 10,000 free tokens per quest.
+ * Skippable setup and prepaid credit checkout.
  */
 
 const HEARD = [
@@ -26,10 +26,6 @@ const QUEST_COPY = {
   },
 };
 
-function fmtBonus(n) {
-  return Number(n || 0).toLocaleString("en-US");
-}
-
 function escapeHtml(s) {
   return String(s || "")
     .replace(/&/g, "&amp;")
@@ -50,7 +46,6 @@ function tokensFromUsd(usd) {
 
 export function createOnboardingController({
   apiFetch,
-  onBonusChange,
   variant = "overlay",
   mountSelector = "#sc-onboard-mount",
   onComplete = null,
@@ -239,7 +234,6 @@ export function createOnboardingController({
 
   function renderQuests() {
     const actions = state?.actions || {};
-    const bonus = state?.bonus_tokens || 0;
     const rows = ["star", "x_follow", "plugin"]
       .map((id) => {
         const done = !!actions[id];
@@ -250,7 +244,7 @@ export function createOnboardingController({
             <p class="sc-onboard-quest-title">${copy.title}</p>
             <p class="sc-onboard-quest-meta">${copy.meta}</p>
           </span>
-          <span class="sc-onboard-quest-badge">${done ? "Done" : "+10,000"}</span>
+          <span class="sc-onboard-quest-badge">${done ? "Opened" : "Open"}</span>
         </button>`;
       })
       .join("");
@@ -260,10 +254,9 @@ export function createOnboardingController({
         <span class="sc-onboard-step-dot is-on"></span>
         <span class="sc-onboard-step-dot"></span>
       </div>
-      <p class="sc-onboard-kicker">Get free credits</p>
-      <h1 class="sc-onboard-title" id="sc-onboard-title">Earn 10,000 free tokens each</h1>
-      <p class="sc-onboard-lead">Stack up to <strong>30,000</strong> extra free tokens on top of your monthly 1M. Skip anytime.</p>
-      <p class="sc-onboard-bonus">Bonus so far: <strong>${fmtBonus(bonus)}</strong> free tokens</p>
+      <p class="sc-onboard-kicker">Optional setup</p>
+      <h1 class="sc-onboard-title" id="sc-onboard-title">Connect with SuperCompress</h1>
+      <p class="sc-onboard-lead">Install the plugin or follow project updates. Your free allowance is <strong>1M tokens per month</strong>. Skip anytime.</p>
       <div class="sc-onboard-grid">${rows}</div>
       <div class="sc-onboard-actions">
         <button type="button" class="sc-onboard-skip" data-act="skip">Skip for now</button>
@@ -294,8 +287,8 @@ export function createOnboardingController({
         <span class="sc-onboard-step-dot is-on"></span>
       </div>
       <p class="sc-onboard-kicker">Stay unlocked</p>
-      <h1 class="sc-onboard-title" id="sc-onboard-title">Load credits so agents never hard-stop</h1>
-      <p class="sc-onboard-lead">You still get <strong>5M free</strong> every month. Credits only kick in after that — <strong>$0.10 / 1M</strong>.</p>
+      <h1 class="sc-onboard-title" id="sc-onboard-title">Keep agents running with prepaid credits</h1>
+      <p class="sc-onboard-lead">You still get <strong>1M free</strong> every month. Credits only kick in after that — <strong>$0.10 / 1M</strong>.</p>
       <div class="sc-onboard-packs" role="group" aria-label="Credit packs">
         ${packBtn(10, "$10")}
         ${packBtn(20, "$20")}
@@ -311,6 +304,7 @@ export function createOnboardingController({
           : ""
       }
       <p class="sc-onboard-pay-hint">${hint}</p>
+      <p class="sc-onboard-pay-hint">One-time prepaid purchase. No automatic recharge. Review payment in checkout.</p>
       ${checkoutError ? `<p class="sc-onboard-pay-error" role="alert">${escapeHtml(checkoutError)}</p>` : ""}
       <div class="sc-onboard-actions sc-onboard-actions--stack">
         <button type="button" class="sc-onboard-btn" data-act="checkout" ${
@@ -338,11 +332,11 @@ export function createOnboardingController({
     return `
       <p class="sc-onboard-kicker">Coding agent plugin</p>
       <h1 class="sc-onboard-title" id="sc-onboard-title">Install in one command</h1>
-      <p class="sc-onboard-lead">Run this in your terminal, then come back and claim <strong>10,000</strong> free tokens.</p>
+      <p class="sc-onboard-lead">Run this in your terminal, then return here to finish setup.</p>
       <div class="sc-onboard-cmds">${blocks}</div>
       <div class="sc-onboard-actions">
         <button type="button" class="sc-onboard-btn sc-onboard-btn--ghost" data-act="back-quests">Back</button>
-        <button type="button" class="sc-onboard-btn" data-act="claim-plugin">I installed it — claim →</button>
+        <button type="button" class="sc-onboard-btn" data-act="claim-plugin">I installed it — continue →</button>
       </div>
     `;
   }
@@ -496,20 +490,12 @@ export function createOnboardingController({
   }
 
   async function claimQuest(id) {
-    try {
-      state = await apiFetch("/api/account?op=onboarding-claim", {
-        method: "POST",
-        body: JSON.stringify({ action: id }),
-      });
-      if (typeof onBonusChange === "function") onBonusChange(state);
-      if (mode === "plugin") {
-        mode = "onboard";
-        step = 2;
-      }
-      render();
-    } catch (err) {
-      console.warn("claim failed", err);
+    state = { ...state, actions: { ...state?.actions, [id]: true } };
+    if (mode === "plugin") {
+      mode = "onboard";
+      step = 2;
     }
+    render();
   }
 
   async function continueFree() {
@@ -540,7 +526,7 @@ export function createOnboardingController({
         body: JSON.stringify({
           action: "enable_payg",
           credit_limit_usd: amount,
-          auto_recharge: true,
+          auto_recharge: false,
           source: "onboarding",
         }),
       });
@@ -559,10 +545,7 @@ export function createOnboardingController({
   function evaluateShouldOnboard(nextState, { forceNew = false, forceOnboardQa = false } = {}) {
     const serverFinished =
       nextState &&
-      nextState.needs_onboarding === false &&
-      (Boolean(nextState.heard) ||
-        Number(nextState.bonus_tokens) > 0 ||
-        Boolean(nextState.completed_actions?.length));
+      nextState.needs_onboarding === false;
     return (
       Boolean(nextState?.needs_onboarding) ||
       forceOnboardQa ||
@@ -601,7 +584,7 @@ export function createOnboardingController({
     } catch (err) {
       console.warn("onboarding status failed", err);
       if (!(forceNew || forceOnboardQa)) return false;
-      state = { needs_onboarding: true, actions: {}, bonus_tokens: 0, links: {} };
+      state = { needs_onboarding: true, actions: {}, links: {} };
     }
 
     if (state?.needs_power_celebrate || forcePower) {
@@ -637,7 +620,7 @@ export function createOnboardingController({
       state = await apiFetch("/api/account?op=onboarding");
     } catch (err) {
       console.warn("onboarding status failed", err);
-      state = { needs_onboarding: true, actions: {}, bonus_tokens: 0, links: {} };
+      state = { needs_onboarding: true, actions: {}, links: {} };
     }
 
     const shouldShow = evaluateShouldOnboard(state, { forceNew, forceOnboardQa });
