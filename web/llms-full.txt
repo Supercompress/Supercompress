@@ -395,6 +395,27 @@ A: Run supercompress uninstall. It removes only the supercompress block from Goo
 Q: Does it work on Windows?
 A: Setup writes the macOS and Linux path (~/.config/goose/config.yaml) today. It does not write Goose's Windows config path.
 
+### Reduce OpenClaw Token Usage: Compress Tool Results
+
+URL: https://www.supercompress.dev/reduce-openclaw-token-usage
+
+Where OpenClaw tokens go (tool results, file reads, shell and log output, MCP results, session history before compaction) and how SuperCompress wires MCP, hooks, a plugin and a skill. The plugin compresses large tool results into a session-scoped digest and prepends that digest on the next prompt build. It does not replace the tool result OpenClaw already has.
+
+Q: Does the plugin replace OpenClaw tool output?
+A: No. The plugin does not replace the tool result OpenClaw already has. It writes a compressed digest for that session and prepends the digest on the next prompt build.
+
+Q: Does SuperCompress summarize what OpenClaw reads?
+A: No. It is extractive and query-aware. It keeps original lines chosen against the question and drops the rest. It never rewrites or summarizes, so file paths, error messages and code stay as they were.
+
+Q: Are OpenClaw digests shared across sessions?
+A: No. Digests are per session at ~/.supercompress/inbox/<sessionId>/latest.md. Sessions do not share a digest.
+
+Q: Does setup change my other OpenClaw MCP servers or theme?
+A: No. It adds mcp.servers.supercompress next to the servers you already have and leaves your theme as it was. It writes a *.sc-bak.<timestamp> backup of openclaw.json first.
+
+Q: How do I undo the OpenClaw setup?
+A: Run supercompress uninstall. It removes the SuperCompress instructions, skill, both hooks, plugin, auto config and MCP registration, and restores your OpenClaw config.
+
 ### Claude Code context limit: why you run out and what to do
 
 URL: https://www.supercompress.dev/claude-code-context-limit
@@ -465,10 +486,10 @@ A: Yes. They act at different points and can be combined.
 
 URL: https://www.supercompress.dev/coding-agent-token-usage
 
-Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, OpenCode and Goose, plus what SuperCompress setup adds to each agent.
+Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, OpenCode, Goose and OpenClaw, plus what SuperCompress setup adds to each agent.
 
 Q: Which coding agents does SuperCompress support?
-A: Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, Continue and more. supercompress setup detects them and supercompress doctor lists what it found.
+A: Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, OpenClaw, Continue and more. supercompress setup detects them and supercompress doctor lists what it found.
 
 Q: Do I need to install SuperCompress separately for each agent?
 A: No. One supercompress setup wires every detected agent. Run supercompress plugin after you install a new agent.
@@ -486,7 +507,7 @@ Q: How do I install SuperCompress for my coding agent?
 A: Run npm install -g supercompress-proxy && supercompress setup. Setup links your account in the browser, detects the coding agents on the machine and wires each one. Run supercompress doctor to check.
 
 Q: Which coding agents does it work with?
-A: Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, Continue and more. See the coding agent guides.
+A: Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code, Kilo Code, OpenCode, Zed, Goose, OpenClaw, Continue and more. See the coding agent guides.
 
 Q: Is SuperCompress a summarizer?
 A: No. It is extractive. Every kept line is copied from the original, so error messages, IDs, paths and code come through unchanged.
