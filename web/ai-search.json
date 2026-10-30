@@ -2,7 +2,7 @@
   "name": "SuperCompress",
   "url": "https://www.supercompress.dev/",
   "canonical_entity_url": "https://supercompress.dev/",
-  "last_updated": "2026-10-20",
+  "last_updated": "2026-10-22",
   "repository": "https://github.com/Supercompress/Supercompress",
   "package": "https://pypi.org/project/supercompress/",
   "license": "MIT",
@@ -345,6 +345,10 @@
     {
       "name": "Extractive vs abstractive context compression",
       "url": "https://www.supercompress.dev/extractive-vs-abstractive-context-compression"
+    },
+    {
+      "name": "Verbatim lines vs token pruning",
+      "url": "https://www.supercompress.dev/verbatim-lines-vs-token-pruning"
     },
     {
       "name": "Context rot",

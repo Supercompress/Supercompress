@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Verbatim Lines vs Token Pruning for Coding-Agent Context</title>
+  <meta name="description" content="Token pruning drops words by score and changes the source. Line-level selection keeps original lines verbatim. How each works for coding-agent context and edits." />
+  <meta name="keywords" content="verbatim lines vs token pruning, line-level context compression, token pruning coding agents, SWE-Pruner, query-aware extractive compression" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Verbatim Lines vs Token Pruning for Coding-Agent Context" />
+  <meta property="og:description" content="Token pruning drops words by score and changes the source. Line-level selection keeps original lines verbatim. How each works for coding-agent context and edits." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/verbatim-lines-vs-token-pruning" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Verbatim Lines vs Token Pruning for Coding-Agent Context" />
+  <meta name="twitter:description" content="Token pruning drops words by score and changes the source. Line-level selection keeps original lines verbatim. How each works for coding-agent context and edits." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/verbatim-lines-vs-token-pruning" />
+  <meta property="article:published_time" content="2026-10-22T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-22" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Verbatim lines vs token pruning: how to compress coding-agent context without breaking edits",
+  "description": "Token pruning drops words by score and changes the source. Line-level selection keeps original lines verbatim. How each works for coding-agent context and edits.",
+  "datePublished": "2026-10-22",
+  "dateModified": "2026-10-22",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/verbatim-lines-vs-token-pruning"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "verbatim lines vs token pruning, line-level context compression, token pruning coding agents, SWE-Pruner, query-aware extractive compression"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress change my code or error messages?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It keeps original lines verbatim. It does not rewrite or summarize them."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is SWE-Pruner the same as SuperCompress?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. SWE-Pruner is a research method for agents. SuperCompress is a hosted API and MCP tool. Both select lines rather than prune tokens."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I compress the file I am editing?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Keep that file whole and verbatim. Use line-level selection for bulky output such as logs, test results, search hits and MCP tool results."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I see what SuperCompress kept?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Each response reports original_tokens and kept_tokens. You can check those fields on your own calls."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Verbatim lines vs token pruning",
+      "item": "https://www.supercompress.dev/verbatim-lines-vs-token-pruning"
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Glossary · Updated 2026-10-22</p>
+  <h1>Verbatim lines vs token pruning: how to compress coding-agent context without breaking edits</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">Token pruning shortens text by dropping individual tokens or words. Line-level selection keeps or drops whole original lines. For coding agents, that difference decides whether a later edit can still apply: stack traces, diffs, file reads and error text are line-structured, and a patch only lands if the quoted text still exists. This page explains both mechanisms, when to keep a file whole, and how to evaluate any method on cost per solved task rather than token counts.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/extractive-vs-abstractive-context-compression">Extractive vs abstractive</a>
+    <a href="/context-compression-for-coding-agents">Context compression for coding agents</a>
+    <a href="/compress-claude-code-tool-output">Compress Claude Code tool output</a>
+    <a href="/what-is-context-compression-for-ai-agents">What is context compression</a>
+  </nav>
+  <div class="article-prose">
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#token-pruning">What is token pruning?</a></li><li><a href="#line-selection">What is line-level selection?</a></li><li><a href="#granularity">Why does granularity matter for coding agents?</a></li><li><a href="#keep-whole">When should you keep a file whole?</a></li><li><a href="#evaluate">How should you evaluate any method?</a></li><li><a href="#faq">FAQ</a></li><li><a href="#sources">Sources</a></li></ul></nav>
+    <h2 id="token-pruning">What is token pruning?</h2>
+    <p>Token pruning methods score individual tokens or words and delete the ones that score low. Microsoft's <a href="https://github.com/microsoft/LLMLingua">LLMLingua</a> is the usual example: a small language model estimates how surprising each token is, and low-information tokens are removed. The leftover string is shorter, but it is no longer identical to the source. Words can sit next to neighbors they never sat next to in the original file. A path, an identifier or an error message can lose characters even when most of the surrounding line remains.</p>
+    <p>That can be acceptable for prose a model only needs to understand. It is a different bet for text an agent will quote or edit. If a compressor deletes a space, a comma or part of a symbol, an apply-patch tool looking for the original line will not find it.</p>
+    <h2 id="line-selection">What is line-level selection?</h2>
+    <p>Line-level selection makes a keep-or-drop decision on whole original lines. Each kept line is byte-identical to the corresponding line in the input. Nothing is rewritten, paraphrased or summarized. The shortened result is a subset of the source, which makes it possible to check what the model actually saw against the input you sent.</p>
+    <p><a href="https://arxiv.org/abs/2601.16746">SWE-Pruner</a> (arXiv 2601.16746) is a research example of this idea for coding agents: it selects relevant lines given a goal hint from the agent. SuperCompress is a hosted, query-aware, extractive example of the same granularity. You send the bulky context and the current question. The hosted model keeps original lines that answer that question and drops the rest. It does not rewrite or summarize. The question itself is not compressed.</p>
+    <p>Query-aware here means the keep-or-drop choice depends on the question. The same test log can yield a different kept subset when the question changes from "why did test_auth fail?" to "which fixture loaded the user?" Two methods can both be extractive and still disagree on grain: one drops tokens inside a line, the other drops or keeps the line as a unit. See <a href="/extractive-vs-abstractive-context-compression">extractive vs abstractive context compression</a> for the rewrite-versus-select distinction.</p>
+    <h2 id="granularity">Why does granularity matter for coding agents?</h2>
+    <p>Coding-agent context is mostly line-structured: stack traces, log lines, diffs, file reads, JSON lines and shell output. An agent has to quote exact paths, identifiers and error text. An edit only applies if the text it quotes still exists in the file or the tool output.</p>
+    <p><a href="https://arxiv.org/abs/2610.21073">Skip the Compressor</a> (arXiv 2610.21073) studies this directly. The authors report that compressors keep the files to edit but alter their text, so fewer patches apply, and that showing chosen files whole and verbatim did better at equal budget. That result is about how the kept text is shaped, not about any one vendor product.</p>
+    <p>The same pattern shows up in ordinary agent work. A long pytest run can bury the assertion, the traceback frames and the file path under captured stdout from other tests. Line-level selection can drop unused lines and still hand the agent strings it can copy into a patch. Token pruning can shrink the same log and leave a traceback that no longer matches the file on disk.</p>
+    <p>Extractive line keeping is also a different design from abstractive compaction such as Claude Code's <code>/compact</code>, which rewrites history into a shorter recap. That can be useful for old conversation. It is a poor fit for the file the agent is about to change. For where SuperCompress sits among command filters, MCP proxies and built-in compaction, see <a href="/context-compression-for-coding-agents">context compression for coding agents</a>.</p>
+    <h2 id="keep-whole">When should you keep a file whole?</h2>
+    <p>Files the agent is about to edit should stay whole and verbatim. That is consistent with Skip the Compressor and with the advice on the coding-agents guide: query-aware extraction is for bulky output where only a few lines answer the current question, not for the buffer under the cursor.</p>
+    <p>Keep the file whole when the agent is about to apply a patch, a search-and-replace or a formatted edit to that file; when it needs neighboring lines as anchors, not only the one line that mentions the symbol; or when the file is already small enough that shrinking it does not change the request.</p>
+    <p>Use line-level selection when the input is a log, a test run, search results or an MCP tool result; when many lines are unrelated to the current question; and when the agent needs a few exact strings (an error, a path, a JSON field) and can ignore the rest. Claude Code PostToolUse hooks are one place this split shows up: compress the bulky tool dump, leave the file being edited alone. See <a href="/compress-claude-code-tool-output">compress Claude Code tool output</a>.</p>
+    <p>Do not compress the question. SuperCompress leaves the query untouched and only scores the context against it.</p>
+    <h2 id="evaluate">How should you evaluate any method?</h2>
+    <p>Measure cost per solved task and success, not token counts alone. <a href="https://arxiv.org/abs/2609.32961">Beyond Token Savings</a> (arXiv 2609.32961) and <a href="https://arxiv.org/abs/2607.12161">Token Reduction Is Not Cost Reduction</a> (arXiv 2607.12161) both argue that a smaller prompt is not the same thing as a cheaper or more successful run. Extra retries, broken edits and cache misses can erase a token saving.</p>
+    <p>None of these papers tested SuperCompress. Treat them as mechanism papers, not as a ranking of products.</p>
+    <p>If you try a compressor on your own work, compare sessions that finish the same task. Check that patches still apply. Compare the provider bill per finished task. Every SuperCompress response reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can inspect each call without taking a vendor headline at face value.</p>
+    <p>A fair test also separates shrinking bulky tool output from preparing the file the agent will edit. A method that helps with the first can still hurt the second if it rewrites the file. For the broader method list, see <a href="/what-is-context-compression-for-ai-agents">what is context compression for AI agents</a>.</p>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>Does SuperCompress change my code or error messages?</h3>
+    <p>No. It keeps original lines verbatim. It does not rewrite or summarize them.</p>
+    <h3>Is SWE-Pruner the same as SuperCompress?</h3>
+    <p>No. SWE-Pruner is a research method for agents. SuperCompress is a hosted API and MCP tool. Both select lines rather than prune tokens.</p>
+    <h3>Should I compress the file I am editing?</h3>
+    <p>No. Keep that file whole and verbatim. Use line-level selection for bulky output such as logs, test results, search hits and MCP tool results.</p>
+    <h3>How do I see what SuperCompress kept?</h3>
+    <p>Each response reports original_tokens and kept_tokens. You can check those fields on your own calls.</p>
+    <h2 id="sources">Sources</h2>
+    <ul>
+      <li><a href="https://arxiv.org/abs/2601.16746">SWE-Pruner</a> (arXiv 2601.16746)</li>
+      <li><a href="https://arxiv.org/abs/2610.21073">Skip the Compressor</a> (arXiv 2610.21073)</li>
+      <li><a href="https://arxiv.org/abs/2609.32961">Beyond Token Savings</a> (arXiv 2609.32961)</li>
+      <li><a href="https://arxiv.org/abs/2607.12161">Token Reduction Is Not Cost Reduction</a> (arXiv 2607.12161)</li>
+      <li><a href="https://github.com/microsoft/LLMLingua">LLMLingua</a> on GitHub, as a token-pruning example</li>
+    </ul>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>
