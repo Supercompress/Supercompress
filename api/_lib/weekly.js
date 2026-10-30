@@ -362,6 +362,23 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
   const errors = [];
 
   for (const rec of pending) {
+    try {
+      const { initFirebaseAdmin } = require("./auth");
+      if (!initFirebaseAdmin()) throw new Error("weekly_recipient_auth_unavailable");
+      const user = await require("firebase-admin").auth().getUserByEmail(rec.email);
+      if (user.disabled || user.customClaims?.sc_unsub) {
+        await markWeekly(rec.key, { status: "unsubscribed" });
+        continue;
+      }
+    } catch (err) {
+      if (err.code === "auth/user-not-found") {
+        await markWeekly(rec.key, { status: "suppressed" });
+      } else {
+        failed += 1;
+        errors.push({ error: "weekly_recipient_auth_unavailable" });
+      }
+      continue;
+    }
     const result = await sendWeeklyEmail({
       email: rec.email,
       firstName: rec.first_name || "",

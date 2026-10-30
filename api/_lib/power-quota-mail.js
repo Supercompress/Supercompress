@@ -80,7 +80,7 @@ async function drainPowerQuotaMails(options) {
     getUnsubscribes: async () => {
       return require("./mail-suppressions").reconciledMailSuppressions();
     },
-    isBlocked: isHardBlockedRecipient,
+    isBlocked: user => isHardBlockedRecipient(user) || /nikunj|kothari/i.test(`${user.email || ""} ${user.first_name || ""}`),
     unsubscribeLinks: email => ({ unsubUrl: unsubUrlFor(email), listUnsubscribeUrl: unsubApiUrlFor(email) }),
   })(options);
 }

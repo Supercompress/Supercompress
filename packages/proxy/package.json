@@ -1,7 +1,7 @@
 {
   "name": "supercompress-proxy",
   "version": "0.5.40",
-  "description": "SuperCompress v2 for coding agents — ~400M Neural Keep via MCP/hooks across 40+ harnesses. Hosted MCP supports OAuth 2.1 sign-in (PKCE). Includes Grok Bot hosted MCP. Launch promo $0.10/1M after 5M free. Benchmarks at supercompress.dev/benchmarks.",
+  "description": "SuperCompress v2 for coding agents — ~400M Neural Keep via MCP/hooks across 40+ harnesses. Hosted MCP supports OAuth 2.1 sign-in (PKCE). Includes Grok Bot hosted MCP. 1M free tokens/month, then $0.10/1M. Benchmarks at supercompress.dev/benchmarks.",
   "keywords": [
     "supercompress",
     "prompt-compression",

@@ -2081,11 +2081,11 @@ function requestedDashboardPanel() {
   const url = new URL(window.location.href);
   if (["success", "cancel"].includes(url.searchParams.get("billing"))) return "billing";
   const panel = (url.hash.slice(1) || url.searchParams.get("panel") || "").trim().toLowerCase();
-  return ["keys", "analytics", "billing"].includes(panel) ? panel : "";
+  return ["keys", "analytics", "billing", "agents"].includes(panel) ? panel : "";
 }
 
 function openDashboardPanel(panel, { updateUrl = true } = {}) {
-  if (!["keys", "analytics", "billing"].includes(panel)) return false;
+  if (!["keys", "analytics", "billing", "agents"].includes(panel)) return false;
   const btn = document.querySelector(`.dash-topnav-item[data-panel="${panel}"]`);
   if (!btn) return false;
   document.querySelectorAll(".dash-topnav-item[data-panel]").forEach((b) => b.classList.remove("active"));

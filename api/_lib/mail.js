@@ -522,20 +522,25 @@ async function sendViaResend({
     reqHeaders["Idempotency-Key"] = String(idempotencyKey).slice(0, 256);
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: reqHeaders,
-    signal: AbortSignal.timeout(20000),
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      text,
-      html,
-      reply_to: REPLY_TO,
-      headers,
-    }),
-  });
+  let res;
+  try {
+    res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: reqHeaders,
+      signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject,
+        text,
+        html,
+        reply_to: REPLY_TO,
+        headers,
+      }),
+    });
+  } catch {
+    return { ok: false, provider: "resend", error: "resend_request_failed" };
+  }
 
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
