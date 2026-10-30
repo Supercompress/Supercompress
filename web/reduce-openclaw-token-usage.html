@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/reduce-openclaw-token-usage" />
   <meta property="article:published_time" content="2026-10-29T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-29" />
+  <meta property="article:modified_time" content="2026-10-30" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -36,7 +36,7 @@
   "headline": "Reduce OpenClaw Token Usage: Compress Tool Results",
   "description": "Where OpenClaw tokens go (tool results, file reads, shell and log output, MCP results, session history before compaction) and how SuperCompress wires MCP, hooks, a plugin and a skill so large tool results become a session digest prepended on the next prompt.",
   "datePublished": "2026-10-29",
-  "dateModified": "2026-10-29",
+  "dateModified": "2026-10-30",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -191,7 +191,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">OpenClaw · Updated 2026-10-29</p>
+  <p class="seo-kicker">OpenClaw · Updated 2026-10-30</p>
   <div class="seo-tags">
     <span class="seo-tag seo-tag--accent">OpenClaw</span>
     <span class="seo-tag">Token usage</span>
@@ -208,6 +208,7 @@
     <a href="/reduce-codex-token-usage">Codex</a>
     <a href="/reduce-hermes-agent-token-usage">Hermes Agent</a>
     <a href="/reduce-goose-token-usage">Goose</a>
+    <a href="/reduce-grok-build-token-usage">Grok Build</a>
     <a href="/mcp-token-reduction">MCP token reduction</a>
     <a href="/context-compression-for-coding-agents">Approaches compared</a>
     <a href="/faq">FAQ</a>
@@ -291,6 +292,8 @@
     <p>No. It adds <code>mcp.servers.supercompress</code> next to the servers you already have and leaves your theme as it was. It writes a <code>*.sc-bak.&lt;timestamp&gt;</code> backup of <code>openclaw.json</code> first.</p>
     <h3>How do I undo the OpenClaw setup?</h3>
     <p>Run <code>supercompress uninstall</code>. It removes the SuperCompress instructions, skill, both hooks, plugin, auto config and MCP registration, and restores your OpenClaw config.</p>
+
+    <p>Related: <a href="/reduce-grok-build-token-usage">Reduce Grok Build token usage</a>. On Grok Build the hook path differs: a PostToolUse hook replaces the model's copy of a large tool result with the compressed digest.</p>
 
     <p class="seo-cta-row">
       <a class="df-nav-cta" href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
