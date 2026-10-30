@@ -56,7 +56,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/blog</loc>
-    <lastmod>2026-10-29</lastmod>
+    <lastmod>2026-10-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
@@ -110,7 +110,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/coding-agent-token-usage</loc>
-    <lastmod>2026-10-29</lastmod>
+    <lastmod>2026-10-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -182,7 +182,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/reduce-codex-token-usage</loc>
-    <lastmod>2026-10-17</lastmod>
+    <lastmod>2026-10-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -224,7 +224,13 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/reduce-openclaw-token-usage</loc>
-    <lastmod>2026-10-29</lastmod>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/reduce-grok-build-token-usage</loc>
+    <lastmod>2026-10-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
