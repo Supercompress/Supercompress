@@ -101,6 +101,9 @@ test("billing hash wins after auth, hash changes route, and navigation clears st
   open("keys");
   assert.equal(new URL(window.location.href).hash, "");
   assert.equal(open('billing"]'), false);
+  window.location.href = "https://example.test/dashboard#agents";
+  assert.equal(context.requestedDashboardPanel(), "agents");
+  assert.equal(open("agents"), true);
   assert.match(dashboardSource, /requestedDashboardPanel\(\) === "billing"\s*\? false/);
   assert.match(dashboardSource, /const panel = requestedDashboardPanel\(\);\s*if \(panel/);
 });

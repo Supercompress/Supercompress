@@ -112,7 +112,14 @@ async function deliverQuotaMail(rec) {
   const key = rec.key || `${rec.month}:${rec.uid}`;
   const { initFirebaseAdmin } = require("./auth");
   if (!initFirebaseAdmin()) throw Error("quota_recipient_auth_unavailable");
-  const user = await require("firebase-admin").auth().getUser(rec.uid);
+  let user;
+  try {
+    user = await require("firebase-admin").auth().getUser(rec.uid);
+  } catch (err) {
+    if (err.code !== "auth/user-not-found") throw err;
+    await markQuotaMail(key, { status: "suppressed", skipped_at: new Date().toISOString() });
+    return { ok: true, skipped: true };
+  }
   const suppressions = require("./mail-suppressions").reconciledMailSuppressions();
   if (rec.month !== currentMonth() || quotaRecipientSuppressed(user, suppressions)) {
     await markQuotaMail(key, { status: "suppressed", skipped_at: new Date().toISOString() });
@@ -317,8 +324,9 @@ async function drainPendingQuotaMails() {
     pending = records.length;
     for (const rec of records) {
       const result = await deliverQuotaMail(rec);
-      if (result.ok) sent += 1;
-      else failed += 1;
+      if (result.ok) {
+        if (!result.skipped) sent += 1;
+      } else failed += 1;
     }
   } catch (err) {
     storeError = err.message || "store_unavailable";

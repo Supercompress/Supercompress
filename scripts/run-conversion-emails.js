@@ -7,8 +7,12 @@ drainConversionMails({ dryRun: !process.argv.includes("--send") })
     console.log(JSON.stringify({ job: "conversion-emails", at: new Date().toISOString(), ...result }));
     if (result.failed || result.pending_review) process.exitCode = 1;
   })
-  .catch(() => {
-    console.error(JSON.stringify({ job: "conversion-emails", error: "conversion_run_failed" }));
+  .catch(err => {
+    const safeCodes = new Set([
+      "payment_suppression_unavailable", "suppression_reconciliation_missing", "invalid_suppression_manifest",
+      "conversion_state_path_missing", "conversion_disabled", "conversion_state_invalid",
+    ]);
+    const error = safeCodes.has(err?.message) ? err.message : "conversion_run_failed";
+    console.error(JSON.stringify({ job: "conversion-emails", error }));
     process.exitCode = 1;
   });
-

@@ -264,7 +264,7 @@ export async function fetchUsage(): Promise<UsageSnap> {
           "tokens_used_this_period", "tokens_remaining", "free_tokens_remaining", "usage_pct",
           "payg_enabled", "credit_wallet", "credit_balance_usd", "credit_limit_usd", "limit_reached",
         ]) {
-          if (me[field] != null) data[field] = me[field]
+          if (data[field] == null && me[field] != null) data[field] = me[field]
         }
       }
     } catch {
