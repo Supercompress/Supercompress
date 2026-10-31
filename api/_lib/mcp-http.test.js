@@ -31,6 +31,19 @@ async function main() {
     ""
   );
   assert.equal(init.result.serverInfo.name, "supercompress");
+  assert.equal(init.result.protocolVersion, "2025-03-26");
+
+  const initNew = await dispatchRpc(
+    { jsonrpc: "2.0", id: 11, method: "initialize", params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "test", version: "0" } } },
+    ""
+  );
+  assert.equal(initNew.result.protocolVersion, "2025-11-25");
+
+  const initUnknown = await dispatchRpc(
+    { jsonrpc: "2.0", id: 12, method: "initialize", params: { protocolVersion: "1999-01-01", capabilities: {}, clientInfo: { name: "test", version: "0" } } },
+    ""
+  );
+  assert.equal(initUnknown.result.protocolVersion, "2025-11-25");
   assert.ok(init.result.capabilities.tools);
 
   const listed = await dispatchRpc({ jsonrpc: "2.0", id: 2, method: "tools/list" }, "");

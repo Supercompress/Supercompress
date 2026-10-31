@@ -138,6 +138,10 @@ function printInstallSummary(result, { version } = {}) {
   if (result.rulePath) {
     console.log(`  Cursor rule        ${mark(true)}  ${result.rulePath.replace(HOME, "~")}`);
   }
+  if (result.runway?.runtime) {
+    const claude = result.runway.claude ? ` · Claude Code statusline ${result.runway.claude}` : "";
+    console.log(`  Runway (limits)    ${mark(true)}  local · \`supercompress limits\` / MCP runway_check${claude}`);
+  }
   console.log("");
   console.log("  Restart your agents so MCP + hooks reload.");
   console.log("  Then: `supercompress doctor` anytime.");

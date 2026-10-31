@@ -32,6 +32,7 @@ const { ListToolsRequestSchema, CallToolRequestSchema } = require("@modelcontext
 
 // Reuse the server-side engine from the hosted API
 const { compressAdaptive, compressCCR, simpleHash, getEngine } = require("../api/_lib/engine");
+const { responseMetadata } = require("../api/_lib/mcp-response");
 
 const server = new Server(
   { name: "supercompress", version: "1.0.0" },
@@ -53,7 +54,7 @@ Use this when you need to fit a long context into a smaller context window, redu
         type: "object",
         properties: {
           context: { type: "string", description: "The full context text to compress" },
-          query: { type: "string", description: "The question or task that defines what content is important to preserve" },
+          query: { type: "string", description: "Optional question or task defining what to preserve; omit for a raw dump" },
           mode: {
             type: "string",
             enum: ["compiler", "ccr"],
@@ -61,7 +62,7 @@ Use this when you need to fit a long context into a smaller context window, redu
             default: "compiler",
           },
         },
-        required: ["context", "query"],
+        required: ["context"],
       },
     },
     {
@@ -105,7 +106,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case "compress": {
         const context = String(args?.context || "");
-        const query = String(args?.query || "Summarize this context.");
+        const query = String(args?.query || "").trim() ? String(args.query) : "";
         const mode = String(args?.mode || "compiler");
 
         if (!context.trim()) {
@@ -141,6 +142,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 compression_risk: result.compression_risk,
                 preprocessor: result.preprocessor || "none",
                 ccr: result.ccr || null,
+                ...responseMetadata(result),
               }, null, 2),
             },
           ],

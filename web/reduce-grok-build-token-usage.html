@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Reduce Grok Build Token Usage: Compress Tool Results | SuperCompress</title>
+  <meta name="description" content="Where Grok Build tokens go (tool results, file reads, shell, test and build output, search results, MCP results, long sessions) and how SuperCompress wires MCP, hooks, instructions and a skill so a PostToolUse hook replaces the model's copy of a large tool result with a compressed digest." />
+  <meta name="keywords" content="reduce Grok Build token usage, Grok Build tokens, Grok Build context, Grok Build MCP compression, SuperCompress Grok Build" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Reduce Grok Build Token Usage: Compress Tool Results" />
+  <meta property="og:description" content="Where Grok Build tokens go (tool results, file reads, shell, test and build output, search results, MCP results, long sessions) and how SuperCompress wires MCP, hooks, instructions and a skill so a PostToolUse hook replaces the model's copy of a large tool result with a compressed digest." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/reduce-grok-build-token-usage" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Reduce Grok Build Token Usage: Compress Tool Results" />
+  <meta name="twitter:description" content="Where Grok Build tokens go (tool results, file reads, shell, test and build output, search results, MCP results, long sessions) and how SuperCompress wires MCP, hooks, instructions and a skill so a PostToolUse hook replaces the model's copy of a large tool result with a compressed digest." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/reduce-grok-build-token-usage" />
+  <meta property="article:published_time" content="2026-10-30T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-30" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Reduce Grok Build Token Usage: Compress Tool Results",
+  "description": "Where Grok Build tokens go (tool results, file reads, shell, test and build output, search results, MCP results, long sessions) and how SuperCompress wires MCP, hooks, instructions and a skill so a PostToolUse hook replaces the model's copy of a large tool result with a compressed digest.",
+  "datePublished": "2026-10-30",
+  "dateModified": "2026-10-30",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.supercompress.dev/assets/img/icon-chevron-192.png"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/reduce-grok-build-token-usage"
+  },
+  "about": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Grok Build"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Blog",
+      "item": "https://www.supercompress.dev/blog"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Coding agent guides",
+      "item": "https://www.supercompress.dev/coding-agent-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Grok Build",
+      "item": "https://www.supercompress.dev/reduce-grok-build-token-usage"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Install SuperCompress in Grok Build",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "name": "Run setup",
+      "text": "Run npx supercompress-proxy setup, or supercompress setup if the CLI is already installed. Setup opens a browser sign-in link, detects Grok Build and wires it."
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Restart Grok Build",
+      "text": "Restart Grok Build so it loads the new MCP server and hooks."
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Check the install",
+      "text": "Run supercompress doctor to see a per-agent health check."
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress change my existing Grok MCP servers?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Setup appends [mcp_servers.supercompress] to ~/.grok/config.toml after the servers you already have, and your own entries are kept untouched. supercompress uninstall restores config.toml byte-for-byte."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does the PostToolUse hook do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When a tool result is large, the PostToolUse hook compresses it and replaces the model's copy of that result with the digest via updatedToolOutput. The real result stays on the record, and small output passes through unchanged."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress rewrite or summarize what Grok Build reads?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is extractive and query-aware. It keeps original lines chosen against the question and drops the rest. It never rewrites or summarizes, so file paths, error messages and code stay as they were."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does setup raise [mcp] max_output_bytes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Grok Build truncates MCP tool results at 20KB unless the cap is raised, and compressed digests can be larger than that. Setup sets [mcp] max_output_bytes = 2000000 so digests come through whole. Uninstall removes the cap again."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I remove the Grok Build setup?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Run supercompress uninstall. It restores config.toml and AGENTS.md byte-for-byte to your originals, removes the [mcp] output cap it added, and removes the hooks file and the skill."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Grok Build · Updated 2026-10-30</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">Grok Build</span>
+    <span class="seo-tag">Token usage</span>
+    <span class="seo-tag">MCP</span>
+  </div>
+  <h1>Reduce Grok Build Token Usage: Compress Tool Results</h1>
+  <p class="seo-lead">Grok Build sessions grow with tool results, file reads, shell output, test and build logs, search results and MCP results that sit in context for later turns. Here is where those tokens go and what <code>supercompress setup</code> wires so the model's copy of a large tool result is replaced with a compressed digest mid-turn.</p>
+  <p class="seo-author">By Arjun Shah · October 30, 2026 · Guide</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="/coding-agent-token-usage">All coding agents</a>
+    <a href="/reduce-claude-code-token-usage">Claude Code</a>
+    <a href="/reduce-cursor-token-usage">Cursor</a>
+    <a href="/reduce-codex-token-usage">Codex</a>
+    <a href="/reduce-openclaw-token-usage">OpenClaw</a>
+    <a href="/mcp-token-reduction">MCP token reduction</a>
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+
+  <div class="article-prose">
+    <div class="seo-verdict">
+      <strong>In short:</strong> run <code>npx supercompress-proxy setup</code> or <code>supercompress setup</code>. Setup opens a browser sign-in link (no API key step), then writes Grok Build MCP registration, hooks, instructions and a skill. When a tool result is large, a PostToolUse hook replaces the model's copy of that result with a compressed digest via <code>updatedToolOutput</code>. The real result stays on the record, and small output passes through unchanged.
+    </div>
+
+    <h2 id="where-tokens-go">Where Grok Build tokens go</h2>
+    <ul>
+      <li><strong>Tool results.</strong> Each tool call leaves its output in the session for later turns.</li>
+      <li><strong>File reads.</strong> Whole files come back even when a few lines matter.</li>
+      <li><strong>Shell output.</strong> Command output stays in context after the agent has read it.</li>
+      <li><strong>Test and build output.</strong> A failing test run or a long build log can be thousands of lines for one relevant error.</li>
+      <li><strong>Grep and search results.</strong> Wide searches return many hits the task never touches.</li>
+      <li><strong>MCP results.</strong> Large results from other MCP servers ride along after they are read.</li>
+      <li><strong>Long sessions.</strong> Old turns and their tool results stay in the prompt as the session grows.</li>
+    </ul>
+
+    <h2 id="how-supercompress-works">How SuperCompress works</h2>
+    <p>SuperCompress is hosted, extractive and query-aware. It keeps original lines chosen against the question and drops the rest. It never rewrites or summarizes, so file paths, error messages, IDs and code come back as they were. The question itself is never compressed.</p>
+    <p>Every compress call reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see what was dropped on your own work. In Grok Build the agent can call the MCP tools <code>compress_context</code>, <code>connect_account</code> and <code>runway_check</code>.</p>
+
+    <h2 id="what-setup-adds">What <code>supercompress setup</code> wires in Grok Build</h2>
+    <p><code>supercompress setup</code> and <code>supercompress plugin</code> write the same Grok Build files. Your existing MCP servers in <code>config.toml</code> are kept untouched, and the SuperCompress entry is appended after them. Grok Build keeps its settings in <code>~/.grok/config.toml</code>, or under <code>$GROK_HOME</code> when that is set, as described in the <a href="https://docs.x.ai/build/settings" rel="noopener" target="_blank">Grok Build settings docs</a>.</p>
+    <table class="seo-table">
+      <thead>
+        <tr><th>File</th><th>Change</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>~/.grok/config.toml</code></td><td>Appends <code>[mcp_servers.supercompress]</code>, a stdio command running the SuperCompress MCP server with <code>startup_timeout_sec = 60</code>, <code>tool_timeout_sec = 600</code>, <code>enabled = true</code> and <code>env SUPERCOMPRESS_AGENT_NAME = "Grok Build"</code>, after your own servers. Also sets <code>[mcp] max_output_bytes = 2000000</code>.</td></tr>
+        <tr><td><code>~/.grok/hooks/supercompress.json</code></td><td>Adds a <code>UserPromptSubmit</code> hook and a <code>PostToolUse</code> hook (matcher <code>".*"</code>). The PostToolUse hook replaces the model's copy of a large tool result with the compressed digest via <code>updatedToolOutput</code>.</td></tr>
+        <tr><td><code>~/.grok/AGENTS.md</code></td><td>Appends a SuperCompress instructions block after your own text.</td></tr>
+        <tr><td><code>~/.grok/skills/supercompress/SKILL.md</code></td><td>Copies the SuperCompress skill.</td></tr>
+      </tbody>
+    </table>
+    <p>The MCP server shape matches the <a href="https://docs.x.ai/build/features/mcp-servers" rel="noopener" target="_blank">Grok Build MCP servers docs</a>: servers live under <code>[mcp_servers.NAME]</code> with <code>command</code>, <code>args</code>, <code>env</code>, <code>startup_timeout_sec</code> and <code>tool_timeout_sec</code>. For clients you wire by hand, Grok Build also accepts a <code>[mcp_servers.NAME]</code> entry with <code>url = ...</code>, and the hosted SuperCompress MCP endpoint is <code>https://www.supercompress.dev/api/mcp</code>.</p>
+
+    <h2 id="how-a-turn-works">How a turn works</h2>
+    <ol>
+      <li>Grok Build runs a tool. The real tool result stays on the record. It is not deleted.</li>
+      <li>On <code>PostToolUse</code>, if that result is large, the hook compresses it against the task and replaces the model's copy of the result with the digest via <code>updatedToolOutput</code>. Small output passes through unchanged.</li>
+      <li>Digests are also written to <code>~/.supercompress/inbox/latest.md</code> and <code>~/.supercompress/inbox/&lt;sessionId&gt;/</code>.</li>
+    </ol>
+    <p>The <a href="https://docs.x.ai/build/features/hooks" rel="noopener" target="_blank">Grok Build hooks docs</a> describe <code>updatedToolOutput</code> as replacing the model's copy of the result, which is exactly the path SuperCompress uses. Grok Build discards <code>UserPromptSubmit</code> <code>additionalContext</code>, so PostToolUse replacement is the mid-turn path. The agent can also call <code>compress_context</code> itself, with the bulky text as <code>context</code> and the user's request as <code>query</code>, and can call <code>runway_check</code> before large work.</p>
+
+    <h2 id="output-cap">Why setup raises the MCP output cap</h2>
+    <p>Grok Build truncates MCP tool results at 20KB unless the cap is raised, and compressed digests can be larger than that. Setup sets <code>[mcp] max_output_bytes = 2000000</code> in <code>config.toml</code> so digests come through whole. <code>supercompress uninstall</code> removes the cap again.</p>
+
+    <h2 id="install">Install</h2>
+    <pre><code>npx supercompress-proxy setup</code></pre>
+    <p>If the CLI is already installed:</p>
+    <pre><code>supercompress setup</code></pre>
+    <p>Or install it first with <code>npm i -g supercompress-proxy</code>, then run <code>supercompress setup</code>. Setup opens a browser sign-in link. There is no API key step. It detects the coding agents on the machine and wires each one, including Grok Build. Restart Grok Build so it loads the new MCP server and hooks.</p>
+
+    <h2 id="doctor">Check what got wired</h2>
+    <pre><code>supercompress doctor</code></pre>
+    <p><code>doctor</code> prints a per-agent health check. For Grok Build the plugin table row is MCP, Hooks and Instructions.</p>
+
+    <h2 id="uninstall">Undo</h2>
+    <pre><code>supercompress uninstall</code></pre>
+    <p><code>supercompress uninstall --yes</code> skips the confirm prompt. Uninstall removes the Grok Build instructions and MCP registration, restores <code>config.toml</code> and <code>AGENTS.md</code> byte-for-byte to your originals, removes the <code>[mcp]</code> output cap it added, and removes the hooks file and the skill.</p>
+
+    <h2 id="when-to-skip">When to skip it</h2>
+    <ul>
+      <li>Short sessions with small tool results. There is little to drop.</li>
+      <li>Files the agent is about to edit line by line. It needs those in full.</li>
+      <li>Work where every byte must be passed through unchanged for compliance reasons.</li>
+    </ul>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>Does SuperCompress change my existing Grok MCP servers?</h3>
+    <p>No. Setup appends <code>[mcp_servers.supercompress]</code> to <code>~/.grok/config.toml</code> after the servers you already have, and your own entries are kept untouched. <code>supercompress uninstall</code> restores <code>config.toml</code> byte-for-byte.</p>
+    <h3>What does the PostToolUse hook do?</h3>
+    <p>When a tool result is large, the PostToolUse hook compresses it and replaces the model's copy of that result with the digest via <code>updatedToolOutput</code>. The real result stays on the record, and small output passes through unchanged.</p>
+    <h3>Does SuperCompress rewrite or summarize what Grok Build reads?</h3>
+    <p>No. It is extractive and query-aware. It keeps original lines chosen against the question and drops the rest. It never rewrites or summarizes, so file paths, error messages and code stay as they were.</p>
+    <h3>Why does setup raise <code>[mcp] max_output_bytes</code>?</h3>
+    <p>Grok Build truncates MCP tool results at 20KB unless the cap is raised, and compressed digests can be larger than that. Setup sets <code>[mcp] max_output_bytes = 2000000</code> so digests come through whole. Uninstall removes the cap again.</p>
+    <h3>How do I remove the Grok Build setup?</h3>
+    <p>Run <code>supercompress uninstall</code>. It restores <code>config.toml</code> and <code>AGENTS.md</code> byte-for-byte to your originals, removes the <code>[mcp]</code> output cap it added, and removes the hooks file and the skill.</p>
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/coding-agent-token-usage">All coding agents</a>
+      <a href="/reduce-codex-token-usage">Codex</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/reduce-goose-token-usage">Goose</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

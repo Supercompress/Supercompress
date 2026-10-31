@@ -501,18 +501,17 @@ function allPlugins() {
 }
 
 function instructionBody() {
+  const guidance = require("./agent-guidance");
   const inboxHint = path.join(CONFIG_DIR, "inbox", "<sessionId>", "latest.md");
   return [
     INSTRUCTION_MARKER,
     "",
-    "**Auto (Headroom-parity):** compress every *new* bulky context dump; when rolling session memory gets large, compact it. Never compress the user's ask/query. Skip already-seen chunks.",
+    guidance.COMPRESS_INTRO + " Already-seen chunks are skipped, and rolling session memory is compacted when it grows large.",
     "",
-    "What to compress: tool dumps, file reads, logs, diffs, pasted blobs, scrapes, long history — anything that is not the current user question.",
+    ...guidance.COMPRESS_WHAT,
     "",
-    "1. If `" + inboxHint + "` exists for this session, Read it first — session digest (ask is unchanged).",
-    "2. Else call MCP `compress_context` with `context`=<new dump only> and `query`=<user ask>. Prefer the returned digest.",
-    "3. Hooks also auto-compress on submit + after large tool results when installed.",
-    "4. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
+    ...guidance.compressSteps(inboxHint),
+    "5. " + guidance.runwayRule(),
     "",
   ].join("\n");
 }
@@ -566,6 +565,8 @@ function writeHermesAutoCompress(hermesHome = path.join(HOME, ".hermes")) {
   const libSrc = path.join(__dirname, "cursor-hooks", "compress-prompt-lib.js");
   if (fs.existsSync(libSrc)) {
     fs.copyFileSync(libSrc, path.join(hooksDest, "compress-prompt-lib.js"));
+    recordOriginal(path.join(hooksDest, "..", "mcp-response.js"));
+    fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(hooksDest, "..", "mcp-response.js"));
   }
   installed.push("agent-hooks");
 
@@ -586,6 +587,8 @@ function writeHermesAutoCompress(hermesHome = path.join(HOME, ".hermes")) {
         path.join(hooksDest, "compress-prompt-lib.js"),
         path.join(pluginDest, "compress-prompt-lib.js")
       );
+      recordOriginal(path.join(pluginDest, "..", "mcp-response.js"));
+      fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(pluginDest, "..", "mcp-response.js"));
     }
     installed.push("plugin:transform_tool_result");
   }
@@ -786,6 +789,8 @@ function writeOpenClawAutoCompress(openclawHome = path.join(HOME, ".openclaw")) 
     if (copyTree(path.join(assetsRoot, "hooks", name), dest)) {
       if (fs.existsSync(libSrc)) {
         fs.copyFileSync(libSrc, path.join(dest, "compress-prompt-lib.js"));
+        recordOriginal(path.join(dest, "..", "mcp-response.js"));
+        fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(dest, "..", "mcp-response.js"));
       }
     }
   }
@@ -794,7 +799,12 @@ function writeOpenClawAutoCompress(openclawHome = path.join(HOME, ".openclaw")) 
   const pluginDest = path.join(openclawHome, "extensions", "supercompress");
   if (copyTree(path.join(assetsRoot, "plugin"), pluginDest)) {
     if (fs.existsSync(libSrc)) {
-      fs.copyFileSync(libSrc, path.join(pluginDest, "compress-prompt-lib.js"));
+      fs.copyFileSync(libSrc, path.join(pluginDest, "compress-prompt-lib.cjs"));
+      recordOriginal(path.join(pluginDest, "..", "mcp-response.js"));
+      fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(pluginDest, "..", "mcp-response.js"));
+      const entryPath = path.join(pluginDest, "index.js");
+      const entry = fs.readFileSync(entryPath, "utf8");
+      fs.writeFileSync(entryPath, entry.replace('path.join(__dirname, "compress-prompt-lib.js")', 'path.join(__dirname, "compress-prompt-lib.cjs")'));
     }
     installed.push("plugin");
   }
