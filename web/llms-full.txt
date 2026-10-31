@@ -262,6 +262,8 @@ The benchmarks page (https://www.supercompress.dev/benchmarks) publishes the v2 
 
 Full notes: https://www.supercompress.dev/changelog and https://github.com/Supercompress/Supercompress/releases
 
+- Plugin 0.5.40: rate-limit runway (`supercompress limits`, local MCP tool `runway_check`) tells the agent to go, land or wait, plus clearer agent instructions built from one shared source.
+- Plugin 0.5.39: Grok Bot in setup auto-detect, and `uninstall` now removes only SuperCompress's own entries, keeping MCP servers and settings added after install.
 - Plugin 0.5.37: the Claude Code plugin no longer sends an empty API key header, the Cursor plugin key is optional, unauthenticated `initialize` returns `401`, and `?key=` query-string auth was removed.
 - Plugin 0.5.36: server-side auth endpoints, plus a rewritten benchmarks page.
 - v2: the hosted Neural Keep engine is the default on the compress API.
@@ -536,6 +538,13 @@ Q: Is SWE-Pruner the same as SuperCompress?
 A: No. SWE-Pruner is a research method for agents. SuperCompress is a hosted API and MCP tool. Both select lines rather than prune tokens.
 Q: Should I compress the file I am editing?
 A: No. Keep that file whole and verbatim.
+### How to check Codex and Claude Code rate limits
+URL: https://www.supercompress.dev/coding-agent-rate-limits
+`supercompress limits` (alias `runway`) and the local MCP tool `runway_check` read provider rate-limit data and return go, pace, land, wait or unknown. Codex is zero config from session events. Claude Code uses the statusline tee that setup connects. The hosted MCP does not have runway_check.
+Q: Do I need a SuperCompress account to use Runway?
+A: No. runway_check runs in the local plugin and does not need an account.
+Q: How do I turn it off?
+A: Set SUPERCOMPRESS_RUNWAY=0. uninstall also reverses the wiring.
 
 ### Reduce coding agent token usage
 
