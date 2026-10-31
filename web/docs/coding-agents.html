@@ -213,11 +213,12 @@
             <tr><th>Tool</th><th>What it does</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>compress_context</code></td><td>Compress bulky coding context for a query. Returns compressed text + savings.</td></tr>
+            <tr><td><code>compress_context</code></td><td>Compress bulky coding context. Pass the user's question as <code>query</code> for the smallest digest; without one, dump mode keeps about half. Read any warning; a passthrough means keep your original text.</td></tr>
             <tr><td><code>connect_account</code></td><td>Open the dashboard to link this install if you skipped setup.</td></tr>
             <tr><td><code>usage_summary</code></td><td>Per-agent token savings for the connected SuperCompress account.</td></tr>
           </tbody>
         </table>
+        <p>On the hosted API and hosted MCP endpoint, <code>query</code> is optional. The local npm plugin (supercompress-proxy 0.5.40) still requires <code>query</code> until the next proxy release.</p>
 
         <h2 id="dashboard">Dashboard tracking</h2>
         <p>After agents start compressing, your <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a> shows per-agent requests, tokens in/out/saved, and last-used time. Only usage metadata is sent, never prompt contents.</p>

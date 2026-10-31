@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Does Context Compression Lower Your Bill? | SuperCompress</title>
+  <meta name="description" content="Fewer tokens is not a lower bill. Why prompt caching, extra turns, and coverage mean context compression can help or hurt — and how to measure it yourself." />
+  <meta name="keywords" content="does context compression lower your bill, token compression cost, token reduction is not cost reduction, prompt caching coding agents, headroom vs rtk, context compression for coding agents" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Does context compression lower your bill?" />
+  <meta property="og:description" content="Fewer tokens is not a lower bill. Why prompt caching, extra turns, and coverage mean context compression can help or hurt — and how to measure it yourself." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/does-context-compression-lower-your-bill" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Does context compression lower your bill?" />
+  <meta name="twitter:description" content="Fewer tokens is not a lower bill. Why prompt caching, extra turns, and coverage mean context compression can help or hurt — and how to measure it yourself." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/does-context-compression-lower-your-bill" />
+  <meta property="article:published_time" content="2026-10-13T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-13" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Does context compression lower your bill?",
+  "description": "Fewer tokens is not a lower bill. Why prompt caching, extra turns, and coverage mean context compression can help or hurt — and how to measure it yourself.",
+  "datePublished": "2026-10-13",
+  "dateModified": "2026-10-13",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.supercompress.dev/assets/img/icon-chevron-192.png"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/does-context-compression-lower-your-bill"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does context compression lower your bill?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not automatically. Independent paired tests of coding-agent compression keep finding that a large drop in tokens on one payload can sit next to a flat or higher session bill. Cache pricing, extra turns, and which tools the compressor actually sees decide the result. Measure cache-aware cost per solved task on your own work."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does prompt caching change the math?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Coding agents resend the conversation prefix on every turn. Providers bill a cache hit at a fraction of fresh input and charge a premium to write a new cache entry. Input compression does not change output tokens. If a tool rewrites earlier turns, the cheap cached prefix becomes an expensive rewrite."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How should I measure a compression tool?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Run the same tasks with and without the tool. Compare cost per solved task using provider cache-read, cache-write, uncached-input, and output usage. Count failures and extra turns. Do not multiply a tokens-removed percentage by your whole bill."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress rewrite earlier turns?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. SuperCompress compresses new bulky tool results and context before they enter the conversation and leaves earlier turns untouched. It is extractive and query-aware: it keeps the original lines that answer the current question and drops the rest."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I use SuperCompress with Claude Code, Codex, or Cursor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Run npm install -g supercompress-proxy && supercompress setup. Setup detects the coding agents on the machine and wires each one. Then run supercompress doctor to check what is connected."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Guide · Updated 2026-10-13</p>
+  <div class="seo-tags">
+    <span class="seo-tag seo-tag--accent">Guide</span>
+    <span class="seo-tag">Coding agents</span>
+    <span class="seo-tag">Cost</span>
+  </div>
+  <h1>Does context compression lower your bill?</h1>
+  <p class="seo-lead">If you run Claude Code, Codex, Cursor or a similar coding agent, shrinking tool output looks like an obvious way to pay less. Independent measurements keep finding a gap: fewer tokens on a payload is not the same as a cheaper completed task. This page explains why, when compression can help or hurt, and how to measure it on your own work.</p>
+  <p class="seo-author">October 13, 2026 · Guide</p>
+
+  <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="/coding-agent-token-usage">All coding agents</a>
+    <a href="/mcp-tool-output-compression">MCP tool output</a>
+    <a href="/supercompress-vs-rtk">vs RTK</a>
+    <a href="/faq">FAQ</a>
+    <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a>
+  </nav>
+
+  <div class="article-prose">
+    <div class="seo-verdict">
+      <strong>In short:</strong> a tokens-removed counter cannot tell you whether your bill went down. Cached prefixes are billed at a fraction of fresh input; cache writes cost a premium; output tokens are untouched; extra turns re-send the whole prefix. Compression can help when it shrinks <em>new</em> bulky results before they are cached, without rewriting earlier turns. Measure cache-aware cost per solved task yourself. This page does not claim SuperCompress has been shown to lower anyone’s bill; it describes a design that follows that cache-friendly pattern.
+    </div>
+
+    <h2 id="why-fewer-tokens-is-not-a-lower-bill">Why fewer tokens is not a lower bill</h2>
+    <p>A coding agent is a loop. The model asks for a tool, the harness runs it, and the result is appended to the conversation. The next request sends that whole conversation back. Most of what you pay for is the prefix being replayed, not the one new file.</p>
+    <p>Providers do not price every input token the same. <a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching">Anthropic’s prompt-caching docs</a> price a five-minute cache write at 1.25 times the base input rate, a one-hour write at 2 times, and a cache read at 0.1 times for most models. <a href="https://platform.openai.com/docs/guides/prompt-caching">OpenAI’s prompt-caching guide</a> uses the same shape on GPT-5.6 and later: cache writes at 1.25 times uncached input, subsequent reads at 0.1 times on most of those models. A cache hit is cheap. Busting the prefix and writing it again is not.</p>
+    <p>Three other facts sit next to that pricing. Compressing what the model reads does not shrink the tokens it writes, which are billed at the output rate either way. If compression drops a line the agent needed for an exact edit, the model re-reads or retries; each extra turn pays the prefix again, plus new output. And a tool that only intercepts shell stdout never sees built-in Read, Grep, Glob, or most MCP results, so a large reduction on that slice can be a rounding error on the session.</p>
+
+    <h2 id="what-the-measurements-show">What independent measurements show</h2>
+    <p>These studies do not all test the same tools. Several are written by vendors; that is noted. What they share is paired sessions and a bill, not a counter on one compressed blob.</p>
+    <ul>
+      <li><a href="https://arxiv.org/html/2607.12161v5">Token Reduction Is Not Cost Reduction</a> (PointFive; affiliation disclosed) ran paired, provider-billed Claude Code tasks. The most aggressive setup they report reduced delivered tool-output tokens by 38.4% and increased billed cost by 6.8%. Prompt-cache traffic dominated the input-side bill.</li>
+      <li><a href="https://gliai.com/research/rtk-token-savings-benchmark">Glia Intelligence’s RTK benchmark</a> compared 18 low-effort Opus 5 runs with RTK to 18 without. RTK’s counter estimated 76% less shell output. Claude Code reported 5.8% more total cost with RTK. Some tasks were cheaper, some more expensive; the shell-output saving was not a reliable cost saving.</li>
+      <li><a href="https://rakuensoftware.com/blog/token-compression-tools-cost-more-than-they-save">Rakuen Software</a> (maker of aimee; disclosed) cites a JetBrains paired RTK trial: across 80 clean low-effort Claude Code pairs, median cost per task rose 7.6%, turns rose 13.8%, and cache reads rose 14.3%. At high effort, cost was statistically tied. Quality was tied in both arms.</li>
+      <li><a href="https://arxiv.org/html/2607.15516">Cache-Aware Prompt Compression</a> (Yan Song) isolates the cache-bust. On 50 tau-bench retail tasks, query-aware compression — a different compressed prefix per query — cost 40.1% more than an uncompressed baseline at the same reward. A cache-preserving compressor on the same suite cost 7.9% less, with the same 36 of 50 tasks completed.</li>
+      <li><a href="https://codepointer.dev/p/cutting-llm-token-costs-with-rtk">codepointer.dev</a> replayed rtk, headroom, and caveman over a 614M-token sample of real Claude Code sessions. Combined, the three saved 3.7% of spend. In that corpus, 78% of tool-output tokens never reached rtk’s shell hook — almost all of it the native Read tool.</li>
+      <li><a href="https://tokenade.net/en/articles/headroom-vs-rtk">Tokenade’s THOL write-up</a> (vendor; disclosed) reports rtk at about break-even on session cost and headroom 53% above running no tool.</li>
+      <li>The <a href="https://dev.to/projectescape/does-compacting-tool-output-lower-a-coding-agents-api-bill-ena">Torana tool-output compaction measurement</a> (vendor; disclosed) found a median paired saving of ~2.1% per session on DeepSeek V4 Pro, smaller than run-to-run variation, with about 92% of input tokens already cache hits. An earlier design that summarised file reads broke exact-match edits and caused re-read loops.</li>
+    </ul>
+    <p>None of this says compression can never pay — Song’s cache-preserving arm did. <a href="https://arxiv.org/pdf/2609.22114">Chen and Shi</a> (Paritok; disclosed) argue that shrinking file reads can compound over a long session, and that recalling the original spends that saving back. Payload token reduction is not a forecast of the invoice.</p>
+
+    <h2 id="when-it-helps">When compression can help, and when it can raise the bill</h2>
+    <p><strong>Help: compress new content before its first cache write.</strong> The first time a log, grep dump, or MCP result enters the conversation, it is written to the cache at the write rate and then re-read cheaply. Making that first write smaller, without changing anything already cached, is the case the pricing tables reward.</p>
+    <p><strong>Hurt: rewriting or summarising history.</strong> Changing bytes behind the cache breakpoint turns a cheap read into a new write, and the rest of the prefix is billed as fresh until the cache is rebuilt. PointFive’s <a href="https://www.pointfive.co/guides/top-prompt-compression-solutions-2026">2026 prompt-compression guide</a> puts it plainly: a compressed prompt that misses the cache can cost more than an uncompressed prompt that hits it. Evaluate caching and compression together.</p>
+    <p><strong>Hurt: coverage that misses the real tokens.</strong> Command-output filters help with noisy <code>git</code>, test, and build stdout. They do not see Claude Code’s built-in Read, Grep, and Glob paths, or most MCP results, unless those run through the shell. Glia, the JetBrains trial Rakuen cites, and codepointer all run into that gap. If your sessions are mostly file reads, a shell-only saving will not show up on the bill.</p>
+    <p><strong>Hurt: lossy summaries that the agent must repair.</strong> Coding agents apply patches by matching exact lines. Torana documented re-read loops after summarising file reads; PointFive documented ranked search summaries breaking shell pipelines that expected original grep lines. Extractive keeping of original lines avoids that class of failure; abstractive summaries have to prove they do not introduce it.</p>
+
+    <h2 id="how-to-measure">How to measure it yourself</h2>
+    <p>Do not multiply a token-reduction percentage by your whole bill. That product assumes every token is uncached input and that the agent takes the same number of turns. A workable test:</p>
+    <ol>
+      <li><strong>Pair the runs.</strong> Same repo, same task, same model and effort, with and without the tool. Repeat, and randomise order inside each pair. Keep an uncompressed control; client and model drift will move the bill on their own.</li>
+      <li><strong>Score the work, then the money.</strong> Count a run only if the task was actually solved. <a href="https://github.com/daseinlabs/code-compression-bench">daseinlabs/code-compression-bench</a> ranks layers by cost per solved task: cache-aware total cost divided by tasks the grader passed. A cheaper run that fails the task is not a saving.</li>
+      <li><strong>Use the provider’s usage fields.</strong> Uncached input, cache writes, cache reads, and output, each at that model’s published rate. A “tokens saved” counter that never sees cache or output cannot contradict the invoice.</li>
+      <li><strong>Count failures and extra turns.</strong> Extra file reads and extra tool calls are how a local saving disappears. If the treatment side takes more turns, ask whether the compressor dropped something the agent had to go back for.</li>
+    </ol>
+    <p>For how the different tool families act, see <a href="/context-compression-for-coding-agents">context compression for coding agents</a>.</p>
+
+    <h2 id="where-supercompress-sits">Where SuperCompress sits</h2>
+    <p>SuperCompress is hosted, extractive, and query-aware. It compresses new bulky tool results and other large context — logs, diffs, file reads, MCP results — before those bytes enter the conversation, and it leaves earlier turns untouched. That is the cache-friendly pattern: shrink the live tail, do not rewrite the cached prefix. The agent sends the bulky block as <code>context</code> and the current question as <code>query</code>. SuperCompress keeps the original lines that answer that question and drops the rest, so file paths, error messages, IDs, and code come through as the tool returned them. The question itself is never compressed. Every response reports <code>original_tokens</code> and <code>kept_tokens</code>. This page does not claim SuperCompress has been shown to lower anyone’s bill; the only honest number is a paired measurement on your sessions.</p>
+
+    <h2 id="install">Install</h2>
+    <p>One command finds the coding agents on your machine and adds SuperCompress to each of them:</p>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <p>Then run <code>supercompress doctor</code> to check what is connected. The full harness list is in the <a href="https://docs.supercompress.dev/coding-agents">coding agents guide</a>.</p>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>Does context compression lower your bill?</h3>
+    <p>Not automatically. Paired tests keep finding that a large drop in tokens on one payload can sit next to a flat or higher session bill. Measure cache-aware cost per solved task on your own work.</p>
+    <h3>Why does prompt caching change the math?</h3>
+    <p>Agents resend the conversation prefix every turn. A cache hit is billed at a fraction of fresh input; a new cache write costs a premium. Input compression does not change output tokens. Rewriting earlier turns turns a cheap read into an expensive write.</p>
+    <h3>How should I measure a compression tool?</h3>
+    <p>Run the same tasks with and without it. Compare cost per solved task from provider cache-read, cache-write, uncached-input, and output usage. Count failures and extra turns. Do not multiply a tokens-removed percentage by your whole bill.</p>
+    <h3>Does SuperCompress rewrite earlier turns?</h3>
+    <p>No. It compresses new bulky tool results and context before they enter the conversation and leaves earlier turns untouched. It keeps the original lines that answer the current question and drops the rest.</p>
+    <h3>Can I use SuperCompress with Claude Code, Codex, or Cursor?</h3>
+    <p>Yes. Run <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>, then <code>supercompress doctor</code>.</p>
+
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Product</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+            <li><a href="/playground">Playground</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+            <li><a href="/dashboard?signup=1">Get API key</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Legal</p>
+          <ul>
+            <li><a href="/terms">Terms of Service</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>
