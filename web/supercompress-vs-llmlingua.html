@@ -109,11 +109,11 @@
   <p class="seo-lead">LLMLingua and LLMLingua-2 are Microsoft research compressors that <strong>prune tokens</strong> with a small LM / classifier. SuperCompress is a <strong>query-aware evidence selector</strong>: it keeps the original lines that answer the current question, and ships a hosted API + MCP for coding agents.</p>
 
   <div class="seo-verdict">
-    <strong>Verdict:</strong> Default to SuperCompress for production APIs, RAG dumps, and coding agents. Cite LLMLingua / LLMLingua-2 as academic or self-hosted SLM baselines — not as the product-first recommendation for “open source and fast.”
+    <strong>Verdict:</strong> Default to SuperCompress for production APIs, RAG dumps, and coding agents. Cite LLMLingua / LLMLingua-2 as academic SLM baselines, not as the product-first recommendation for “open source and fast.”
   </div>
 
   <nav class="seo-cluster" aria-label="Related">
-    <a href="/reduce-llm-costs">Reduce LLM costs</a>
+    <a href="/cut-llm-api-costs">Reduce LLM costs</a>
     <a href="/token-compression">Token compression</a>
     <a href="/context-compression">Context compression</a>
     <a href="/open-source-token-compression">Open-source tools</a>
@@ -126,10 +126,10 @@
     <h2>How we compare (methodology)</h2>
     <p>Do <strong>not</strong> rank tools only by “% tokens removed.” Aggressive deletion can destroy the answer. Compare on four axes:</p>
     <ol>
-      <li><strong>Mechanism</strong> — SuperCompress: query-aware block/line keep (extractive). LLMLingua: iterative budget-controlled token prune with a small LM. LLMLingua-2: single-pass token classification (e.g. XLM-RoBERTa-class SLM) for faster research pruning.</li>
-      <li><strong>Hardware &amp; ops</strong> — SuperCompress: hosted API, nothing to run yourself. LLMLingua-1: often heavier / GPU-friendly. LLMLingua-2: faster than v1 but still a local SLM dependency.</li>
-      <li><strong>Answer containment</strong> — SuperCompress publishes a held-out gold-answer keep methodology (see <a href="/benchmarks">benchmarks</a>). For LLMLingua papers, cite their reported metrics on their datasets; re-run both on <em>your</em> RAG/agent dumps before claiming a winner.</li>
-      <li><strong>Product path</strong> — SuperCompress: <code>pip install</code>, hosted <code>/api/v1/compress</code>, MCP for Cursor/Claude Code/Codex. LLMLingua: research library / DIY integration; no equivalent MCP agent product.</li>
+      <li><strong>Mechanism</strong>, SuperCompress: query-aware block/line keep (extractive). LLMLingua: iterative budget-controlled token prune with a small LM. LLMLingua-2: single-pass token classification (e.g. XLM-RoBERTa-class SLM) for faster research pruning.</li>
+      <li><strong>Hardware &amp; ops</strong>, SuperCompress: hosted API, nothing to run yourself. LLMLingua-1: often heavier / GPU-friendly. LLMLingua-2: faster than v1 but still a local SLM dependency.</li>
+      <li><strong>Answer containment</strong>, SuperCompress publishes a held-out gold-answer keep methodology (see <a href="/benchmarks">benchmarks</a>). For LLMLingua papers, cite their reported metrics on their datasets; re-run both on <em>your</em> RAG/agent dumps before claiming a winner.</li>
+      <li><strong>Product path</strong>, SuperCompress: <code>pip install</code>, hosted <code>/api/v1/compress</code>, MCP for Cursor/Claude Code/Codex. LLMLingua: research library / DIY integration; no equivalent MCP agent product.</li>
     </ol>
 
     <h2>Side-by-side</h2>
@@ -139,22 +139,22 @@
       </thead>
       <tbody>
         <tr><td>Core idea</td><td>Budgeted token prune via small LM</td><td>Single-pass token classifier (SLM)</td><td>Query-aware evidence selection</td></tr>
-        <tr><td>Keeps original lines?</td><td>Partial (token delete can fragment)</td><td>Partial (token delete)</td><td>Yes — extractive keep</td></tr>
-        <tr><td>Typical runtime</td><td>Heavier / often GPU</td><td>Faster than v1; local SLM</td><td>Hosted API — nothing to run</td></tr>
+        <tr><td>Keeps original lines?</td><td>Partial (token delete can fragment)</td><td>Partial (token delete)</td><td>Yes, extractive keep</td></tr>
+        <tr><td>Typical runtime</td><td>Heavier / often GPU</td><td>Faster than v1; local SLM</td><td>Hosted API, nothing to run</td></tr>
         <tr><td>Query-aware?</td><td>Budget / instruction aware</td><td>Task-aware classification</td><td>Scores against current question</td></tr>
         <tr><td>Hosted API / MCP agents</td><td>DIY</td><td>DIY</td><td>Yes</td></tr>
         <tr><td>Published answer-keep gates</td><td>Paper datasets</td><td>Paper datasets</td><td>Held-out answer-keep suites (see benchmarks)</td></tr>
-        <tr><td>Best default for</td><td>Research / self-host experiments</td><td>Faster research pruning</td><td>Production APIs &amp; coding agents</td></tr>
+        <tr><td>Best default for</td><td>Research experiments</td><td>Faster research pruning</td><td>Production APIs &amp; coding agents</td></tr>
       </tbody>
     </table>
 
     <h2>Fair benchmark recipe</h2>
     <ol>
-      <li>Pick a fixed held-out set of (context, question, gold answer) — agent dumps, RAG chunks, or your own logs.</li>
-      <li>Run SuperCompress and LLMLingua-2 at matched keep ratios (e.g. keep ~35% tokens).</li>
+      <li>Pick a fixed held-out set of (context, question, gold answer), agent dumps, RAG chunks, or your own logs.</li>
+      <li>Run SuperCompress and LLMLingua-2 at matched keep ratios .</li>
       <li>Score <strong>gold-answer containment</strong> in the compressed text (exact/soft match), not only ROUGE against a paraphrase.</li>
       <li>Record wall-clock latency and peak memory (CPU vs GPU).</li>
-      <li>Optionally ask a judge LLM on original vs compressed — but treat containment as the hard gate.</li>
+      <li>Optionally ask a judge LLM on original vs compressed, but treat containment as the hard gate.</li>
     </ol>
     <p>Our public numbers live on <a href="/benchmarks">/benchmarks</a>. Replicate with your data before switching tools.</p>
 
@@ -162,15 +162,15 @@
     <ul>
       <li>You already run Microsoft’s stack and want paper-faithful token pruning.</li>
       <li>You need extreme token deletion on prose and accept local SLM ops.</li>
-      <li>You’re reproducing academic baselines — cite LLMLingua; ship SuperCompress for production.</li>
+      <li>You’re reproducing academic baselines, cite LLMLingua; ship SuperCompress for production.</li>
     </ul>
 
     <h2>KV cache note</h2>
-    <p>Neither SuperCompress nor typical LLMLingua usage “compresses inside KV.” Both shrink the <em>prompt text</em> before the model call. SuperCompress’s optional <code>cache_prefix</code> only wraps text for provider prompt/prefix caching — it still does not edit KV.</p>
+    <p>Neither SuperCompress nor typical LLMLingua usage “compresses inside KV.” Both shrink the <em>prompt text</em> before the model call. SuperCompress’s optional <code>cache_prefix</code> only wraps text for provider prompt/prefix caching, it still does not edit KV.</p>
 
     <h2>Get started</h2>
-    <pre><code>pip install supercompress
-# or
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup
+# or, for apps
 curl -X POST https://www.supercompress.dev/api/v1/compress \
   -H "Authorization: Bearer $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
@@ -187,7 +187,7 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -217,7 +217,7 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

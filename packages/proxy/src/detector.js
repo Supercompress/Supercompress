@@ -14,6 +14,7 @@
  *                     (context_servers MCP — not Cursor-style mcpServers)
  *   - fx (Vercel)     ~/.fx/mcp.json (trusted profile only) + ~/.fx/AGENTS.md + skills
  *   - OpenCode        ~/.config/opencode/opencode.json(c) mcp block
+ *   - Grok Bot        hosted Streamable HTTP MCP (cloud) — always offered by setup/plugin
  *   - Any custom      `supercompress agents connect` / Agent Plugins pack / agents add
  */
 
@@ -22,12 +23,18 @@ const path = require("path");
 const os = require("os");
 const { execFileSync } = require("child_process");
 const agentPlugins = require("./agent-plugins");
+const edit = require("./config-edit");
 
 const HOME = os.homedir();
 const PROXY_BASE = "http://localhost:8080/v1";
+const SC_ANTHROPIC_BASE = PROXY_BASE.replace(/\/v1$/, "");
 const MCP_SERVER_PATH = path.join(__dirname, "mcp.js");
 const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(HOME, ".supercompress");
 const BACKUP_PATH = path.join(CONFIG_DIR, "agent-config-backups.json");
+
+const guidance = require("./agent-guidance");
+/** Cloud-reachable MCP for Grok Bot / marketplace HTTP hosts (stdio is not reachable). */
+const HOSTED_MCP_URL = "https://www.supercompress.dev/api/mcp";
 
 function loadBackups() {
   try {
@@ -45,6 +52,7 @@ function saveBackups(backups) {
 
 /** Preserve the exact pre-setup contents so uninstall never loses user config. */
 function backupFile(filePath) {
+  // Same manifest/format as agent-plugins.recordOriginal (first write wins).
   const backups = loadBackups();
   if (Object.prototype.hasOwnProperty.call(backups, filePath)) return;
   backups[filePath] = fs.existsSync(filePath)
@@ -53,77 +61,133 @@ function backupFile(filePath) {
   saveBackups(backups);
 }
 
-function restoreBackups() {
-  const backups = loadBackups();
+// Backups being reverted by the current `revertAll` (null outside uninstall).
+let activeBackups = null;
+
+function currentBackups() {
+  return activeBackups || loadBackups();
+}
+
+/**
+ * Files SuperCompress owns outright (its own rule / skill / hook file). A
+ * backup at one of these paths is a user's file that setup overwrote, so the
+ * whole snapshot goes back. Every other backed-up file is shared with the
+ * user and is only ever edited surgically.
+ */
+function isOwnedArtifact(filePath) {
+  const rel = path.relative(HOME, filePath);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) return false;
+  if ([".cursor/hooks/mcp-response.js", ".hermes/agent-hooks/mcp-response.js", ".hermes/plugins/mcp-response.js", ".openclaw/hooks/mcp-response.js", ".openclaw/extensions/mcp-response.js"].includes(rel.split(path.sep).join("/"))) return true;
+  return rel.split(/[\\/]/).some((seg) => /^supercompress(?:\.[a-z]+)?$/i.test(seg));
+}
+
+/**
+ * Restore whole-file snapshots for owned artifacts only.
+ *
+ * Shared configs (Codex/Grok config.toml, mcp.json, settings.json, YAML, …)
+ * are never rewound to their install-time snapshot: that wiped every MCP
+ * server and setting the user added after setup. They are cleaned by the
+ * surgical removers instead, and `finalizeSharedConfigs` restores the
+ * snapshot bytes only when nothing but formatting would change.
+ */
+function restoreOwnedArtifacts(backups) {
   const restored = new Set();
   for (const [filePath, snapshot] of Object.entries(backups)) {
+    if (!isOwnedArtifact(filePath) || !snapshot) continue;
     try {
-      // Shared MCP JSON files accumulate other servers after setup. Never
-      // rewind the whole file to the install-time snapshot — that wipes
-      // anything the user added later (reported for ~/.claude.json).
-      if (isSharedMcpConfigSnapshot(snapshot)) {
-        if (fs.existsSync(filePath)) {
-          stripSupercompressMcpFromFile(filePath);
-        }
-        restored.add(filePath);
-        continue;
-      }
       if (snapshot.exists) {
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(filePath, snapshot.content);
       } else if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
+        const dir = path.dirname(filePath);
+        if (/^supercompress$/i.test(path.basename(dir))) {
+          try { fs.rmdirSync(dir); } catch {} // only succeeds when empty
+        }
       }
       restored.add(filePath);
     } catch (err) {
       console.error(`  ✗ Failed to restore ${filePath}: ${err.message}`);
     }
   }
-  try { fs.unlinkSync(BACKUP_PATH); } catch {}
   return restored;
 }
 
-/** True when a backup snapshot is a shared MCP host config (mcpServers / mcp map). */
-function isSharedMcpConfigSnapshot(snapshot) {
-  if (!snapshot || !snapshot.exists || typeof snapshot.content !== "string") return false;
+/** Text of a file before setup: string, "" if it did not exist, null if unknown. */
+function originalText(filePath, backups = currentBackups()) {
+  const snap = backups[filePath];
+  if (!snap || typeof snap !== "object") return null;
+  if (!snap.exists) return "";
+  return typeof snap.content === "string" ? snap.content : null;
+}
+
+/** Parsed pre-setup JSON object: {} if the file did not exist, null if unknown. */
+function originalJson(filePath, backups = currentBackups()) {
+  const text = originalText(filePath, backups);
+  if (text === null) return null;
+  if (!text.trim()) return {};
   try {
-    const data = JSON.parse(snapshot.content);
-    if (!data || typeof data !== "object") return false;
-    if (data.mcpServers && typeof data.mcpServers === "object") return true;
-    if (data.mcp && typeof data.mcp === "object") return true;
-    return false;
+    const data = edit.parseJsonLoose(text);
+    return edit.isPlainObject(data) ? data : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+/** True when `obj[key]` should be deleted because setup created it. */
+function createdBySetup(original, ...keys) {
+  if (!original) return false; // unknown pre-install state — keep it
+  let cur = original;
+  for (const k of keys) {
+    if (!edit.isPlainObject(cur) || !Object.prototype.hasOwnProperty.call(cur, k)) return true;
+    cur = cur[k];
+  }
+  return false;
+}
+
+/** Delete an emptied container that setup created (or that was already gone). */
+function pruneEmpty(data, key, original, parentKeys = []) {
+  const v = data[key];
+  if (!edit.isPlainObject(v) && !Array.isArray(v)) return;
+  const empty = Array.isArray(v) ? v.length === 0 : Object.keys(v).length === 0;
+  if (!empty) return;
+  // Keep a container the user had before setup; drop one we introduced. With
+  // no snapshot (legacy installs) keep the historical behaviour of dropping it.
+  if (original && !createdBySetup(original, ...parentKeys, key)) return;
+  delete data[key];
+}
+
+/**
+ * Restore one key SuperCompress overwrote. Only acts while the key still holds
+ * our value — if the user changed it since, their value wins.
+ */
+function revertKey(obj, key, scValue, original) {
+  if (!edit.isPlainObject(obj) || obj[key] !== scValue) return false;
+  if (edit.isPlainObject(original) &&
+      Object.prototype.hasOwnProperty.call(original, key) &&
+      original[key] !== scValue) {
+    obj[key] = original[key];
+  } else {
+    delete obj[key];
+  }
+  return true;
 }
 
 /**
  * Surgically remove SuperCompress MCP entries from a live config file without
- * touching other servers the user may have added after install.
+ * touching other servers the user may have added after install. Malformed or
+ * missing files are left untouched.
  */
 function stripSupercompressMcpFromFile(filePath) {
-  if (!fs.existsSync(filePath)) return false;
-  const raw = fs.readFileSync(filePath, "utf8");
-  let data;
-  try {
-    data = typeof parseJsonc === "function" ? parseJsonc(raw) : JSON.parse(raw);
-  } catch {
-    data = JSON.parse(raw);
-  }
-  let changed = false;
-  if (data.mcpServers && data.mcpServers.supercompress) {
-    delete data.mcpServers.supercompress;
-    if (Object.keys(data.mcpServers).length === 0) delete data.mcpServers;
-    changed = true;
-  }
-  if (data.mcp && data.mcp.supercompress) {
-    delete data.mcp.supercompress;
-    if (Object.keys(data.mcp).length === 0) delete data.mcp;
-    changed = true;
-  }
-  if (!changed) return false;
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
-  return true;
+  const original = originalJson(filePath);
+  return edit.editJsonFile(filePath, (data) => {
+    for (const key of ["mcpServers", "mcp"]) {
+      if (edit.isPlainObject(data[key]) && data[key].supercompress) {
+        delete data[key].supercompress;
+        pruneEmpty(data, key, original);
+      }
+    }
+  });
 }
 
 // Shared by the instruction writer and the uninstaller so the two cannot drift.
@@ -278,11 +342,9 @@ function upsertTomlMcpServer(filePath, {
       `[mcp_servers.supercompress.env]\n` +
       envLines.map((l) => `${l}\n`).join("");
   }
-  raw = raw
-    .replace(/\n?\[mcp_servers\.supercompress\.env\][\s\S]*?(?=\n\[|$)/, "\n")
-    .replace(/\n?\[mcp_servers\.supercompress\][\s\S]*?(?=\n\[|$)/, "\n");
-  raw = `${raw.trimEnd()}\n\n${block}`;
-  fs.writeFileSync(filePath, raw.startsWith("\n") ? raw.slice(1) : raw);
+  raw = edit.removeTomlTable(raw, "mcp_servers.supercompress");
+  raw = raw.trim() ? `${raw.trimEnd()}\n\n${block}` : block;
+  fs.writeFileSync(filePath, raw);
 }
 
 /** Grok truncates MCP tool results at 20KB unless raised — compress digests are larger. */
@@ -327,35 +389,59 @@ function grokInstructionBody(inboxPath) {
   return [
     "# SuperCompress (always on · context only)",
     "",
-    "Compress bulky **context** (tool dumps, files, logs, diffs, history). Never compress the user's ask/query.",
+    guidance.COMPRESS_INTRO,
+    "",
+    ...guidance.COMPRESS_WHAT.map((line) => line.replace("MCP `compress_context`", "MCP `supercompress__compress_context`")),
     "",
     "## How it works in Grok Build",
     "- Hooks auto-compress large tool outputs. PostToolUse replaces the model's copy of the tool result with the digest (`updatedToolOutput`).",
     "- Digests are also written to `" + inboxPath + "` (and `inbox/<sessionId>/`).",
     "- Grok discards UserPromptSubmit additionalContext — do not wait for the next prompt; the replaced tool result is the mid-turn path.",
-    "- Prefer the replaced result (or Read the inbox) over re-reading / re-pasting raw dumps.",
     "",
     "## Playbook",
     "1. Prefer the PostToolUse-replaced tool result when present.",
-    "2. Else if `" + inboxPath + "` exists, **Read it** — compressed digest (ask is unchanged).",
-    "3. Session digests may also be at `~/.supercompress/inbox/<sessionId>/latest.md`.",
-    "4. Otherwise call MCP `supercompress__compress_context` with `context`=<dump> and `query`=<user ask>.",
-    "   If that tool is not listed, `search_tool` then `use_tool` with `supercompress__compress_context`.",
-    "   Also: `supercompress__connect_account`, `supercompress__usage_summary`.",
-    "5. Prefer the digest over raw dumps. Keep normal login — no provider API-key mode required.",
-    "6. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
+    "2. Else if `" + inboxPath + "` exists, **Read it** — compressed digest (ask is unchanged). Session digests may also be at `~/.supercompress/inbox/<sessionId>/latest.md`.",
+    "3. Otherwise call `supercompress__compress_context` with only the new dump and work from the digest. If that tool is not listed, `search_tool` then `use_tool` with `supercompress__compress_context`.",
+    "4. If the digest dropped a line you need, re-read just that part of the source.",
+    "5. If it says the account is not linked, call `supercompress__connect_account` once, give the user its link, then retry.",
+    "6. " + guidance.runwayRule({ tool: "supercompress__runway_check" }),
     "",
   ].join("\n");
 }
 
+/** Remove `[mcp_servers.supercompress]` (+ sub-tables) only; every other byte stays. */
 function removeTomlMcpServer(filePath) {
   if (!fs.existsSync(filePath)) return false;
   const raw = fs.readFileSync(filePath, "utf8");
-  const cleaned = raw
-    .replace(/\n?\[mcp_servers\.supercompress\.env\][\s\S]*?(?=\n\[|$)/, "\n")
-    .replace(/\n?\[mcp_servers\.supercompress\][\s\S]*?(?=\n\[|$)/, "\n");
+  const cleaned = edit.removeTomlTable(raw, "mcp_servers.supercompress");
   if (cleaned === raw) return false;
-  fs.writeFileSync(filePath, cleaned.trimEnd() + "\n");
+  fs.writeFileSync(filePath, cleaned);
+  return true;
+}
+
+/**
+ * Undo `upsertGrokMcpOutputCap`: put back the pre-install `[mcp]
+ * max_output_bytes` (or drop it, plus an `[mcp]` table we created). Skipped
+ * when the user changed the value since, or the original is unknown.
+ */
+function restoreGrokMcpOutputCap(filePath, floor = 2_000_000) {
+  if (!fs.existsSync(filePath)) return false;
+  const before = originalText(filePath);
+  if (before === null) return false;
+  const raw = fs.readFileSync(filePath, "utf8");
+  const cur = edit.findTomlKey(raw, "mcp", "max_output_bytes");
+  if (!cur || Number(cur.value) !== floor) return false;
+  const orig = edit.findTomlKey(before, "mcp", "max_output_bytes");
+  let next;
+  if (orig) {
+    if (Number(orig.value) === floor) return false;
+    next = edit.replaceTomlLine(raw, cur.index, orig.line);
+  } else {
+    next = edit.replaceTomlLine(raw, cur.index, null);
+    if (!edit.hasExactTomlTable(before, "mcp")) next = edit.dropEmptyTomlTable(next, "mcp");
+  }
+  if (next === raw) return false;
+  fs.writeFileSync(filePath, next);
   return true;
 }
 
@@ -365,6 +451,61 @@ function grokHome() {
 
 function grokInstalled() {
   return commandExists("grok") || fs.existsSync(grokHome());
+}
+
+function grokBotHome() {
+  return path.join(CONFIG_DIR, "hosts", "grok-bot");
+}
+
+function grokBotMcpPath() {
+  return path.join(grokBotHome(), "mcp.json");
+}
+
+/** Always offered — Grok Bot is cloud-hosted; setup writes a paste-ready hosted MCP snippet. */
+function grokBotAvailable() {
+  return true;
+}
+
+function writeGrokBotHostedMcp() {
+  const dir = grokBotHome();
+  fs.mkdirSync(dir, { recursive: true });
+  const file = grokBotMcpPath();
+  backupFile(file);
+  const payload = {
+    mcpServers: {
+      supercompress: {
+        url: HOSTED_MCP_URL,
+      },
+    },
+    install: `Add this MCP server: ${HOSTED_MCP_URL}`,
+    note:
+      "Grok Bot runs in the cloud — paste the URL in Grok Bot MCP settings, then complete Google OAuth once. Local stdio MCP is not reachable from Grok Bot.",
+  };
+  fs.writeFileSync(file, `${JSON.stringify(payload, null, 2)}\n`);
+  fs.writeFileSync(
+    path.join(dir, "INSTALL.txt"),
+    `Add this MCP server: ${HOSTED_MCP_URL}\n`
+  );
+  return file;
+}
+
+function removeGrokBotHostedMcp() {
+  const dir = grokBotHome();
+  if (!fs.existsSync(dir)) return false;
+  try {
+    for (const name of ["mcp.json", "INSTALL.txt"]) {
+      const p = path.join(dir, name);
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    }
+    try {
+      fs.rmdirSync(dir);
+    } catch {
+      /* keep parent hosts/ */
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function fxHome() {
@@ -412,19 +553,7 @@ function writeFxMcp() {
 }
 
 function removeFxMcp() {
-  const filePath = path.join(fxHome(), "mcp.json");
-  if (!fs.existsSync(filePath)) return false;
-  let data;
-  try {
-    data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-  } catch {
-    return false;
-  }
-  if (!data.mcp || !data.mcp.supercompress) return false;
-  delete data.mcp.supercompress;
-  if (Object.keys(data.mcp).length === 0) delete data.mcp;
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
-  return true;
+  return stripSupercompressMcpFromFile(path.join(fxHome(), "mcp.json"));
 }
 
 function writeFxSkill() {
@@ -451,16 +580,19 @@ function removeFxSkill() {
 }
 
 function fxInstructionBody(inboxPath) {
+  const steps = guidance.compressSteps(inboxPath);
+  steps[1] =
+    "2. Otherwise find the SuperCompress MCP tools (`mcp_search_tools` / `mcp_select_tool`), call `compress_context` with only the new dump, and work from the returned digest instead of the raw text.";
   return [
     "# SuperCompress (always on · context only)",
     "",
-    "Compress bulky **context** (tool dumps, files, logs, diffs, history). Never compress the user's ask/query.",
+    guidance.COMPRESS_INTRO,
     "",
-    "1. If `" + inboxPath + "` exists, Read it — compressed context digest (ask is unchanged).",
-    "2. Otherwise discover MCP tools (`mcp_search_tools` / `mcp_select_tool`) for SuperCompress, then call `compress_context` with `context`=<dump> and `query`=<user ask>.",
-    "3. Prefer the digest over raw dumps. Keep normal login — no provider API-key mode required.",
-    "4. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
+    ...guidance.COMPRESS_WHAT,
+    "",
+    ...steps,
     "5. After installing MCP: `/mcp reload` (or restart fx).",
+    "6. " + guidance.runwayRule(),
     "",
   ].join("\n");
 }
@@ -973,6 +1105,15 @@ function configureMcp() {
     }
   }
 
+  // Grok Bot (xAI cloud) — hosted Streamable HTTP MCP (stdio is unreachable from the bot)
+  try {
+    writeGrokBotHostedMcp();
+    configured.push("Grok Bot");
+    console.log(`  → Grok Bot: Add this MCP server: ${HOSTED_MCP_URL}`);
+  } catch (err) {
+    console.error(`  ✗ Failed to configure Grok Bot hosted MCP: ${err.message}`);
+  }
+
   // fx (Vercel Labs) — trusted profile only at ~/.fx/mcp.json
   if (fxInstalled()) {
     try {
@@ -1029,40 +1170,95 @@ function removeMcp() {
     }
   }
 
+  // OpenCode: `mcp.supercompress` plus the `experimental.mcp_timeout` default
+  // setup fills in when absent.
   for (const filePath of [
     path.join(HOME, ".config", "opencode", "opencode.jsonc"),
     path.join(HOME, ".config", "opencode", "opencode.json"),
   ]) {
     try {
-      if (!fs.existsSync(filePath)) continue;
-      if (stripSupercompressMcpFromFile(filePath)) removed.push("OpenCode");
+      const original = originalJson(filePath);
+      let hit = false;
+      edit.editJsonFile(filePath, (data) => {
+        if (edit.isPlainObject(data.mcp) && data.mcp.supercompress) {
+          delete data.mcp.supercompress;
+          pruneEmpty(data, "mcp", original);
+          hit = true;
+        }
+        if (edit.isPlainObject(data.experimental) &&
+            data.experimental.mcp_timeout === 120000 &&
+            original && createdBySetup(original, "experimental", "mcp_timeout")) {
+          delete data.experimental.mcp_timeout;
+          pruneEmpty(data, "experimental", original);
+        }
+      });
+      if (hit) removed.push("OpenCode");
     } catch (err) {
       console.error(`  ✗ Failed to remove OpenCode MCP registration: ${err.message}`);
     }
   }
 
+  // Zed: `context_servers.supercompress` (+ legacy mcpServers entry) and the
+  // `agent.enable_all_context_servers` default setup fills in when absent.
   for (const filePath of zedSettingsCandidates()) {
     try {
-      if (!fs.existsSync(filePath)) continue;
-      const data = parseJsonc(fs.readFileSync(filePath, "utf8"));
-      let changed = false;
-      if (data.context_servers && data.context_servers.supercompress) {
-        delete data.context_servers.supercompress;
-        if (Object.keys(data.context_servers).length === 0) delete data.context_servers;
-        changed = true;
-      }
-      if (data.mcpServers && data.mcpServers.supercompress) {
-        delete data.mcpServers.supercompress;
-        if (Object.keys(data.mcpServers).length === 0) delete data.mcpServers;
-        changed = true;
-      }
-      if (changed) {
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
-        removed.push("Zed");
-      }
+      const original = originalJson(filePath);
+      let hit = false;
+      edit.editJsonFile(filePath, (data) => {
+        for (const key of ["context_servers", "mcpServers"]) {
+          if (edit.isPlainObject(data[key]) && data[key].supercompress) {
+            delete data[key].supercompress;
+            pruneEmpty(data, key, original);
+            hit = true;
+          }
+        }
+        if (edit.isPlainObject(data.agent) &&
+            data.agent.enable_all_context_servers === true &&
+            original && createdBySetup(original, "agent", "enable_all_context_servers")) {
+          delete data.agent.enable_all_context_servers;
+          pruneEmpty(data, "agent", original);
+        }
+      });
+      if (hit) removed.push("Zed");
     } catch (err) {
       console.error(`  ✗ Failed to remove Zed MCP registration: ${err.message}`);
     }
+  }
+
+  // Continue: experimental.modelContextProtocolServers array entry.
+  const continuePath = path.join(HOME, ".continue", "config.json");
+  try {
+    const original = originalJson(continuePath);
+    let hit = false;
+    edit.editJsonFile(continuePath, (data) => {
+      const exp = data.experimental;
+      if (edit.isPlainObject(exp) && Array.isArray(exp.modelContextProtocolServers)) {
+        const kept = exp.modelContextProtocolServers.filter((item) => !isSupercompressContinueServer(item));
+        if (kept.length !== exp.modelContextProtocolServers.length) {
+          exp.modelContextProtocolServers = kept;
+          hit = true;
+          if (!kept.length && (!original || createdBySetup(original, "experimental", "modelContextProtocolServers"))) {
+            delete exp.modelContextProtocolServers;
+          }
+          pruneEmpty(data, "experimental", original);
+        }
+      }
+      if (edit.isPlainObject(data.mcpServers) && data.mcpServers.supercompress) {
+        delete data.mcpServers.supercompress;
+        pruneEmpty(data, "mcpServers", original);
+        hit = true;
+      }
+    });
+    if (hit) removed.push("Continue");
+  } catch (err) {
+    console.error(`  ✗ Failed to remove Continue MCP registration: ${err.message}`);
+  }
+
+  // Goose: YAML extensions.supercompress block.
+  try {
+    if (removeGooseYaml(path.join(HOME, ".config", "goose", "config.yaml"))) removed.push("Goose");
+  } catch (err) {
+    console.error(`  ✗ Failed to remove Goose MCP registration: ${err.message}`);
   }
 
   const codexPath = path.join(HOME, ".codex", "config.toml");
@@ -1073,21 +1269,55 @@ function removeMcp() {
   }
 
   try {
-    if (removeTomlMcpServer(path.join(grokHome(), "config.toml"))) removed.push("Grok Build");
+    const grokPath = path.join(grokHome(), "config.toml");
+    if (removeTomlMcpServer(grokPath)) removed.push("Grok Build");
+    restoreGrokMcpOutputCap(grokPath);
   } catch (err) {
     console.error(`  ✗ Failed to remove Grok Build MCP registration: ${err.message}`);
   }
 
   try {
-    if (removeFxMcp()) removed.push("fx");
+    if (removeGrokBotHostedMcp()) removed.push("Grok Bot");
   } catch (err) {
-    console.error(`  ✗ Failed to remove fx MCP registration: ${err.message}`);
+    console.error(`  ✗ Failed to remove Grok Bot hosted MCP: ${err.message}`);
   }
 
   for (const name of agentPlugins.removePluginAgents()) {
     if (!removed.includes(name)) removed.push(name);
   }
+
+  // Hermes: drop an `mcp_servers:` key setup introduced and left empty.
+  const hermesConfig = path.join(HOME, ".hermes", "config.yaml");
+  try {
+    if (fs.existsSync(hermesConfig)) {
+      const raw = fs.readFileSync(hermesConfig, "utf8");
+      const next = edit.dropEmptyYamlKey(raw, "mcp_servers", originalText(hermesConfig));
+      if (next !== raw) fs.writeFileSync(hermesConfig, next);
+    }
+  } catch (err) {
+    console.error(`  ✗ Failed to tidy Hermes config: ${err.message}`);
+  }
   return removed;
+}
+
+function isSupercompressContinueServer(item) {
+  const cmd = item?.transport?.command || item?.command || "";
+  const name = item?.name || "";
+  const env = item?.transport?.env || item?.env || {};
+  return /supercompress/i.test(String(cmd)) ||
+    /supercompress/i.test(String(name)) ||
+    Boolean(env && typeof env === "object" && env.SUPERCOMPRESS_CONFIG_DIR);
+}
+
+/** Remove the `  supercompress:` block under Goose `extensions:` only. */
+function removeGooseYaml(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+  const raw = fs.readFileSync(filePath, "utf8");
+  let next = raw.replace(/(^|\n) {2}supercompress:[ \t]*\n(?: {4}[^\n]*(?:\n|$))*/g, "$1");
+  if (next === raw) return false;
+  next = edit.dropEmptyYamlKey(next, "extensions", originalText(filePath));
+  fs.writeFileSync(filePath, next);
+  return true;
 }
 
 function commandExists(command) {
@@ -1120,6 +1350,22 @@ function appExists(appName) {
 
 // ── Agent definitions ──
 
+/** Read a JSON/JSONC agent config; null when missing or malformed (never `{}`). */
+function readJsonConfig(filePath) {
+  try {
+    const data = edit.parseJsonLoose(fs.readFileSync(filePath, "utf8"));
+    return edit.isPlainObject(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Write an agent config, editing only the spans that changed. */
+function writeJsonConfig(filePath, config) {
+  const raw = fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : "";
+  fs.writeFileSync(filePath, edit.rewriteJson(raw, config));
+}
+
 const AGENTS = [
   {
     name: "Cursor",
@@ -1133,19 +1379,14 @@ const AGENTS = [
       ];
       return paths.find((p) => fs.existsSync(p));
     },
-    read: (filePath) => {
-      try {
-        return JSON.parse(fs.readFileSync(filePath, "utf8"));
-      } catch { return {}; }
-    },
-    write: (filePath, config) => {
-      fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
-    },
-    configure: (config, revert) => {
+    read: readJsonConfig,
+    write: writeJsonConfig,
+    configure: (config, revert, original) => {
       if (revert) {
-        // Only clear values we wrote — never wipe a user's custom API base.
-        if (config["openAiBaseUrl"] === PROXY_BASE) delete config["openAiBaseUrl"];
-        if (config["openAIBaseUrl"] === PROXY_BASE) delete config["openAIBaseUrl"];
+        // Only clear values we wrote — never wipe a user's custom API base —
+        // and put back the pre-install value when we know it.
+        revertKey(config, "openAiBaseUrl", PROXY_BASE, original);
+        revertKey(config, "openAIBaseUrl", PROXY_BASE, original);
       } else {
         config["openAiBaseUrl"] = PROXY_BASE;
       }
@@ -1162,18 +1403,12 @@ const AGENTS = [
       ];
       return paths.find((p) => fs.existsSync(p));
     },
-    read: (filePath) => {
-      try {
-        return JSON.parse(fs.readFileSync(filePath, "utf8"));
-      } catch { return {}; }
-    },
-    write: (filePath, config) => {
-      fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
-    },
-    configure: (config, revert) => {
+    read: readJsonConfig,
+    write: writeJsonConfig,
+    configure: (config, revert, original) => {
       if (revert) {
-        if (config["apiBaseUrl"] === PROXY_BASE) delete config["apiBaseUrl"];
-        if (config["api_base_url"] === PROXY_BASE) delete config["api_base_url"];
+        revertKey(config, "apiBaseUrl", PROXY_BASE, original);
+        revertKey(config, "api_base_url", PROXY_BASE, original);
       } else {
         config["apiBaseUrl"] = PROXY_BASE;
       }
@@ -1194,22 +1429,26 @@ const AGENTS = [
       try {
         const content = fs.readFileSync(filePath, "utf8");
         if (filePath.endsWith(".json")) {
-          return { type: "json", data: JSON.parse(content), raw: content };
+          const data = edit.parseJsonLoose(content);
+          if (!edit.isPlainObject(data)) return null;
+          return { type: "json", data, raw: content };
         }
         return { type: "yaml", data: null, raw: content };
-      } catch { return { type: "unknown", data: null, raw: "" }; }
+      } catch { return null; }
     },
     write: (filePath, config) => {
-      if (config.type === "json") {
-        fs.writeFileSync(filePath, JSON.stringify(config.data, null, 2));
-      }
+      if (config.type === "json") writeJsonConfig(filePath, config.data);
       // YAML files are not auto-modified — we'll show instructions
     },
-    configure: (config, revert) => {
+    configure: (config, revert, original) => {
       if (config.type !== "json") return config;
-      const models = config.data.models || [];
+      const models = Array.isArray(config.data.models) ? config.data.models : [];
       if (revert) {
-        config.data.models = models.filter((m) => m.apiBase !== PROXY_BASE);
+        if (!models.some((m) => m && m.apiBase === PROXY_BASE)) return config;
+        config.data.models = models.filter((m) => !(m && m.apiBase === PROXY_BASE));
+        if (!config.data.models.length && original && createdBySetup(original, "models")) {
+          delete config.data.models;
+        }
       } else {
         // Add a proxy model if not already present
         const hasProxy = models.some((m) => m.apiBase === PROXY_BASE);
@@ -1237,17 +1476,16 @@ const AGENTS = [
       ];
       return paths.find((p) => fs.existsSync(p));
     },
-    read: (filePath) => {
-      try { return JSON.parse(fs.readFileSync(filePath, "utf8")); } catch { return {}; }
-    },
-    write: (filePath, config) => {
-      fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
-    },
-    configure: (config, revert) => {
+    read: readJsonConfig,
+    write: writeJsonConfig,
+    configure: (config, revert, original) => {
       if (revert) {
-        if (config["openAiBaseUrl"] === PROXY_BASE) delete config["openAiBaseUrl"];
-        if (config["apiBaseUrl"] === PROXY_BASE) delete config["apiBaseUrl"];
-        if (config["api_base_url"] === PROXY_BASE) delete config["api_base_url"];
+        const ours = revertKey(config, "openAiBaseUrl", PROXY_BASE, original);
+        revertKey(config, "apiBaseUrl", PROXY_BASE, original);
+        revertKey(config, "api_base_url", PROXY_BASE, original);
+        // Setup also switched the provider; undo that only alongside our base
+        // URL and only when the pre-install provider is known.
+        if (ours && original) revertKey(config, "apiProvider", "openai-compatible", original);
       } else {
         config["openAiBaseUrl"] = PROXY_BASE;
         config["apiProvider"] = "openai-compatible";
@@ -1264,18 +1502,16 @@ const AGENTS = [
       ];
       return paths.find((p) => fs.existsSync(p));
     },
-    read: (filePath) => {
-      try { return JSON.parse(fs.readFileSync(filePath, "utf8")); } catch { return {}; }
-    },
-    write: (filePath, config) => {
-      fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
-    },
-    configure: (config, revert) => {
+    read: readJsonConfig,
+    write: writeJsonConfig,
+    configure: (config, revert, original) => {
       if (revert) {
-        // Remove the anthropic base URL override
-        const env = config.env || {};
-        delete env["ANTHROPIC_BASE_URL"];
-        config.env = env;
+        // Remove only our ANTHROPIC_BASE_URL override (restoring the user's
+        // previous value when known); a value the user set stays.
+        if (edit.isPlainObject(config.env)) {
+          revertKey(config.env, "ANTHROPIC_BASE_URL", SC_ANTHROPIC_BASE, original && original.env);
+          pruneEmpty(config, "env", original);
+        }
       } else {
         config.env = config.env || {};
         config.env["ANTHROPIC_BASE_URL"] = PROXY_BASE.replace(/\/v1$/, "");
@@ -1300,19 +1536,26 @@ const AGENTS = [
     write: (filePath, config) => {
       fs.writeFileSync(filePath, config.raw);
     },
-    configure: (config, revert) => {
+    configure: (config, revert, original) => {
       if (config.type === "json") {
-        const data = JSON.parse(config.raw || "{}");
-        if (revert) delete data.openai_base_url;
+        const data = edit.parseJsonLoose(config.raw || "{}");
+        if (revert) revertKey(data, "openai_base_url", PROXY_BASE, original ? edit.parseJsonLoose(original || "{}") : null);
         else data.openai_base_url = PROXY_BASE;
-        return { ...config, raw: JSON.stringify(data, null, 2) + "\n" };
+        return { ...config, raw: edit.rewriteJson(config.raw || "", data) };
       }
 
       const marker = "# SuperCompress Proxy";
       const line = `openai_base_url = \"${PROXY_BASE}\"`;
       let raw = config.raw || "";
       if (revert) {
-        raw = raw.replace(new RegExp(`\\n?${marker}\\n${line}\\n?`, "g"), "");
+        raw = raw.replace(new RegExp(`(^|\\n)\\n?${marker}\\n${line}(?:\\n|$)`, "g"), "$1");
+        // Setup overwrote a pre-existing openai_base_url in place: put the
+        // user's original line back (or drop ours if there was none).
+        const cur = edit.findTomlKey(raw, null, "openai_base_url");
+        if (cur && cur.value === `"${PROXY_BASE}"`) {
+          const orig = original ? edit.findTomlKey(original, null, "openai_base_url") : null;
+          raw = edit.replaceTomlLine(raw, cur.index, orig && orig.value !== cur.value ? orig.line : null);
+        }
       } else if (/^openai_base_url\s*=/m.test(raw)) {
         raw = raw.replace(/^openai_base_url\s*=.*$/m, line);
       } else {
@@ -1366,6 +1609,7 @@ const AUTO_MCP_AGENTS = new Set([
   "Hermes",
   "OpenClaw",
   "Grok Build",
+  "Grok Bot",
   "fx",
 ]);
 
@@ -1418,6 +1662,8 @@ const EXTRA_AGENTS = [
   ["Hermes", ["hermes"], [".hermes"]],
   ["OpenClaw", ["openclaw", "claw"], [".openclaw"]],
   ["Grok Build", ["grok"], [".grok"]],
+  // Marker dir under CONFIG_DIR is relative to HOME via detectAll special-case.
+  ["Grok Bot", [], [".supercompress/hosts/grok-bot"]],
   ["fx", ["fx"], [".fx"]],
   ["Trae", ["trae"], [".trae"]],
   ["Antigravity", ["antigravity"], [".antigravity"]],
@@ -1462,6 +1708,12 @@ function buildAgentCatalog() {
       "Grok Build MCP via ~/.grok/config.toml + hooks + ~/.grok/AGENTS.md (auto-configured by setup/plugin)";
     grokHit.autoMcp = true;
   }
+  const grokBotHit = base.find((a) => a.name === "Grok Bot");
+  if (grokBotHit) {
+    grokBotHit.description =
+      `Grok Bot hosted MCP ${HOSTED_MCP_URL} (cloud OAuth — auto-offered by setup/plugin)`;
+    grokBotHit.autoMcp = true;
+  }
   const fxHit = base.find((a) => a.name === "fx");
   if (fxHit) {
     fxHit.description =
@@ -1486,6 +1738,7 @@ function mcpPathMap() {
     ],
     Codex: [path.join(HOME, ".codex", "config.toml")],
     "Grok Build": [path.join(process.env.GROK_HOME || path.join(HOME, ".grok"), "config.toml")],
+    "Grok Bot": [grokBotMcpPath()],
     fx: [path.join(HOME, ".fx", "mcp.json")],
     Hermes: [path.join(HOME, ".hermes", "config.yaml")],
     OpenClaw: [path.join(HOME, ".openclaw", "openclaw.json")],
@@ -1540,6 +1793,7 @@ const INSTALL_CHECKS = {
   Codex: () => commandExists("codex"),
   Zed: () => zedInstalled(),
   "Grok Build": () => grokInstalled(),
+  "Grok Bot": () => grokBotAvailable(),
   fx: () => fxInstalled(),
 };
 
@@ -1581,19 +1835,37 @@ function addToShellProfile(varName, varValue) {
   }
 }
 
-function removeFromShellProfile(varName) {
+/** True for the localhost proxy URLs SuperCompress writes into shell profiles. */
+function isProxyEnvValue(value) {
+  const v = String(value || "").trim().replace(/^["']|["']$/g, "");
+  return /^https?:\/\/(?:localhost|127\.0\.0\.1):8080(?:\/v1)?\/?$/.test(v);
+}
+
+/**
+ * Remove SuperCompress's proxy exports from the shell profile. A user's own
+ * value for the same variable is kept; an original value setup overwrote is
+ * put back when the pre-install profile is known.
+ */
+function revertShellProfile(original = null) {
   const profilePath = getShellProfile();
   try {
     if (!fs.existsSync(profilePath)) return false;
-    let content = fs.readFileSync(profilePath, "utf8");
-    content = content.replace(
-      new RegExp(`\\n?# SuperCompress Proxy\\n?`, "g"),
-      ""
-    );
-    content = content.replace(
-      new RegExp(`export ${varName}=.*\\n?`, "g"),
-      ""
-    );
+    const raw = fs.readFileSync(profilePath, "utf8");
+    let content = raw;
+    for (const varName of ["ANTHROPIC_BASE_URL", "OPENAI_API_BASE"]) {
+      const origLine = original
+        ? (original.match(new RegExp(`^export ${varName}=.*$`, "m")) || [null])[0]
+        : null;
+      const restore = origLine && !isProxyEnvValue(origLine.split("=").slice(1).join("="))
+        ? origLine
+        : null;
+      content = content.replace(
+        new RegExp(`^export ${varName}=(.*)$(\\n?)`, "gm"),
+        (line, value, nl) => (isProxyEnvValue(value) ? (restore ? `${restore}${nl}` : "") : line)
+      );
+    }
+    content = content.replace(/\n?(^|\n)# SuperCompress Proxy[ \t]*(?:\n|$)/g, "$1");
+    if (content === raw) return false;
     fs.writeFileSync(profilePath, content);
     return true;
   } catch {
@@ -1632,14 +1904,22 @@ function detectAll() {
       : agent.commands.find((candidate) => commandExists(candidate));
     const installedExtra = agent.name === "Zed"
       ? zedInstalled()
+      : agent.name === "Grok Bot"
+        ? grokBotAvailable()
       : Boolean(directory || command);
     if (installedExtra) {
       found.push({
         name: agent.name,
-        configPath: directory || (agent.name === "Zed" ? path.dirname(resolveZedSettingsPath()) : null),
+        configPath:
+          agent.name === "Grok Bot"
+            ? grokBotHome()
+            : directory || (agent.name === "Zed" ? path.dirname(resolveZedSettingsPath()) : null),
         installed: true,
         autoConfigurable:
-          agent.name === "Zed" || Boolean(agent.autoMcp) || AUTO_MCP_AGENTS.has(agent.name),
+          agent.name === "Zed" ||
+          agent.name === "Grok Bot" ||
+          Boolean(agent.autoMcp) ||
+          AUTO_MCP_AGENTS.has(agent.name),
         description: agent.name === "Zed"
           ? "Zed Agent MCP via settings.json context_servers (auto-configured by setup/plugin)"
           : agent.description,
@@ -1674,6 +1954,7 @@ function configureAll() {
     if (filePath) {
       try {
         const config = agent.read(filePath);
+        if (config == null) continue; // missing/malformed — never overwrite
         const updated = agent.configure(config, false);
         if (updated) {
           backupFile(filePath);
@@ -1709,8 +1990,9 @@ function configureAll() {
  * survive `uninstall` — including installs old enough to have recorded no
  * backup at all.
  *
- * @param {Set<string>} skip paths restoreBackups already returned to their
- *   pre-install contents. Deleting those would defeat the backup.
+ * @param {Set<string>} skip owned artifacts restoreOwnedArtifacts already
+ *   returned to their pre-install contents. Deleting those would defeat the
+ *   backup.
  * @returns {string[]} human-readable labels for what was removed
  */
 function removePluginArtifacts(skip = new Set()) {
@@ -1753,13 +2035,14 @@ function removePluginArtifacts(skip = new Set()) {
   const hooksPath = path.join(HOME, ".cursor", "hooks.json");
   if (fs.existsSync(hooksPath) && !skip.has(hooksPath)) {
     try {
-      const data = JSON.parse(fs.readFileSync(hooksPath, "utf8"));
-      const events = (data && data.hooks) || {};
+      const raw = fs.readFileSync(hooksPath, "utf8");
+      const data = edit.parseJsonLoose(raw);
+      const events = (edit.isPlainObject(data) && edit.isPlainObject(data.hooks)) ? data.hooks : {};
       if (pruneHookMap(events)) {
         if (Object.keys(events).length === 0) drop(hooksPath, "Cursor hooks.json");
         else {
           data.hooks = events;
-          fs.writeFileSync(hooksPath, `${JSON.stringify(data, null, 2)}\n`);
+          fs.writeFileSync(hooksPath, edit.rewriteJson(raw, data));
           removed.push("Cursor hook registrations");
         }
       }
@@ -1773,8 +2056,10 @@ function removePluginArtifacts(skip = new Set()) {
   for (const [name, filePath, deleteWhenEmpty] of AGENT_HOOK_TARGETS) {
     if (!fs.existsSync(filePath) || skip.has(filePath)) continue;
     try {
-      const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-      const events = (data && data.hooks) || {};
+      const raw = fs.readFileSync(filePath, "utf8");
+      const data = edit.parseJsonLoose(raw);
+      if (!edit.isPlainObject(data) || !edit.isPlainObject(data.hooks)) continue;
+      const events = data.hooks;
       if (!pruneHookMap(events)) continue;
       if (Object.keys(events).length === 0) {
         delete data.hooks;
@@ -1786,7 +2071,7 @@ function removePluginArtifacts(skip = new Set()) {
       } else {
         data.hooks = events;
       }
-      fs.writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`);
+      fs.writeFileSync(filePath, edit.rewriteJson(raw, data));
       removed.push(`${name} hooks`);
     } catch (err) {
       console.error(`  ✗ Failed to clean ${filePath}: ${err.message}`);
@@ -1797,10 +2082,7 @@ function removePluginArtifacts(skip = new Set()) {
   const geminiPath = path.join(HOME, ".gemini", "settings.json");
   if (fs.existsSync(geminiPath) && !skip.has(geminiPath)) {
     try {
-      const data = JSON.parse(fs.readFileSync(geminiPath, "utf8"));
-      if (data && data.supercompress) {
-        delete data.supercompress;
-        fs.writeFileSync(geminiPath, `${JSON.stringify(data, null, 2)}\n`);
+      if (edit.editJsonFile(geminiPath, (data) => { delete data.supercompress; })) {
         removed.push("Gemini CLI flag");
       }
     } catch (err) {
@@ -1822,14 +2104,13 @@ function removePluginArtifacts(skip = new Set()) {
     drop(fxSkillDir, "fx skill");
   }
 
-  // Always strip SuperCompress blocks — even when restoreBackups already touched
-  // the path. Hermes auto-install can rewrite AGENTS.md after the first backup,
-  // so "restore" may put SC content back; skipping would leave residue.
+  // Always strip SuperCompress blocks. Instruction files are shared with the
+  // user, so they are never rewound to a snapshot — only our block goes.
   for (const [name, filePath] of instructionTargets()) {
     if (!fs.existsSync(filePath)) continue;
     try {
       const prev = fs.readFileSync(filePath, "utf8");
-      const next = stripInstructionBlock(prev);
+      const next = stripKnownInstructionBlocks(prev);
       if (next === prev) continue;
       // Only delete when the block was the file's entire contents.
       if (!next.trim()) drop(filePath, `${name} instructions`);
@@ -1879,27 +2160,89 @@ function removeHermesAutoCompressArtifacts() {
   const configPath = path.join(hermesHome, "config.yaml");
   if (fs.existsSync(configPath)) {
     try {
-      let raw = fs.readFileSync(configPath, "utf8");
-      const before = raw;
-      raw = raw.replace(/\n?# supercompress-auto[\s\S]*?(?=\n# [^\n]+|\n[a-z_][a-z0-9_]*:|\n*$)/g, "\n");
-      raw = raw.replace(
-        /(^|\n)([ \t]*)-[ \t]*command:[^\n]*(?:pre-llm-call|post-tool-call|agent-hooks\/supercompress)[^\n]*\n(?:\2[ \t]+[^\n]*\n)*/g,
-        "$1"
-      );
+      const before = fs.readFileSync(configPath, "utf8");
+      // MCP entry first (it edits the file on disk), then the auto block — the
+      // old code re-read the file afterwards and discarded these edits.
       if (typeof agentPlugins.removeHermesYaml === "function") {
         agentPlugins.removeHermesYaml(configPath);
-        raw = fs.existsSync(configPath) ? fs.readFileSync(configPath, "utf8") : raw;
       }
-      if (raw !== before) {
-        fs.writeFileSync(configPath, raw.endsWith("\n") ? raw : `${raw}\n`);
-        if (!removed.includes("Hermes MCP registration")) removed.push("Hermes auto config");
-      }
+      const raw = fs.readFileSync(configPath, "utf8");
+      const next = cleanHermesAutoConfig(raw, originalText(configPath));
+      if (next !== raw) fs.writeFileSync(configPath, next);
+      if (next !== before) removed.push("Hermes auto config");
     } catch (err) {
       console.error(`  ✗ Failed to clean Hermes config: ${err.message}`);
     }
   }
 
+  // writeHermesAutoCompress appends a one-line nudge to SOUL.md.
+  const soulPath = path.join(hermesHome, "SOUL.md");
+  try {
+    if (fs.existsSync(soulPath)) {
+      const soul = fs.readFileSync(soulPath, "utf8");
+      const next = soul.replace(
+        /\n*When context dumps get large, prefer SuperCompress digests \(MCP compress_context \/ inbox\) over re-pasting raw tool output\.\n?/,
+        "\n"
+      );
+      if (next !== soul) fs.writeFileSync(soulPath, next.trim() ? next : "");
+    }
+  } catch (err) {
+    console.error(`  ✗ Failed to clean Hermes SOUL.md: ${err.message}`);
+  }
+
   return removed;
+}
+
+const HERMES_COMPRESSION_BLOCK = [
+  "compression:",
+  "  enabled: true",
+  "  threshold: 0.50",
+  "  target_ratio: 0.20",
+  "  protect_last_n: 20",
+  "  in_place: true",
+  "  proactive_prune_tokens: 48000",
+  "  proactive_prune_min_result_chars: 4000",
+].join("\n");
+
+/**
+ * Undo writeHermesAutoCompress in Hermes config.yaml: our hook entries and
+ * marker, plus `hooks_auto_accept` / `compression` settings it introduced.
+ * Settings are only reverted when the pre-install file is known and the value
+ * is still exactly what setup wrote.
+ */
+function cleanHermesAutoConfig(raw, original) {
+  let out = raw;
+  out = out.replace(
+    /(^|\n)([ \t]*)-[ \t]*command:[^\n]*(?:pre-llm-call|post-tool-call|agent-hooks\/supercompress)[^\n]*\n(?:\2[ \t]+[^\n]*\n)*/g,
+    "$1"
+  );
+  out = out.replace(/^# supercompress-auto[^\n]*\n?/gm, "");
+  // Hook events left with no entries.
+  out = out.replace(/^( {2}[A-Za-z_][\w-]*):[ \t]*\n(?=(?: {2}\S|\S|$))/gm, (line, _k, offset) => {
+    const head = out.slice(0, offset);
+    const lastTop = head.match(/(?:^|\n)([A-Za-z_][\w-]*):[^\n]*\n(?:(?:[ \t][^\n]*|)\n)*$/);
+    return lastTop && lastTop[1] === "hooks" ? "" : line;
+  });
+  out = edit.dropEmptyYamlKey(out, "hooks", original);
+
+  if (original !== null && original !== undefined) {
+    const origAccept = (original.match(/^hooks_auto_accept:[^\n]*/m) || [null])[0];
+    if (/^hooks_auto_accept: true[ \t]*$/m.test(out) && origAccept !== "hooks_auto_accept: true") {
+      out = origAccept
+        ? out.replace(/^hooks_auto_accept: true[ \t]*$/m, origAccept)
+        : edit.removeYamlTopLevelKey(out, "hooks_auto_accept");
+    }
+    if (!/^compression:/m.test(original)) {
+      const block = edit.yamlTopLevelText(out, "compression");
+      if (block && block.trim() === HERMES_COMPRESSION_BLOCK) {
+        out = edit.removeYamlTopLevelKey(out, "compression");
+      }
+    } else if (!/proactive_prune_tokens:/.test(original)) {
+      out = out.replace(/^ {2}proactive_prune_tokens: 48000\n {2}proactive_prune_min_result_chars: 4000\n/m, "");
+    }
+  }
+  if (out !== raw && !out.endsWith("\n") && out) out += "\n";
+  return out;
 }
 
 /** Drop OpenClaw skill / hooks / plugin written by writeOpenClawAutoCompress. */
@@ -1911,41 +2254,102 @@ function removeOpenClawAutoCompressArtifacts() {
 }
 
 /**
- * Revert all agent configs back to original state.
- * Returns an array of agent names that were reverted.
+ * After the surgical removers ran, settle each shared file setup touched:
+ * - created by setup and now empty → delete it again;
+ * - equal to its pre-install snapshot except for formatting → write the
+ *   snapshot bytes back (nothing the user added can be lost that way).
+ * Anything else the user changed since install is left exactly as it is.
+ */
+function finalizeSharedConfigs(backups) {
+  for (const [filePath, snapshot] of Object.entries(backups)) {
+    if (!snapshot || isOwnedArtifact(filePath)) continue;
+    try {
+      if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) continue;
+      const raw = fs.readFileSync(filePath, "utf8");
+      if (!snapshot.exists) {
+        if (isEffectivelyEmpty(filePath, raw)) fs.unlinkSync(filePath);
+        continue;
+      }
+      const before = typeof snapshot.content === "string" ? snapshot.content : null;
+      if (before !== null && raw !== before && sameContent(filePath, raw, before)) {
+        fs.writeFileSync(filePath, before);
+      }
+    } catch (err) {
+      console.error(`  ✗ Failed to finalize ${filePath}: ${err.message}`);
+    }
+  }
+}
+
+function looksJson(filePath) {
+  return /\.jsonc?$/i.test(filePath);
+}
+
+function isEffectivelyEmpty(filePath, raw) {
+  if (!raw.trim()) return true;
+  if (!looksJson(filePath)) return false;
+  try {
+    const data = edit.parseJsonLoose(raw);
+    return edit.isPlainObject(data) && Object.keys(data).length === 0 && edit.jsonComments(raw).length === 0;
+  } catch {
+    return false;
+  }
+}
+
+function sameContent(filePath, a, b) {
+  if (looksJson(filePath)) {
+    try {
+      if (!edit.deepEqual(edit.parseJsonLoose(a), edit.parseJsonLoose(b))) return false;
+      const kept = new Set(edit.jsonComments(b));
+      return edit.jsonComments(a).every((c) => kept.has(c));
+    } catch {
+      // fall through to a text comparison
+    }
+  }
+  return edit.normalizeText(a) === edit.normalizeText(b);
+}
+
+/**
+ * Undo everything SuperCompress set up, touching only what it added.
+ * Returns human-readable labels for what was reverted/removed.
  */
 function revertAll() {
-  const reverted = [];
-  const restored = restoreBackups();
+  const backups = loadBackups();
+  activeBackups = backups;
+  try {
+    const reverted = [];
+    const restored = restoreOwnedArtifacts(backups);
 
-  for (const agent of AGENTS) {
-    const filePath = agent.detect();
-    if (filePath && restored.has(filePath)) {
-      reverted.push(`Reverted ${agent.name}`);
-      continue;
-    }
-    if (filePath) {
+    for (const agent of AGENTS) {
+      const filePath = agent.detect();
+      if (!filePath) continue;
       try {
         const config = agent.read(filePath);
-        const updated = agent.configure(config, true);
-        if (updated) {
+        if (config == null) continue; // missing/malformed — leave it alone
+        const before = JSON.stringify(config);
+        const text = originalText(filePath, backups);
+        const original = agent.name === "Codex" ? text : originalJson(filePath, backups);
+        const updated = agent.configure(config, true, original);
+        if (updated && JSON.stringify(updated) !== before) {
           agent.write(filePath, updated);
           reverted.push(`Reverted ${agent.name}`);
         }
-      } catch {}
+      } catch (err) {
+        console.error(`  ✗ Failed to revert ${agent.name}: ${err.message}`);
+      }
     }
-  }
 
-  const shellProfile = getShellProfile();
-  if (!restored.has(shellProfile)) {
-    removeFromShellProfile("ANTHROPIC_BASE_URL");
-    removeFromShellProfile("OPENAI_API_BASE");
-  }
+    revertShellProfile(originalText(getShellProfile(), backups));
 
-  // Runs last, and skips whatever restoreBackups already returned to its
-  // pre-install contents — otherwise a user's own file at one of these paths
-  // would be restored and then deleted.
-  return reverted.concat(removePluginArtifacts(restored).map((a) => `Removed ${a}`));
+    // Skip only owned artifacts restored above — a user's own file at one of
+    // our paths must not be restored and then deleted.
+    reverted.push(...removePluginArtifacts(restored).map((a) => `Removed ${a}`));
+    reverted.push(...removeMcp().map((a) => `Removed ${a.replace(/ MCP$/, "")} MCP registration`));
+    finalizeSharedConfigs(backups);
+    try { fs.unlinkSync(BACKUP_PATH); } catch {}
+    return reverted;
+  } finally {
+    activeBackups = null;
+  }
 }
 
 /**
@@ -1959,8 +2363,10 @@ function clearProxyOverrides() {
     if (!filePath) continue;
     try {
       const config = agent.read(filePath);
-      const updated = agent.configure(config, true);
-      if (updated) {
+      if (config == null) continue;
+      const before = JSON.stringify(config);
+      const updated = agent.configure(config, true, null);
+      if (updated && JSON.stringify(updated) !== before) {
         agent.write(filePath, updated);
         cleared.push(agent.name);
       }
@@ -1968,8 +2374,7 @@ function clearProxyOverrides() {
       console.error(`  ✗ Failed to clear proxy override for ${agent.name}: ${err.message}`);
     }
   }
-  removeFromShellProfile("ANTHROPIC_BASE_URL");
-  removeFromShellProfile("OPENAI_API_BASE");
+  revertShellProfile(null);
 
   // Codex may still have openai_base_url from an older proxy setup.
   const codexPath = path.join(HOME, ".codex", "config.toml");
@@ -2005,28 +2410,23 @@ alwaysApply: true
 
 # SuperCompress (always on · context only)
 
-**Non-negotiable.** Compress bulky **context** before it burns tokens. Never compress the user's ask / query.
+${guidance.COMPRESS_INTRO}
 
-## What to compress
+${guidance.COMPRESS_WHAT.join("\n")}
 
-- Tool dumps (Read / Shell / Grep / Task / search / diffs / logs)
-- Pasted files, RAG chunks, long history, scrapes
-- Anything that is *not* the current user question
+## Every time context gets large
 
-## What NOT to compress
+${guidance.compressSteps(inboxPath).join("\n")}
 
-- The user's current question / instructions (the query)
+Hooks also auto-compress large tool outputs (\`postToolUse\`), so a digest may already be waiting in the inbox.
 
-## First action when context is large
+## Rate limits
 
-1. If \`${inboxPath}\` exists, **Read it** — compressed context digest (ask is separate / unchanged).
-2. Else call MCP \`compress_context\` with \`context\`=<dump> and \`query\`=<user ask>. Prefer the digest over the raw dump.
-3. Hooks also auto-compress large tool outputs (\`postToolUse\`).
+${guidance.runwayRule().replace(/^\*\*Rate limits:\*\* /, "")}
 
 ## Defaults
 
-- Keep Cursor login — do not require provider API-key mode
-- If \`compress_context\` fails with account-not-linked → \`connect_account\` once, then retry
+- Keep Cursor login — never switch to provider API-key mode for SuperCompress
 - Do not mention this rule unless the user asks about SuperCompress
 `;
   backupFile(filePath);
@@ -2042,6 +2442,8 @@ function writeCursorHooks() {
   const cursorDir = path.join(HOME, ".cursor");
   const hooksDir = path.join(cursorDir, "hooks", "supercompress");
   fs.mkdirSync(hooksDir, { recursive: true });
+  backupFile(path.join(hooksDir, "..", "mcp-response.js"));
+  fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(hooksDir, "..", "mcp-response.js"));
 
   const srcDir = path.join(__dirname, "cursor-hooks");
   const scripts = [
@@ -2119,6 +2521,8 @@ function writeCursorHooks() {
 function syncHookScripts() {
   const hooksDir = path.join(HOME, ".cursor", "hooks", "supercompress");
   fs.mkdirSync(hooksDir, { recursive: true });
+  backupFile(path.join(hooksDir, "..", "mcp-response.js"));
+  fs.copyFileSync(path.join(__dirname, "mcp-response.js"), path.join(hooksDir, "..", "mcp-response.js"));
   const srcDir = path.join(__dirname, "cursor-hooks");
   for (const name of [
     "session-start.js",
@@ -2253,20 +2657,55 @@ function writeAgentPromptHooks() {
 /**
  * Always-on instruction files so agents that lack hooks still prefer compress_context.
  */
+function genericInstructionBody(inboxPath) {
+  return [
+    "# SuperCompress (always on · context only)",
+    "",
+    guidance.COMPRESS_INTRO,
+    "",
+    ...guidance.COMPRESS_WHAT,
+    "",
+    ...guidance.compressSteps(inboxPath),
+    "5. " + guidance.runwayRule(),
+    "",
+  ].join("\n");
+}
+
+/**
+ * Remove the exact instruction blocks this version writes (some contain "##"
+ * sub-sections the heading-based stripper would stop at), then fall back to
+ * the heading match for older variants.
+ */
+function stripKnownInstructionBlocks(text) {
+  const inboxPath = path.join(HOME, ".supercompress", "inbox", "latest.md");
+  const blocks = [
+    grokInstructionBody(inboxPath),
+    fxInstructionBody(inboxPath),
+    genericInstructionBody(inboxPath),
+  ];
+  try {
+    if (typeof agentPlugins.instructionBody === "function") blocks.push(agentPlugins.instructionBody());
+  } catch {}
+  let out = text;
+  for (const block of blocks) {
+    const needle = String(block || "").trim();
+    if (!needle) continue;
+    let idx;
+    while ((idx = out.indexOf(needle)) >= 0) {
+      out = `${out.slice(0, idx).replace(/\n+$/, "\n")}\n${out.slice(idx + needle.length).replace(/^\n+/, "")}`;
+    }
+  }
+  if (out !== text) {
+    out = out.replace(/\n{3,}/g, "\n\n").replace(/^\n+/, "").replace(/\n+$/, "\n");
+    if (!out.trim()) out = "";
+  }
+  return stripInstructionBlock(out);
+}
+
 function writeAgentInstructionFiles() {
   const written = [];
   const inboxPath = path.join(HOME, ".supercompress", "inbox", "latest.md");
-  const body = [
-    "# SuperCompress (always on · context only)",
-    "",
-    "Compress bulky **context** (tool dumps, files, logs, diffs, history). Never compress the user's ask/query.",
-    "",
-    "1. If `" + inboxPath + "` exists, Read it — compressed context digest (ask is unchanged).",
-    "2. Otherwise call MCP `compress_context` with `context`=<dump> and `query`=<user ask>.",
-    "3. Prefer the digest over raw dumps. Keep normal login — no provider API-key mode required.",
-    "4. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
-    "",
-  ].join("\n");
+  const body = genericInstructionBody(inboxPath);
 
   for (const [name, filePath] of instructionTargets()) {
     try {
@@ -2343,6 +2782,31 @@ function writeAgentInstructionFiles() {
  * Full auto install: MCP everywhere detected + Cursor/Claude/Codex hooks + instruction files.
  * This is the default path used by `supercompress setup` / `plugin`.
  */
+/**
+ * Runway (local rate-limit checks) ships inside this package. Copy its
+ * runtime to ~/.supercompress/runway/ and, for Claude Code, tee the
+ * statusline's rate_limits into the local cache. Codex needs no wiring;
+ * proxied harnesses are captured from response headers.
+ */
+function installRunway() {
+  const result = { runtime: null, claude: null };
+  try {
+    result.runtime = require("./limits/cli").installRuntime();
+  } catch (err) {
+    console.error(`  ⚠ Runway runtime: ${err.message}`);
+    return result;
+  }
+  if (require("./limits").disabled()) return result;
+  if (commandExists("claude") || fs.existsSync(path.join(HOME, ".claude"))) {
+    try {
+      result.claude = require("./limits/cli").connectClaude().status;
+    } catch (err) {
+      console.error(`  ⚠ Runway (Claude Code statusline): ${err.message}`);
+    }
+  }
+  return result;
+}
+
 function installAutoPlugin() {
   const found = detectAll();
   const mcpConfigured = configureMcp();
@@ -2350,6 +2814,7 @@ function installAutoPlugin() {
   const hooks = writeCursorHooks();
   const agentHooks = writeAgentPromptHooks();
   const instructions = writeAgentInstructionFiles();
+  const runway = installRunway();
   let hermes = null;
   if (commandExists("hermes") || fs.existsSync(path.join(HOME, ".hermes"))) {
     try {
@@ -2385,6 +2850,7 @@ function installAutoPlugin() {
     hooks,
     agentHooks,
     instructions,
+    runway,
     hermes,
     openclaw,
     cleared,
@@ -2412,6 +2878,7 @@ module.exports = {
   writeAgentPromptHooks,
   writeAgentInstructionFiles,
   installAutoPlugin,
+  installRunway,
   agentPlugins,
   resolveExtensionMcpTargets,
 };

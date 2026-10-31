@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Compression Arena — SuperCompress</title>
-  <meta name="description" content="Paste your context and question. Run SuperCompress on your own dump — see token reduction, evidence retention, and optional comparisons. Challenge our benchmarks." />
+  <title>Compression Arena | SuperCompress</title>
+  <meta name="description" content="Paste your context and question. Run SuperCompress on your own dump, see token reduction, evidence retention, and optional comparisons. Challenge our benchmarks." />
   <meta name="keywords" content="prompt compression benchmark, context compression arena, SuperCompress, LLM token savings" />
   <link rel="canonical" href="https://www.supercompress.dev/arena" />
   <meta property="og:title" content="SuperCompress Compression Arena" />
-  <meta property="og:description" content="Paste context. Compress with SuperCompress. Inspect the receipt — optional comparison to other methods on identical inputs." />
+  <meta property="og:description" content="Paste context. Compress with SuperCompress. Inspect the receipt, optional comparison to other methods on identical inputs." />
   <meta property="og:url" content="https://www.supercompress.dev/arena" />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
@@ -25,7 +25,7 @@
 
   <main class="arena-shell">
     <p class="arena-local-banner is-hidden" id="arena-local-banner" hidden>
-      Local dev — Headroom column needs <code>vercel dev</code> or <code>HEADROOM_API_BASE</code>.
+      Local dev, Headroom column needs <code>vercel dev</code> or <code>HEADROOM_API_BASE</code>.
     </p>
 
     <header class="arena-hero">
@@ -34,8 +34,7 @@
       <h1 class="arena-brand-lockup">Super<em>Compress</em></h1>
       <p class="arena-hero-line">Compression Arena</p>
       <p class="arena-hero-sub">
-        Paste context + a question. <strong>SuperCompress</strong> compresses against your query —
-        keeping original evidence, dropping what doesn't matter. Optionally compare to other methods on the
+        Paste context + a question. <strong>SuperCompress</strong> compresses against your query, keeping original evidence, dropping what doesn't matter. Optionally compare to other methods on the
         <em>same</em> inputs. Inspect the JSON receipt and share your result.
       </p>
 
@@ -43,22 +42,22 @@
         <article class="arena-proof-card arena-proof-card--cut">
           <div class="arena-kpi-wash" id="arena-wash-cut" aria-hidden="true"></div>
           <div class="arena-proof-body">
-            <p class="arena-proof-val">64%</p>
-            <p class="arena-proof-label">Mean context reduction (our B5 suite)</p>
+            <p class="arena-proof-val">Query-aware</p>
+            <p class="arena-proof-label">Reads the question; keeps only the lines that answer it</p>
           </div>
         </article>
         <article class="arena-proof-card">
           <div class="arena-kpi-wash" id="arena-wash-pass" aria-hidden="true"></div>
           <div class="arena-proof-body">
-            <p class="arena-proof-val">24/24</p>
-            <p class="arena-proof-label">Benchmark evidence passes</p>
+            <p class="arena-proof-val">Extractive</p>
+            <p class="arena-proof-label">Original wording, IDs, paths, stack traces unchanged</p>
           </div>
         </article>
         <article class="arena-proof-card">
           <div class="arena-kpi-wash" id="arena-wash-max" aria-hidden="true"></div>
           <div class="arena-proof-body">
-            <p class="arena-proof-val">96.6%</p>
-            <p class="arena-proof-label">Max reduction @ ≥99% retention</p>
+            <p class="arena-proof-val">Hosted API</p>
+            <p class="arena-proof-label">Neural Keep on the service · MCP + hooks for agents</p>
           </div>
         </article>
       </div>
@@ -117,7 +116,7 @@
       <div class="arena-cta-band" id="arena-cta-band" hidden>
         <div class="arena-cta-copy">
           <h3>Ship this in your agent loop</h3>
-          <p id="arena-cta-blurb">Compress bulky tool output before every model call — query-aware, extractive, reversible.</p>
+          <p id="arena-cta-blurb">Compress bulky tool output before every model call, query-aware, extractive, reversible.</p>
         </div>
         <div class="arena-cta-actions">
           <a class="arena-btn arena-btn-primary" href="/onboard">Connect Cursor / MCP</a>
@@ -137,7 +136,7 @@
     <section class="arena-board" aria-label="Community comparisons">
       <h2>Community comparisons</h2>
       <p>
-        Side-by-side runs where Headroom came out ahead. We publish these openly — marketing benchmarks only matter if the comparison is real.
+        Side-by-side runs where Headroom came out ahead. We publish these openly, marketing benchmarks only matter if the comparison is real.
       </p>
       <ul class="arena-board-list" id="arena-board-list"></ul>
     </section>

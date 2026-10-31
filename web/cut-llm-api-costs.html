@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>How to Cut LLM API Costs (OpenAI, Claude, Gemini) | SuperCompress</title>
+  <meta name="description" content="Practical ways to cut LLM API costs: send fewer input tokens, use prompt caching, trim history, and compress bulky context with SuperCompress, which keeps only the lines that answer the current question." />
+  <meta name="keywords" content="cut llm api costs, reduce llm api costs, reduce openai api costs, reduce claude api costs, lower llm token costs" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="How to cut LLM API costs" />
+  <meta property="og:description" content="Practical ways to cut LLM API costs: send fewer input tokens, use prompt caching, trim history, and compress bulky context with SuperCompress, which keeps only the lines that answer the current question." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/cut-llm-api-costs" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="How to cut LLM API costs" />
+  <meta name="twitter:description" content="Practical ways to cut LLM API costs: send fewer input tokens, use prompt caching, trim history, and compress bulky context with SuperCompress, which keeps only the lines that answer the current question." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/cut-llm-api-costs" />
+  <meta property="article:published_time" content="2026-10-17T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-18" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How to cut LLM API costs",
+  "description": "Practical ways to cut LLM API costs: send fewer input tokens, use prompt caching, trim history, and compress bulky context with SuperCompress, which keeps only the lines that answer the current question.",
+  "datePublished": "2026-10-17",
+  "dateModified": "2026-10-20",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/cut-llm-api-costs"
+  },
+  "about": {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Linux, Windows",
+    "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
+    "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
+    "sameAs": [
+      "https://github.com/Supercompress/Supercompress"
+    ]
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SuperCompress",
+  "url": "https://www.supercompress.dev/",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Linux, Windows",
+  "description": "Hosted query-aware context compression for coding agents and LLM apps. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.",
+  "installUrl": "https://www.npmjs.com/package/supercompress-proxy",
+  "sameAs": [
+    "https://github.com/Supercompress/Supercompress"
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Guides",
+      "item": "https://www.supercompress.dev/blog"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Cut LLM API costs",
+      "item": "https://www.supercompress.dev/cut-llm-api-costs"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is the best way to cut LLM API costs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Send fewer input tokens. Cache stable prefixes, trim old history, retrieve fewer chunks, and compress bulky context against the current question with a tool such as SuperCompress."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does compressing prompts reduce OpenAI and Claude bills?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Fewer billed input tokens lower metered spend, but check total cost per successful task, since caching, retries and extra turns also matter."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Will compression hurt answer quality?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "SuperCompress is extractive: it keeps original lines verbatim rather than rewriting them. Still, test on your own tasks and keep files the model must edit whole."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress work with any model provider?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Its output is plain text, so you can send it to OpenAI, Anthropic, Google or any other model."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Guide · Updated 2026-10-18</p>
+  <h1>How to cut LLM API costs</h1>
+  <p class="seo-lead">The most reliable way to cut LLM API costs is to send fewer input tokens per call, because input (history, retrieved documents, tool output) is usually most of what you pay for. Use prompt caching for stable prefixes, trim old history, and compress bulky context before the call. SuperCompress does the last part: a hosted model keeps the original lines that answer the current question and drops the rest, so your OpenAI, Claude or Gemini call gets smaller without paraphrasing anything.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/alternatives">All alternatives</a>
+    <a href="/alternatives/headroom">Headroom alternative</a>
+    <a href="/alternatives/caveman">Caveman alternative</a>
+    <a href="/cut-llm-api-costs" aria-current="page">Cut LLM API costs</a>
+    <a href="/context-compression-for-coding-agents">Approaches compared</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+  <div class="article-prose">
+    <h2 id="where-cost-comes-from">Where the money goes</h2>
+    <p>Providers bill per token in and per token out. In chatbots, RAG apps and coding agents, the input side grows every turn: the whole conversation, every retrieved chunk and every tool result is sent again. The reply is usually small by comparison. So the biggest lever is the size of what you send.</p>
+    <h2 id="steps">Steps that work, in order</h2>
+    <ol>
+      <li><strong>Measure first.</strong> Log input and output tokens per call and per feature so you know which calls are expensive.</li>
+      <li><strong>Use prompt caching</strong> for long system prompts and other prefixes that do not change. Check your provider's docs for how cached input is billed.</li>
+      <li><strong>Trim history.</strong> Drop or compact old turns that no longer matter.</li>
+      <li><strong>Retrieve less, then compress.</strong> Fetch fewer chunks, then compress what is left against the question so only relevant lines reach the model.</li>
+      <li><strong>Compress tool output.</strong> In agents, large logs, diffs and MCP results are the usual culprit.</li>
+    </ol>
+    <h2 id="supercompress">Where SuperCompress fits</h2>
+    <p>SuperCompress sits right before your model call. Send the bulky part as <code>context</code> and the user's ask as <code>query</code>; it returns the original lines that matter and reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see the effect on your own traffic. The query itself is never compressed.</p>
+    <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"context":"&lt;large context&gt;","query":"&lt;the user question&gt;"}'</code></pre>
+    <h2 id="how-supercompress-works">How SuperCompress works</h2>
+    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
+    <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
+
+    <h2 id="compare">Compression vs other cost tools</h2>
+    <table>
+      <thead><tr><th>Approach</th><th>What it does</th><th>Combine with compression?</th></tr></thead>
+      <tbody>
+        <tr><td>Prompt caching</td><td>Cheaper reuse of identical prefixes</td><td>Yes, compress the changing part, cache the stable part</td></tr>
+        <tr><td>Summarization</td><td>Rewrites context in fewer words, can lose exact details</td><td>Use SuperCompress where details must stay verbatim</td></tr>
+        <tr><td>Truncation</td><td>Keeps the first or last part, may drop the evidence</td><td>Compression picks lines by relevance instead of position</td></tr>
+        <tr><td>Shorter replies (for example Caveman)</td><td>Cuts output tokens</td><td>Yes, it acts on the other side</td></tr>
+      </tbody>
+    </table>
+    <h2 id="measure">How to pick fairly</h2>
+    <p>Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see <a href="https://arxiv.org/abs/2607.12161" rel="noopener" target="_blank">PointFive's end-to-end study</a>, the <a href="https://github.com/daseinlabs/code-compression-bench" rel="noopener" target="_blank">code-compression-bench</a> SWE-bench runs, <a href="https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/" rel="noopener" target="_blank">JetBrains' rtk trial</a> and the <a href="https://pi-infected.github.io/token-harness-optimizer-leaderboard/" rel="noopener" target="_blank">THOL leaderboard</a>; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.</p>
+
+    <p>Provider-specific guides: <a href="/reduce-openai-costs">reduce OpenAI costs</a>, <a href="/reduce-claude-costs">reduce Claude costs</a>, <a href="/reduce-gemini-costs">reduce Gemini costs</a>, <a href="/reduce-claude-code-token-usage">reduce Claude Code token usage</a>, <a href="/reduce-cursor-token-usage">reduce Cursor token usage</a>.</p>
+
+    <h2 id="install">Try it</h2>
+    <p>One command installs the CLI and wires the hosted compressor into every coding agent it finds on your machine (Claude Code, Cursor, Codex, Windsurf, Cline, Gemini CLI, OpenCode and more). Then <code>supercompress doctor</code> shows a health check per agent.</p>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+    <p>Building your own app instead? Call the <a href="https://docs.supercompress.dev/api-reference">hosted API</a> with a key from the <a href="/dashboard?signup=1">dashboard</a>.</p>
+    <h2 id="faq">FAQ</h2>
+    <h3>What is the best way to cut LLM API costs?</h3>
+    <p>Send fewer input tokens. Cache stable prefixes, trim old history, retrieve fewer chunks, and compress bulky context against the current question with a tool such as SuperCompress.</p>
+    <h3>Does compressing prompts reduce OpenAI and Claude bills?</h3>
+    <p>Fewer billed input tokens lower metered spend, but check total cost per successful task, since caching, retries and extra turns also matter.</p>
+    <h3>Will compression hurt answer quality?</h3>
+    <p>SuperCompress is extractive: it keeps original lines verbatim rather than rewriting them. Still, test on your own tasks and keep files the model must edit whole.</p>
+    <h3>Does SuperCompress work with any model provider?</h3>
+    <p>Yes. Its output is plain text, so you can send it to OpenAI, Anthropic, Google or any other model.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

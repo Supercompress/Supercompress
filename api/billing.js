@@ -293,13 +293,13 @@ async function handleGet(req, res, user) {
     default_credit_limit_usd: DEFAULT_CREDIT_LIMIT_USD,
     min_credit_limit_usd: MIN_CREDIT_LIMIT_USD,
     max_credit_limit_usd: MAX_CREDIT_LIMIT_USD,
-    limit_reached: !payg && !isComped(claims) && !legacyMetered && freeRemaining === 0,
+    limit_reached: !isComped(claims) && !legacyMetered && freeRemaining === 0 && !(creditBalance > 0),
     upgrade_url: "https://www.supercompress.dev/dashboard#billing",
     paywall:
-      !payg && !isComped(claims) && !legacyMetered && freeRemaining === 0
+      !isComped(claims) && !legacyMetered && freeRemaining === 0 && !(creditBalance > 0)
         ? {
             title: "Compression paused — free allowance used",
-            detail: "You've hit your free 5M tokens this month. Add a payment method to unlock.",
+            detail: "You've used your free 1M tokens this month. Add prepaid credits to resume ($10 minimum).",
             cta: "Unlock compression",
             price: "$0.10 / 1M tokens after free",
           }

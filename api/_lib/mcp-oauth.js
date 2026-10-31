@@ -3,9 +3,15 @@
  * authorization codes, and access tokens that are real sc_live_ API keys
  * (so /compress and hosted MCP keep working unchanged).
  *
- * Storage: Firestore in production; in-memory when SC_OAUTH_MEMORY=1 (unit tests).
+ * Storage:
+ *   - SC_OAUTH_MEMORY=1 → in-memory (unit tests)
+ *   - SUPERCOMPRESS_USE_FIRESTORE off → GitHub Gist (production default;
+ *     Cloud Firestore API is not enabled on this project)
+ *   - SUPERCOMPRESS_USE_FIRESTORE=1 → Firestore
  */
 const crypto = require("crypto");
+const { skipFirestore } = require("./firebase-off");
+const { gistConfigured, loadGistStore, saveGistStore } = require("./gist-store");
 
 const SITE = "https://www.supercompress.dev";
 const ISSUER = SITE;
@@ -27,8 +33,11 @@ const mem = {
 };
 
 function useMemory() {
-  // Unit tests only. Production always uses Firestore (same as device-link secrets).
   return process.env.SC_OAUTH_MEMORY === "1";
+}
+
+function useGist() {
+  return !useMemory() && skipFirestore();
 }
 
 function db() {
@@ -41,6 +50,26 @@ function db() {
     throw err;
   }
   return admin.firestore();
+}
+
+function oauthUnavailable(message) {
+  const err = new Error(message);
+  err.status = 503;
+  err.code = "oauth_unavailable";
+  return err;
+}
+
+async function withGistOauth(mutator) {
+  if (!gistConfigured()) {
+    throw oauthUnavailable("OAuth requires Gist store while Firestore is disabled");
+  }
+  const store = (await loadGistStore()) || {};
+  if (!store.oauth_clients || typeof store.oauth_clients !== "object") store.oauth_clients = {};
+  if (!store.oauth_auth_codes || typeof store.oauth_auth_codes !== "object") store.oauth_auth_codes = {};
+  if (!store.oauth_refresh || typeof store.oauth_refresh !== "object") store.oauth_refresh = {};
+  const result = await mutator(store);
+  await saveGistStore(store);
+  return result;
 }
 
 function issuerMetadata() {
@@ -150,6 +179,12 @@ async function saveClient(client) {
     mem.clients.set(client.client_id, client);
     return client;
   }
+  if (useGist()) {
+    await withGistOauth((store) => {
+      store.oauth_clients[client.client_id] = { ...(store.oauth_clients[client.client_id] || {}), ...client };
+    });
+    return client;
+  }
   await db().collection("oauth_clients").doc(client.client_id).set(client, { merge: true });
   return client;
 }
@@ -158,6 +193,11 @@ async function getClient(clientId) {
   const id = String(clientId || "").trim();
   if (!id) return null;
   if (useMemory()) return mem.clients.get(id) || null;
+  if (useGist()) {
+    if (!gistConfigured()) return null;
+    const store = (await loadGistStore()) || {};
+    return store.oauth_clients?.[id] || null;
+  }
   const snap = await db().collection("oauth_clients").doc(id).get();
   return snap.exists ? snap.data() : null;
 }
@@ -248,6 +288,12 @@ async function saveCode(record) {
     mem.codes.set(record.code, record);
     return;
   }
+  if (useGist()) {
+    await withGistOauth((store) => {
+      store.oauth_auth_codes[record.code] = record;
+    });
+    return;
+  }
   await db().collection("oauth_auth_codes").doc(record.code).set(record);
 }
 
@@ -259,6 +305,13 @@ async function takeCode(code) {
     if (!rec) return null;
     mem.codes.delete(id);
     return rec;
+  }
+  if (useGist()) {
+    return withGistOauth((store) => {
+      const rec = store.oauth_auth_codes[id] || null;
+      if (rec) delete store.oauth_auth_codes[id];
+      return rec;
+    });
   }
   const ref = db().collection("oauth_auth_codes").doc(id);
   return db().runTransaction(async (tx) => {
@@ -275,6 +328,12 @@ async function saveRefresh(record) {
     mem.refresh.set(record.refresh_token, record);
     return;
   }
+  if (useGist()) {
+    await withGistOauth((store) => {
+      store.oauth_refresh[record.refresh_token] = record;
+    });
+    return;
+  }
   await db().collection("oauth_refresh").doc(record.refresh_token).set(record);
 }
 
@@ -282,6 +341,11 @@ async function getRefresh(token) {
   const id = String(token || "").trim();
   if (!id) return null;
   if (useMemory()) return mem.refresh.get(id) || null;
+  if (useGist()) {
+    if (!gistConfigured()) return null;
+    const store = (await loadGistStore()) || {};
+    return store.oauth_refresh?.[id] || null;
+  }
   const snap = await db().collection("oauth_refresh").doc(id).get();
   return snap.exists ? snap.data() : null;
 }
@@ -291,6 +355,12 @@ async function deleteRefresh(token) {
   if (!id) return;
   if (useMemory()) {
     mem.refresh.delete(id);
+    return;
+  }
+  if (useGist()) {
+    await withGistOauth((store) => {
+      delete store.oauth_refresh[id];
+    });
     return;
   }
   await db().collection("oauth_refresh").doc(id).delete().catch(() => {});

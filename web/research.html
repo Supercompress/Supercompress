@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress — Research, Citation & Benchmarks for LLM Prompt Compression</title>
-  <meta name="description" content="Academic citation and benchmark results for SuperCompress LLM prompt compression. Query-aware learned keep/drop policy, 100% oracle recall at 64% token reduction. Benchmarks on NQ, TriviaQA, HotpotQA, and SQuAD." />
+  <title>SuperCompress | Research, Citation & Benchmarks for LLM Prompt Compression</title>
+  <meta name="description" content="Academic citation and benchmark methodology for SuperCompress LLM prompt compression. Query-aware extractive keep/drop: reads the question, keeps original answer lines. See SuperCompress benchmarks." />
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
-  <meta property="og:title" content="SuperCompress — Research, Citation & Benchmarks" />
-  <meta property="og:description" content="Academic citation and benchmark results for LLM prompt compression. 100% oracle recall at 64% token reduction." />
+  <meta property="og:title" content="SuperCompress, Research, Citation & Benchmarks" />
+  <meta property="og:description" content="Academic citation and benchmark methodology for LLM prompt compression. Query-aware extractive keep/drop on the hosted API." />
   <meta property="og:url" content="https://supercompress.dev/research" />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="en_US" />
@@ -17,7 +17,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="SuperCompress — Research, Citation & Benchmarks" />
+  <meta name="twitter:title" content="SuperCompress, Research, Citation & Benchmarks" />
   <meta name="twitter:description" content="Academic citation and benchmark results for LLM prompt compression technology." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="LLM compression research, prompt compression paper, token compression citation, context compression benchmark, learned compression policy, oracle recall research" />
@@ -61,7 +61,7 @@
     "@context": "https://schema.org",
     "@type": "ScholarlyArticle",
     "name": "SuperCompress: Efficient LLM Context Compression",
-    "description": "Introduces a query-aware learned keep/drop policy for context compression achieving 100% oracle recall at 64% token reduction on benchmark seeds.",
+    "description": "Introduces a query-aware learned keep/drop policy for context compression: keep original lines that answer the question, drop the rest.",
     "url": "https://supercompress.dev/research",
     "author": {
       "@type": "Person",
@@ -320,7 +320,7 @@
     <header class="research-head">
       <p class="kicker">Academic Citation & Technical Details</p>
       <h1>SuperCompress: Efficient LLM Context Compression</h1>
-      <p class="subtitle">A query-aware learned keep/drop policy for context compression. Achieves 100% oracle recall at 64% token reduction on benchmark seeds. Features include recency, position, and query overlap.</p>
+      <p class="subtitle">A query-aware learned keep/drop policy for context compression. Reads the question, keeps original lines that answer it, and drops the rest. Features include recency, position, and query overlap.</p>
     </header>
 
     <div class="research-body">
@@ -335,10 +335,10 @@
   year         = 2025,
   url          = {https://supercompress.dev},
   version      = {0.6.1},
-  note         = {64% token reduction with 100% oracle recall}
+  note         = {query-aware extractive keep/drop for LLM context}
 }
         </div>
-        <p><strong>BibTeX citation</strong> for LaTeX documents — copy the block above into your <code>.bib</code> file.</p>
+        <p><strong>BibTeX citation</strong> for LaTeX documents, copy the block above into your <code>.bib</code> file.</p>
       </section>
 
       <!-- Model Architecture -->
@@ -351,105 +351,16 @@
           <li><strong>Output:</strong> Per-line keep/drop decision with a budget constraint that adapts to context length</li>
         </ul>
         <div class="callout">
-          <strong>Key insight:</strong> The policy is small enough to run in <10KB of memory — smaller than a single vector embedding. It compresses context on CPU before GPU inference, requiring zero extra GPU time.
+          <strong>Key insight:</strong> The policy is small enough to run in <10KB of memory, smaller than a single vector embedding. It compresses context on CPU before GPU inference, requiring zero extra GPU time.
         </div>
       </section>
 
       <!-- Benchmark Results -->
       <section>
-        <h2>Benchmark Results</h2>
-        <p>All benchmarks conducted on CPU (Apple M1) at a fixed 35% token budget on 8 project seeds. Results may vary by hardware and context size.</p>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Dataset</th>
-              <th>Tokens Saved</th>
-              <th>Oracle Recall</th>
-              <th>Latency (CPU)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>NQ (Natural Questions)</td>
-              <td><strong>64%</strong></td>
-              <td><span class="badge badge-green">100%</span></td>
-              <td>58ms</td>
-            </tr>
-            <tr>
-              <td>TriviaQA</td>
-              <td><strong>62%</strong></td>
-              <td><span class="badge badge-green">100%</span></td>
-              <td>55ms</td>
-            </tr>
-            <tr>
-              <td>HotpotQA</td>
-              <td><strong>58%</strong></td>
-              <td><span class="badge badge-green">98%</span></td>
-              <td>62ms</td>
-            </tr>
-            <tr>
-              <td>SQuAD</td>
-              <td><strong>67%</strong></td>
-              <td><span class="badge badge-green">100%</span></td>
-              <td>52ms</td>
-            </tr>
-            <tr class="best-row">
-              <td><strong>Average (all datasets)</strong></td>
-              <td><strong>63%</strong></td>
-              <td><strong>99.5%</strong></td>
-              <td><strong>57ms</strong></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <p class="research-meta">For more detailed results including adaptive mode and policy comparisons, see the <a href="/benchmarks">full benchmarks page</a>.</p>
-      </section>
-
-      <!-- Policy Comparison -->
-      <section>
-        <h2>Policy Comparison at 35% Budget</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Policy</th>
-              <th>Oracle Recall</th>
-              <th>Entity Recall</th>
-              <th>Latency</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>FIFO / Truncation</td>
-              <td>25%</td>
-              <td>73%</td>
-              <td>~57 ms</td>
-
-            </tr>
-            <tr>
-              <td>Summarization</td>
-              <td>61%</td>
-              <td>64%</td>
-              <td>~63 ms*</td>
-
-            </tr>
-            <tr>
-              <td>H2O (Heavy Hitter Oracle)</td>
-              <td>98%</td>
-              <td>73%</td>
-              <td>~56 ms</td>
-
-            </tr>
-            <tr class="best-row">
-              <td><strong>SuperCompress</strong></td>
-              <td><strong>100%</strong></td>
-              <td><strong>73%</strong></td>
-              <td><strong>~60 ms</strong></td>
-
-            </tr>
-          </tbody>
-        </table>
-        <p class="research-meta">* Summarization latency excludes the extra LLM call cost. SuperCompress requires zero GPU time.</p>
+        <h2>Benchmark methodology</h2>
+        <p>SuperCompress is query-aware and extractive: it scores context against the current question and keeps original wording. Public suites measure <strong>evidence containment</strong>, whether required lines survive, not a downstream chat-model grade.</p>
+        <p>Headline cut and answer-keep figures are on hold pending re-verification. Cite the live methodology on <a href="/benchmarks">SuperCompress benchmarks</a> rather than restating unpublished summary numbers here.</p>
+        <p>Qualitative comparators: truncation is position-blind; summarization rewrites source lines and needs an extra model call; attention-based methods such as H2O need model internals. SuperCompress is hosted Neural Keep plus MCP/hooks for coding agents.</p>
       </section>
 
       <!-- Links -->
@@ -457,12 +368,11 @@
         <h2>Resources</h2>
         <ul>
           <li><a href="https://github.com/Supercompress/Supercompress">GitHub Repository</a></li>
-          <li><a href="https://pypi.org/project/supercompress/">PyPI Package</a> — <code>pip install supercompress</code></li>
           <li><a href="/playground">Interactive Comparison Tool</a></li>
           <li><a href="/benchmarks">Full Benchmarks</a></li>
           <li><a href="/token-compression">Token Compression Guide</a></li>
           <li><a href="/playground">Playground</a></li>
-          <li><a href="/awesome-token-compression">Awesome Token Compression List</a></li>
+          <li><a href="/open-source-token-compression">Open-source token compression</a></li>
         </ul>
       </section>
     </div>
@@ -476,7 +386,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -506,7 +416,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>
@@ -563,7 +473,7 @@
   </div>
   <!-- Social Share -->
   <div style="display: flex; justify-content: center; gap: 12px; margin: 40px 0;">
-    <a href="https://twitter.com/intent/tweet?text=SuperCompress%20-%2065%25%20fewer%20tokens%2C%20100%25%20oracle%20recall.&url=https://supercompress.dev/research"
+    <a href="https://twitter.com/intent/tweet?text=SuperCompress%20research%3A%20query-aware%20context%20compression%20for%20LLMs%20and%20coding%20agents.&url=https://supercompress.dev/research"
        target="_blank" rel="noopener"
        style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #1d9bf0; color: #fff; border-radius: 20px; text-decoration: none; font-size: 13px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>

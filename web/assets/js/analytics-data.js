@@ -8,17 +8,21 @@
 
   const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-  function utcYmd(d = new Date()) {
-    return d.toISOString().slice(0, 10);
+  /** Local calendar YYYY-MM-DD (viewer timezone), not UTC. */
+  function localYmd(d = new Date()) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
   }
 
   function dayKeys(n = 30) {
     const out = [];
     for (let i = n - 1; i >= 0; i--) {
       const d = new Date();
-      d.setUTCHours(12, 0, 0, 0);
-      d.setUTCDate(d.getUTCDate() - i);
-      out.push(d.toISOString().slice(0, 10));
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      out.push(localYmd(d));
     }
     return out;
   }
@@ -26,12 +30,12 @@
   function daysInMonth(month) {
     const [y, m] = String(month || "").split("-").map(Number);
     if (!y || !m) return 31;
-    return new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return new Date(y, m, 0).getDate();
   }
 
-  /** Calendar days for the billing month through today (UTC), plus any earlier ISO days in `extra`. */
+  /** Calendar days for the billing month through today (local TZ), plus any earlier ISO days in `extra`. */
   function monthKeys(month, throughIso, extra = []) {
-    const today = utcYmd();
+    const today = localYmd();
     const m = String(month || today.slice(0, 7));
     const through = String(throughIso || today);
     const end =
@@ -44,20 +48,26 @@
     const start = earlier[0];
     if (!start) return out;
     const merged = [];
-    let cur = new Date(start + "T12:00:00Z");
-    const last = new Date(out[out.length - 1] + "T12:00:00Z");
+    let cur = new Date(Number(start.slice(0, 4)), Number(start.slice(5, 7)) - 1, Number(start.slice(8, 10)), 12);
+    const last = new Date(
+      Number(out[out.length - 1].slice(0, 4)),
+      Number(out[out.length - 1].slice(5, 7)) - 1,
+      Number(out[out.length - 1].slice(8, 10)),
+      12
+    );
     while (cur <= last && merged.length < 62) {
-      merged.push(cur.toISOString().slice(0, 10));
-      cur.setUTCDate(cur.getUTCDate() + 1);
+      merged.push(localYmd(cur));
+      cur.setDate(cur.getDate() + 1);
     }
     return merged.length ? merged : out;
   }
 
   function labelDay(iso) {
-    const d = new Date(iso + "T12:00:00");
+    const [y, m, d] = String(iso || "").split("-").map(Number);
+    const dt = y && m && d ? new Date(y, m - 1, d, 12) : new Date(iso + "T12:00:00");
     return {
-      short: `${d.getMonth() + 1}/${d.getDate()}`,
-      full: d.toLocaleDateString(undefined, {
+      short: `${dt.getMonth() + 1}/${dt.getDate()}`,
+      full: dt.toLocaleDateString(undefined, {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -116,7 +126,7 @@
   function aggregateUsage(payload) {
     const usage = payload.usage || {};
     const account = payload.account_usage || {};
-    const month = account.month || utcYmd().slice(0, 7);
+    const month = account.month || localYmd().slice(0, 7);
     const accountDays = {};
     for (const [day, rec] of Object.entries(account.by_day || {})) {
       addDay(accountDays, day, rec);
@@ -139,7 +149,7 @@
       (d) => d.tokens_in > 0 || d.tokens_saved > 0 || d.requests > 0
     );
     const sourceDays = accountHasDays ? accountDays : keyDays;
-    const keys = monthKeys(month, utcYmd(), Object.keys(sourceDays));
+    const keys = monthKeys(month, localYmd(), Object.keys(sourceDays));
     const byDay = Object.fromEntries(keys.map((k) => [k, emptyDay()]));
     for (const [day, rec] of Object.entries(sourceDays)) {
       if (!byDay[day]) byDay[day] = emptyDay();
@@ -227,7 +237,7 @@
       totals.tokens_out += Math.max(0, tin - saved);
     }
 
-    const month = new Date().toISOString().slice(0, 7);
+    const month = localYmd().slice(0, 7);
     const cursorShare = 0.58;
     const codexShare = 0.24;
     const claudeShare = 0.18;
@@ -302,8 +312,8 @@
 
   function chartDayList(bundle) {
     const extra = Object.keys(bundle.byDay || {}).filter(isChartDay);
-    const month = (bundle.account && bundle.account.month) || utcYmd().slice(0, 7);
-    const keys = monthKeys(month, utcYmd(), extra);
+    const month = (bundle.account && bundle.account.month) || localYmd().slice(0, 7);
+    const keys = monthKeys(month, localYmd(), extra);
     // Early in a billing month (day 1–3) a single point becomes a solid blue slab.
     // Fall back to a rolling 14-day window so the chart stays readable at 1M+.
     if (keys.length < 7) {
@@ -382,15 +392,20 @@
           const t = keys.length <= 1 ? 1 : (i + 1) / keys.length;
           return t * t;
         }
-        // Tiny residual so the gap isn't a single needle, but peaks stay readable.
-        return 0.12;
+        // Unused calendar days stay at 0 — do not invent a ~flat baseline.
+        return 0;
       });
       const wSum = weights.reduce((s, w) => s + w, 0) || keys.length || 1;
       let usedS = 0;
       let usedI = 0;
       let usedR = 0;
+      const lastWeighted = (() => {
+        for (let i = keys.length - 1; i >= 0; i--) if (weights[i] > 0) return i;
+        return keys.length - 1;
+      })();
       keys.forEach((iso, i) => {
-        const last = i === keys.length - 1;
+        if (weights[i] <= 0) return;
+        const last = i === lastWeighted;
         const share = weights[i] / wSum;
         const addS = last ? gapSaved - usedS : Math.round(gapSaved * share);
         const addI = last ? gapIn - usedI : Math.round(gapIn * share);

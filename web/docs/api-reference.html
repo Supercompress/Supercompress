@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API Reference — SuperCompress Documentation</title>
+  <title>API Reference | SuperCompress Documentation</title>
   <meta name="description" content="SuperCompress API reference: Python compress_context, compress_for_turn, HTTP POST /v1/compress, response fields, error codes, and client usage." />
-  <meta property="og:title" content="API Reference — SuperCompress Documentation" />
+  <meta property="og:title" content="API Reference, SuperCompress Documentation" />
   <meta property="og:description" content="Complete API reference for SuperCompress prompt compression." />
   <meta property="og:url" content="https://docs.supercompress.dev/api-reference" />
   <meta property="og:type" content="website" />
@@ -63,7 +63,7 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">API Reference</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Everything you need to use SuperCompress programmatically — Python library, HTTP API, response types, and client configuration.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Everything you need to use SuperCompress programmatically, Python library, HTTP API, response types, and client configuration.</p>
 
         <div class="doc-toc">
           <h3>Sections</h3>
@@ -105,7 +105,7 @@ result = compress_context(
 <span class="kw">print</span>(result.compressed_text)
 <span class="kw">print</span>(<span class="str">f"Saved {result.tokens_saved_pct:.1f}% tokens"</span>)</code></pre>
 
-        <h3>Hosted client — <code>SuperCompress.compress(...)</code></h3>
+        <h3>Hosted client, <code>SuperCompress.compress(...)</code></h3>
         <p>Same <code>CompressResult</code> type as the local engine.</p>
         <pre><code><span class="kw">from</span> supercompress.client <span class="kw">import</span> SuperCompress
 
@@ -131,11 +131,11 @@ result = sc.compress(context, query, mode=<span class="str">"precision"</span>)<
         </table>
 
         <h2 id="http-api">HTTP API</h2>
-        <p>The hosted API uses compiler mode by default — no budget needed. Compiler mode maximizes token removal while preserving answer-critical evidence.</p>
+        <p>The hosted API uses compiler mode by default, no budget needed. Compiler mode maximizes token removal while preserving answer-critical evidence.</p>
 
         <div class="doc-callout doc-callout--tip">
           <span class="doc-callout-label">Quick start (curl)</span>
-          One-liner — no JSON, no headers:
+          One-liner, no JSON, no headers:
           <pre style="margin-top:8px"><code><span class="kw">curl</span> -d <span class="str">"context=Your long text&query=What matters?"</span> <span class="kw">https://supercompress.dev/compress</span> \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span></code></pre>
         </div>
@@ -155,12 +155,12 @@ result = sc.compress(context, query, mode=<span class="str">"precision"</span>)<
 <span class="kw">curl</span> -d <span class="str">"context=...&amp;query=..."</span> <span class="kw">https://supercompress.dev/compress</span> \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span>
 
-<span class="cm"># Prefer header auth — API keys in the URL (?api_key=) are rejected</span>
+<span class="cm"># Prefer header auth, API keys in the URL (?api_key=) are rejected</span>
 <span class="kw">curl</span> -X POST https://api.supercompress.dev/compress \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
   -H <span class="str">"Content-Type: application/json"</span> \
   -d <span class="str">'{"context":"…","query":"…"}'</span></code></pre>
-        <p>JSON and form-encoded POST both hit the same endpoint. Put the key in <code>X-API-Key</code> or <code>Authorization: Bearer</code> — never in the query string.</p>
+        <p>JSON and form-encoded POST both hit the same endpoint. Put the key in <code>X-API-Key</code> or <code>Authorization: Bearer</code>, never in the query string.</p>
 
         <h3>Parameters</h3>
         <table>
@@ -169,7 +169,7 @@ result = sc.compress(context, query, mode=<span class="str">"precision"</span>)<
           </thead>
           <tbody>
             <tr><td><code>context</code></td><td>string</td><td>yes</td><td>The full context to compress. Supports Unicode, code, markup, logs.</td></tr>
-            <tr><td><code>query</code></td><td>string</td><td>yes</td><td>The user question that defines retention relevance.</td></tr>
+            <tr><td><code>query</code></td><td>string</td><td>no</td><td>The user's question. Omit it, or send a generic ask, to get a dump-mode digest that keeps about half of the input.</td></tr>
             <tr><td><code>budget_ratio</code></td><td>number</td><td>no</td><td>Pass only for legacy fixed-ratio mode (0.1–1.0). Omit for default compiler mode.</td></tr>
           </tbody>
         </table>
@@ -205,12 +205,22 @@ result = sc.compress(context, query, mode=<span class="str">"precision"</span>)<
             <tr><td><code>tokens_saved</code></td><td>int</td><td>original − kept.</td></tr>
             <tr><td><code>tokens_saved_pct</code></td><td>float</td><td>Percent of prompt tokens removed.</td></tr>
             <tr><td><code>important_kept_pct</code></td><td>float</td><td>Estimated fraction of important context preserved. 0.0–1.0.</td></tr>
-            <tr><td><code>compression_risk</code></td><td>string</td><td><code>"low"</code>, <code>"medium"</code>, or <code>"high"</code> — verifier confidence.</td></tr>
+            <tr><td><code>compression_risk</code></td><td>string</td><td><code>"low"</code>, <code>"medium"</code>, or <code>"high"</code>, verifier confidence.</td></tr>
             <tr><td><code>kept_blocks</code></td><td>array</td><td>Evidence blocks kept, with reasons.</td></tr>
             <tr><td><code>dropped_blocks</code></td><td>array</td><td>Largest removed blocks, with reasons.</td></tr>
             <tr><td><code>policy_name</code></td><td>string</td><td><code>"SuperCompress-compiler"</code> or <code>"SuperCompress-fixed"</code>.</td></tr>
+            <tr><td><code>query_mode</code></td><td>string</td><td><code>"dump"</code> when <code>query</code> is missing or generic; <code>"query"</code> when a specific question is sent. CCR requests (<code>ccr: true</code>) keep their own query path and are not labelled dump mode.</td></tr>
+            <tr><td><code>notice</code></td><td>string</td><td>Present in dump mode (asks the caller to pass the user's question for a targeted, smaller digest) and on passthrough (explains the unchanged return).</td></tr>
+            <tr><td><code>compression_warning</code></td><td>string</td><td>Present on very deep cuts in query mode (1,500 or more input tokens, under 3% kept). Explains the cut and suggests a more specific query or omitting <code>query</code>.</td></tr>
+            <tr><td><code>passthrough</code></td><td>boolean</td><td><code>true</code> when the original input is returned unchanged.</td></tr>
+            <tr><td><code>passthrough_reason</code></td><td>string</td><td><code>no_meaningful_savings</code> (would save under 5%) or <code>output_larger_than_input</code>.</td></tr>
+            <tr><td><code>billed</code></td><td>boolean</td><td><code>false</code> on passthrough. That call is not billed.</td></tr>
+            <tr><td><code>quota</code></td><td>object</td><td>On billed responses: <code>tokens_used_this_period</code>, <code>free_allowance</code>, <code>free_tokens_remaining</code>, <code>billing</code>.</td></tr>
+            <tr><td><code>quota_warning</code></td><td>string</td><td>On billed responses when the free quota is nearly or fully used.</td></tr>
           </tbody>
         </table>
+        <h3>Passthrough and warnings</h3>
+        <p>If compression would save under 5%, or the output would be larger than the input, the API returns the original text unchanged with <code>passthrough: true</code>, a <code>passthrough_reason</code>, <code>billed: false</code>, <code>tokens_saved: 0</code>, and a <code>notice</code>. That call is not billed. Very deep cuts on large inputs (query mode, 1,500 or more input tokens, under 3% kept) add <code>compression_warning</code>. Billed responses include a <code>quota</code> object and, when the free quota is nearly or fully used, <code>quota_warning</code>.</p>
 
         <h3>Authentication</h3>
         <p>Include your API key in either the <code>X-API-Key</code> header or the <code>Authorization: Bearer sc_live_…</code> header. Get a key from the <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>.</p>
@@ -231,7 +241,7 @@ result = sc.compress(context, query, mode=<span class="str">"precision"</span>)<
             <tr><th>Situation</th><th>Use</th></tr>
           </thead>
           <tbody>
-            <tr><td>Production API call — maximize savings safely</td><td><strong>Compiler mode</strong> (omit budget)</td></tr>
+            <tr><td>Production API call, maximize savings safely</td><td><strong>Compiler mode</strong> (omit budget)</td></tr>
             <tr><td>Research / fixed retention budget</td><td><strong>Fixed-ratio mode</strong> (pass budget_ratio)</td></tr>
             <tr><td>Local offline / no API key</td><td><code>compress_for_turn()</code> / <code>compress_context()</code></td></tr>
             <tr><td>Hosted with quality gate</td><td><code>SuperCompress(...).compress(..., mode="precision")</code></td></tr>
@@ -269,10 +279,10 @@ impact = sustainability_from_tokens_saved(saved)
             <tr><th>Status</th><th>Meaning</th></tr>
           </thead>
           <tbody>
-            <tr><td>200</td><td>Success — compressed text in response</td></tr>
-            <tr><td>400</td><td>Missing or invalid <code>context</code> or <code>query</code></td></tr>
+            <tr><td>200</td><td>Success, compressed text in response</td></tr>
+            <tr><td>400</td><td>Missing or invalid <code>context</code></td></tr>
             <tr><td>401</td><td>Missing or invalid API key</td></tr>
-            <tr><td>402</td><td>Payment required — quota exceeded</td></tr>
+            <tr><td>402</td><td>Payment required, quota exceeded</td></tr>
             <tr><td>429</td><td>Rate limit exceeded</td></tr>
             <tr><td>500</td><td>Internal server error</td></tr>
           </tbody>
@@ -286,7 +296,7 @@ impact = sustainability_from_tokens_saved(saved)
               <aside class="docs-signup-cta" aria-label="Get started">
           <p class="docs-signup-cta-kicker">Free to start</p>
           <h2>Get your API key</h2>
-          <p>5M free tokens/mo · then $0.10/1M. No credit card.</p>
+          <p>Free monthly allowance. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
             <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>

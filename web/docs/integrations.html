@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Integrations — SuperCompress Documentation</title>
+  <title>Integrations | SuperCompress Documentation</title>
   <meta name="description" content="Integrate SuperCompress with OpenAI, LangChain, Express.js, Vercel AI SDK, Anthropic, and more. Drop-in wrappers for popular LLM frameworks." />
-  <meta property="og:title" content="Integrations — SuperCompress Documentation" />
+  <meta property="og:title" content="Integrations, SuperCompress Documentation" />
   <meta property="og:description" content="Drop-in SuperCompress integration wrappers for OpenAI, LangChain, Express.js, Vercel AI SDK, and Anthropic." />
   <meta property="og:url" content="https://docs.supercompress.dev/integrations" />
   <meta property="og:type" content="website" />
@@ -63,7 +63,7 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">Integrations</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Drop compression into your existing LLM stack with one wrapper function. Each integration preserves your current API shape — just swap out the client or add a middleware step.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Drop compression into your existing LLM stack with one wrapper function. Each integration preserves your current API shape, just swap out the client or add a middleware step.</p>
 
         <div class="doc-toc">
           <h3>Integrations</h3>
@@ -80,7 +80,7 @@
         </div>
 
         <h2 id="python">Python (direct import)</h2>
-        <p>The simplest integration — call compression before sending to any LLM:</p>
+        <p>The simplest integration, call compression before sending to any LLM:</p>
         <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> compress_for_turn
 
 compressed, stats = compress_for_turn(
@@ -121,7 +121,7 @@ response = client.chat.completions.create(
 
 <span class="kw">print</span>(client.get_stats())
 <span class="cm"># → {'total_original_tokens': 580, 'total_kept_tokens': 203, 'total_savings_pct': 65.0}</span></code></pre>
-        <p>Streaming works too — just pass <code>stream=True</code>.</p>
+        <p>Streaming works too, just pass <code>stream=True</code>.</p>
         <p>The wrapper is available at <code>integrations/openai_middleware.py</code> in the repo.</p>
 
         <div class="doc-callout doc-callout--tip">
@@ -130,7 +130,7 @@ response = client.chat.completions.create(
         </div>
 
         <h2 id="langchain">LangChain hook</h2>
-        <p>Compress <code>HumanMessage</code> / <code>AIMessage</code> history before <code>invoke()</code>. No LangChain dependency in the core package — the example is copy-paste friendly.</p>
+        <p>Compress <code>HumanMessage</code> / <code>AIMessage</code> history before <code>invoke()</code>. No LangChain dependency in the core package, the example is copy-paste friendly.</p>
         <p>Available at <code>examples/integrations/langchain_hook.py</code> in the repo.</p>
         <pre><code><span class="kw">from</span> langchain_hook <span class="kw">import</span> compress_history
 <span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
@@ -153,7 +153,7 @@ compressed_msgs, meta = compress_history(messages)
         <p>The hook preserves system messages, compresses assistant/user history into a single context block, and appends the latest user query. The compressed messages can be passed directly to any LangChain chain.</p>
 
         <h2 id="anthropic">Anthropic SDK wrapper</h2>
-        <p>Available at <code>integrations/anthropic_middleware.py</code>. Same pattern as the OpenAI wrapper — intercepts <code>messages</code> before sending to Anthropic's API, compresses history, tracks savings.</p>
+        <p>Available at <code>integrations/anthropic_middleware.py</code>. Same pattern as the OpenAI wrapper, intercepts <code>messages</code> before sending to Anthropic's API, compresses history, tracks savings.</p>
         <pre><code><span class="kw">from</span> anthropic_middleware <span class="kw">import</span> SuperCompressAnthropic
 
 client = SuperCompressAnthropic(budget_ratio=0.35)
@@ -234,7 +234,7 @@ app.post(<span class="str">"/api/chat"</span>, sc.handler, <span class="kw">asyn
 
         <h2 id="curl">curl / any HTTP client</h2>
         <p>Call the hosted API from any language or script. Three ways, same result:</p>
-        <pre><code><span class="cm"># Quickest — form-encoded, no JSON needed</span>
+        <pre><code><span class="cm"># Quickest, form-encoded, no JSON needed</span>
 <span class="kw">curl</span> -d <span class="str">"context=Your long context...&query=Summarize."</span> \
   <span class="kw">https://supercompress.dev/compress</span> \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span>
@@ -278,7 +278,7 @@ app.post(<span class="str">"/api/chat"</span>, sc.handler, <span class="kw">asyn
               <aside class="docs-signup-cta" aria-label="Get started">
           <p class="docs-signup-cta-kicker">Free to start</p>
           <h2>Get your API key</h2>
-          <p>5M free tokens/mo · then $0.10/1M. No credit card.</p>
+          <p>Free monthly allowance. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
             <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>

@@ -424,6 +424,7 @@ async function revokeKey(ownerUid, keyUid) {
   }
 
   let storeRevoked = null;
+  let storeErr = null;
   try {
     storeRevoked = await mutateStore((store) => {
       const rec = store.keys[keyUid];
@@ -436,15 +437,19 @@ async function revokeKey(ownerUid, keyUid) {
       return { ...publicKey(rec), revoked: true };
     });
   } catch (err) {
+    storeErr = err;
     console.warn("revokeKey: store mark skipped:", err.message);
   }
 
-  if (authRevoked || storeRevoked || existing) {
-    return (
-      storeRevoked ||
-      authRevoked ||
-      (existing ? { ...publicKey(existing), revoked: true } : { id: keyUid, revoked: true })
-    );
+  if (authRevoked || storeRevoked) {
+    return storeRevoked || authRevoked;
+  }
+
+  // Never report success if neither Auth nor the durable store actually revoked.
+  if (existing && storeErr) {
+    const err = new Error(storeErr.message || "Could not revoke key — storage unavailable");
+    err.status = storeErr.status || 503;
+    throw err;
   }
 
   const err = new Error("Key not found");

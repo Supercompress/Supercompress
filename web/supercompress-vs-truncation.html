@@ -36,7 +36,7 @@
     "description": "Truncation is cheap but blind. SuperCompress uses query-aware context selection so important middle sections survive.",
     "datePublished": "2026-07-02",
     "dateModified": "2026-07-03",
-    "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.linkedin.com/in/arjunkshah", "url": "https://www.linkedin.com/in/arjunkshah"},
+    "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.arjunshah.xyz/", "url": "https://www.arjunshah.xyz/"},
     "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://supercompress.dev/assets/img/logo-chevrons.png"}},
     "mainEntityOfPage": "https://supercompress.dev/supercompress-vs-truncation"
   }
@@ -108,15 +108,16 @@
     <p class="seo-kicker">Comparison guide</p>
     <h1>SuperCompress vs truncation</h1>
     <p class="seo-lead">Truncation keeps the beginning and end, drops the middle. If answer evidence sits in the middle, truncation removes it.</p>
-    <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
+    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
 <section class="seo-section">
         <h2>Why truncation is risky</h2>
-        <p>Truncation achieves only ~25% oracle recall at a matched compression budget. That means most of the time, the line containing the answer gets dropped.</p>
+        <p>Truncation keeps the head and tail of the prompt and drops the middle, regardless of the question. SuperCompress picks lines against the question: it keeps original lines chosen for this ask and never rewrites or summarizes.</p>
       </section>    <section class="seo-section">
         <h2>Benchmark comparison</h2>
-        <table class="seo-table"><thead><tr><th>Metric</th><th>Truncation</th><th>SuperCompress</th></tr></thead><tbody>
-<tr><td>Oracle recall</td><td>25%</td><td>100%</td></tr>
-<tr><td>Query awareness</td><td>None</td><td>Full</td></tr>
+        <table class="seo-table"><thead><tr><th>Factor</th><th>Truncation</th><th>SuperCompress</th></tr></thead><tbody>
+<tr><td>Selection</td><td>Head and tail only</td><td>Lines scored against the question</td></tr>
+<tr><td>Query awareness</td><td>None</td><td>Yes</td></tr>
+<tr><td>Output</td><td>Original lines (position-based)</td><td>Original lines (query-selected)</td></tr>
 </tbody></table>
       </section>
 
@@ -136,7 +137,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -166,7 +167,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

@@ -88,7 +88,7 @@ function computeCompressFingerprint(body = {}) {
   const mode = String(body.mode || "compiler");
   const normalized = JSON.stringify({
     context: String(body.context || ""),
-    query: String(body.query || "Summarize this context."),
+    query: String(body.query || "").trim() ? String(body.query) : "",
     mode,
     budget_ratio: mode === "fixed" ? Number(body.budget_ratio ?? 0.35) : 0.35,
     ccr: body.ccr === true || body.ccr === "true",
@@ -387,6 +387,11 @@ function compactRecentBillingRow(r) {
   };
 }
 
+/** A credit top-up turns PAYG on; keep an existing paid plan, otherwise "payg". */
+function paidPlanOrPayg(plan) {
+  return ["payg", "starter", "pro", "business"].includes(plan) ? plan : "payg";
+}
+
 /** Firebase custom claims cap at 1000 bytes — drop bulky non-ledger fields to fit.
  * Never delete sc_recent_billing entirely (idempotency watermarks). Never delete
  * sc_power_mail, sc_welcome, sc_wk, sc_unsub, sc_ku, or sc_write_id.
@@ -442,7 +447,11 @@ function fitCustomClaims(claims) {
       delete next.sc_power_celebrate;
     },
     () => {
-      delete next.sc_credited_sessions;
+      // Keep the newest credited session: it is the only top-up idempotency guard
+      // when Firestore is off. Deleting it re-credits the same payment on retry.
+      if (Array.isArray(next.sc_credited_sessions)) {
+        next.sc_credited_sessions = next.sc_credited_sessions.slice(-1);
+      }
     },
     () => {
       if (Array.isArray(next.sc_recent_billing)) next.sc_recent_billing = next.sc_recent_billing.slice(0, 2);
@@ -485,7 +494,9 @@ function emergencyFitCustomClaims(claims) {
   delete next.sc_onboard_done;
   delete next.sc_onboard_step;
   delete next.sc_power_celebrate;
-  delete next.sc_credited_sessions;
+  if (Array.isArray(next.sc_credited_sessions)) {
+    next.sc_credited_sessions = next.sc_credited_sessions.slice(-1);
+  }
   if (Array.isArray(next.sc_recent_billing)) {
     next.sc_recent_billing = next.sc_recent_billing.slice(0, 1).map(compactRecentBillingRow);
   }
@@ -557,6 +568,13 @@ async function patchUserClaims(uid, mutator, opts = {}) {
     const held = claimsWriteHeld(after, writeId);
     const extraOk = verify ? verify(after, { before, intended }) : true;
     if (held && extraOk) return after;
+    if (held) {
+      // Our write landed but verify can't see its marker. Retrying would apply the
+      // mutation again (double credit / double burn), so stop here.
+      const err = new Error("claims_patch_unverified");
+      err.code = "claims_patch_unverified";
+      throw err;
+    }
     lastErr = new Error("claims_patch_conflict");
   }
   const err = lastErr || new Error("claims_patch_conflict");
@@ -900,6 +918,8 @@ async function reserveIdempotencyLease(uid, requestId, fingerprint) {
 
 async function releaseIdempotencyLease(uid, requestId) {
   const rid = sanitizeRequestId(requestId);
+  // Claims-fallback leases live in memory; clear them too or a same-key retry 409s for 90s.
+  if (uid && rid) clearClaimsPendingLease(uid, rid);
   if (!uid || !rid || !initFirebaseAdmin()) return;
   try {
     const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
@@ -988,9 +1008,24 @@ function sanitizeReplayResponse(response) {
     keep_ratio: response.keep_ratio ?? null,
     coding_agent: response.coding_agent || null,
     source: response.source || null,
+    fallback_reason: typeof response.fallback_reason === "string" ? response.fallback_reason.slice(0, 200) : null,
+    warnings: Array.isArray(response.warnings)
+      ? response.warnings.filter(warning => typeof warning === "string").slice(0, 20).map(warning => warning.slice(0, 2000))
+      : [],
+    compression_safety: response.compression_safety && typeof response.compression_safety === "object"
+      ? Object.fromEntries(["status", "reason", "token_count_method", "semantic_verification"]
+        .filter(key => typeof response.compression_safety[key] === "string")
+        .map(key => [key, response.compression_safety[key].slice(0, 200)]))
+      : null,
     cache_prefix_applied: Boolean(response.cache_prefix_applied),
     ccr: response.ccr || null,
     latency_ms: Number(response.latency_ms) || 0,
+    // Safety and quota notices must survive an Idempotency-Key replay.
+    ...(response.query_mode ? { query_mode: String(response.query_mode) } : {}),
+    ...(response.notice ? { notice: String(response.notice).slice(0, 600) } : {}),
+    ...(response.compression_warning ? { compression_warning: String(response.compression_warning).slice(0, 600) } : {}),
+    ...(response.quota && typeof response.quota === "object" ? { quota: response.quota } : {}),
+    ...(response.quota_warning ? { quota_warning: String(response.quota_warning).slice(0, 600) } : {}),
   };
 }
 
@@ -1300,7 +1335,8 @@ async function creditBalanceClaimsFallback({
         return {
           ...liveClaims,
           sc_billing_rev: prevRev + 1,
-          sc_plan: liveClaims.sc_plan || "payg",
+          sc_plan: paidPlanOrPayg(liveClaims.sc_plan),
+          sc_subscription_status: "active",
           sc_metered: false,
           sc_usage: {
             month: ledger.month,
@@ -1493,7 +1529,8 @@ async function creditBalance({
           : {};
       await patchUserClaims(uid, (prev) => ({
         ...prev,
-        sc_plan: prev.sc_plan || "payg",
+        sc_plan: paidPlanOrPayg(prev.sc_plan),
+        sc_subscription_status: "active",
         sc_metered: false,
         sc_usage: {
           month: result.ledger.month,
@@ -1606,6 +1643,7 @@ module.exports = {
   REPLAY_TTL_MS,
   IDEMPOTENCY_LEASE_MS,
   fitCustomClaims,
+  paidPlanOrPayg,
   emergencyFitCustomClaims,
   claimsByteLength,
   AUTH_CLAIMS_MAX_BYTES,

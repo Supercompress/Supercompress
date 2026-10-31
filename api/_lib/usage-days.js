@@ -154,18 +154,36 @@ function fillMonthGap(byDay, totals = {}, month = monthKey(), throughIso = dayKe
     return { by_day: recorded, source: "recorded" };
   }
 
-  const weights = keys.map((iso) => {
+  // Never paint a flat baseline onto days with no recorded activity.
+  // Prefer real activity days; if none exist, ramp toward month-end.
+  const hasActivity = keys.some((iso) => {
     const d = recorded[iso];
-    const w = 1 + (d ? Math.max(d.requests || 0, d.tokens_in > 0 ? 2 : 0) : 0);
-    return w;
+    return d && (d.requests || d.tokens_in || d.tokens_saved);
+  });
+  const weights = keys.map((iso, i) => {
+    const d = recorded[iso];
+    const active = d && (d.requests || d.tokens_in || d.tokens_saved);
+    if (active) {
+      return 8 + Math.max(Number(d.requests) || 0, d.tokens_in > 0 ? 2 : 0);
+    }
+    if (!hasActivity) {
+      const t = keys.length <= 1 ? 1 : (i + 1) / keys.length;
+      return t * t;
+    }
+    return 0;
   });
   const wSum = weights.reduce((s, w) => s + w, 0) || keys.length;
   const out = { ...recorded };
   let usedIn = 0;
   let usedSaved = 0;
   let usedReq = 0;
+  const lastWeighted = (() => {
+    for (let i = keys.length - 1; i >= 0; i--) if (weights[i] > 0) return i;
+    return keys.length - 1;
+  })();
   keys.forEach((iso, i) => {
-    const last = i === keys.length - 1;
+    if (weights[i] <= 0) return;
+    const last = i === lastWeighted;
     const share = weights[i] / wSum;
     const addIn = last ? gapIn - usedIn : Math.round(gapIn * share);
     const addSaved = last ? gapSaved - usedSaved : Math.round(gapSaved * share);

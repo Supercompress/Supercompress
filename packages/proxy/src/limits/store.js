@@ -1,0 +1,158 @@
+/**
+ * Local snapshot cache + usage history under ~/.supercompress/limits/.
+ *
+ *   snapshots/<provider>.json   latest normalized snapshot per provider
+ *   history/<provider>.jsonl    compact usage points used for burn-rate math
+ *
+ * Only rate-limit numbers are stored — never prompts, responses, or tokens.
+ */
+
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { normalizeProvider, tryNormalizeSnapshot } = require("./normalize");
+
+const MAX_HISTORY_BYTES = 256 * 1024;
+const KEEP_HISTORY_LINES = 2000;
+const MIN_APPEND_INTERVAL_MS = 60 * 1000;
+const lastPoints = new Map();
+
+function limitsDir() {
+  const configDir = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(os.homedir(), ".supercompress");
+  return path.join(configDir, "limits");
+}
+
+function safeName(provider) {
+  return normalizeProvider(provider).replace(/[^a-z0-9._-]/g, "_") || "generic";
+}
+
+/** `account` is a short key fingerprint so two API keys never share a reading. */
+function fileStem(provider, account) {
+  const acct = account ? `.${String(account).replace(/[^a-z0-9]/gi, "").slice(0, 16)}` : "";
+  return `${safeName(provider)}${acct}`;
+}
+
+function snapshotPath(provider, account) {
+  return path.join(limitsDir(), "snapshots", `${fileStem(provider, account)}.json`);
+}
+
+function historyPath(provider, account) {
+  return path.join(limitsDir(), "history", `${fileStem(provider, account)}.jsonl`);
+}
+
+function writeAtomic(file, text) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(tmp, text);
+  fs.renameSync(tmp, file);
+}
+
+function readSnapshot(provider, account) {
+  try {
+    return JSON.parse(fs.readFileSync(snapshotPath(provider, account), "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function listSnapshots() {
+  const dir = path.join(limitsDir(), "snapshots");
+  let names = [];
+  try {
+    names = fs.readdirSync(dir).filter((n) => n.endsWith(".json"));
+  } catch {
+    return [];
+  }
+  return names
+    .map((n) => {
+      try {
+        return JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+function toPoint(snapshot) {
+  return {
+    t: snapshot.checkedAt,
+    w: snapshot.windows.map((w) => ({ n: w.name, u: w.usedPercent, ...(w.resetAt ? { r: w.resetAt } : {}) })),
+  };
+}
+
+function readHistory(provider, account) {
+  let text = "";
+  try {
+    text = fs.readFileSync(historyPath(provider, account), "utf8");
+  } catch {
+    return [];
+  }
+  return text
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    })
+    .filter((p) => p && p.t && Array.isArray(p.w));
+}
+
+function appendHistory(provider, snapshot) {
+  const file = historyPath(provider, snapshot.account);
+  const point = toPoint(snapshot);
+  if (!lastPoints.has(file)) {
+    const history = readHistory(provider, snapshot.account);
+    lastPoints.set(file, history[history.length - 1] ?? null);
+  }
+  const last = lastPoints.get(file);
+  if (last) {
+    const elapsed = new Date(point.t).getTime() - new Date(last.t).getTime();
+    const same = JSON.stringify(last.w) === JSON.stringify(point.w);
+    if (elapsed < 0) return false; // out-of-order (older) sample
+    if (same && elapsed < MIN_APPEND_INTERVAL_MS) return false;
+  }
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.appendFileSync(file, `${JSON.stringify(point)}\n`);
+  lastPoints.set(file, point);
+  try {
+    if (fs.statSync(file).size > MAX_HISTORY_BYTES) {
+      const kept = readHistory(provider, snapshot.account).slice(-KEEP_HISTORY_LINES);
+      writeAtomic(file, kept.map((p) => JSON.stringify(p)).join("\n") + "\n");
+    }
+  } catch {}
+  return true;
+}
+
+/**
+ * Persist a snapshot (raw or normalized). Returns the normalized snapshot, or
+ * null if the payload had no usable windows. Older snapshots never overwrite
+ * newer ones.
+ */
+function recordSnapshot(raw, providerHint, { account } = {}) {
+  const snapshot = tryNormalizeSnapshot(raw, providerHint);
+  if (!snapshot) return null;
+  if (account) snapshot.account = account;
+  const existing = readSnapshot(snapshot.provider, account);
+  if (existing && new Date(existing.checkedAt).getTime() > new Date(snapshot.checkedAt).getTime()) {
+    return existing;
+  }
+  writeAtomic(snapshotPath(snapshot.provider, account), JSON.stringify(snapshot, null, 2) + "\n");
+  appendHistory(snapshot.provider, snapshot);
+  return snapshot;
+}
+
+module.exports = {
+  limitsDir,
+  snapshotPath,
+  historyPath,
+  readSnapshot,
+  listSnapshots,
+  readHistory,
+  appendHistory,
+  recordSnapshot,
+  toPoint,
+};

@@ -82,7 +82,7 @@
   <p class="legal-kicker">Legal</p>
   <h1>Privacy Policy</h1>
 
-    <p><strong>Hosted MCP / plugin path:</strong> When you use <code>npx supercompress setup</code> / the coding-agent plugin, context is sent to SuperCompress’s hosted API for Neural Keep. That is not a local-only path. The legacy repo-root MCP and the local Python/compiler paths can run on-device without an API key — do not confuse them with hosted v2.</p>
+    <p><strong>Hosted MCP / plugin path:</strong> When you use <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> / the coding-agent plugin, context is sent to SuperCompress’s hosted API for Neural Keep. That is not a local-only path. The legacy repo-root MCP and the local Python/compiler paths can run on-device without an API key, do not confuse them with hosted v2.</p>
 
   <p class="legal-meta">
     Effective: <strong>August 14, 2026</strong><br />
@@ -180,7 +180,7 @@
     </ul>
 
     <h3>3.6 Information we do not intentionally collect</h3>
-    <p>We do not require government ID numbers or sensitive special-category data to use SuperCompress. Please do not submit highly sensitive personal data in compress payloads unless necessary for your use case and lawful for you to process—you control what you send.</p>
+    <p>We do not require government ID numbers or sensitive special-category data to use SuperCompress. Please do not submit highly sensitive personal data in compress payloads unless necessary for your use case and lawful for you to process, you control what you send.</p>
   </section>
 
   <section class="legal-section" id="use">
@@ -190,7 +190,7 @@
       <li>provide, operate, secure, and improve the Services;</li>
       <li>authenticate users, manage API keys, and enforce rate limits and quotas;</li>
       <li>meter usage, bill credits, prevent double-billing, and detect fraud/abuse;</li>
-      <li>send transactional messages (account, security, billing) and, where permitted, product updates—you can unsubscribe from non-essential marketing emails;</li>
+      <li>send transactional messages (account, security, billing) and, where permitted, product updates, you can unsubscribe from non-essential marketing emails;</li>
       <li>respond to support requests and investigate incidents;</li>
       <li>comply with law, enforce our <a href="/terms">Terms of Service</a>, and protect rights, safety, and property; and</li>
       <li>produce aggregated, de-identified statistics (for example overall token-savings trends) that do not identify you.</li>
@@ -202,10 +202,10 @@
     <h2>5. Legal bases (EEA/UK)</h2>
     <p>If GDPR/UK GDPR applies, we process personal data under these bases as appropriate:</p>
     <ul>
-      <li><strong>Contract</strong> — to provide the Services you request (account, API, billing);</li>
-      <li><strong>Legitimate interests</strong> — security, abuse prevention, product improvement with appropriate safeguards, and limited product communications;</li>
-      <li><strong>Consent</strong> — where required (for example certain cookies or marketing), which you may withdraw;</li>
-      <li><strong>Legal obligation</strong> — when we must retain or disclose information to comply with law.</li>
+      <li><strong>Contract</strong>, to provide the Services you request (account, API, billing);</li>
+      <li><strong>Legitimate interests</strong>, security, abuse prevention, product improvement with appropriate safeguards, and limited product communications;</li>
+      <li><strong>Consent</strong>, where required (for example certain cookies or marketing), which you may withdraw;</li>
+      <li><strong>Legal obligation</strong>, when we must retain or disclose information to comply with law.</li>
     </ul>
   </section>
 
@@ -235,7 +235,7 @@
         <tr>
           <td>Emergency ops backup (disabled in production by default)</td>
           <td>GitHub Gist (only if explicitly enabled via operator break-glass)</td>
-          <td>Optional non-production / break-glass store fallback — not used for routine production traffic</td>
+          <td>Optional non-production / break-glass store fallback, not used for routine production traffic</td>
         </tr>
         <tr>
           <td>Professional advisors</td>
@@ -261,13 +261,13 @@
     <h2>7. Retention</h2>
     <p>We retain information only as long as needed for the purposes above, including:</p>
     <ul>
-      <li><strong>Account data</strong> — for the life of the account, then deleted or de-identified within a reasonable period after closure, unless law requires longer retention.</li>
-      <li><strong>Billing and ledger metadata</strong> (token counts, credit burns, idempotency fingerprints, payment references) — retained as needed for accounting, dispute resolution, abuse prevention, and legal compliance (often years for financial records).</li>
-      <li><strong>Replayable compressed responses</strong> — retained briefly to support idempotent retries (on the order of <strong>about 48 hours</strong>), after which response bodies are intended to expire or be scrubbed while billing metadata may remain.</li>
-      <li><strong>CCR (Cache, Compress, Retrieve) originals</strong> — when you enable CCR, SuperCompress stores removed original text blocks (keyed by hash, scoped to your account) so markers like <code>[SC-Retrieve: …]</code> can restore them. Those originals are retained for <strong>48 hours</strong>, then expire and are deleted or refused on retrieve. In-memory process caches use the same window.</li>
-      <li><strong>Compress activity previews</strong> — only when preview logging is enabled for an account/deployment; short clipped previews (not full dumps), capped per account. Disabled by default.</li>
-      <li><strong>Server logs</strong> — retained for a limited operational window consistent with our host’s defaults and our security needs, then deleted or aggregated.</li>
-      <li><strong>Email records</strong> — retained as needed to operate communications and prove delivery of transactional notices.</li>
+      <li><strong>Account data</strong>, for the life of the account, then deleted or de-identified within a reasonable period after closure, unless law requires longer retention.</li>
+      <li><strong>Billing and ledger metadata</strong> (token counts, credit burns, idempotency fingerprints, payment references), retained as needed for accounting, dispute resolution, abuse prevention, and legal compliance (often years for financial records).</li>
+      <li><strong>Replayable compressed responses</strong>, retained briefly to support idempotent retries (on the order of <strong>about 48 hours</strong>), after which response bodies are intended to expire or be scrubbed while billing metadata may remain.</li>
+      <li><strong>CCR (Cache, Compress, Retrieve) originals</strong>, when you enable CCR, SuperCompress stores removed original text blocks (keyed by hash, scoped to your account) so markers like <code>[SC-Retrieve: …]</code> can restore them. Those originals are retained for <strong>48 hours</strong>, then expire and are deleted or refused on retrieve. In-memory process caches use the same window.</li>
+      <li><strong>Compress activity previews</strong>, only when preview logging is enabled for an account/deployment; short clipped previews (not full dumps), capped per account. Disabled by default.</li>
+      <li><strong>Server logs</strong>, retained for a limited operational window consistent with our host’s defaults and our security needs, then deleted or aggregated.</li>
+      <li><strong>Email records</strong>, retained as needed to operate communications and prove delivery of transactional notices.</li>
     </ul>
     <p>Exact periods may vary as we improve systems; we will not keep Customer Content longer than reasonably necessary for the Services.</p>
   </section>
@@ -339,7 +339,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -369,7 +369,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

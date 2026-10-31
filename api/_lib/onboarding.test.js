@@ -14,14 +14,14 @@ const {
 } = require("./onboarding");
 
 describe("onboarding bonuses", () => {
-  it("caps bonus at 30,000", () => {
-    assert.equal(onboardBonusTokens({ sc_onboard_bonus: 50_000 }), 30_000);
-    assert.equal(onboardBonusTokens({ sc_onboard_bonus: 10_000 }), 10_000);
+  it("does not extend free allowance with retired promotional bonuses", () => {
+    assert.equal(onboardBonusTokens({ sc_onboard_bonus: 50_000 }), 0);
+    assert.equal(onboardBonusTokens({ sc_onboard_bonus: 10_000 }), 0);
     assert.equal(onboardBonusTokens({}), 0);
   });
 
-  it("action token grant is 10,000", () => {
-    assert.equal(ONBOARD_ACTION_TOKENS, 10_000);
+  it("setup actions no longer grant promotional tokens", () => {
+    assert.equal(ONBOARD_ACTION_TOKENS, 0);
   });
 });
 
@@ -65,7 +65,7 @@ describe("statusPayload", () => {
     const young = { metadata: { creationTime: new Date().toISOString() } };
     const p = statusPayload({}, young);
     assert.equal(p.needs_onboarding, true);
-    assert.equal(p.action_tokens, 10_000);
+    assert.equal(p.action_tokens, 0);
     assert.ok(p.links.star.includes("github.com"));
     assert.ok(p.links.x_follow.includes("x.com"));
     assert.ok(Array.isArray(p.plugin_commands) && p.plugin_commands.length >= 1);
@@ -77,7 +77,7 @@ describe("statusPayload", () => {
       sc_onboard_bonus: 10_000,
     });
     assert.deepEqual(p.actions, { star: true });
-    assert.equal(p.bonus_tokens, 10_000);
+    assert.equal(p.bonus_tokens, 0);
     assert.deepEqual(p.completed_actions, ["star"]);
   });
 });

@@ -20,6 +20,7 @@ export const CONFIG_PATH = path.join(CONFIG_DIR, "config.json")
 export const PID_PATH = path.join(CONFIG_DIR, "proxy.pid")
 export const LOG_PATH = path.join(CONFIG_DIR, "proxy.log")
 export const USAGE_URL = process.env.SUPERCOMPRESS_USAGE_URL || "https://www.supercompress.dev/api/usage"
+export const BILLING_URL = "https://www.supercompress.dev/dashboard#billing"
 // API-key auth lives on account?op=me (plain /api/me is Firebase-session only)
 export const ME_URL =
   process.env.SUPERCOMPRESS_ME_URL || "https://www.supercompress.dev/api/account?op=me"
@@ -60,6 +61,7 @@ export type UsageSnap = {
   quotaUsed: number
   quotaLimit: number
   quotaPct: number
+  limitReached: boolean
   remaining: number
   cutPct: number
   payg: boolean
@@ -163,6 +165,7 @@ export function emptyUsage(error?: string): UsageSnap {
     quotaUsed: 0,
     quotaLimit: 0,
     quotaPct: 0,
+    limitReached: false,
     remaining: 0,
     cutPct: 0,
     payg: false,
@@ -225,7 +228,12 @@ export function usageFromApi(data: Record<string, unknown>, cfg: Config | null):
     requests: num(data.total_requests),
     quotaUsed: num(data.tokens_used_this_period),
     quotaLimit: num(data.tokens_per_month),
-    quotaPct: num(data.usage_pct),
+    quotaPct: data.usage_pct != null ? num(data.usage_pct)
+      : num(data.tokens_per_month) > 0 ? Math.min(100, num(data.tokens_used_this_period) / num(data.tokens_per_month) * 100) : 0,
+    limitReached: data.limit_reached === true
+      || (data.free_tokens_remaining != null && num(data.free_tokens_remaining) === 0)
+      || (data.tokens_remaining != null && num(data.tokens_remaining) === 0)
+      || (num(data.tokens_per_month) > 0 && num(data.tokens_used_this_period) >= num(data.tokens_per_month)),
     remaining: num(data.tokens_remaining),
     cutPct: tokensIn > 0 ? Math.round((tokensSaved / tokensIn) * 1000) / 10 : 0,
     payg: Boolean(data.payg_enabled),
@@ -248,16 +256,21 @@ export async function fetchUsage(): Promise<UsageSnap> {
     if (data.auth === "required" || data.ok === false) {
       throw new Error(String(data.detail || "Authorization required — reconnect"))
     }
-    const snap = usageFromApi(data, cfg)
     try {
       const me = await fetchJson(ME_URL, cfg.api_key)
-      snap.email = String(me.email || snap.email)
-      snap.plan = String(me.plan_name || me.plan || snap.plan)
-      snap.uid = me.uid ? String(me.uid) : snap.uid
+      if (me.auth !== "required" && me.ok !== false) {
+        for (const field of [
+          "email", "plan", "plan_name", "uid", "unlimited", "tokens_per_month",
+          "tokens_used_this_period", "tokens_remaining", "free_tokens_remaining", "usage_pct",
+          "payg_enabled", "credit_wallet", "credit_balance_usd", "credit_limit_usd", "limit_reached",
+        ]) {
+          if (data[field] == null && me[field] != null) data[field] = me[field]
+        }
+      }
     } catch {
       /* usage still valid */
     }
-    return snap
+    return usageFromApi(data, cfg)
   } catch (err) {
     return emptyUsage(err instanceof Error ? err.message : String(err))
   }
@@ -601,6 +614,28 @@ export function mcpCheck(timeoutMs = 8000): Promise<{ ok: boolean; tools: string
   })
 }
 
+export function usageNotice(u: UsageSnap) {
+  if (!u.linked || u.error || u.unlimited) return null
+  if (u.limitReached) {
+    if (u.creditUsd > 0 || (u.payg && !u.credits)) return null
+    return {
+      paused: true,
+      message: "Compression paused — monthly allowance exhausted; no credits available.",
+      action: `Upgrade / add credits: ${BILLING_URL}`,
+    }
+  }
+  if (u.quotaLimit > 0 && u.quotaPct >= 80) {
+    return {
+      paused: false,
+      message: u.creditUsd > 0 || (u.payg && !u.credits)
+        ? "Monthly allowance nearly used — paid compression remains available."
+        : "Monthly allowance nearly used — upgrade to avoid a compression pause.",
+      action: `Manage billing: ${BILLING_URL}`,
+    }
+  }
+  return null
+}
+
 export function formatUsageLog(u: UsageSnap) {
   const lines = [
     `USAGE  ·  ${u.plan}`,
@@ -610,6 +645,8 @@ export function formatUsageLog(u: UsageSnap) {
     `tokens out    ${fmt(u.tokensOut)}`,
     `tokens saved  ${fmt(u.tokensSaved)}${u.tokensIn ? `  (−${u.cutPct}%)` : ""}`,
   ]
+  const notice = usageNotice(u)
+  if (notice) lines.splice(1, 0, notice.message, notice.action, "")
   if (u.unlimited) lines.push("quota        unlimited")
   else if (u.quotaLimit) lines.push(`quota        ${fmt(u.quotaUsed)} / ${fmt(u.quotaLimit)}  (${u.quotaPct}%)`)
   if (u.payg && u.billable) lines.push(`billable     ${fmt(u.billable)}  (~$${u.overageUsd.toFixed(2)})`)
@@ -623,7 +660,7 @@ export function formatUsageLog(u: UsageSnap) {
     }
   }
   if (u.pluginLinked) lines.push("", `plugin linked${u.pluginLinkedAt ? `  ${u.pluginLinkedAt}` : ""}`)
-  lines.push("", "dashboard  https://www.supercompress.dev/dashboard")
+  lines.push("", "dashboard  https://www.supercompress.dev/dashboard", `billing    ${BILLING_URL}`)
   return lines.join("\n")
 }
 

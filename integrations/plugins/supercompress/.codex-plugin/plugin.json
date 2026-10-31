@@ -1,6 +1,6 @@
 {
   "name": "supercompress",
-  "version": "0.5.37",
+  "version": "0.5.40",
   "description": "SuperCompress v2 \u2014 hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Hosted MCP supports OAuth 2.1 sign-in (PKCE). Hosted remote MCP at https://www.supercompress.dev/api/mcp.",
   "skills": "./skills/"
 }

@@ -93,6 +93,7 @@ echo
 
 # Static guard before any HTTP — fail PRs that reintroduce the catch-all outage.
 node scripts/check-api-host-routes.js
+node scripts/check-firebase-auth-proxy.js
 
 # Domains / edge
 check "www home" 200 "$WWW/"
@@ -134,6 +135,9 @@ check "auth-status" 200 "$WWW/api/auth-status"
 expect_body "auth-status firestore" '"storage":"firestore"' "$TMP/body"
 check "firebase-config" 200 "$WWW/api/firebase-config"
 expect_body "firebase-config key" 'apiKey' "$TMP/body"
+# First-party Google auth: /__/auth must proxy to Firebase (not marketing 404)
+check "firebase auth handler proxy" 200 "$WWW/__/auth/handler"
+expect_body "firebase auth handler html" "gstatic" "$TMP/body"
 check "usage requires auth" 401 "$WWW/api/usage"
 check "billing requires auth" 401 "$WWW/api/billing"
 

@@ -1,12 +1,92 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
+  "git": {
+    "deploymentEnabled": {
+      "fix/mcp-firestore-required": false
+    }
+  },
   "installCommand": "npm ci --omit=optional --ignore-scripts --no-audit --no-fund",
   "buildCommand": "node scripts/generate-firebase-config.js 2>&1 || echo 'warn: firebase config skipped' && cp web/assets/js/compress-engine.js api/_lib/ 2>&1 || true && cp web/assets/data/model.json api/_lib/ 2>&1 || true && echo \"static site + serverless API\"",
   "outputDirectory": "web",
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
+    {
+      "source": "/chatgpt-traffic",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
+      "source": "/geo",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
+      "source": "/aeo",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
+      "source": "/aeo-geo",
+      "destination": "/ai-search",
+      "permanent": true
+    },
+    {
+      "source": "/coding-agent-proxy",
+      "destination": "/coding-agent-token-usage",
+      "permanent": true
+    },
+    {
+      "source": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-llm-costs",
+      "destination": "/cut-llm-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/llm-cost-optimization",
+      "destination": "/cut-llm-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/cut-api-costs",
+      "destination": "/cut-llm-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/headroom-for-coding-agents",
+      "destination": "/alternatives/headroom",
+      "permanent": true
+    },
+    {
+      "source": "/headroom-api",
+      "destination": "/alternatives/headroom",
+      "permanent": true
+    },
+    {
+      "source": "/better-than-headroom",
+      "destination": "/alternatives/headroom",
+      "permanent": true
+    },
+    {
+      "source": "/open-source-headroom-alternative",
+      "destination": "/alternatives/headroom",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-claude-code-token-costs",
+      "destination": "/reduce-claude-code-token-usage",
+      "permanent": true
+    },
     {
       "source": "/arena",
       "destination": "/benchmarks",
@@ -16,6 +96,17 @@
       "source": "/compare",
       "destination": "/playground",
       "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "limitcheck.supercompress.dev"
+        }
+      ],
+      "destination": "/live",
+      "permanent": false
     },
     {
       "source": "/",
@@ -146,7 +237,7 @@
           "value": "api.supercompress.dev"
         }
       ],
-      "destination": "https://www.supercompress.dev/aeo-geo",
+      "destination": "https://www.supercompress.dev/ai-search",
       "permanent": true
     },
     {
@@ -281,27 +372,27 @@
     },
     {
       "source": "/headroom",
-      "destination": "/headroom-api",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/headroom-alternative",
-      "destination": "/better-than-headroom",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/better-than-headroom-ai",
-      "destination": "/better-than-headroom",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/what-is-better-than-headroom",
-      "destination": "/better-than-headroom",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/alternatives-to-headroom",
-      "destination": "/better-than-headroom",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
@@ -310,13 +401,38 @@
       "permanent": true
     },
     {
+      "source": "/vs-rtk",
+      "destination": "/supercompress-vs-rtk",
+      "permanent": true
+    },
+    {
+      "source": "/vs-llmlingua",
+      "destination": "/supercompress-vs-llmlingua",
+      "permanent": true
+    },
+    {
+      "source": "/vs-alternatives",
+      "destination": "/alternatives",
+      "permanent": true
+    },
+    {
+      "source": "/vs-summarization",
+      "destination": "/supercompress-vs-summarization",
+      "permanent": true
+    },
+    {
+      "source": "/vs-truncation",
+      "destination": "/supercompress-vs-truncation",
+      "permanent": true
+    },
+    {
       "source": "/find-headroom",
-      "destination": "/headroom-api",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/what-is-headroom-api",
-      "destination": "/headroom-api",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
@@ -336,67 +452,62 @@
     },
     {
       "source": "/headroom-cursor",
-      "destination": "/headroom-for-coding-agents",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/headroom-claude-code",
-      "destination": "/headroom-for-coding-agents",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/headroom-mcp",
-      "destination": "/headroom-for-coding-agents",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/headroom-open-source-alternative",
-      "destination": "/open-source-headroom-alternative",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/oss-headroom-alternative",
-      "destination": "/open-source-headroom-alternative",
+      "destination": "/alternatives/headroom",
       "permanent": true
     },
     {
       "source": "/cut-api-cost",
-      "destination": "/cut-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/how-to-cut-api-costs",
-      "destination": "/cut-api-costs",
-      "permanent": true
-    },
-    {
-      "source": "/cut-llm-api-costs",
-      "destination": "/cut-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/what-ai-tool-to-reduce-api-costs",
-      "destination": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/ai-tool-to-reduce-api-costs",
-      "destination": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/best-ai-tool-to-reduce-api-costs",
-      "destination": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/what-tool-to-reduce-api-costs",
-      "destination": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/reduce-my-api-costs",
-      "destination": "/what-ai-tool-reduce-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
@@ -421,22 +532,22 @@
     },
     {
       "source": "/cut-llm-costs",
-      "destination": "/reduce-llm-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/reduce-llm-cost",
-      "destination": "/reduce-llm-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/reduce-token-cost",
-      "destination": "/reduce-llm-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
       "source": "/reduce-token-costs",
-      "destination": "/reduce-llm-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
@@ -461,22 +572,22 @@
     },
     {
       "source": "/assets/img/og-image-v6.png",
-      "destination": "/assets/img/og-share.png",
+      "destination": "/assets/img/og-share-light.png",
       "permanent": false
     },
     {
       "source": "/assets/img/og-image-v5.png",
-      "destination": "/assets/img/og-share.png",
+      "destination": "/assets/img/og-share-light.png",
       "permanent": false
     },
     {
       "source": "/assets/img/og-image-v4.png",
-      "destination": "/assets/img/og-share.png",
+      "destination": "/assets/img/og-share-light.png",
       "permanent": false
     },
     {
       "source": "/assets/img/og-image.png",
-      "destination": "/assets/img/og-share.png",
+      "destination": "/assets/img/og-share-light.png",
       "permanent": false
     },
     {
@@ -903,7 +1014,7 @@
     },
     {
       "source": "/save-llm-tokens",
-      "destination": "/cut-api-costs",
+      "destination": "/cut-llm-api-costs",
       "permanent": true
     },
     {
@@ -953,27 +1064,27 @@
     },
     {
       "source": "/supercompress-vs-hyde",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
       "source": "/supercompress-vs-mmr",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
       "source": "/supercompress-vs-self-rag",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
       "source": "/supercompress-vs-sliding-window",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
       "source": "/supercompress-vs-top-k-retrieval",
-      "destination": "/supercompress-vs-alternatives",
+      "destination": "/alternatives",
       "permanent": true
     },
     {
@@ -1299,6 +1410,16 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/live",
+      "has": [
+        {
+          "type": "host",
+          "value": "limitcheck.supercompress.dev"
+        }
+      ],
+      "destination": "/limitcheck"
+    },
     {
       "source": "/wp-login.php",
       "destination": "/api/soft-probe"
@@ -1728,22 +1849,6 @@
       "destination": "/reduce-gemini-costs.html"
     },
     {
-      "source": "/aeo-geo",
-      "destination": "/aeo-geo.html"
-    },
-    {
-      "source": "/aeo",
-      "destination": "/aeo-geo.html"
-    },
-    {
-      "source": "/geo",
-      "destination": "/aeo-geo.html"
-    },
-    {
-      "source": "/chatgpt-traffic",
-      "destination": "/aeo-geo.html"
-    },
-    {
       "source": "/llm-cost-optimization",
       "destination": "/llm-cost-optimization.html"
     },
@@ -1774,10 +1879,6 @@
     {
       "source": "/supercompress-vs-llmlingua",
       "destination": "/supercompress-vs-llmlingua.html"
-    },
-    {
-      "source": "/vs-rtk",
-      "destination": "/supercompress-vs-rtk.html"
     },
     {
       "source": "/open-source-token-compression",
@@ -1848,12 +1949,16 @@
       "destination": "/assets/img/icon-192.png"
     },
     {
-      "source": "/api/:path*",
-      "destination": "/api/soft-probe"
+      "source": "/__/auth/:path*",
+      "destination": "https://supercompress.firebaseapp.com/__/auth/:path*"
     },
     {
-      "source": "/aeo-geo",
-      "destination": "/aeo-geo.html"
+      "source": "/api/keys/:id",
+      "destination": "/api/key?id=:id"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/soft-probe"
     },
     {
       "source": "/reduce-chatgpt-costs",
@@ -1971,7 +2076,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net; connect-src 'self' https://www.gstatic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://api.supercompress.dev https://www.supercompress.dev https://supercompress.dev https://*.stripe.com https://api.stripe.com; frame-src https://accounts.google.com https://js.stripe.com https://hooks.stripe.com; worker-src 'self' blob:; upgrade-insecure-requests"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net; connect-src 'self' https://www.gstatic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://api.supercompress.dev https://www.supercompress.dev https://supercompress.dev https://*.stripe.com https://api.stripe.com; frame-src 'self' https://accounts.google.com https://*.firebaseapp.com https://*.google.com https://js.stripe.com https://hooks.stripe.com; worker-src 'self' blob:; upgrade-insecure-requests"
         }
       ]
     },
