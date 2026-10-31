@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Cursor MCP Context Compression: Setup Guide</title>
+  <meta name="description" content="Add query-aware context compression to Cursor with one command. SuperCompress installs an MCP server, hooks and a rule so bulky context is cut to relevant lines." />
+  <meta name="keywords" content="Cursor context compression, Cursor MCP setup, reduce Cursor token usage, Cursor MCP context bloat" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Cursor MCP Context Compression: Setup Guide" />
+  <meta property="og:description" content="Add query-aware context compression to Cursor with one command. SuperCompress installs an MCP server, hooks and a rule so bulky context is cut to relevant lines." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/cursor-mcp-context-compression" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Cursor MCP Context Compression: Setup Guide" />
+  <meta name="twitter:description" content="Add query-aware context compression to Cursor with one command. SuperCompress installs an MCP server, hooks and a rule so bulky context is cut to relevant lines." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/cursor-mcp-context-compression" />
+  <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Cursor MCP context compression: setup guide",
+  "description": "Add query-aware context compression to Cursor with one command. SuperCompress installs an MCP server, hooks and a rule so bulky context is cut to relevant lines.",
+  "datePublished": "2026-10-19",
+  "dateModified": "2026-10-19",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/cursor-mcp-context-compression"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "Cursor context compression, Cursor MCP setup, reduce Cursor token usage, Cursor MCP context bloat"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress work with Cursor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. supercompress setup detects Cursor and writes an MCP server, hooks and a rule."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to paste an API key into Cursor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Setup links your account through the browser and saves a coding agent key for you."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it change which model Cursor uses?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It only compresses context that the agent sends through it."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I uninstall it from Cursor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Run supercompress uninstall, which removes the entries it added and restores backed-up configs."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Cursor MCP context compression: setup guide",
+      "item": "https://www.supercompress.dev/cursor-mcp-context-compression"
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Integration guide · Updated 2026-10-19</p>
+  <h1>Cursor MCP context compression: setup guide</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">To add context compression to Cursor, run npm install -g supercompress-proxy then supercompress setup and restart Cursor. Setup writes the SuperCompress MCP server to ~/.cursor/mcp.json, adds hooks and an always-on rule, and lets the agent call compress_context so bulky output is cut to the original lines that answer your request.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/reduce-cursor-token-usage">Reduce Cursor token usage</a>
+    <a href="/compress-claude-code-tool-output">Claude Code setup</a>
+    <a href="/mcp-context-bloat">MCP context bloat</a>
+    <a href="/coding-agent-token-usage">All coding agents</a>
+  </nav>
+  <div class="article-prose">
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why compress context in Cursor?</a></li><li><a href="#install">How do I set it up?</a></li><li><a href="#what">What gets installed?</a></li><li><a href="#use">How do I use it day to day?</a></li><li><a href="#other">What else keeps Cursor context small?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <h2 id="why">Why compress context in Cursor?</h2>
+    <p>Agent mode reads files, runs terminal commands and calls MCP tools, and all of that output is sent back to the model on later steps. Large results use your usage allowance and crowd the window. Compressing them against the request keeps the relevant lines and drops the rest.</p>
+    <h2 id="install">How do I set it up?</h2>
+    <ol><li>Install the CLI and run setup. Your browser opens to sign in.<pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre></li><li>Run <code>supercompress doctor</code> and check the Cursor row.</li><li>Restart Cursor. In Cursor's MCP settings, the <code>supercompress</code> server should be listed with its tools.</li></ol>
+    <h2 id="what">What gets installed?</h2>
+    <ul><li>An MCP entry in <code>~/.cursor/mcp.json</code> with the <code>compress_context</code>, <code>connect_account</code> and <code>usage_summary</code> tools.</li><li>Cursor hooks for large context.</li><li>An always-on rule that tells the agent to compress bulky dumps before reasoning over them.</li></ul>
+    <h2 id="use">How do I use it day to day?</h2>
+    <p>Mostly you do nothing: the rule and hooks prompt the agent to compress large output. You can also ask directly, for example "compress this test output for the failing auth test". The kept text is original lines, so file paths and error strings stay exact.</p>
+    <h2 id="other">What else keeps Cursor context small?</h2>
+    <ul><li>Turn off MCP servers you are not using; their tool definitions load every turn. See <a href="/mcp-context-bloat">MCP context bloat</a>.</li><li>Start new chats for new tasks.</li><li>Keep rules files short and specific.</li></ul><p>More: <a href="/reduce-cursor-token-usage">reduce Cursor token usage</a>.</p>
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>Does SuperCompress work with Cursor?</h3>
+    <p>Yes. supercompress setup detects Cursor and writes an MCP server, hooks and a rule.</p>
+    <h3>Do I need to paste an API key into Cursor?</h3>
+    <p>No. Setup links your account through the browser and saves a coding agent key for you.</p>
+    <h3>Does it change which model Cursor uses?</h3>
+    <p>No. It only compresses context that the agent sends through it.</p>
+    <h3>How do I uninstall it from Cursor?</h3>
+    <p>Run supercompress uninstall, which removes the entries it added and restores backed-up configs.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

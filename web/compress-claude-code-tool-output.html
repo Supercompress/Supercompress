@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Compress Claude Code Tool Output with Hooks and MCP</title>
+  <meta name="description" content="Set up SuperCompress in Claude Code so large tool output is compressed against your request through PostToolUse hooks and an MCP tool. Step-by-step guide." />
+  <meta name="keywords" content="reduce Claude Code token costs, Claude Code hooks compress output, Claude Code PostToolUse, Claude Code MCP compression" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Compress Claude Code Tool Output with Hooks and MCP" />
+  <meta property="og:description" content="Set up SuperCompress in Claude Code so large tool output is compressed against your request through PostToolUse hooks and an MCP tool. Step-by-step guide." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/compress-claude-code-tool-output" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Compress Claude Code Tool Output with Hooks and MCP" />
+  <meta name="twitter:description" content="Set up SuperCompress in Claude Code so large tool output is compressed against your request through PostToolUse hooks and an MCP tool. Step-by-step guide." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/compress-claude-code-tool-output" />
+  <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Compress Claude Code tool output with hooks and MCP",
+  "description": "Set up SuperCompress in Claude Code so large tool output is compressed against your request through PostToolUse hooks and an MCP tool. Step-by-step guide.",
+  "datePublished": "2026-10-19",
+  "dateModified": "2026-10-19",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/compress-claude-code-tool-output"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "reduce Claude Code token costs, Claude Code hooks compress output, Claude Code PostToolUse, Claude Code MCP compression"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I reduce Claude Code token costs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Clear between tasks, keep CLAUDE.md small, prune MCP servers, and compress bulky tool output against your request with a PostToolUse hook."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress need an Anthropic API key?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It works alongside your normal Claude Code login and does not proxy your Anthropic traffic."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need a SuperCompress API key for Claude Code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. supercompress setup signs you in through a browser link and saves a coding agent key automatically."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where is my context processed?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Hosted requests are processed by SuperCompress's hosted model service."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Compress Claude Code tool output with hooks and MCP",
+      "item": "https://www.supercompress.dev/compress-claude-code-tool-output"
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Integration guide · Updated 2026-10-19</p>
+  <h1>Compress Claude Code tool output with hooks and MCP</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">To compress Claude Code tool output, run npm install -g supercompress-proxy then supercompress setup. Setup adds an MCP server, instructions and UserPromptSubmit and PostToolUse hooks. After large tool calls, the hook sends the output and your request to the hosted SuperCompress model and passes the kept lines to Claude.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/reduce-claude-code-token-usage">Reduce Claude Code token usage</a>
+    <a href="/claude-code-mcp-output-too-large">MCP output too large</a>
+    <a href="/reduce-tool-call-output-tokens">Reduce tool output tokens</a>
+    <a href="/cursor-mcp-context-compression">Cursor setup</a>
+  </nav>
+  <div class="article-prose">
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why target tool output in Claude Code?</a></li><li><a href="#install">How do I install it?</a></li><li><a href="#what">What does setup change?</a></li><li><a href="#verify">How do I check that it is working?</a></li><li><a href="#tips">What else reduces Claude Code token costs?</a></li><li><a href="#remove">How do I remove it?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <h2 id="why">Why target tool output in Claude Code?</h2>
+    <p>In a typical coding session the bulk of tokens are inputs the model re-reads: file reads, test runs, grep results and build logs. Shorter replies help a little, but the large lever is what Claude reads. A failing test run may be thousands of lines where a few lines explain the failure.</p>
+    <h2 id="install">How do I install it?</h2>
+    <ol><li>Install and link your account. Setup opens your browser to sign in; no API key step is needed for coding agents.<pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre></li>
+<li>Confirm detection with <code>supercompress agents</code> and health with <code>supercompress doctor</code>.</li>
+<li>Restart Claude Code so the MCP server loads.</li></ol>
+    <h2 id="what">What does setup change?</h2>
+    <ul><li><strong>MCP server</strong> in <code>~/.claude.json</code> exposing <code>compress_context</code>, <code>connect_account</code> and <code>usage_summary</code>.</li>
+<li><strong>Hooks</strong> in <code>~/.claude/settings.json</code>: <code>UserPromptSubmit</code> and <code>PostToolUse</code>.</li>
+<li><strong>Instructions</strong> in <code>CLAUDE.md</code> telling Claude when to call the tool.</li></ul>
+<p>It does not change how Claude Code talks to Anthropic, so your normal login keeps working.</p>
+    <h2 id="verify">How do I check that it is working?</h2>
+    <p>Run a command with large output, such as a full test suite, and watch for the compressed context. The <code>usage_summary</code> tool and your dashboard show per-agent requests and tokens in and out. The API reports <code>original_tokens</code> and <code>kept_tokens</code> per call.</p>
+    <h2 id="tips">What else reduces Claude Code token costs?</h2>
+    <ul><li><code>/clear</code> between tasks and steered <code>/compact</code> within one, see <a href="/claude-code-compact-vs-clear-vs-compression">compact vs clear vs compression</a>.</li>
+<li>Keep <code>CLAUDE.md</code> short.</li><li>Disconnect MCP servers you do not need, see <a href="/mcp-context-bloat">MCP context bloat</a>.</li></ul>
+    <h2 id="remove">How do I remove it?</h2>
+    <p>Run <code>supercompress uninstall</code>. It removes only the entries SuperCompress added and restores backed-up configs.</p>
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>How do I reduce Claude Code token costs?</h3>
+    <p>Clear between tasks, keep CLAUDE.md small, prune MCP servers, and compress bulky tool output against your request with a PostToolUse hook.</p>
+    <h3>Does SuperCompress need an Anthropic API key?</h3>
+    <p>No. It works alongside your normal Claude Code login and does not proxy your Anthropic traffic.</p>
+    <h3>Do I need a SuperCompress API key for Claude Code?</h3>
+    <p>No. supercompress setup signs you in through a browser link and saves a coding agent key automatically.</p>
+    <h3>Where is my context processed?</h3>
+    <p>Hosted requests are processed by SuperCompress&#x27;s hosted model service.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

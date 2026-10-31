@@ -4,9 +4,9 @@
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>API Dashboard — SuperCompress</title>
+  <title>API Dashboard | SuperCompress</title>
   <meta name="description" content="Manage SuperCompress API keys, view usage, and access documentation." />
-  <meta property="og:title" content="API Dashboard — SuperCompress" />
+  <meta property="og:title" content="API Dashboard, SuperCompress" />
   <meta property="og:url" content="https://supercompress.dev/dashboard" />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="en_US" />
@@ -16,7 +16,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="SuperCompress API Dashboard — Manage Keys &amp; Usage" />
+  <meta name="twitter:title" content="SuperCompress API Dashboard, Manage Keys &amp; Usage" />
   <meta name="twitter:description" content="Create and manage SuperCompress API keys, view usage analytics, and manage billing." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="API key management, LLM API dashboard, token usage dashboard, prompt compression API, SuperCompress dashboard, API billing" />
@@ -419,7 +419,7 @@
       color: var(--text-muted);
     }
 
-    /* Keys summary cards (light) — full charts on Analytics panel */
+    /* Keys summary cards (light), full charts on Analytics panel */
     .dash-panel-actions {
       display: flex;
       align-items: center;
@@ -571,8 +571,8 @@
             <span class="dash-profile-initial" id="dash-profile-initial">?</span>
           </button>
           <div class="dash-profile-dropdown" id="dash-profile-dropdown" role="menu">
-            <div class="dash-profile-dropdown-name" id="dash-profile-name">—</div>
-            <div class="dash-profile-dropdown-email" id="dash-profile-email">—</div>
+            <div class="dash-profile-dropdown-name" id="dash-profile-name">-</div>
+            <div class="dash-profile-dropdown-email" id="dash-profile-email">-</div>
             <button type="button" class="dash-profile-action hidden" id="dash-change-password" role="menuitem">Change password</button>
             <button type="button" class="dash-profile-signout" id="dash-signout" role="menuitem">Sign out</button>
           </div>
@@ -608,7 +608,7 @@
       <div class="dash-auth-card">
         <p class="dash-section-label">Free to start</p>
         <h1 id="auth-title">Get your free API key</h1>
-        <p class="dash-auth-sub" id="auth-subtitle">5M free tokens/mo · then $0.10/1M. Google takes one click — your key is ready instantly.</p>
+        <p class="dash-auth-sub" id="auth-subtitle">1M free tokens/mo · then $0.10/1M. Google takes one click, your key is ready instantly.</p>
 
         <div id="firebase-auth-area">
           <button type="button" class="dash-btn-google" id="btn-google">
@@ -653,7 +653,7 @@
     <div class="dash-shell hidden" id="view-dashboard">
       <div class="df-container df-container-wide">
         <div class="dash-api-banner hidden" id="dash-api-banner">
-          <strong>Offline demo mode.</strong> Could not reach the hosted API — keys are stored in this browser only. Refresh once the API is available, or run locally:
+          <strong>Offline demo mode.</strong> Could not reach the hosted API, keys are stored in this browser only. Refresh once the API is available, or run locally:
           <code>SC_AUTH_DEV=1 SC_KEY_STORE=memory python scripts/local_web_server.py</code>
         </div>
 
@@ -688,7 +688,7 @@
             <span id="stat-keys">0</span>
             <span id="stat-requests">0</span>
             <span id="stat-saved">0</span>
-            <span id="stat-cut">—</span>
+            <span id="stat-cut">-</span>
             <span id="stat-in">0 in</span>
             <div id="keys-stats"></div>
           </div>
@@ -727,7 +727,7 @@
             </div>
             <div class="dash-analytics-kpi dash-analytics-kpi--cut">
               <span class="dash-analytics-kpi-l">Saved</span>
-              <strong class="dash-analytics-kpi-n" id="keys-kpi-pct">—</strong>
+              <strong class="dash-analytics-kpi-n" id="keys-kpi-pct">-</strong>
               <span class="dash-analytics-kpi-s" id="keys-kpi-pct-sub">percentage cut</span>
             </div>
           </div>
@@ -845,7 +845,7 @@ npm exec supercompress setup</pre>
           </div>
         </div>
 
-        <!-- Analytics (live charts — same dither UI, stays inside the dashboard) -->
+        <!-- Analytics (live charts, same dither UI, stays inside the dashboard) -->
         <div id="panel-analytics" class="an-scope hidden">
           <div class="dash-panel-head">
             <div>
@@ -867,7 +867,7 @@ npm exec supercompress setup</pre>
               <div class="kpi-wash" id="an-wash-cut" aria-hidden="true"></div>
               <div class="kpi-body">
                 <span class="kpi-l">Cut</span>
-                <strong class="kpi-n" id="an-kpi-cut">—</strong>
+                <strong class="kpi-n" id="an-kpi-cut">-</strong>
                 <span class="kpi-s" id="an-kpi-cut-sub">loading…</span>
               </div>
             </article>
@@ -875,7 +875,7 @@ npm exec supercompress setup</pre>
               <div class="kpi-wash" id="an-wash-saved" aria-hidden="true"></div>
               <div class="kpi-body">
                 <span class="kpi-l">Saved</span>
-                <strong class="kpi-n" id="an-kpi-saved">—</strong>
+                <strong class="kpi-n" id="an-kpi-saved">-</strong>
                 <span class="kpi-s">this month · billing meter</span>
               </div>
             </article>
@@ -883,7 +883,7 @@ npm exec supercompress setup</pre>
               <div class="kpi-wash" id="an-wash-in" aria-hidden="true"></div>
               <div class="kpi-body">
                 <span class="kpi-l">Input</span>
-                <strong class="kpi-n" id="an-kpi-in">—</strong>
+                <strong class="kpi-n" id="an-kpi-in">-</strong>
                 <span class="kpi-s">tokens compressed in</span>
               </div>
             </article>
@@ -891,7 +891,7 @@ npm exec supercompress setup</pre>
               <div class="kpi-wash" id="an-wash-req" aria-hidden="true"></div>
               <div class="kpi-body">
                 <span class="kpi-l">Requests</span>
-                <strong class="kpi-n" id="an-kpi-req">—</strong>
+                <strong class="kpi-n" id="an-kpi-req">-</strong>
                 <span class="kpi-s" id="an-kpi-req-sub">loading…</span>
               </div>
             </article>
@@ -904,7 +904,7 @@ npm exec supercompress setup</pre>
                   <h2>Tokens saved</h2>
                   <p>Daily · this month · hover a day</p>
                 </div>
-                <span class="chip chip--cut" id="an-chip-delta">—</span>
+                <span class="chip chip--cut" id="an-chip-delta">-</span>
               </header>
               <div class="chart-well chart-well--lg" id="an-area"></div>
             </section>
@@ -949,7 +949,7 @@ npm exec supercompress setup</pre>
           <div class="dash-panel-head">
             <div>
               <h1>Usage &amp; billing</h1>
-              <p>Every account includes 5M free tokens each month. After that, pay-as-you-go is $0.10 per 1M tokens.</p>
+              <p>Every account includes 1M free tokens each month. After that, pay-as-you-go is $0.10 per 1M tokens.</p>
             </div>
           </div>
 
@@ -961,9 +961,9 @@ npm exec supercompress setup</pre>
           <div class="dash-plans-grid" id="plans-grid">
             <div class="dash-plan-card" data-plan="free">
               <div class="dash-plan-badge">Included free</div>
-              <div class="dash-plan-price">5M<span> free / mo</span></div>
+              <div class="dash-plan-price">1M<span> free / mo</span></div>
               <ul class="dash-plan-features">
-                <li>5M tokens every month</li>
+                <li>1M tokens every month</li>
                 <li>Hard stop when allowance runs out</li>
                 <li>Up to 10 API keys</li>
               </ul>
@@ -976,8 +976,8 @@ npm exec supercompress setup</pre>
               <div class="dash-plan-badge">Pay as you go</div>
               <div class="dash-plan-price">$0.10<span> / 1M tokens</span></div>
               <ul class="dash-plan-features">
-                <li>Same 5M free included</li>
-                <li>Unlimited after free allowance</li>
+                <li>Same 1M free included</li>
+                <li>Continue with prepaid credits after free</li>
                 <li>Prepaid credits · auto-recharge optional</li>
               </ul>
               <div class="dash-plan-cta">
@@ -1010,7 +1010,7 @@ npm exec supercompress setup</pre>
   <div class="dash-modal hidden" id="modal-secret">
     <div class="dash-modal-card dash-modal-card--wide">
       <h2>You're ready to integrate</h2>
-      <p class="dash-warn">Copy your API key now — it’s only shown once.</p>
+      <p class="dash-warn">Copy your API key now, it’s only shown once.</p>
       <code class="dash-key-full" id="secret-value"></code>
       <button type="button" class="btn-brand" id="btn-copy-secret">Copy key</button>
 
@@ -1042,7 +1042,7 @@ npm exec supercompress setup</pre>
     </div>
   </div>
 
-  <!-- Change password modal (email link via Resend — email/password accounts only) -->
+  <!-- Change password modal (email link via Resend, email/password accounts only) -->
   <div class="dash-modal hidden" id="modal-password">
     <div class="dash-modal-card">
       <h2 id="password-modal-title">Change password</h2>
@@ -1073,8 +1073,8 @@ npm exec supercompress setup</pre>
       </div>
       <p class="dash-credits-hint" id="credits-hint">About 100M tokens · $10 minimum</p>
       <label class="dash-credits-auto">
-        <input type="checkbox" id="credits-auto-recharge" checked />
-        <span>Auto-recharge this amount when balance hits $0</span>
+        <input type="checkbox" id="credits-auto-recharge" />
+        <span>Optional: automatically charge this amount when balance hits $0 (off by default)</span>
       </label>
       <button type="button" class="btn-brand dash-credits-submit" id="btn-confirm-credits">Continue to checkout</button>
       <button type="button" class="btn-link-muted" id="btn-cancel-credits">Cancel</button>
@@ -1092,7 +1092,7 @@ npm exec supercompress setup</pre>
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -1122,7 +1122,7 @@ npm exec supercompress setup</pre>
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>
@@ -1163,9 +1163,9 @@ npm exec supercompress setup</pre>
   <script src="assets/js/firebase-config.js?v=3"></script>
   <script src="assets/js/supercompress.js?v=1"></script>
   <script src="/assets/js/dither-kit-lite.js?v=18"></script>
-  <script src="/assets/js/analytics-data.js?v=5"></script>
+  <script src="/assets/js/analytics-data.js?v=7"></script>
   <script src="/assets/js/dashboard-analytics.js?v=6"></script>
-  <script type="module" src="/assets/js/dashboard-api.js?v=55"></script>
+  <script type="module" src="/assets/js/dashboard-api.js?v=62"></script>
   <script src="assets/js/affiliate-track.js?v=1"></script>
   <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>

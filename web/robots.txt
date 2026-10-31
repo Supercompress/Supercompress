@@ -1,8 +1,8 @@
 # SuperCompress crawl policy
-# Canonical LLM index: https://supercompress.dev/llms.txt
-# Full LLM index: https://supercompress.dev/llms-full.txt
-# Human-readable AI search facts: https://supercompress.dev/ai-search
-# AI search facts: https://supercompress.dev/ai-search.json
+# Canonical LLM index: https://www.supercompress.dev/llms.txt
+# Full LLM index: https://www.supercompress.dev/llms-full.txt
+# Human-readable AI search facts: https://www.supercompress.dev/ai-search
+# AI search facts: https://www.supercompress.dev/ai-search.json
 # Terms: https://www.supercompress.dev/terms
 # Privacy: https://www.supercompress.dev/privacy
 
@@ -40,6 +40,15 @@ User-agent: Bingbot
 Allow: /
 
 User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Perplexity-User
 Allow: /
 
 User-agent: CCBot

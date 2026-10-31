@@ -9,7 +9,8 @@ test("v2 launch email points at the tool", () => {
   assert.match(copy.text, /24\/24/);
   assert.match(copy.text, /16,647 tokens → 5,148/);
   assert.match(copy.text, /coding-agent dumps/);
-  assert.match(copy.text, /Launch promo: 5M tokens\/month free, then \$0\.10 per million/);
+  assert.match(copy.text, /1M tokens\/month free, then \$0\.10 per million/);
+  assert.doesNotMatch(copy.text, /Launch promo|5M tokens/);
   assert.match(copy.html, /dashboard\?signup=1/);
   assert.match(copy.html, /coding-agents/);
   assert.match(copy.html, /\/playground/);

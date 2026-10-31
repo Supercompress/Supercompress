@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Compress Engine Reference — SuperCompress Documentation</title>
-  <meta name="description" content="Layman and technical reference for every function in web/assets/js/compress-engine.js — what it does and how it works." />
-  <meta property="og:title" content="Compress Engine Reference — SuperCompress Documentation" />
+  <title>Compress Engine Reference | SuperCompress Documentation</title>
+  <meta name="description" content="Layman and technical reference for every function in web/assets/js/compress-engine.js, what it does and how it works." />
+  <meta property="og:title" content="Compress Engine Reference, SuperCompress Documentation" />
   <meta property="og:description" content="Function-by-function guide to the browser compress engine: preprocessors, ML scoring, compiler selection, CCR, and precision mode." />
   <meta property="og:url" content="https://docs.supercompress.dev/compress-engine" />
   <meta property="og:type" content="website" />
@@ -76,7 +76,7 @@
 
       <div class="docs-content">
         <h1>Compress engine reference</h1>
-        <p class="doc-lead">Every function in <code>web/assets/js/compress-engine.js</code> — what it does in plain English, and how it works technically. Source of truth for the browser playground and the proxy package copy.</p>
+        <p class="doc-lead">Every function in <code>web/assets/js/compress-engine.js</code>, what it does in plain English, and how it works technically. Source of truth for the browser playground and the proxy package copy.</p>
 
         <div class="policy-note">
           <strong>Eviction policy.</strong> Domain preprocessors may tidy structure (blank-line collapse, JSON shape crushing, log dedupe, stack-frame collapse). They must <em>not</em> drop content because a hardcoded phrase matched. Keep/drop decisions belong to the ML path: token MLP scores, compiler block ranking, and optional neural (<code>neuralBoost</code>) reranking.
@@ -101,7 +101,7 @@
         <h2 id="pipeline">End-to-end flow</h2>
         <ol>
           <li>Normalize text → split lines.</li>
-          <li><code>preprocessLines</code> routes to JSON / code / log tidy (structure only).</li>
+          <li><code>preprocessLines</code> dispatches to JSON / code / log tidy (structure only).</li>
           <li>Tokenize → build per-token features → <code>forwardModel</code> (tiny MLP).</li>
           <li>Aggregate to lines/blocks → <code>scoreCompilerBlocks</code> (+ optional neural boost).</li>
           <li><code>selectCompilerLines</code> keeps a budgeted subset; verifiers check entity recall.</li>
@@ -141,7 +141,7 @@
           <h3>compressCodeLines(lines)</h3>
           <div class="fn-meta">Preprocessor · <strong>no keyword eviction</strong></div>
           <div class="fn-grid">
-            <div class="fn-box"><strong>Layman</strong><p>Tidies code whitespace and tags the language. It does <em>not</em> delete comments or “boring” lines by keyword — that is the ML engine’s job.</p></div>
+            <div class="fn-box"><strong>Layman</strong><p>Tidies code whitespace and tags the language. It does <em>not</em> delete comments or “boring” lines by keyword, that is the ML engine’s job.</p></div>
             <div class="fn-box"><strong>Technical</strong><p>Calls <code>detectLanguage</code>, collapses runs of blank lines to at most one, returns <code>{ lines, preprocessor: "code", language }</code>. Comment/docstring/license stripping and fixture phrase blacklists were removed.</p></div>
           </div>
         </article>
@@ -174,7 +174,7 @@
         </article>
 
         <h2 id="languages">Language detection coverage</h2>
-        <p>Detection is for metadata and routing hints — the compressor still works on any text. Recognized ids include:</p>
+        <p>Detection is for metadata and segmentation hints, the compressor still works on any text. Recognized ids include:</p>
         <ul class="lang-list">
           <li>c / cpp (via fence)</li>
           <li>csharp</li>
@@ -218,7 +218,7 @@
           <h3>extractQuestionEntities(question)</h3>
           <div class="fn-grid">
             <div class="fn-box"><strong>Layman</strong><p>Pulls out the “proper nouns” of the question: names, paths, IDs, code-ish tokens.</p></div>
-            <div class="fn-box"><strong>Technical</strong><p>Heuristic extractors for CamelCase, paths, dotted ids, quoted spans, ALL_CAPS, numerics — used as soft overlap features, not hard drop rules.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Heuristic extractors for CamelCase, paths, dotted ids, quoted spans, ALL_CAPS, numerics, used as soft overlap features, not hard drop rules.</p></div>
           </div>
         </article>
 
@@ -289,7 +289,7 @@
         <article class="fn-card" id="fn-specificQuestionEntities">
           <h3>specificQuestionEntities(question, blocks)</h3>
           <div class="fn-grid">
-            <div class="fn-box"><strong>Layman</strong><p>Finds question entities that are rare across blocks — the good “needles.”</p></div>
+            <div class="fn-box"><strong>Layman</strong><p>Finds question entities that are rare across blocks, the good “needles.”</p></div>
             <div class="fn-box"><strong>Technical</strong><p>Entity list filtered by block DF for multi-hop protection.</p></div>
           </div>
         </article>
@@ -306,7 +306,7 @@
           <h3>measureCriticalRetention(original, compressed, question)</h3>
           <div class="fn-grid">
             <div class="fn-box"><strong>Layman</strong><p>Scores whether the compressed text still has the lines that look critical for answering.</p></div>
-            <div class="fn-box"><strong>Technical</strong><p>Ranks original lines by entity overlap; reports kept vs dropped critical previews. Measurement only — not an eviction policy.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Ranks original lines by entity overlap; reports kept vs dropped critical previews. Measurement only, not an eviction policy.</p></div>
           </div>
         </article>
 
@@ -331,7 +331,7 @@
         <article class="fn-card" id="fn-deterministicAttention">
           <h3>deterministicAttention(…)</h3>
           <div class="fn-grid">
-            <div class="fn-box"><strong>Layman</strong><p>A hand-crafted “attention” score when no neural boost is present — still a feature, not a keyword blacklist.</p></div>
+            <div class="fn-box"><strong>Layman</strong><p>A hand-crafted “attention” score when no neural boost is present, still a feature, not a keyword blacklist.</p></div>
             <div class="fn-box"><strong>Technical</strong><p>Combines semantic class, entity match, and recency into a bounded prior for the MLP / fallback.</p></div>
           </div>
         </article>
@@ -405,7 +405,7 @@
           <div class="fn-meta"><strong>No hardcoded drop phrases</strong></div>
           <div class="fn-grid">
             <div class="fn-box"><strong>Layman</strong><p>How relevant is this line to the question? Starts from the model score and bumps when question words appear.</p></div>
-            <div class="fn-box"><strong>Technical</strong><p><code>modelLineScore * 2</code> + term/entity soft hits. Fixture penalties (e.g. Maycomb, Region CPU eviction, Appendix notes) removed — negatives are not applied from keyword lists.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p><code>modelLineScore * 2</code> + term/entity soft hits. Fixture penalties (e.g. Maycomb, Region CPU eviction, Appendix notes) removed, negatives are not applied from keyword lists.</p></div>
           </div>
         </article>
 
@@ -487,7 +487,7 @@
           <h3>classifyLine(line)</h3>
           <div class="fn-grid">
             <div class="fn-box"><strong>Layman</strong><p>Labels a line: heading, code, log, blank, etc.</p></div>
-            <div class="fn-box"><strong>Technical</strong><p>Regex typology used by routing and block segmentation.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Regex typology used by block segmentation.</p></div>
           </div>
         </article>
 
@@ -566,10 +566,10 @@
 
         <article class="fn-card" id="fn-selectCompilerLines">
           <h3>selectCompilerLines(…)</h3>
-          <div class="fn-meta">Largest internal routine — budgeted keep set</div>
+          <div class="fn-meta">Largest internal routine, budgeted keep set</div>
           <div class="fn-grid">
             <div class="fn-box"><strong>Layman</strong><p>The compiler: given scores and a token budget, picks which lines survive, protecting answer-critical bridges and sinks.</p></div>
-            <div class="fn-box"><strong>Technical</strong><p>Segments → scores → greedy/protected keep with neural seed protection, multi-hop bridge harvest, fence closing, and verifier loops. This is where eviction happens — driven by relative scores / neural ranks, not phrase blacklists.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Segments → scores → greedy/protected keep with neural seed protection, multi-hop bridge harvest, fence closing, and verifier loops. This is where eviction happens, driven by relative scores / neural ranks, not phrase blacklists.</p></div>
           </div>
         </article>
 
@@ -724,7 +724,7 @@
         <article class="fn-card" id="fn-cacheWrap">
           <h3>cacheWrap(compressedText, query)</h3>
           <div class="fn-grid">
-            <div class="fn-box"><strong>Layman</strong><p>Optional wrapper that puts a fixed header around compressed text so providers can reuse prompt/prefix cache. We never touch the model’s KV cache — we only change the string we send.</p></div>
+            <div class="fn-box"><strong>Layman</strong><p>Optional wrapper that puts a fixed header around compressed text so providers can reuse prompt/prefix cache. We never touch the model’s KV cache, we only change the string we send.</p></div>
             <div class="fn-box"><strong>Technical</strong><p>CacheAligner: deterministic XML preamble/postamble for provider prompt caching (OpenAI/Anthropic/vLLM). Not in-model KV eviction.</p></div>
           </div>
         </article>
@@ -800,7 +800,7 @@ compressCCR, ccrRetrieve, ccrGetStats, simpleHash, cacheWrap</code></pre>
         <aside class="docs-signup-cta" aria-label="Get started">
           <p class="docs-signup-cta-kicker">Free to start</p>
           <h2>Get your API key</h2>
-          <p>5M free tokens/mo · then $0.10/1M. No credit card.</p>
+          <p>Free monthly allowance. No credit card.</p>
           <div class="docs-signup-cta-actions">
             <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
             <a class="docs-signup-cta-link" href="https://docs.supercompress.dev/coding-agents">Coding agents setup</a>

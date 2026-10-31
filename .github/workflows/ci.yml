@@ -61,6 +61,8 @@ jobs:
           node packages/proxy/test/sse-stream.js
           node packages/proxy/test/protocol-safety.js
           node packages/proxy/test/uninstall-clean.js
+          node packages/proxy/test/limits.js
+          node packages/proxy/test/runway-sim.js
       - name: CCR storage-key collision tests
         run: node web/assets/js/compress-engine-ccr.test.js
       - name: Billing ledger unit tests
@@ -143,3 +145,4 @@ jobs:
         run: |
           node scripts/check-api-host-routes.test.js
           node scripts/check-api-host-routes.js
+          node scripts/check-firebase-auth-proxy.js

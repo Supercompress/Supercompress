@@ -2,7 +2,7 @@
   "name": "supercompress",
   "displayName": "SuperCompress",
   "description": "SuperCompress v2 \u2014 hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Hosted MCP supports OAuth 2.1 sign-in (PKCE); optional API key remains a fallback.",
-  "version": "0.5.37",
+  "version": "0.5.40",
   "author": {
     "name": "SuperCompress",
     "email": "team@supercompress.dev"

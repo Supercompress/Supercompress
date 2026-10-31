@@ -4,7 +4,7 @@
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SuperCompress — Local Playground</title>
+  <title>SuperCompress | Local Playground</title>
   <meta property="og:url" content="https://supercompress.dev/playground" />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="en_US" />
@@ -15,7 +15,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="SuperCompress — Interactive Compression Playground" />
+  <meta name="twitter:title" content="SuperCompress, Interactive Compression Playground" />
   <meta name="twitter:description" content="Test SuperCompress compression on your own text. Paste context, ask a question, see exactly what gets kept and removed." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="prompt compression playground, LLM token test, compression demo free, AI context tester, SuperCompress try online, token savings calculator" />
@@ -251,7 +251,7 @@
 <main>
 
     <section class="panel">
-      <label for="api-key">API key (optional — uses hosted API when set)</label>
+      <label for="api-key">API key (optional, uses hosted API when set)</label>
       <div class="key-row">
         <input type="password" id="api-key" placeholder="sc_live_…" autocomplete="off" />
         <button type="button" id="save-key">Save key</button>
@@ -267,7 +267,7 @@
     </section>
 
     <section class="panel">
-      <label for="query">Your question — defines what SuperCompress keeps</label>
+      <label for="query">Your question, defines what SuperCompress keeps</label>
       <input type="text" id="query" value="Summarize this context." placeholder="What should the model answer from this context?" />
     </section>
 
@@ -292,15 +292,15 @@
 
     <section class="panel">
       <div class="stats" id="stats" hidden>
-        <span class="pill pill--hero"><strong id="stat-removed">—</strong> tokens removed</span>
-        <span class="pill"><strong id="stat-in">—</strong> → <strong id="stat-out">—</strong> tokens kept</span>
-        <span class="pill"><strong id="stat-saved">—</strong>% saved</span>
-        <span class="pill"><strong id="stat-lines">—</strong> lines evicted</span>
-        <span class="pill">policy: <strong id="stat-policy">—</strong></span>
-        <span class="pill">mode: <strong id="stat-mode">—</strong></span>
-        <span class="pill">quality: <strong id="stat-quality">—</strong></span>
-        <span class="pill">important kept: <strong id="stat-important">—</strong></span>
-        <span class="pill">risk: <strong id="stat-risk">—</strong></span>
+        <span class="pill pill--hero"><strong id="stat-removed">-</strong> tokens removed</span>
+        <span class="pill"><strong id="stat-in">-</strong> → <strong id="stat-out">-</strong> tokens kept</span>
+        <span class="pill"><strong id="stat-saved">-</strong>% saved</span>
+        <span class="pill"><strong id="stat-lines">-</strong> lines evicted</span>
+        <span class="pill">policy: <strong id="stat-policy">-</strong></span>
+        <span class="pill">mode: <strong id="stat-mode">-</strong></span>
+        <span class="pill">quality: <strong id="stat-quality">-</strong></span>
+        <span class="pill">important kept: <strong id="stat-important">-</strong></span>
+        <span class="pill">risk: <strong id="stat-risk">-</strong></span>
       </div>
       <p class="status" id="status" aria-live="polite"></p>
     </section>
@@ -356,13 +356,13 @@
         const linesIn = (context || "").split("\n").length;
         const linesOut = (data.compressed_text || "").split("\n").length;
         $("stat-lines").textContent = fmt(Math.max(0, linesIn - linesOut));
-        $("stat-policy").textContent = data.policy_name || "—";
-        $("stat-mode").textContent = data.mode || "—";
+        $("stat-policy").textContent = data.policy_name || "-";
+        $("stat-mode").textContent = data.mode || "-";
         $("stat-quality").textContent =
-          data.answer_quality != null ? fmt(data.answer_quality * 100, 0) + "%" : "—";
+          data.answer_quality != null ? fmt(data.answer_quality * 100, 0) + "%" : "-";
         $("stat-important").textContent =
-          data.important_kept_pct != null ? fmt(data.important_kept_pct * 100, 0) + "%" : "—";
-        $("stat-risk").textContent = data.compression_risk || "—";
+          data.important_kept_pct != null ? fmt(data.important_kept_pct * 100, 0) + "%" : "-";
+        $("stat-risk").textContent = data.compression_risk || "-";
       }
 
       // Presets
@@ -385,7 +385,7 @@
         presetRoot.appendChild(btn);
       });
 
-      // API key — page memory only (XSS-safe; never sessionStorage)
+      // API key, page memory only (XSS-safe; never sessionStorage)
       const keyInput = $("api-key");
       if (memoryApiKey) keyInput.value = memoryApiKey;
       $("save-key").addEventListener("click", () => {
@@ -466,7 +466,7 @@
           const same = data.compressed_text === context;
           setStatus(
             same
-              ? `Done — output unchanged (${fmt(data.original_tokens)} tokens). Try a longer preset.`
+              ? `Done, output unchanged (${fmt(data.original_tokens)} tokens). Try a longer preset.`
               : `Removed ${fmt(removed)} tokens (${fmt(data.tokens_saved_pct, 1)}% saved) via ${data.mode}.`,
             "ok"
           );
@@ -529,7 +529,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -559,7 +559,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

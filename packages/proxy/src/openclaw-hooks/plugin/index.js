@@ -130,7 +130,7 @@ export default definePluginEntry({
       "after_tool_call",
       async (event, ctx) => {
         const toolName = String(event?.toolName || ctx?.toolName || "");
-        if (/compress_context|connect_account|usage_summary|headroom_/i.test(toolName)) {
+        if (/compress_context|connect_account|usage_summary|runway_check|headroom_/i.test(toolName)) {
           return;
         }
         if (event?.error) return;

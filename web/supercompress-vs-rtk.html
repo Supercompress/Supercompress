@@ -7,7 +7,7 @@
   <meta name="description" content="SuperCompress vs RTK (rtk-ai): query-aware compression for any context vs shell-output filtering. When to use each, answer-keep gates, MCP for Cursor/Claude Code." />
   <meta name="keywords" content="SuperCompress vs RTK, RTK alternative, Rust Token Killer, rtk-ai, Claude Code token savings, prompt compression vs RTK, coding agent context compression" />
   <meta property="og:title" content="SuperCompress vs RTK (2026): Query-Aware Compression vs Shell Filters" />
-  <meta property="og:description" content="RTK compresses bash/tool stdout. SuperCompress compresses any context against the query — RAG, Read/Grep dumps, chat, and shell — with held-out answer keep." />
+  <meta property="og:description" content="RTK compresses bash/tool stdout. SuperCompress compresses any context against the query, RAG, Read/Grep dumps, chat, and shell, with held-out answer keep." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/supercompress-vs-rtk" />
   <meta property="og:type" content="article" />
@@ -17,7 +17,7 @@
   <meta name="twitter:title" content="SuperCompress vs RTK (2026)" />
   <meta name="twitter:description" content="Shell filters ≠ full context compression. Compare RTK vs SuperCompress on scope, answer keep, and agent MCP." />
   <link rel="canonical" href="https://www.supercompress.dev/supercompress-vs-rtk" />
-  <meta property="article:modified_time" content="2026-08-20" />
+  <meta property="article:modified_time" content="2026-10-18" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
 
@@ -27,7 +27,7 @@
     "@type": "TechArticle",
     "headline": "SuperCompress vs RTK (Rust Token Killer) 2026",
     "description": "Comparison of SuperCompress and RTK for coding-agent token reduction and prompt compression.",
-    "dateModified": "2026-08-20",
+    "dateModified": "2026-10-18",
     "author": {"@type": "Person", "name": "Arjun Shah"},
     "publisher": {"@type": "Organization", "name": "SuperCompress"},
     "mainEntityOfPage": "https://www.supercompress.dev/supercompress-vs-rtk"
@@ -46,16 +46,16 @@
       {
         "@type": "Question",
         "name": "What is the best RTK alternative in 2026?",
-        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is the RTK alternative when you need query-aware compression across the whole context window — MCP for Cursor/Claude Code/Codex, hosted API, and held-out answer-keep gates. Keep RTK if you only want transparent bash-output filters."}
+        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is the RTK alternative when you need query-aware compression across the whole context window, MCP for Cursor/Claude Code/Codex, hosted API, and held-out answer-keep gates. Keep RTK if you only want transparent bash-output filters."}
       },
       {
         "@type": "Question",
         "name": "Can I use SuperCompress and RTK together?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes. RTK can shrink shell stdout; SuperCompress can still compress the remaining tool dumps and conversation against the query. They attack different layers — do not assume either alone is a 90% bill cut."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. RTK can shrink shell stdout; SuperCompress can still compress the remaining tool dumps and conversation against the query. They attack different layers, do not assume either alone cuts your bill dramatically."}
       },
       {
         "@type": "Question",
-        "name": "Does RTK cut 60–90% of my LLM bill?",
+        "name": "Does RTK cut my LLM bill as much as its token numbers suggest?",
         "acceptedAnswer": {"@type": "Answer", "text": "Not automatically. RTK reports compression on bash output it intercepts. Independent evaluations (e.g. JetBrains skill trial) found session cost can stay flat or rise because bash is only part of input tokens and retries/cache can dominate. Always measure paired session cost."}
       }
     ]
@@ -92,29 +92,30 @@
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">RTK alternative · Updated 2026-08-20</p>
+  <p class="seo-kicker">RTK alternative · Updated 2026-10-18</p>
   <h1>SuperCompress vs RTK (Rust Token Killer)</h1>
-  <p class="seo-lead">Searching for an <strong>RTK alternative</strong>? <a href="https://github.com/rtk-ai/rtk" rel="noopener" target="_blank">RTK</a> is a Rust CLI that intercepts <strong>shell command output</strong> and filters it before the agent reads it. <strong>SuperCompress</strong> compresses <em>any</em> context against the current query — Read/Grep dumps, RAG, chat, JSON, and shell — via MCP/API, with published answer-keep gates.</p>
+  <p class="seo-lead">Searching for an <strong>RTK alternative</strong>? <a href="https://github.com/rtk-ai/rtk" rel="noopener" target="_blank">RTK</a> is a Rust CLI that intercepts <strong>shell command output</strong> and filters it before the agent reads it. <strong>SuperCompress</strong> compresses <em>any</em> context against the current query, Read/Grep dumps, RAG, chat, JSON, and shell, via MCP/API, with published answer-keep gates.</p>
 
   <div class="seo-verdict">
-    <strong>Verdict:</strong> Use SuperCompress when you care about the whole context window and whether the answer survives. Use RTK when you only want transparent bash/stdout filters. They can stack; neither is a guaranteed 90% bill cut on its own.
+    <strong>Verdict:</strong> Use SuperCompress when you care about the whole context window and whether the answer survives. Use RTK when you only want transparent bash/stdout filters. They can stack; neither guarantees a large bill cut on its own.
   </div>
 
   <nav class="seo-cluster" aria-label="Related">
     <a href="/supercompress-vs-headroom">vs Headroom</a>
     <a href="/supercompress-vs-llmlingua">vs LLMLingua</a>
-    <a href="/coding-agent-proxy">Coding agent proxy</a>
-    <a href="/reduce-llm-costs">Reduce LLM costs</a>
+    <a href="/coding-agent-token-usage">Coding agent proxy</a>
+    <a href="/cut-llm-api-costs">Reduce LLM costs</a>
     <a href="/token-compression">Token compression</a>
     <a href="/benchmarks">Benchmarks</a>
   </nav>
 
   <div class="article-prose">
+    <p>Related: <a href="/alternatives">compare context compression tools</a>, including <a href="/alternatives/headroom">Headroom alternatives</a>, <a href="/alternatives/caveman">Caveman alternatives</a>, and the <a href="/alternatives/caveman-cloud">Caveman Cloud alternative</a>.</p>
     <h2>Different jobs</h2>
     <p>This is the comparison people get wrong:</p>
     <ul>
-      <li><strong>RTK</strong> — PreToolUse / CLI rewrite for <code>git</code>, <code>cargo test</code>, logs, etc. Shrinks <em>command stdout</em> the agent sees.</li>
-      <li><strong>SuperCompress</strong> — Query-aware compression of the <em>context blob</em> (MCP <code>compress_context</code>, hosted API, Python). Keeps answer-critical lines in original wording.</li>
+      <li><strong>RTK</strong>, PreToolUse / CLI rewrite for <code>git</code>, <code>cargo test</code>, logs, etc. Shrinks <em>command stdout</em> the agent sees.</li>
+      <li><strong>SuperCompress</strong>, Query-aware compression of the <em>context blob</em> (MCP <code>compress_context</code>, hosted API, Python). Keeps answer-critical lines in original wording.</li>
     </ul>
     <p>Claude Code built-ins like <code>Read</code> / <code>Grep</code> often <strong>bypass</strong> RTK hooks. Those dumps are exactly where SuperCompress helps.</p>
 
@@ -126,17 +127,17 @@
       <tbody>
         <tr><td>Primary target</td><td>Shell / bash tool stdout</td><td>Any context + query</td></tr>
         <tr><td>Mechanism</td><td>Command filters, grouping, truncate, dedupe</td><td>Query-aware evidence selection</td></tr>
-        <tr><td>Query-aware?</td><td>No (command-structure aware)</td><td>Yes — scores against the question</td></tr>
+        <tr><td>Query-aware?</td><td>No (command-structure aware)</td><td>Yes, scores against the question</td></tr>
         <tr><td>Read / Grep / RAG dumps</td><td>Usually out of scope</td><td>First-class</td></tr>
-        <tr><td>Install</td><td>Rust binary + agent hooks</td><td><code>npx supercompress setup</code> / pip / API</td></tr>
+        <tr><td>Install</td><td>Rust binary + agent hooks</td><td><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> / pip / API</td></tr>
         <tr><td>Answer-keep gates</td><td>Stdout fidelity focus</td><td>Held-out answer-containment suites (see benchmarks)</td></tr>
         <tr><td>Bill impact</td><td>Only the bash slice of input tokens</td><td>Any oversized context you send through it</td></tr>
         <tr><td>Best default for</td><td>Noisy test/git/log spam</td><td>Agents + APIs that drown in mixed context</td></tr>
       </tbody>
     </table>
 
-    <h2>Why “60–90%” is not the same as your invoice</h2>
-    <p>RTK’s own docs note that bash is only one contributor to input tokens, and input is only part of the bill. Independent skill trials have reported <strong>flat or higher</strong> session cost even when the tool’s scoreboard looked great — because of retries, cache reads, and the fraction of traffic the hook never sees.</p>
+    <h2>Why token percentages are not the same as your invoice</h2>
+    <p>RTK’s own docs note that bash is only one contributor to input tokens, and input is only part of the bill. Independent skill trials have reported <strong>flat or higher</strong> session cost even when the tool’s scoreboard looked great, because of retries, cache reads, and the fraction of traffic the hook never sees.</p>
     <p><strong>Rule:</strong> measure paired session cost with and without the tool. Do not ship marketing that confuses “bytes of git status” with “dollars on the provider invoice.”</p>
 
     <h2>When RTK still wins</h2>
@@ -155,12 +156,10 @@
     </ul>
 
     <h2>Stacking (optional)</h2>
-    <p>RTK can clean stdout; SuperCompress can still compress the remaining transcript against the query. Treat them as layers — not rivals for the same metric.</p>
+    <p>RTK can clean stdout; SuperCompress can still compress the remaining transcript against the query. Treat them as layers, not rivals for the same metric.</p>
 
     <h2>Get started</h2>
-    <pre><code>npm i -g supercompress-proxy && npx supercompress setup
-# or
-pip install supercompress</code></pre>
+    <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
     <p>Coding agents: <a href="https://docs.supercompress.dev/coding-agents">docs.supercompress.dev/coding-agents</a> · Benchmarks: <a href="/benchmarks">/benchmarks</a></p>
   </div>
 </main>
@@ -173,7 +172,7 @@ pip install supercompress</code></pre>
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">

@@ -35,8 +35,8 @@
     "headline": "LLM Token Compression: Reduce Context Size Before Inference",
     "description": "LLM token compression reduces prompt size before inference. Compare learned compression, truncation, and summarization with implementation examples.",
     "datePublished": "2026-07-02",
-    "dateModified": "2026-07-03",
-    "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.linkedin.com/in/arjunkshah", "url": "https://www.linkedin.com/in/arjunkshah"},
+    "dateModified": "2026-10-20",
+    "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.arjunshah.xyz/", "url": "https://www.arjunshah.xyz/"},
     "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://supercompress.dev/assets/img/logo-chevrons.png"}},
     "mainEntityOfPage": "https://supercompress.dev/llm-token-compression"
   }
@@ -49,7 +49,7 @@
             {
         "@type": "Question",
         "name": "Does token compression require a model download?",
-        "acceptedAnswer": {"@type": "Answer", "text": "No. SuperCompress uses a tiny CPU policy and does not require a model download or GPU."}
+        "acceptedAnswer": {"@type": "Answer", "text": "No. SuperCompress runs on the hosted API, so there is nothing to download or run yourself."}
       },
       {
         "@type": "Question",
@@ -108,30 +108,30 @@
     <p class="seo-kicker">Token compression guide</p>
     <h1>LLM token compression before inference</h1>
     <p class="seo-lead">LLM token compression removes waste before the model spends compute on it. The goal is to preserve the evidence needed for the answer while cutting everything else.</p>
-    <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
+    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
 <section class="seo-section">
         <h2>What is LLM token compression?</h2>
         <p><strong>LLM token compression</strong> reduces the number of tokens sent to a language model during inference while preserving the information needed to answer the current query.</p>
-<p>In a typical RAG query, 60-80% of retrieved context may be irrelevant to the specific question. Those tokens still cost money and add latency.</p>
+<p>In many RAG queries, much of the retrieved context is irrelevant to the specific question. Those tokens still cost money and add latency.</p>
       </section>    <section class="seo-section">
         <h2>Token compression methods compared</h2>
-        <table class="seo-table"><thead><tr><th>Method</th><th>Oracle Recall</th><th>Latency</th><th>Extra Cost</th></tr></thead><tbody>
-<tr><td>SuperCompress</td><td>100%</td><td>CPU preprocess</td><td>None</td></tr>
-<tr><td>Summarization</td><td>61%</td><td>~63ms + LLM call</td><td>Full LLM cost</td></tr>
-<tr><td>Truncation (FIFO)</td><td>25%</td><td>~57ms</td><td>None</td></tr>
+        <table class="seo-table"><thead><tr><th>Method</th><th>Mechanism</th><th>Query-aware</th><th>Extra LLM call</th></tr></thead><tbody>
+<tr><td>SuperCompress</td><td>Learned query-aware line selection: keeps original lines chosen against the question</td><td>Yes</td><td>No</td></tr>
+<tr><td>Summarization</td><td>Rewrites context with another model</td><td>Varies</td><td>Yes</td></tr>
+<tr><td>Truncation (FIFO)</td><td>Keeps head and tail; drops the middle regardless of the question</td><td>No</td><td>No</td></tr>
 </tbody></table>
       </section>    <section class="seo-section">
         <h2>Integrating with your LLM pipeline</h2>
-                        <pre><code>pip install supercompress
-from supercompress import Compressor
-comp = Compressor()
-result = comp.compress(context, query)</code></pre>
+                        <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"context":"...","query":"..."}'</code></pre>
       </section>
 
     <section class="seo-section">
       <h2>Frequently asked questions</h2>
             <h3>Does token compression require a model download?</h3>
-      <p>No. SuperCompress uses a tiny CPU policy and does not require a model download or GPU.</p>
+      <p>No. SuperCompress runs on the hosted API, so there is nothing to download or run yourself.</p>
       <h3>Does it work with local models?</h3>
       <p>Yes. Compression is model-agnostic and works before any model call.</p>
     </section>
@@ -144,7 +144,7 @@ result = comp.compress(context, query)</code></pre>
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -174,7 +174,7 @@ result = comp.compress(context, query)</code></pre>
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

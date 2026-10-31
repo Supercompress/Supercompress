@@ -253,15 +253,31 @@ See [ENVIRONMENT.md](./ENVIRONMENT.md) for assumptions.
 
 ## Hosted API (production)
 
-Use `POST /api/v1/compress` with `context` and `query`. Do not pass a budget unless you intentionally want the legacy fixed-ratio mode.
+Use `POST /api/v1/compress` with `context`. `query` is optional: omit it, or send a generic ask, to get a dump-mode digest that keeps about half of the input. Do not pass a budget unless you intentionally want the legacy fixed-ratio mode.
 
 Optional parameters:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
+| `query` | str | omitted | The user's question. Omit it (or send a generic ask) for dump mode. |
 | `mode` | str | `"compiler"` | `"compiler"`, `"precision"`, or `"fixed"` |
-| `ccr` | bool | `false` | Enable reversible compression (markers + storage) |
+| `ccr` | bool | `false` | Enable reversible compression (markers + storage). CCR requests keep their own query path and are not labelled dump mode. |
 | `cache_prefix` | bool | `false` | Wrap compressed output in a deterministic XML preamble/postamble so providers can reuse **prompt/prefix cache**. SuperCompress does not operate inside model KV cache — compression is pre-inference text selection. |
+
+Hosted response fields added by the compress safety path:
+
+| Field | Description |
+|-------|-------------|
+| `query_mode` | `dump` when query is missing or generic; `query` when a specific question is sent |
+| `notice` | Dump-mode or passthrough explanation |
+| `compression_warning` | Present on very deep cuts (query mode, 1,500 or more input tokens, under 3% kept) |
+| `passthrough` | `true` when the original text is returned unchanged |
+| `passthrough_reason` | `no_meaningful_savings` (would save under 5%) or `output_larger_than_input` |
+| `billed` | `false` on passthrough. That call is not billed |
+| `quota` | On billed responses: `tokens_used_this_period`, `free_allowance`, `free_tokens_remaining`, `billing` |
+| `quota_warning` | On billed responses when the free quota is nearly or fully used |
+
+Passthrough and warnings: if compression would save under 5%, or the output would be larger than the input, the API returns the original text unchanged with `passthrough: true`, `passthrough_reason`, `billed: false`, `tokens_saved: 0`, and a `notice`. Very deep cuts add `compression_warning`. Billed responses include `quota` and, when the free quota is nearly or fully used, `quota_warning`.
 
 Or use the Python client:
 

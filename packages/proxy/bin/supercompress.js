@@ -9,6 +9,7 @@
  *   stop      Stop the background proxy
  *   status    Check if the proxy is running
  *   usage     Show plan + token savings / per-agent stats
+ *   limits    Rate-limit runway for the current agent (drains 5h windows fully)
  *   uninstall Remove the proxy and revert agent configs
  */
 
@@ -66,6 +67,7 @@ function printHelp() {
   console.log("  connect        Link this install to your SuperCompress account");
   console.log("  account        Show the connected SuperCompress account");
   console.log("  usage          Plan, quota, and token savings by coding agent");
+  console.log("  limits         Provider rate-limit runway (5h / weekly) — `limits --json` for agents");
   console.log("  start          Start the optional local proxy server");
   console.log("  stop           Stop the proxy server");
   console.log("  status         Check if the proxy is running");
@@ -85,6 +87,7 @@ function printHelp() {
   console.log("  supercompress plugin");
   console.log("  supercompress doctor");
   console.log("  supercompress usage");
+  console.log("  supercompress limits --json");
 }
 
 function findBun() {
@@ -196,6 +199,16 @@ async function main() {
   if (cmd === "--help" || cmd === "-h" || cmd === "--plain") {
     printLogo();
     printHelp();
+    return;
+  }
+  // Agent-facing: stdout must stay machine-readable (no logo).
+  if (cmd === "limits" || cmd === "runway") {
+    try {
+      await require("../src/limits/cli").run(process.argv.slice(3));
+    } catch (err) {
+      process.stderr.write(`supercompress limits: ${err.message}\n`);
+      process.exitCode = 2;
+    }
     return;
   }
   if (wantsTui(cmd)) {
@@ -537,10 +550,15 @@ async function main() {
       stopServer();
       require("../src/service").unregister();
       console.log("  → Reverting agent configurations...");
-      const { revertAll, removeMcp } = require("../src/detector");
-      const undone = revertAll();
-      undone.forEach((a) => console.log(`  → ${a}`));
-      removeMcp().forEach((a) => console.log(`  → Removed ${a} MCP registration`));
+      // revertAll removes only what SuperCompress added (MCP entries, hooks,
+      // instruction blocks, proxy settings) and leaves everything else —
+      // including MCP servers added after install — untouched.
+      const { revertAll } = require("../src/detector");
+      revertAll().forEach((a) => console.log(`  → ${a}`));
+      try {
+        const unhooked = require("../src/limits/cli").disconnectClaude();
+        if (unhooked.status === "disconnected") console.log(`  → Removed runway statusline tee from ${unhooked.path}`);
+      } catch {}
       // Remove config dir
       if (fs.existsSync(CONFIG_DIR)) {
         fs.rmSync(CONFIG_DIR, { recursive: true, force: true });

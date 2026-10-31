@@ -4,6 +4,37 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+### Added
+- **Public limitcheck counter.** Each runway check (`supercompress limits` status or the MCP tool `runway_check`) sends one anonymous count to [limitcheck.supercompress.dev](https://limitcheck.supercompress.dev/live), which shows the global total live. The body is only the verdict (`go` / `land` / `pace` / `wait` / `unknown`) and `cli` or `mcp`: no ids, usage numbers, prompts or paths. Statusline updates and `limits ingest` never count. The ping times out after 1.5 s and never fails a check. Opt out with `SUPERCOMPRESS_TELEMETRY=0`, `DO_NOT_TRACK=1` or `SUPERCOMPRESS_RUNWAY=0`.
+
+### Fixed
+- **`compress_context` no longer returns more than it was given.** It returned the whole rolling session memory, twice (`compressed_context` and `compressed_text`), so small inputs came back larger than they went in, and inputs under 40 characters returned all of the memory. It now returns this call's digest once. When there is nothing to gain, it returns a one-line passthrough notice instead of echoing the text.
+- **`query` is optional.** Omit it to shrink a raw dump; the API compresses in dump mode. Session compaction without an ask uses dump mode too.
+- **Warnings reach the agent.** Deep-cut and free-quota warnings from the API appear as `warning` and `quota_warning`, first in the result. `usage_summary` warns when the free tier is used up.
+
+## [0.5.40] — 2026-10-22
+
+### Added
+- **Runway: local rate-limit checks for coding agents.** `supercompress limits [--json]` and the MCP tool `runway_check` tell the agent how much provider quota is left (5h / weekly / monthly windows) and what to do with it: `go`, `land`, `wait`, or `unknown`. Runway runs locally and ships in this package; nothing goes through the hosted API.
+  - Sources: Codex session telemetry (no setup needed), Claude Code's statusline `rate_limits`, rate-limit headers the local proxy sees (Anthropic, OpenAI-compatible, xAI, OpenRouter, Codex, plus `retry-after` on 429), and `supercompress limits ingest` for any other harness.
+  - The default `max` policy uses a 5h window all the way to the provider's cutoff instead of stopping at a fixed 10% floor. Short windows reset on their own, so unused quota is lost. Near the end the agent "lands": it keeps working but commits or writes a handoff note before each step. Weekly and monthly windows are judged by pace. `--policy conservative` keeps the classic 25% / 10% thresholds.
+  - `setup` / `plugin` wire it automatically. They copy a standalone runtime to `~/.supercompress/runway/` and connect Claude Code's statusline as `(tee || cat) | <your statusline>`, so your statusline keeps working unchanged. `uninstall` restores it. `SUPERCOMPRESS_RUNWAY=0` opts out.
+  - Never answers one agent with another agent's quota, and never invents a limit.
+
+### Changed
+- **Clearer agent instructions everywhere** (CLAUDE.md / AGENTS.md blocks, Cursor rule, fx, Grok, Hermes / OpenClaw, skills, session-start hook, MCP tool descriptions). Instructions are now built from one shared source, with concrete triggers ("diffs over ~150 lines / ~2K tokens", logs, test runs, long file reads, search results, docs). They also say what not to compress (the request, and code you are about to edit), to re-read the source when the digest drops a needed line, and to hand the user the `connect_account` link.
+- The marketplace plugin skill points agents at the local `supercompress limits --json` for rate limits, since the hosted MCP has no runway tool.
+
+## [0.5.39] — 2026-10-20
+
+### Added
+- **Grok Bot** in CLI auto-detect / auto-plugin: `setup` and `plugin` always write a paste-ready hosted MCP snippet (`Add this MCP server: https://www.supercompress.dev/api/mcp`) under `~/.supercompress/hosts/grok-bot/` and list Grok Bot with other auto MCP hosts.
+
+### Fixed
+- **uninstall no longer wipes MCP servers / settings added after install.** Only SuperCompress's own entries are removed; every other config is edited in place (TOML/JSON/JSONC/YAML formatting and comments preserved). Previously every backed-up file except JSON with an `mcpServers`/`mcp` key was rewound to its install-time snapshot (Codex and Grok Build `config.toml`, Gemini/Zed/Continue/Goose/Hermes/OpenClaw configs), and configs setup had created were deleted outright.
+- Overwritten settings (provider base URLs, Grok `[mcp] max_output_bytes`, shell-profile `ANTHROPIC_BASE_URL`) are restored key-by-key from the pre-install value, and only while they still hold SuperCompress's value.
+- Missing or malformed configs are skipped (no crash, never overwritten with `{}`).
+
 ## [0.5.37] — 2026-09-30
 
 ### Fixed

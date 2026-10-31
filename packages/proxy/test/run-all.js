@@ -9,12 +9,18 @@ const ROOT = path.join(__dirname, "..");
 const suites = [
   ["smoke", "test/smoke.js"],
   ["protocol-safety", "test/protocol-safety.js"],
+  ["mcp-safety", "test/mcp-safety.test.js"],
   ["sse-stream", "test/sse-stream.js"],
   ["agent-plugins", "test/agent-plugins.js"],
+  ["hook-packaging", "test/hook-packaging.js"],
+  ["limits", "test/limits.js"],
+  ["runway-sim", "test/runway-sim.js"],
   ["harness-writers", "test/harness-writers.js"],
   ["grok-build", "test/grok-build.js"],
+  ["grok-bot", "test/grok-bot.js"],
   ["fx-build", "test/fx-build.js"],
   ["uninstall-clean", "test/uninstall-clean.js"],
+  ["uninstall-preserves-user-config", "test/uninstall-preserves-user-config.js"],
   ["dual-launch", "test/dual-launch.js"],
   ["compress-deep", "test/compress-deep.js"],
   ["bug-hunt", "test/bug-hunt.js"],
@@ -31,7 +37,8 @@ for (const [name, rel] of suites) {
     cwd: ROOT,
     encoding: "utf8",
     timeout: 300000,
-    env: { ...process.env },
+    // Test runs must never count on the public limitcheck total.
+    env: { ...process.env, SUPERCOMPRESS_TELEMETRY: "0" },
   });
   if (res.stdout) process.stdout.write(res.stdout);
   if (res.stderr) process.stderr.write(res.stderr);
