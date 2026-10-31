@@ -32,6 +32,7 @@ const EXTRA_PROTECTED = [
   "/api/billing",
   "/api/billing/webhook",
   "/api/me",
+  "/api/usage-share",
   "/me",
   "/api/stats",
   "/api/firebase-config",

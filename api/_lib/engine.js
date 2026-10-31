@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 const { compressViaNeuralKeep, neuralKeepEnabled } = require("./neural-keep");
+const { enforceCompressionSafety } = require("./compression-safety");
 
 let engine = null;
 let model = null;
@@ -63,7 +64,10 @@ async function loadNeuralBoost(context, query) {
 
 function compress(context, query, budgetRatio = 0.35) {
   const E = getEngine();
-  return E.compressContext(context, query, budgetRatio, "SuperCompress", getModel());
+  return enforceCompressionSafety(
+    context,
+    E.compressContext(context, query, budgetRatio, "SuperCompress", getModel())
+  );
 }
 
 async function compressAdaptive(context, query) {
@@ -71,28 +75,10 @@ async function compressAdaptive(context, query) {
   if (neuralKeepEnabled()) {
     const remote = await compressViaNeuralKeep(context, query);
     if (remote && remote.compressed_text != null) {
-      const E = getEngine();
-      const orig = E.countTokens
-        ? E.countTokens(String(context || ""))
-        : remote.original_tokens;
-      const kept = E.countTokens
-        ? E.countTokens(String(remote.compressed_text || ""))
-        : remote.kept_tokens;
-      const keptTokens = kept || remote.kept_tokens || 0;
-      const origTokens = orig || remote.original_tokens || 0;
-      const saved =
-        origTokens > 0
-          ? Math.max(0, Math.round((1 - keptTokens / origTokens) * 1000) / 10)
-          : 0;
       // Hosted API + billing read `kept_tokens`; MCP clients also accept
       // `compressed_tokens`. Emit both so usage never reports 0 kept / 100%.
-      return {
+      return enforceCompressionSafety(context, {
         compressed_text: remote.compressed_text,
-        original_tokens: origTokens,
-        kept_tokens: keptTokens,
-        compressed_tokens: keptTokens,
-        tokens_saved: Math.max(0, origTokens - keptTokens),
-        tokens_saved_pct: remote.tokens_saved_pct || saved,
         policy_name: remote.policy_name || "SuperCompress Neural Keep",
         mode: remote.mode || "neural-keep",
         neural_keep_latency_ms: remote.neural_keep_latency_ms,
@@ -102,7 +88,7 @@ async function compressAdaptive(context, query) {
         checkpoint: remote.checkpoint,
         params_m: remote.params_m,
         weights_match_expected: remote.weights_match_expected,
-      };
+      });
     }
   }
 
@@ -121,17 +107,20 @@ async function compressAdaptive(context, query) {
     local.neural_keep_fallback = true;
     local.fallback_reason = local.fallback_reason || "neural_keep_unavailable";
   }
-  return local;
+  return enforceCompressionSafety(context, local);
 }
 
 async function compressCCR(context, query) {
   const E = getEngine();
   const neuralBoost = await loadNeuralBoost(context, query);
-  return E.compressCCR(context, query, getModel(), {
-    enableMarkers: true,
-    includeAnnotations: false,
-    neuralBoost: neuralBoost || undefined,
-  });
+  return enforceCompressionSafety(
+    context,
+    E.compressCCR(context, query, getModel(), {
+      enableMarkers: true,
+      includeAnnotations: false,
+      neuralBoost: neuralBoost || undefined,
+    })
+  );
 }
 
 function simpleHash(str) {

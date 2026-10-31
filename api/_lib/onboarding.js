@@ -1,9 +1,9 @@
 /**
- * Signup onboarding + free-token quests (10,000 each).
+ * Signup onboarding and optional setup actions.
  * Durable on Auth claims — no Firestore required.
  */
 
-const ONBOARD_ACTION_TOKENS = 10_000;
+const ONBOARD_ACTION_TOKENS = 0;
 const ONBOARD_ACTIONS = ["star", "x_follow", "plugin"];
 const HEARD_SOURCES = ["x", "reddit", "linkedin", "instagram", "word_of_mouth"];
 const ONBOARD_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000; // new accounts (2 weeks — covers late deploys)
@@ -12,9 +12,8 @@ const REPO_URL = "https://github.com/Supercompress/Supercompress";
 const X_FOLLOW_URL = "https://x.com/arjunkshah21";
 const SITE_URL = "https://www.supercompress.dev";
 
-function onboardBonusTokens(claims = {}) {
-  const n = Number(claims.sc_onboard_bonus) || 0;
-  return Math.max(0, Math.min(ONBOARD_ACTION_TOKENS * ONBOARD_ACTIONS.length, Math.floor(n)));
+function onboardBonusTokens() {
+  return 0;
 }
 
 function normalizeHeard(raw) {

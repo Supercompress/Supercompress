@@ -14,11 +14,11 @@ process.stdin.on("end", () => {
   const home = process.env.HOME || process.env.USERPROFILE || "";
   const inbox = `${home}/.supercompress/inbox/latest.md`;
   const additional_context = [
-    "SUPERCOMPRESS IS ON FOR EVERY MESSAGE (Headroom-parity).",
-    "Only *new* context is compressed each turn; rolling session memory is compacted when it grows large.",
-    `Each submit with context writes ${inbox} — Read it first and use that digest.`,
-    "Otherwise call MCP compress_context on any bulky *new* dump before reasoning.",
-    "User ask is never compressed. Prefer digests over raw tool output. Keep Cursor login.",
+    "SuperCompress is on for this session.",
+    `If ${inbox} exists, Read it first: hooks already compressed the latest large tool result.`,
+    "Otherwise, before reasoning over bulky new context (tool output, logs, test runs, diffs over ~150 lines, long file reads, search results, docs), call MCP compress_context with only that new text as `context` and the user's request as `query`, then work from the digest.",
+    "Never compress the user's request or code you are about to edit. If the digest dropped a line you need, re-read just that part.",
+    "Before large or multi-step work, call MCP runway_check: on `land` keep working but checkpoint before each step; only `wait` means stop. Keep Cursor login.",
   ].join(" ");
   process.stdout.write(JSON.stringify({ additional_context }));
 });
