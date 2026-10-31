@@ -169,7 +169,7 @@ result = sc.compress(context, query, mode=<span class="str">"precision"</span>)<
           </thead>
           <tbody>
             <tr><td><code>context</code></td><td>string</td><td>yes</td><td>The full context to compress. Supports Unicode, code, markup, logs.</td></tr>
-            <tr><td><code>query</code></td><td>string</td><td>yes</td><td>The user question that defines retention relevance.</td></tr>
+            <tr><td><code>query</code></td><td>string</td><td>no</td><td>The user's question. Omit it, or send a generic ask, to get a dump-mode digest that keeps about half of the input.</td></tr>
             <tr><td><code>budget_ratio</code></td><td>number</td><td>no</td><td>Pass only for legacy fixed-ratio mode (0.1–1.0). Omit for default compiler mode.</td></tr>
           </tbody>
         </table>
@@ -209,8 +209,18 @@ result = sc.compress(context, query, mode=<span class="str">"precision"</span>)<
             <tr><td><code>kept_blocks</code></td><td>array</td><td>Evidence blocks kept, with reasons.</td></tr>
             <tr><td><code>dropped_blocks</code></td><td>array</td><td>Largest removed blocks, with reasons.</td></tr>
             <tr><td><code>policy_name</code></td><td>string</td><td><code>"SuperCompress-compiler"</code> or <code>"SuperCompress-fixed"</code>.</td></tr>
+            <tr><td><code>query_mode</code></td><td>string</td><td><code>"dump"</code> when <code>query</code> is missing or generic; <code>"query"</code> when a specific question is sent. CCR requests (<code>ccr: true</code>) keep their own query path and are not labelled dump mode.</td></tr>
+            <tr><td><code>notice</code></td><td>string</td><td>Present in dump mode (asks the caller to pass the user's question for a targeted, smaller digest) and on passthrough (explains the unchanged return).</td></tr>
+            <tr><td><code>compression_warning</code></td><td>string</td><td>Present on very deep cuts in query mode (1,500 or more input tokens, under 3% kept). Explains the cut and suggests a more specific query or omitting <code>query</code>.</td></tr>
+            <tr><td><code>passthrough</code></td><td>boolean</td><td><code>true</code> when the original input is returned unchanged.</td></tr>
+            <tr><td><code>passthrough_reason</code></td><td>string</td><td><code>no_meaningful_savings</code> (would save under 5%) or <code>output_larger_than_input</code>.</td></tr>
+            <tr><td><code>billed</code></td><td>boolean</td><td><code>false</code> on passthrough. That call is not billed.</td></tr>
+            <tr><td><code>quota</code></td><td>object</td><td>On billed responses: <code>tokens_used_this_period</code>, <code>free_allowance</code>, <code>free_tokens_remaining</code>, <code>billing</code>.</td></tr>
+            <tr><td><code>quota_warning</code></td><td>string</td><td>On billed responses when the free quota is nearly or fully used.</td></tr>
           </tbody>
         </table>
+        <h3>Passthrough and warnings</h3>
+        <p>If compression would save under 5%, or the output would be larger than the input, the API returns the original text unchanged with <code>passthrough: true</code>, a <code>passthrough_reason</code>, <code>billed: false</code>, <code>tokens_saved: 0</code>, and a <code>notice</code>. That call is not billed. Very deep cuts on large inputs (query mode, 1,500 or more input tokens, under 3% kept) add <code>compression_warning</code>. Billed responses include a <code>quota</code> object and, when the free quota is nearly or fully used, <code>quota_warning</code>.</p>
 
         <h3>Authentication</h3>
         <p>Include your API key in either the <code>X-API-Key</code> header or the <code>Authorization: Bearer sc_live_…</code> header. Get a key from the <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>.</p>
@@ -270,7 +280,7 @@ impact = sustainability_from_tokens_saved(saved)
           </thead>
           <tbody>
             <tr><td>200</td><td>Success, compressed text in response</td></tr>
-            <tr><td>400</td><td>Missing or invalid <code>context</code> or <code>query</code></td></tr>
+            <tr><td>400</td><td>Missing or invalid <code>context</code></td></tr>
             <tr><td>401</td><td>Missing or invalid API key</td></tr>
             <tr><td>402</td><td>Payment required, quota exceeded</td></tr>
             <tr><td>429</td><td>Rate limit exceeded</td></tr>

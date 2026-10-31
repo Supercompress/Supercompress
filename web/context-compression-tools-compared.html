@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/context-compression-tools-compared" />
   <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:modified_time" content="2026-10-21" />
   <meta property="article:author" content="https://www.arjunshah.xyz/" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
@@ -36,7 +36,7 @@
   "headline": "Context compression tools for AI agents compared",
   "description": "An honest comparison of context compression tools for AI agents: SuperCompress, Headroom, Caveman, RTK, LLMLingua, plus built-in compaction and truncation.",
   "datePublished": "2026-10-19",
-  "dateModified": "2026-10-19",
+  "dateModified": "2026-10-21",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah",
@@ -150,7 +150,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Comparison · Updated 2026-10-19</p>
+  <p class="seo-kicker">Comparison · Updated 2026-10-21</p>
   <h1>Context compression tools for AI agents compared</h1>
   <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
   <p class="seo-lead">The main context compression tools for AI agents work in different ways. Headroom and RTK filter content locally by type, Caveman shortens replies and shrinks tool output locally, LLMLingua prunes tokens with a small model, and SuperCompress uses a hosted model that keeps the original lines answering your current question.</p>
@@ -161,7 +161,7 @@
     <a href="/context-compression-for-coding-agents">Approaches for coding agents</a>
   </nav>
   <div class="article-prose">
-    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#table">How do the tools compare?</a></li><li><a href="#question">What does query-aware mean, and why does it matter?</a></li><li><a href="#headroom">When is Headroom the right choice?</a></li><li><a href="#caveman">When is Caveman the right choice?</a></li><li><a href="#rtk">When are RTK or LLMLingua the right choice?</a></li><li><a href="#supercompress">When is SuperCompress the right choice?</a></li><li><a href="#fair">How do you compare them fairly?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#table">How do the tools compare?</a></li><li><a href="#question">What does query-aware mean, and why does it matter?</a></li><li><a href="#headroom">When is Headroom the right choice?</a></li><li><a href="#caveman">When is Caveman the right choice?</a></li><li><a href="#scaledown">When is ScaleDown the right choice?</a></li><li><a href="#rtk">When are RTK or LLMLingua the right choice?</a></li><li><a href="#supercompress">When is SuperCompress the right choice?</a></li><li><a href="#fair">How do you compare them fairly?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
     <h2 id="table">How do the tools compare?</h2>
     <table><thead><tr><th>Tool</th><th>Mechanism</th><th>Runs</th><th>Main target</th></tr></thead><tbody>
 <tr><td>SuperCompress</td><td>Hosted Neural Keep model keeps original lines that answer the question</td><td>Hosted API, MCP tool, agent hooks</td><td>Tool output, files, logs, diffs, retrieved docs</td></tr>
@@ -169,6 +169,7 @@
 <tr><td><a href="https://github.com/JuliusBrussee/caveman">Caveman</a></td><td>Terse reply skill, plus local reducers for logs, JSON and pages</td><td>Local CLI and skill</td><td>Agent replies and tool output</td></tr>
 <tr><td><a href="https://github.com/rtk-ai/rtk">RTK</a></td><td>Per-command filters for shell output, optional local proxy</td><td>Local Rust binary</td><td>Bash command output</td></tr>
 <tr><td><a href="https://github.com/microsoft/LLMLingua/">LLMLingua</a></td><td>Small language model drops low-information tokens</td><td>Python library</td><td>Prompts and RAG context</td></tr>
+<tr><td><a href="/alternatives/scaledown">ScaleDown</a></td><td>Hosted Compress API: docs call the output semantically equivalent and lossless in intent; engineering post describes extractive top-sentence selection</td><td>Hosted API, LangChain middleware, LiteLLM</td><td>RAG documents, chat history, tool results</td></tr>
 <tr><td>Built-in compaction</td><td>LLM summary of history</td><td>Inside the agent</td><td>Long sessions</td></tr>
 <tr><td>Truncation / offloading</td><td>Keep head or tail, or store payload and keep a handle</td><td>Agent framework</td><td>Oversized results</td></tr></tbody></table>
 <p>Feature details come from each project's own repository or docs as of October 2026 and change often. Check them before deciding.</p>
@@ -178,6 +179,8 @@
     <p>When everything must run locally, or you want an in-process Python or TypeScript library with broad content-type coverage. More in <a href="/alternatives/headroom">Headroom alternative</a>.</p>
     <h2 id="caveman">When is Caveman the right choice?</h2>
     <p>When you want shorter agent replies, or local shrinking of common outputs. Caveman's own docs note that the reply-style skill does not compress input; its separate engine and proxy do. More in <a href="/alternatives/caveman">Caveman alternative</a>.</p>
+    <h2 id="scaledown">When is ScaleDown the right choice?</h2>
+    <p>When you already build on LangChain or Deep Agents, your context is mostly prose, or you also want Summarize, Extract and Classify from one vendor. ScaleDown's own docs describe a hosted Compress endpoint; its engineering post describes extractive sentence selection. More in <a href="/alternatives/scaledown">ScaleDown alternative</a>.</p>
     <h2 id="rtk">When are RTK or LLMLingua the right choice?</h2>
     <p>RTK fits shell-heavy agents where predictable per-command filters are enough. RTK's own docs point out that bash output savings dilute across the whole bill. LLMLingua fits Python pipelines that want token-level pruning under your control. See <a href="/supercompress-vs-rtk">vs RTK</a> and <a href="/supercompress-vs-llmlingua">vs LLMLingua</a>.</p>
     <h2 id="supercompress">When is SuperCompress the right choice?</h2>

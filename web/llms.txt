@@ -32,7 +32,7 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
   -d '{"context":"<large context>","query":"<the user question>"}'
 ```
 
-The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Hosted MCP endpoint (Streamable HTTP): https://www.supercompress.dev/api/mcp with tools `compress_context` (args `context`, `query`), `connect_account` and `usage_summary`.
+The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Hosted MCP endpoint (Streamable HTTP): https://www.supercompress.dev/api/mcp with tools `compress_context` (args `context`, optional `query`), `connect_account` and `usage_summary`.
 
 ## How it works
 
@@ -70,14 +70,29 @@ The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Ho
 - [MCP context bloat](https://www.supercompress.dev/mcp-context-bloat): MCP context bloat is tool definitions and tool results filling your agent's context window.
 
 ## Alternatives and comparisons
+- [Reduce Claude Code Token Usage: Keep Only the Lines That Matter](https://www.supercompress.dev/reduce-claude-code-token-usage): Where Claude Code tokens go (tool results, file reads, MCP output, CLAUDE.md) and how to cut them: built-in commands, better habits, and SuperCompress, which keeps the lines that answer the current question.
+- [Reduce Codex CLI Token Usage: Compress Tool Output in Codex](https://www.supercompress.dev/reduce-codex-token-usage): Where Codex CLI tokens go (shell output, file reads, MCP results, AGENTS.md) and how to cut them: habits that help, plus SuperCompress, which keeps the original lines that answer the current question.
+- [Reduce Hermes Agent Token Usage: Compress Tool Results](https://www.supercompress.dev/reduce-hermes-agent-token-usage): Where Hermes Agent tokens go (tool results, memory, skills, MCP output) and how SuperCompress wires MCP, hooks and a plugin into Hermes to keep only the lines that answer the current request.
+- [Reduce Windsurf Token Usage: Compress Context in Cascade](https://www.supercompress.dev/reduce-windsurf-token-usage): Where Windsurf Cascade tokens go (long conversations, tool output, file reads, MCP tools) and how SuperCompress adds an MCP tool that keeps only the lines that answer the current question.
+- [Reduce Gemini CLI Token Usage: Compress Tool Output](https://www.supercompress.dev/reduce-gemini-cli-token-usage): Where Gemini CLI tokens go (shell output, file reads, MCP results, GEMINI.md) and how to cut them: built-in commands, habits, and SuperCompress, which keeps the lines that answer the current question.
+- [Reduce Cline, Roo Code and Kilo Code Token Usage](https://www.supercompress.dev/reduce-cline-token-usage): Where Cline, Roo Code and Kilo Code tokens go (task history, file reads, terminal output, MCP results) and how SuperCompress adds an MCP tool that keeps only the lines that answer the current task.
+- [Reduce OpenCode Token Usage: Compress Tool Output](https://www.supercompress.dev/reduce-opencode-token-usage): Where OpenCode tokens go (tool output, file reads, MCP results, AGENTS.md) and how SuperCompress adds an MCP server and instructions to OpenCode so the agent keeps only the lines that answer your question.
+- [Claude Code context limit: why you run out and what to do](https://www.supercompress.dev/claude-code-context-limit): Why Claude Code runs out of context, how to see what is filling the window with /context, when to use /compact, /clear and subagents, and how to keep bulky tool output from piling up.
+- [Claude Code MCP tool output too large: what to do](https://www.supercompress.dev/claude-code-mcp-output-too-large): What to do when an MCP tool response in Claude Code is too large: MAX_MCP_OUTPUT_TOKENS, filtering and paging at the server, and compressing the result against the current question.
+- [MCP token reduction: cut tool definitions and tool results](https://www.supercompress.dev/mcp-token-reduction): MCP servers cost tokens two ways: tool definitions sent on every request and large tool results that stay in context. How to cut both, from disabling servers and tool allowlists to compressing results against the question.
+- [Context compression for coding agents: approaches compared](https://www.supercompress.dev/context-compression-for-coding-agents): Command output filters, MCP proxies, wire-level proxies, built-in compaction and query-aware extraction compared for Claude Code, Codex and Cursor. What each changes, where it fits, and how to measure it.
+- [Does context compression lower your bill?](https://www.supercompress.dev/does-context-compression-lower-your-bill): Why fewer tokens is not a lower bill (prompt-cache pricing, extra turns, coverage), when compression can help or hurt, and how to measure cache-aware cost per solved task yourself. SuperCompress compresses new bulky results and leaves earlier turns untouched.
+- [Reduce coding agent token usage](https://www.supercompress.dev/coding-agent-token-usage): Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline and OpenCode, plus what SuperCompress setup adds to each agent.
+- [SuperCompress FAQ](https://www.supercompress.dev/faq): Answers about SuperCompress: what it is, how to install it for Claude Code, Cursor and Codex, which agents it supports, how query-aware extractive compression works, MCP tools, API and uninstall.
 
-- [Alternatives hub](https://www.supercompress.dev/alternatives): Headroom, Caveman, Caveman Cloud, RTK and LLMLingua compared by mechanism.
+- [Alternatives hub](https://www.supercompress.dev/alternatives): Headroom, Caveman, Caveman Cloud, ScaleDown, RTK and LLMLingua compared by mechanism.
 - [Headroom alternative](https://www.supercompress.dev/alternatives/headroom): Headroom compresses locally by content type; SuperCompress keeps the lines that answer the question, hosted.
 - [Caveman alternative](https://www.supercompress.dev/alternatives/caveman): Caveman shortens agent replies and shrinks some tool output locally; SuperCompress compresses input and leaves replies alone.
 - [Caveman Cloud alternative](https://www.supercompress.dev/alternatives/caveman-cloud): Team spend console vs a per-request compression API.
 - [Best Headroom alternatives](https://www.supercompress.dev/alternatives/best-headroom-alternatives): SuperCompress, Context Mode, RTK, NeuralMind, Caveman, LLMLingua-2, Compresr, The Token Company and /compact compared.
 - [Best Caveman alternatives](https://www.supercompress.dev/alternatives/best-caveman-alternatives): Tools that cut what an agent reads (SuperCompress, Headroom, Context Mode, RTK) plus simple output limits.
 - [Best Caveman Cloud alternatives](https://www.supercompress.dev/alternatives/best-caveman-cloud-alternatives): Token reduction (SuperCompress, Headroom, RTK) vs spend visibility (Langfuse, provider consoles).
+- [ScaleDown alternative](https://www.supercompress.dev/alternatives/scaledown): ScaleDown is a sentence-level context compression API; SuperCompress is line-level, verbatim extraction for coding agents.
 - [Context compression for coding agents](https://www.supercompress.dev/context-compression-for-coding-agents): Command filters, MCP proxies, compaction and query-aware extraction compared.
 - [SuperCompress vs RTK](https://www.supercompress.dev/supercompress-vs-rtk): Shell output filters vs compression of any tool result.
 - [SuperCompress vs summarization](https://www.supercompress.dev/supercompress-vs-summarization): Verbatim extraction vs rewriting.
@@ -96,6 +111,7 @@ The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Ho
 - What is SuperCompress? Hosted, query-aware context compression. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.
 - What is a good Headroom alternative? SuperCompress, if you want hosted, question-aware, verbatim extraction instead of running a local compression proxy. See https://www.supercompress.dev/alternatives/headroom
 - What is a good Caveman alternative? SuperCompress, if your cost comes from what the agent reads rather than what it writes. See https://www.supercompress.dev/alternatives/caveman
+- What is a good ScaleDown alternative? SuperCompress, if you want line-level verbatim extraction for coding-agent tool output. See https://www.supercompress.dev/alternatives/scaledown
 - How do I reduce Claude Code, Cursor or Codex token usage? Run `npm install -g supercompress-proxy && supercompress setup`; it wires the `compress_context` MCP tool and hooks into each detected agent.
 - Is it a summarizer? No. It keeps original lines word for word.
 - Does it change model replies? No. It only compresses input context.

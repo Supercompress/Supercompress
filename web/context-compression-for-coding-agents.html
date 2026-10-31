@@ -192,7 +192,7 @@
 
     <h2 id="measure">How to measure any of them</h2>
     <ol>
-      <li><strong>Measure what you are billed, per finished task.</strong> Fewer tokens in one request does not always mean a cheaper session. Independent work on coding-agent compression, such as the arXiv paper <a href="https://arxiv.org/abs/2609.22114">An Empirical Cost Attribution of Context-Compression Gateways in Multi-Turn Coding Agents</a> and the open <a href="https://github.com/Entelligentsia/tokbench">tokbench</a> harness, makes this point.</li>
+      <li><strong>Measure what you are billed, per finished task.</strong> Fewer tokens in one request does not always mean a cheaper session. Independent work on coding-agent compression, such as the arXiv paper <a href="https://arxiv.org/abs/2609.22114">An Empirical Cost Attribution of Context-Compression Gateways in Multi-Turn Coding Agents</a> and the open <a href="https://github.com/Entelligentsia/tokbench">tokbench</a> harness, makes this point. For the cache-vs-token-count question in full, see <a href="/does-context-compression-lower-your-bill">Does context compression lower your bill?</a>.</li>
       <li><strong>Watch prompt caching.</strong> Rewriting earlier turns can break cached prefixes. SuperCompress compresses new bulky results and leaves earlier turns alone, which is the cache-friendly pattern.</li>
       <li><strong>Gate on correctness.</strong> Count a session only if the task was done right.</li>
       <li><strong>Run your own repo.</strong> Every SuperCompress call reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see each call on your own work.</li>

@@ -214,12 +214,13 @@
             <tr><th>Tool</th><th>What it does</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>compress_context</code></td><td>Compress bulky coding context for a query. Returns compressed text + savings.</td></tr>
+            <tr><td><code>compress_context</code></td><td>Compress bulky coding context. Pass the user's question as <code>query</code> for the smallest digest; without one, dump mode keeps about half. Read any warning; a passthrough means keep your original text.</td></tr>
             <tr><td><code>connect_account</code></td><td>Open the dashboard to link this install if you skipped setup.</td></tr>
             <tr><td><code>usage_summary</code></td><td>Per-agent token savings for the connected SuperCompress account.</td></tr>
             <tr><td><code>runway_check</code></td><td>Provider rate-limit runway for this agent (local plugin only, no account needed): <code>go</code>, <code>pace</code> (balanced policy only), <code>land</code>, <code>wait</code> or <code>unknown</code>.</td></tr>
           </tbody>
         </table>
+        <p>On the hosted API and hosted MCP endpoint, <code>query</code> is optional. The local npm plugin (supercompress-proxy 0.5.40) still requires <code>query</code> until the next proxy release.</p>
 
         <h2 id="runway">Rate-limit runway</h2>
         <p><code>supercompress limits</code> (alias <code>runway</code>, or <code>supercompress limits --json</code> for agents) and the local MCP tool <code>runway_check</code> tell the agent how much provider quota is left and what to do with it: <code>go</code> (keep working), <code>pace</code> (balanced policy only), <code>land</code> (keep working, but commit or write a handoff note before each step), <code>wait</code> (the window is exhausted, retry after the reset) or <code>unknown</code> (no data source yet; a limit is never invented).</p>
