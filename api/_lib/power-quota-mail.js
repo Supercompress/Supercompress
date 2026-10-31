@@ -43,7 +43,7 @@ function createPowerQuotaRunner({ getAuth, send, stamp, getUnsubscribes, isBlock
         const suppressed = unsubscribes instanceof Set
           ? unsubscribes.has(require("node:crypto").createHash("sha256").update(candidate.email).digest("hex"))
           : unsubscribes[candidate.email];
-        if (suppressed || isBlocked({ email: candidate.email, first_name: candidate.firstName })) continue;
+        if (suppressed || isBlocked({ email: candidate.email, first_name: user.displayName || candidate.firstName })) continue;
         result.eligible += 1;
         if (dryRun) continue;
         const delivery = await send({ ...candidate, ...unsubscribeLinks(candidate.email) });

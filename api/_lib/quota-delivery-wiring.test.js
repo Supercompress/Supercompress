@@ -6,7 +6,7 @@ const { test } = require("node:test");
 test("production power-quota adapter suppresses blocked names in email and display name", async () => {
   const users = [
     { uid: "blocked-email", email: "nikunjxyz@product.example.test" },
-    { uid: "blocked-name", email: "recipient@product.example.test", displayName: "Kothari" },
+    { uid: "blocked-name", email: "recipient@product.example.test", displayName: "Alex Kothari" },
     { uid: "allowed", email: "allowed@product.example.test" },
   ].map(user => ({ ...user, customClaims: { sc_power_mail: "sent" } }));
   const messages = [];

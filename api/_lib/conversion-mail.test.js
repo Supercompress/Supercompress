@@ -9,6 +9,20 @@ const seconds = Math.floor(start.getTime() / 1000);
 const daysLater = days => new Date(start.getTime() + days * 86400000);
 const account = claims => ({ uid: "human", email: "human@product.example.test", customClaims: { sc_power_mail: "sent", sc_usage: { month: "2026-10", tokens_in: 2000000 }, ...claims } });
 
+it("conversion suppression receives the full live multiword name before reserving", async () => {
+  const user = { ...account(), displayName: "Alex Kothari" };
+  const runner = createConversionRunner({
+    getAuth: async () => ({ listUsers: async () => ({ users: [user] }), getUser: async () => user }),
+    getUnsubscribes: async () => new Set(), getPaidUserIds: async () => new Set(),
+    isBlocked: recipient => /kothari/i.test(recipient.first_name),
+    reserve: async () => { throw Error("must not reserve blocked recipient"); },
+    send: async () => { throw Error("must not send"); }, now: () => start,
+  });
+  const result = await runner({ dryRun: false });
+  assert.equal(result.eligible, 0);
+  assert.equal(result.sent, 0);
+});
+
 function durableHarness(user = account()) {
   const documents = new Map();
   const storage = {

@@ -201,7 +201,7 @@ function scheduleAutoRechargeRecoveryNotify({
 </p>
 <p style="margin:16px 0;"><a href="${String(checkoutUrl)}" style="display:inline-block;padding:12px 18px;background:#0566ff;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Open Checkout</a></p>
 `;
-        await sendViaResend({
+        const alert = await sendViaResend({
           to: FOUNDER_ALERT_TO,
           subject: alertSubject,
           text: `Auto-recharge could not complete silently.\n\nuid: ${uid}\nemail: ${email || "(none)"}\ncustomer: ${customerId || "?"}\nreason: ${reason}\namount: $${amount}\ncycle: ${cycle}\ncustomer_emailed: ${customerOk}\n\nCheckout:\n${checkoutUrl}\n`,
@@ -213,6 +213,9 @@ function scheduleAutoRechargeRecoveryNotify({
           }),
           idempotencyKey: `founder-${record.idempotency_key}`.slice(0, 256),
         });
+        if (!alert.ok) {
+          console.warn("founder auto-recharge alert failed:", alert.error === "resend_request_failed" ? alert.error : "resend_delivery_failed");
+        }
       } catch (err) {
         console.warn("founder auto-recharge alert failed:", err.message || err);
       }
