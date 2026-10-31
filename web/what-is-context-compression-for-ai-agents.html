@@ -162,7 +162,8 @@
   </nav>
   <div class="article-prose">
     <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why do agents need it?</a></li><li><a href="#methods">What are the main methods?</a></li><li><a href="#supercompress">How does SuperCompress approach it?</a></li><li><a href="#tradeoffs">What are the tradeoffs?</a></li><li><a href="#when">When should you use it?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
-    <h2 id="why">Why do agents need it?</h2>
+    <p>Compare every tool: <a href="/comparisons">context compression and token tools compared</a>, <a href="/headroom-alternatives">Headroom alternatives</a>, and the <a href="/context-compression">complete guide to context compression</a>.</p>
+<h2 id="why">Why do agents need it?</h2>
     <p>An agent loop re-sends its accumulated context on every step. Each tool result therefore costs tokens many times, and long contexts raise the odds of errors and hit window limits. Compression attacks the size of what gets re-sent.</p>
     <h2 id="methods">What are the main methods?</h2>
     <ul><li><strong>Truncation:</strong> keep the head, tail or both. Cheap, ignores relevance.</li>
