@@ -10,7 +10,14 @@ const COMPRESS_URL = `${SITE}/api/v1/compress`;
 const USAGE_URL = `${SITE}/api/usage`;
 const ME_URL = `${SITE}/api/account?op=me`;
 const CONNECT_BASE = `${SITE}/dashboard?source=grok-bot&connect=`;
-const PROTOCOL_VERSION = "2025-03-26";
+const PROTOCOL_VERSION = "2025-11-25";
+// Versions this stateless tools-only server can answer. On initialize we echo the
+// client's requested version when we support it, otherwise we offer the latest.
+const SUPPORTED_PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
+
+function negotiateProtocolVersion(requested) {
+  return SUPPORTED_PROTOCOL_VERSIONS.includes(requested) ? requested : PROTOCOL_VERSION;
+}
 const SERVER_NAME = "supercompress";
 const SERVER_VERSION = "0.5.30";
 
@@ -279,7 +286,7 @@ async function dispatchRpc(msg, apiKey) {
       jsonrpc: "2.0",
       id,
       result: {
-        protocolVersion: PROTOCOL_VERSION,
+        protocolVersion: negotiateProtocolVersion(params?.protocolVersion),
         capabilities: { tools: {} },
         serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
         instructions:
@@ -321,6 +328,8 @@ async function dispatchRpc(msg, apiKey) {
 module.exports = {
   TOOLS,
   PROTOCOL_VERSION,
+  SUPPORTED_PROTOCOL_VERSIONS,
+  negotiateProtocolVersion,
   SERVER_NAME,
   SERVER_VERSION,
   extractApiKey,
