@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/what-is-context-compression-for-ai-agents" />
   <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:modified_time" content="2026-10-22" />
   <meta property="article:author" content="https://www.arjunshah.xyz/" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
@@ -36,7 +36,7 @@
   "headline": "What is context compression for AI agents?",
   "description": "Context compression for AI agents shrinks what an agent sends to the model while keeping what matters. Definition, methods, tradeoffs and when to use it.",
   "datePublished": "2026-10-19",
-  "dateModified": "2026-10-19",
+  "dateModified": "2026-10-22",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah",
@@ -150,7 +150,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Glossary · Updated 2026-10-19</p>
+  <p class="seo-kicker">Glossary · Updated 2026-10-22</p>
   <h1>What is context compression for AI agents?</h1>
   <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
   <p class="seo-lead">Context compression for AI agents is any technique that shrinks the text an agent sends to its model, such as tool output, file contents, history and retrieved documents, while keeping what the current task needs. Methods include truncation, summarization, token pruning, offloading, and query-aware extraction of relevant lines.</p>
@@ -159,10 +159,12 @@
     <a href="/context-compression-for-coding-agents">For coding agents</a>
     <a href="/prompt-compression">Prompt compression</a>
     <a href="/llm-token-compression">LLM token compression</a>
+    <a href="/verbatim-lines-vs-token-pruning">Verbatim lines vs token pruning</a>
   </nav>
   <div class="article-prose">
     <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why do agents need it?</a></li><li><a href="#methods">What are the main methods?</a></li><li><a href="#supercompress">How does SuperCompress approach it?</a></li><li><a href="#tradeoffs">What are the tradeoffs?</a></li><li><a href="#when">When should you use it?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
-    <h2 id="why">Why do agents need it?</h2>
+    <p>Compare every tool: <a href="/comparisons">context compression and token tools compared</a>, <a href="/headroom-alternatives">Headroom alternatives</a>, and the <a href="/context-compression">complete guide to context compression</a>.</p>
+<h2 id="why">Why do agents need it?</h2>
     <p>An agent loop re-sends its accumulated context on every step. Each tool result therefore costs tokens many times, and long contexts raise the odds of errors and hit window limits. Compression attacks the size of what gets re-sent.</p>
     <h2 id="methods">What are the main methods?</h2>
     <ul><li><strong>Truncation:</strong> keep the head, tail or both. Cheap, ignores relevance.</li>

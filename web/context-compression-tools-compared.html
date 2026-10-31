@@ -162,7 +162,8 @@
   </nav>
   <div class="article-prose">
     <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#table">How do the tools compare?</a></li><li><a href="#question">What does query-aware mean, and why does it matter?</a></li><li><a href="#headroom">When is Headroom the right choice?</a></li><li><a href="#caveman">When is Caveman the right choice?</a></li><li><a href="#scaledown">When is ScaleDown the right choice?</a></li><li><a href="#rtk">When are RTK or LLMLingua the right choice?</a></li><li><a href="#supercompress">When is SuperCompress the right choice?</a></li><li><a href="#fair">How do you compare them fairly?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
-    <h2 id="table">How do the tools compare?</h2>
+    <p>Compare every tool: <a href="/comparisons">context compression and token tools compared</a>, <a href="/headroom-alternatives">Headroom alternatives</a>, and the <a href="/context-compression">complete guide to context compression</a>.</p>
+<h2 id="table">How do the tools compare?</h2>
     <table><thead><tr><th>Tool</th><th>Mechanism</th><th>Runs</th><th>Main target</th></tr></thead><tbody>
 <tr><td>SuperCompress</td><td>Hosted Neural Keep model keeps original lines that answer the question</td><td>Hosted API, MCP tool, agent hooks</td><td>Tool output, files, logs, diffs, retrieved docs</td></tr>
 <tr><td><a href="https://github.com/headroomlabs-ai/headroom">Headroom</a></td><td>Content-type compressors per block, with local cache of originals</td><td>Local library, proxy, MCP server</td><td>Agent and app traffic</td></tr>

@@ -529,6 +529,15 @@ A: No. SuperCompress compresses new bulky tool results and context before they e
 
 Q: Can I use SuperCompress with Claude Code, Codex, or Cursor?
 A: Yes. Run npm install -g supercompress-proxy && supercompress setup. Setup detects the coding agents on the machine and wires each one. Then run supercompress doctor to check what is connected.
+### Verbatim lines vs token pruning
+URL: https://www.supercompress.dev/verbatim-lines-vs-token-pruning
+Token pruning drops individual tokens or words by a score, so the remaining text is shorter but no longer identical to the source. Line-level selection keeps or drops whole original lines, so each kept line is byte-identical to the input. SuperCompress is a hosted, query-aware, extractive example of line-level selection. Files the agent is about to edit should stay whole and verbatim. Line-level selection is for bulky output such as logs, test results, search hits and MCP tool results. Measure cost per solved task and success, not token counts alone. None of the cited papers tested SuperCompress. Each SuperCompress response reports original_tokens and kept_tokens.
+Q: Does SuperCompress change my code or error messages?
+A: No. It keeps original lines verbatim. It does not rewrite or summarize them.
+Q: Is SWE-Pruner the same as SuperCompress?
+A: No. SWE-Pruner is a research method for agents. SuperCompress is a hosted API and MCP tool. Both select lines rather than prune tokens.
+Q: Should I compress the file I am editing?
+A: No. Keep that file whole and verbatim.
 ### How to check Codex and Claude Code rate limits
 URL: https://www.supercompress.dev/coding-agent-rate-limits
 `supercompress limits` (alias `runway`) and the local MCP tool `runway_check` read provider rate-limit data and return go, pace, land, wait or unknown. Codex is zero config from session events. Claude Code uses the statusline tee that setup connects. The hosted MCP does not have runway_check.
