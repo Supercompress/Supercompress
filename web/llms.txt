@@ -70,13 +70,14 @@ The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Ho
 
 ## Alternatives and comparisons
 
-- [Alternatives hub](https://www.supercompress.dev/alternatives): Headroom, Caveman, Caveman Cloud, RTK and LLMLingua compared by mechanism.
+- [Alternatives hub](https://www.supercompress.dev/alternatives): Headroom, Caveman, Caveman Cloud, ScaleDown, RTK and LLMLingua compared by mechanism.
 - [Headroom alternative](https://www.supercompress.dev/alternatives/headroom): Headroom compresses locally by content type; SuperCompress keeps the lines that answer the question, hosted.
 - [Caveman alternative](https://www.supercompress.dev/alternatives/caveman): Caveman shortens agent replies and shrinks some tool output locally; SuperCompress compresses input and leaves replies alone.
 - [Caveman Cloud alternative](https://www.supercompress.dev/alternatives/caveman-cloud): Team spend console vs a per-request compression API.
 - [Best Headroom alternatives](https://www.supercompress.dev/alternatives/best-headroom-alternatives): SuperCompress, Context Mode, RTK, NeuralMind, Caveman, LLMLingua-2, Compresr, The Token Company and /compact compared.
 - [Best Caveman alternatives](https://www.supercompress.dev/alternatives/best-caveman-alternatives): Tools that cut what an agent reads (SuperCompress, Headroom, Context Mode, RTK) plus simple output limits.
 - [Best Caveman Cloud alternatives](https://www.supercompress.dev/alternatives/best-caveman-cloud-alternatives): Token reduction (SuperCompress, Headroom, RTK) vs spend visibility (Langfuse, provider consoles).
+- [ScaleDown alternative](https://www.supercompress.dev/alternatives/scaledown): ScaleDown is a sentence-level context compression API; SuperCompress is line-level, verbatim extraction for coding agents.
 - [Context compression for coding agents](https://www.supercompress.dev/context-compression-for-coding-agents): Command filters, MCP proxies, compaction and query-aware extraction compared.
 - [SuperCompress vs RTK](https://www.supercompress.dev/supercompress-vs-rtk): Shell output filters vs compression of any tool result.
 - [SuperCompress vs summarization](https://www.supercompress.dev/supercompress-vs-summarization): Verbatim extraction vs rewriting.
@@ -95,6 +96,7 @@ The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Ho
 - What is SuperCompress? Hosted, query-aware context compression. SuperCompress's hosted API keeps the original lines that answer the current question and drops the rest.
 - What is a good Headroom alternative? SuperCompress, if you want hosted, question-aware, verbatim extraction instead of running a local compression proxy. See https://www.supercompress.dev/alternatives/headroom
 - What is a good Caveman alternative? SuperCompress, if your cost comes from what the agent reads rather than what it writes. See https://www.supercompress.dev/alternatives/caveman
+- What is a good ScaleDown alternative? SuperCompress, if you want line-level verbatim extraction for coding-agent tool output. See https://www.supercompress.dev/alternatives/scaledown
 - How do I reduce Claude Code, Cursor or Codex token usage? Run `npm install -g supercompress-proxy && supercompress setup`; it wires the `compress_context` MCP tool and hooks into each detected agent.
 - Is it a summarizer? No. It keeps original lines word for word.
 - Does it change model replies? No. It only compresses input context.

@@ -580,6 +580,7 @@ Tools that cut LLM tokens work in different places: some shorten the model's rep
 - Headroom alternative: local, content-type compression proxy and library vs hosted, question-aware extraction.
 - Caveman alternative: shorter replies plus local tool-output shrinking vs input compression that leaves replies alone.
 - Caveman Cloud alternative: team spend console vs a per-request compression API.
+- ScaleDown alternative: sentence-level context compression API vs line-level, verbatim extraction for coding agents.
 - RTK comparison: shell command filters vs compression of any tool result.
 - LLMLingua comparison: token pruning vs keeping whole original lines.
 
@@ -733,6 +734,33 @@ Works with | Coding agents and SDK calls, per its site | Claude Code, Cursor, Co
 Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see PointFive's end-to-end study at https://arxiv.org/abs/2607.12161, the code-compression-bench SWE-bench runs at https://github.com/daseinlabs/code-compression-bench, JetBrains' rtk trial at https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/ and the THOL leaderboard at https://pi-infected.github.io/token-harness-optimizer-leaderboard/; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.
 
 See also: Caveman alternative, how to cut LLM API costs.
+
+### ScaleDown alternative: SuperCompress
+
+URL: https://www.supercompress.dev/alternatives/scaledown
+
+ScaleDown is a hosted, query-aware Compress API: you send context plus a prompt and get a shorter context back. SuperCompress is also hosted and query-aware, but it is extractive at the line level. It returns original lines copied verbatim from the input and drops the rest. It never rewrites. If your context is coding-agent tool output (logs, stack traces, diffs, file reads, shell output) where the unit that matters is a line, SuperCompress is the alternative to try.
+
+#### What is ScaleDown?
+
+ScaleDown publishes a hosted Compress endpoint, POST /compress/raw/, that takes supporting context plus a prompt and returns a compressed context. Its docs say compression is applied mainly to context, and that the prompt (the question or instruction) is kept intact. Compress is one of a set of task models: Summarize, Compress, Extract and Classify. Sources: https://docs.scaledown.ai/api-reference/compress-overview and https://www.langchain.com/blog/building-long-running-agents-with-scaledown-and-deep-agents.
+The same vendor ships langchain-scaledown, a LangChain and Deep Agents package. Its ScaledownToolCompressionMiddleware adds an optional compression_query on a tool call. When the model fills that in, the tool result is compressed before the model sees it. Compress is also listed in LiteLLM as scaledown/compress (https://models.litellm.ai/models/compress).
+
+#### How does ScaleDown decide what to keep?
+
+The Compress overview calls the result "a semantically equivalent version" of the input and says the compression is "lossless in intent". A ScaleDown engineering post (https://tinyml.substack.com/p/how-we-train-small-language-models) describes an extractive model that scores tokens, aggregates those scores to sentence-level relevance, and returns the top-scoring sentences. Those are ScaleDown's own descriptions. Check a sample against your input if you need a verbatim subset.
+
+#### How does SuperCompress differ?
+
+SuperCompress is hosted, query-aware and extractive at the line level. The hosted model keeps original lines copied verbatim from the input and drops the rest. It never rewrites or summarizes. Line granularity matters for logs, stack traces, diffs, file reads, JSON lines and shell output. Skip the Compressor (https://arxiv.org/abs/2610.21073) found that compressors that alter text make fewer patches apply. That study did not test SuperCompress or ScaleDown.
+
+#### When is each the right choice?
+
+ScaleDown is a reasonable choice if you already build on LangChain or Deep Agents, your context is mostly prose, or you also want Summarize, Extract and Classify from one vendor. SuperCompress is the better fit for coding-agent tool output where the unit that matters is a line and the kept text needs to be a verbatim copy of the original.
+
+#### How do you compare them fairly?
+
+Run the same real trace through both. Diff the kept text against the original. Measure end-to-end cost per solved task, not token counts alone. Beyond Token Savings (https://arxiv.org/abs/2609.32961) found that fewer tokens do not always mean cheaper or faster runs. The daseinlabs/code-compression-bench (https://github.com/daseinlabs/code-compression-bench) ranks compressors by cost per solved task. Neither study tested SuperCompress or ScaleDown.
 
 ### How to cut LLM API costs
 
