@@ -56,7 +56,7 @@
       <img class="journal-art" src="/assets/img/hero-stipple-hands-web.png" width="560" height="560" alt="" fetchpriority="high" />
     </header>
     <section aria-label="Article library">
-      <div class="journal-library-heading"><h2>From the journal</h2><p data-result-count aria-live="polite">56 articles</p></div>
+      <div class="journal-library-heading"><h2>From the journal</h2><p data-result-count aria-live="polite">57 articles</p></div>
       <form class="journal-search" role="search" hidden>
         <label>Find a story<input type="search" name="q" placeholder="Search articles…" autocomplete="off" /></label>
         <label>Explore a topic<select name="topic"><option value="">All topics</option><option>Comparisons</option><option>Cost optimization</option><option>Engineering</option><option>Guides</option><option>Product notes</option></select></label>
@@ -66,7 +66,7 @@
       <article class="journal-card journal-feature" data-blog-card data-category="Guides">
         <p class="journal-label">Latest dispatch · Guides</p>
         <h2><a href="/coding-agent-token-usage">Reduce coding agent token usage</a></h2>
-        <p class="journal-description">Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, OpenCode and Goose, plus what SuperCompress setup adds to each agent.</p>
+        <p class="journal-description">Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, OpenCode, Goose and OpenClaw, plus what SuperCompress setup adds to each agent.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Guides">
@@ -115,6 +115,18 @@
         <p class="journal-label">Guides</p>
         <h2><a href="/reduce-goose-token-usage">Reduce Goose Token Usage: Compress Tool Output</a></h2>
         <p class="journal-description">Where Goose tokens go (developer-extension shell output, file reads, test runs, MCP results) and how SuperCompress adds an MCP extension and instructions to Goose so the agent keeps the original lines that answer your question.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/reduce-openclaw-token-usage">Reduce OpenClaw Token Usage: Compress Tool Results</a></h2>
+        <p class="journal-description">Where OpenClaw tokens go (tool results, file reads, shell and log output, MCP results, session history before compaction) and how SuperCompress wires MCP, hooks, a plugin and a skill so large tool results become a session digest prepended on the next prompt.</p>
+        <span class="journal-read" aria-hidden="true">Read the story ↗</span>
+      </article>
+      <article class="journal-card" data-blog-card data-category="Guides">
+        <p class="journal-label">Guides</p>
+        <h2><a href="/reduce-grok-build-token-usage">Reduce Grok Build Token Usage: Compress Tool Results</a></h2>
+        <p class="journal-description">Where Grok Build tokens go (tool results, file reads, shell, test and build output, search results, MCP results, long sessions) and how SuperCompress wires MCP, hooks, instructions and a skill so a PostToolUse hook replaces the model's copy of a large tool result with a compressed digest.</p>
         <span class="journal-read" aria-hidden="true">Read the story ↗</span>
       </article>
       <article class="journal-card" data-blog-card data-category="Guides">

@@ -168,7 +168,7 @@ SC = {
         ("Best for", "cutting the input tokens an agent or app sends: tool output, file reads, logs, MCP results, retrieved docs"),
         ("How it works", "a hosted, query-aware model keeps the original lines that answer the current question, word for word, and drops the rest"),
         ("Runs", "hosted API (<code>POST /api/v1/compress</code>) plus an MCP tool and hooks for coding agents"),
-        ("Price", '5M free tokens a month, then $0.10 per million, per <a href="/dashboard?signup=1">the site</a>'),
+        ("Price", '1M free tokens a month, then $0.10 per million, per <a href="/dashboard?signup=1">the site</a>'),
     ],
 }
 CAVEMAN = {

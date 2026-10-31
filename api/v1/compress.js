@@ -9,6 +9,8 @@ const { bearerToken } = require("../_lib/auth");
 const { KEY_PREFIX } = require("../_lib/keys");
 const { authenticateKey, recordUsage } = require("../_lib/firebase-key-store");
 const { compress, compressAdaptive, compressCCR, storeCcrBlocks, wrapCompressedForCache } = require("../_lib/engine");
+const { enforceCompressionSafety } = require("../_lib/compression-safety");
+const { attachCompressionQuota } = require("../_lib/compression-quota");
 const {
   FREE_TOKENS_PER_MONTH,
   freeAllowance,
@@ -20,7 +22,7 @@ const {
   roundUsd,
 } = require("../_lib/stripe");
 const crypto = require("crypto");
-const { DUMP_KEEP_RATIO, isGenericQuery, assessResult, quotaStatus } = require("../_lib/compress-safety");
+const { DUMP_KEEP_RATIO, isGenericQuery, assessResult } = require("../_lib/compress-safety");
 const {
   sanitizeRequestId,
   computeCompressFingerprint,
@@ -47,7 +49,7 @@ function resolveClientIdempotencyKey(req, body) {
 }
 
 /**
- * Free accounts hard-stop at the monthly free allowance (5M + onboard bonus).
+ * Free accounts hard-stop at the monthly free allowance (1M).
  * Legacy metered / comped PAYG may exceed freely.
  * Credit-wallet PAYG may exceed free only while prepaid balance > 0 (or auto-recharge succeeds).
  * Never fail-open for free users — billing down ⇒ 503, not free compress.
@@ -334,7 +336,7 @@ module.exports = async (req, res) => {
     rl.limit = V1_RPM;
 
     const context = body.context || "";
-    const query = (typeof body.query === "string" && body.query.trim()) || "Summarize this context.";
+    const query = String(body.query || "").trim() ? String(body.query) : "";
     const mode = body.mode || "neural";
     const budgetRatio = mode === "fixed" ? (body.budget_ratio ?? 0.35) : 0.35;
     const ccr = body.ccr === true || body.ccr === "true";
@@ -372,12 +374,24 @@ module.exports = async (req, res) => {
       if (lease.status === "completed") {
         const prev = lease.data || {};
         if (prev.response?.compressed_text) {
+          const replay = enforceCompressionSafety(context, prev.response);
+          if (replay.compression_safety.status === "passthrough") {
+            replay.ccr = null;
+            replay.cache_prefix_applied = false;
+          }
+          try {
+            const { loadLedger } = require("../_lib/billing-ledger");
+            const usage = await withTimeout(loadLedger(authenticated.ownerUid, authenticated.owner.customClaims || {}), 2500, "replay_quota");
+            attachCompressionQuota(replay, authenticated.owner, usage);
+          } catch (_) {
+            replay.warnings = [...new Set([...(replay.warnings || []), "Current quota status is unavailable; check usage_summary before further compression."])];
+          }
           res.setHeader("Idempotency-Key", requestId);
           return jsonWithRateLimit(
             res,
             200,
             {
-              ...prev.response,
+              ...replay,
               request_id: requestId,
               idempotent_replay: true,
             },
@@ -415,16 +429,14 @@ module.exports = async (req, res) => {
       throw err;
     }
 
-    const result = ccr
-      ? await compressCCR(context, query)
-      : dumpMode
-        ? { ...compress(context, query, DUMP_KEEP_RATIO), mode: "dump" }
-        : await compressAdaptive(context, query);
-    // Neural Keep historically returned only compressed_tokens — normalize so
-    // billing / response / meters never see undefined kept_tokens.
-    if (result && result.kept_tokens == null && result.compressed_tokens != null) {
-      result.kept_tokens = result.compressed_tokens;
-    }
+    let result = enforceCompressionSafety(
+      context,
+      await (ccr
+        ? compressCCR(context, query)
+        : dumpMode
+          ? { ...compress(context, query, DUMP_KEEP_RATIO), mode: "dump" }
+          : compressAdaptive(context, query))
+    );
     const latencyMs = Math.max(0, Date.now() - compressStarted);
 
     const remainingMs = () => HARD_BUDGET_MS - (Date.now() - requestStarted);
@@ -444,7 +456,7 @@ module.exports = async (req, res) => {
     // For fixed+CCR, fall back to basic full-context storage (no block markers).
     let ccrInfo = null;
     let compressedText = result.compressed_text;
-    if (ccr) {
+    if (ccr && result.compression_safety.status !== "passthrough") {
       let storedOk = false;
       if (remainingMs() > 2500) {
         try {
@@ -512,9 +524,14 @@ module.exports = async (req, res) => {
     const rawText = ccrInfo && ccrInfo.markers_count === 0 && ccrInfo.hash
       ? compressedText + `\n[SC-Retrieve: ${ccrInfo.hash}]\n`
       : compressedText;
-    const finalText = cache_prefix
+    const cachePrefixApplied = cache_prefix && result.compression_safety.status !== "passthrough";
+    const candidateText = cachePrefixApplied
       ? wrapCompressedForCache(rawText, query).wrapped
       : rawText;
+    result = enforceCompressionSafety(context, { ...result, compressed_text: candidateText });
+    const finalText = result.compressed_text;
+    const passedThrough = result.compression_safety.status === "passthrough";
+    if (passedThrough) ccrInfo = null;
 
     const keptTokens =
       result.kept_tokens ?? result.compressed_tokens ?? result.tokens_out ?? 0;
@@ -543,13 +560,18 @@ module.exports = async (req, res) => {
         tokens_saved: 0,
         tokens_saved_pct: 0,
         kv_savings_pct: 0,
+        warnings: result.warnings || [],
+        compression_safety: result.compression_safety,
+        fallback_reason: result.fallback_reason || safety.reason,
+        cache_prefix_applied: false,
+        ccr: null,
         passthrough: true,
         passthrough_reason: safety.reason,
         notice:
           `Returned the input unchanged: compression would have saved ${safety.saved_pct}% ` +
           `(${keptTokens} vs ${originalTokens} tokens). Not billed.`,
         billed: false,
-        mode: dumpMode ? "dump" : result.mode || "compiler",
+        mode: result.mode || (dumpMode ? "dump" : "compiler"),
         query_mode: dumpMode ? "dump" : "query",
         latency_ms: latencyMs,
         coding_agent: coding_agent || null,
@@ -579,7 +601,7 @@ module.exports = async (req, res) => {
       verifier: result.verifier,
       kept_blocks: result.kept_blocks,
       dropped_blocks: result.dropped_blocks,
-      cache_prefix_applied: cache_prefix || false,
+      cache_prefix_applied: cachePrefixApplied && !passedThrough,
       ccr: ccrInfo,
       latency_ms: latencyMs,
       coding_agent: coding_agent || null,
@@ -590,6 +612,8 @@ module.exports = async (req, res) => {
       threshold: result.threshold ?? null,
       neural_keep_fallback: result.neural_keep_fallback === true,
       fallback_reason: result.fallback_reason || null,
+      warnings: result.warnings || [],
+      compression_safety: result.compression_safety,
       query_mode: dumpMode ? "dump" : "query",
       ...(dumpMode
         ? {
@@ -603,21 +627,8 @@ module.exports = async (req, res) => {
 
     // Billing is fail-closed: never return compressed text without a durable charge/quota write.
     // Persist responseBody so identical Idempotency-Key retries replay instead of recomputing.
-    // Persist safety + an estimated quota state with the billed response, so an
-    // Idempotency-Key replay carries the same warnings. Replaced with the exact state below.
-    const ownerClaims = authenticated.owner?.customClaims || {};
-    const quotaFor = (tokensUsed) =>
-      quotaStatus({ tokensUsed, allowance: freeAllowance(ownerClaims), comped: isComped(ownerClaims) });
     try {
-      const month = new Date().toISOString().slice(0, 7);
-      const prior = ownerClaims.sc_usage?.month === month ? Number(ownerClaims.sc_usage.tokens_in || 0) : 0;
-      responseBody.quota = quotaFor(prior + originalTokens);
-      if (responseBody.quota.warning) responseBody.quota_warning = responseBody.quota.warning;
-    } catch (_) {}
-
-    let billedUsage = null;
-    try {
-      billedUsage = await withTimeout(
+      const recordedUsage = await withTimeout(
         recordUsage(authenticated.user, authenticated.owner, result, {
           requestId,
           fingerprint,
@@ -626,6 +637,7 @@ module.exports = async (req, res) => {
         Math.max(2500, Math.min(20000, remainingMs() - 1500)),
         "record_usage"
       );
+      attachCompressionQuota(responseBody, authenticated.owner, recordedUsage);
     } catch (err) {
       if (err.paywall || err.status === 402) throw err;
       const e = new Error(
@@ -637,17 +649,6 @@ module.exports = async (req, res) => {
       e.code = err.code || "billing_unavailable";
       e.requestId = requestId;
       throw e;
-    }
-
-    // Quota state on every billed response so agents see the free tier running out.
-    try {
-      if (Number.isFinite(Number(billedUsage?.tokens_in))) {
-        responseBody.quota = quotaFor(Number(billedUsage.tokens_in));
-        delete responseBody.quota_warning;
-        if (responseBody.quota.warning) responseBody.quota_warning = responseBody.quota.warning;
-      }
-    } catch (err) {
-      console.warn("quota status skipped:", err.message || err);
     }
 
     // Analytics / agent meters ONLY after immutable successful billing — never credit

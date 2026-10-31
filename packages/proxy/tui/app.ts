@@ -33,6 +33,7 @@ import {
   meterBar,
 } from "./theme.ts"
 import {
+  BILLING_URL,
   VERSION,
   beginConnect,
   detectAgents,
@@ -51,11 +52,13 @@ import {
   saveApiKey,
   startProxy,
   stopProxy,
+  usageNotice,
   type UsageSnap,
 } from "./sc.ts"
 
 const COMMANDS: SelectOption[] = [
   { name: "usage", description: "Plan, quota, savings by agent" },
+  { name: "billing", description: "Upgrade / add credits · billing link" },
   { name: "account", description: "Whoami · linked key · recent activity" },
   { name: "connect", description: "Link this machine in the browser" },
   { name: "setup", description: "Connect + install MCP + hooks" },
@@ -170,6 +173,8 @@ export function buildTree() {
         Text({ id: "u-stats", content: "— in     — saved", fg: INK, wrapMode: "none" }),
         Text({ id: "u-meter", content: `${meterBar(0)}   —`, fg: MUTED, wrapMode: "none" }),
         Text({ id: "u-plan", content: "plan  —", fg: MUTED, wrapMode: "none" }),
+        Text({ id: "u-notice", content: "", fg: WARN, wrapMode: "word", visible: false }),
+        Text({ id: "u-billing", content: `Upgrade / add credits: ${BILLING_URL}`, fg: BRAND, wrapMode: "word", selectable: true, visible: false }),
         Text({ content: "─".repeat(36), fg: RULE, wrapMode: "none" }),
         Text({ content: "AGENTS", fg: BRAND, wrapMode: "none" }),
         ...agentLines,
@@ -263,6 +268,8 @@ export async function runApp() {
   const uStats = renderer.root.findDescendantById("u-stats") as TextRenderable
   const uMeter = renderer.root.findDescendantById("u-meter") as TextRenderable
   const uPlan = renderer.root.findDescendantById("u-plan") as TextRenderable
+  const uNotice = renderer.root.findDescendantById("u-notice") as TextRenderable
+  const uBilling = renderer.root.findDescendantById("u-billing") as TextRenderable
   const agentNodes = Array.from({ length: AGENT_SLOTS }, (_, i) =>
     renderer.root.findDescendantById(`agent-${i}`),
   ) as TextRenderable[]
@@ -306,9 +313,16 @@ export async function runApp() {
 
   function paintUsage(u: UsageSnap) {
     usage = u
+    const notice = usageNotice(u)
+    uNotice.visible = Boolean(notice)
+    uBilling.visible = Boolean(notice)
+    uNotice.content = notice?.message || ""
+    uNotice.fg = notice?.paused ? ERR : WARN
+    uBilling.content = notice?.action || ""
     hdrEmail.content = u.email
     hdrEmail.fg = u.linked && !u.error ? OK : MUTED
-    uLabel.content = u.unlimited ? "USAGE  ·  UNLIMITED" : "USAGE  ·  THIS MONTH"
+    uLabel.content = notice?.paused ? "COMPRESSION PAUSED" : u.unlimited ? "USAGE  ·  UNLIMITED" : "USAGE  ·  THIS MONTH"
+    uLabel.fg = notice?.paused ? ERR : BRAND
     uStats.content = `${fmt(u.tokensIn)} in     ${fmt(u.tokensSaved)} saved     −${u.cutPct}%`
     uStats.fg = INK
     if (u.unlimited) {
@@ -446,6 +460,8 @@ export async function runApp() {
       if (name === "usage") {
         const u = await refreshUsage()
         setLog(formatUsageLog(u), u.error ? WARN : INK)
+      } else if (name === "billing") {
+        setLog(`Upgrade / add credits\n${BILLING_URL}\n\nOpen this link to review billing and choose an upgrade.`, BRAND)
       } else if (name === "account") {
         const a = await fetchAccount()
         setLog(formatAccountLog(a), a.error ? WARN : INK)

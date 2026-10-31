@@ -3,13 +3,21 @@
  * Stateless JSON-RPC over POST. Auth: Authorization Bearer sc_… or X-API-Key.
  */
 const crypto = require("crypto");
+const { responseMetadata, responseError } = require("./mcp-response");
 
 const SITE = "https://www.supercompress.dev";
 const COMPRESS_URL = `${SITE}/api/v1/compress`;
 const USAGE_URL = `${SITE}/api/usage`;
 const ME_URL = `${SITE}/api/account?op=me`;
 const CONNECT_BASE = `${SITE}/dashboard?source=grok-bot&connect=`;
-const PROTOCOL_VERSION = "2025-03-26";
+const PROTOCOL_VERSION = "2025-11-25";
+// Versions this stateless tools-only server can answer. On initialize we echo the
+// client's requested version when we support it, otherwise we offer the latest.
+const SUPPORTED_PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
+
+function negotiateProtocolVersion(requested) {
+  return SUPPORTED_PROTOCOL_VERSIONS.includes(requested) ? requested : PROTOCOL_VERSION;
+}
 const SERVER_NAME = "supercompress";
 const SERVER_VERSION = "0.5.30";
 
@@ -96,7 +104,7 @@ async function httpJson(url, options = {}) {
   }
 }
 
-async function handleToolCall(name, args, apiKey) {
+async function handleToolCall(name, args = {}, apiKey) {
   if (!["compress_context", "connect_account", "usage_summary"].includes(name)) {
     return toolError(`Unknown tool: ${name}`);
   }
@@ -163,6 +171,7 @@ async function handleToolCall(name, args, apiKey) {
           meter: body.meter || null,
           account_usage: body.account_usage || null,
           coding_agent_usage: body.coding_agent_usage,
+          ...responseMetadata(body),
         })
       );
     } catch (err) {
@@ -170,8 +179,8 @@ async function handleToolCall(name, args, apiKey) {
     }
   }
 
-  const context = String(args.context || "");
-  const query = String(args.query || "");
+  const context = String(args?.context || "");
+  const query = String(args?.query || "").trim() ? String(args.query) : "";
   const sessionId = String(args.session_id || "grok-bot").trim() || "grok-bot";
   if (!context.trim()) return toolError("context is required");
   if (!apiKey) {
@@ -200,15 +209,15 @@ async function handleToolCall(name, args, apiKey) {
     });
     if (response.status === 402 || body.paywall) {
       return toolError(
-        body.detail ||
-          body.notice ||
-          "PAYWALL: Free quota used. Add credits at https://www.supercompress.dev/dashboard#billing"
+        responseError({ ...body, paywall: true }, "Compression paused. Review account billing.")
       );
     }
     if (!response.ok) {
-      return toolError(body.detail || body.message || `Compression failed (${response.status})`);
+      return toolError(responseError(body, `Compression failed (${response.status})`));
     }
-    return toolText(JSON.stringify(mcpCompressPayload(body, sessionId)));
+    const payload = mcpCompressPayload(body, sessionId);
+    if (!payload) return toolError(responseError(body, "Compression returned an empty digest."));
+    return toolText(JSON.stringify(payload));
   } catch (err) {
     const msg =
       err?.name === "AbortError"
@@ -220,20 +229,29 @@ async function handleToolCall(name, args, apiKey) {
 
 /**
  * One copy of the digest, warnings first. A passthrough is not echoed: the agent already
- * holds the original, and echoing it doubled small results.
+ * holds the original, and echoing it doubled small results. Safety metadata (warnings,
+ * compression_safety, quota fields) is passed through unchanged. Returns null on an empty digest.
  */
 function mcpCompressPayload(body, sessionId) {
   const original = Number(body.original_tokens || body.tokens_in || 0);
   const quotaWarning = body.quota_warning || body.quota?.warning || null;
-  if (body.passthrough) {
+  const { mode: engineMode, notice: bodyNotice, ...metadata } = responseMetadata(body);
+  const mode = body.query_mode || engineMode || "query";
+  if (body.passthrough || body.compression_safety?.status === "passthrough") {
+    const notBilled = body.billed === false || (body.passthrough === true && body.billed == null);
     return {
-      passthrough: true,
-      notice: "Nothing to gain; keep using your original text. Not billed.",
+      ...(body.compression_warning ? { warning: body.compression_warning } : {}),
       ...(quotaWarning ? { quota_warning: quotaWarning } : {}),
+      ...metadata,
+      passthrough: true,
+      mode,
+      notice: bodyNotice || `Nothing to gain; keep using your original text.${notBilled ? " Not billed." : ""}`,
+      original_tokens: original,
       session_id: sessionId,
     };
   }
   const compressed = body.compressed_context || body.compressed_text || body.compressed || body.text || "";
+  if (!compressed) return null;
   const kept = Number(body.compressed_tokens || body.kept_tokens || body.tokens_out || 0);
   const saved = Math.max(0, original - kept);
   const pct = body.tokens_saved_pct != null
@@ -242,8 +260,9 @@ function mcpCompressPayload(body, sessionId) {
   return {
     ...(body.compression_warning ? { warning: body.compression_warning } : {}),
     ...(quotaWarning ? { quota_warning: quotaWarning } : {}),
-    ...(body.notice ? { notice: body.notice } : {}),
-    mode: body.query_mode || "query",
+    ...metadata,
+    ...(bodyNotice ? { notice: bodyNotice } : {}),
+    mode,
     original_tokens: original,
     compressed_tokens: kept,
     tokens_saved: saved,
@@ -267,7 +286,7 @@ async function dispatchRpc(msg, apiKey) {
       jsonrpc: "2.0",
       id,
       result: {
-        protocolVersion: PROTOCOL_VERSION,
+        protocolVersion: negotiateProtocolVersion(params?.protocolVersion),
         capabilities: { tools: {} },
         serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
         instructions:
@@ -309,6 +328,8 @@ async function dispatchRpc(msg, apiKey) {
 module.exports = {
   TOOLS,
   PROTOCOL_VERSION,
+  SUPPORTED_PROTOCOL_VERSIONS,
+  negotiateProtocolVersion,
   SERVER_NAME,
   SERVER_VERSION,
   extractApiKey,

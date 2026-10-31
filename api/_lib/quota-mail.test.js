@@ -12,6 +12,16 @@ const {
 } = require("./quota-mail");
 const { quotaExhaustedCopy } = require("./mail");
 
+it("all quota delivery paths honor live opt-outs and historical suppressions", () => {
+  const { quotaRecipientSuppressed } = require("./quota-mail");
+  const user = { email: "recipient@example.com", customClaims: {} };
+  assert.equal(quotaRecipientSuppressed(user, new Set()), false);
+  assert.equal(quotaRecipientSuppressed({ ...user, customClaims: { sc_unsub: "1" } }, new Set()), true);
+  assert.equal(quotaRecipientSuppressed({ ...user, customClaims: { sc_credit_balance_usd: 10 } }, new Set()), true);
+  const hash = require("node:crypto").createHash("sha256").update(user.email).digest("hex");
+  assert.equal(quotaRecipientSuppressed(user, new Set([hash])), true);
+});
+
 describe("quota mail gating", () => {
   it("claim stamp is per month", () => {
     assert.equal(
@@ -23,6 +33,7 @@ describe("quota mail gating", () => {
       false,
     );
     assert.equal(quotaMailAlreadySent({}, "2026-08"), false);
+    assert.equal(quotaMailAlreadySent({ sc_power_quota_mail: "2026-08" }, "2026-08"), true);
   });
 
   it("idempotency key binds uid and month", () => {
@@ -89,13 +100,14 @@ describe("quota mail copy", () => {
     assert.equal(copy.to, "a@b.com");
   });
 
-  it("never reports usage below the cap and handles missing month", () => {
+  it("reports actual remaining allowance and handles missing month", () => {
     const copy = quotaExhaustedCopy({
       email: "a@b.com",
       tokensUsed: 0,
       freeTokens: 5_000_000,
     });
-    assert.match(copy.text, /5M tokens/);
+    assert.match(copy.text, /5,000,000 free monthly tokens remaining/);
+    assert.doesNotMatch(copy.text, /You've used your free/);
     assert.match(copy.text, /resets on the 1st of next month/);
   });
 });

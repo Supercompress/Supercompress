@@ -53,9 +53,16 @@ The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Ho
 - [Reduce Cursor token usage](https://www.supercompress.dev/reduce-cursor-token-usage): What setup adds to Cursor (MCP server, rule and hooks).
 - [Reduce Codex token usage](https://www.supercompress.dev/reduce-codex-token-usage): Compress shell output and MCP results in Codex CLI.
 - [Reduce Goose token usage](https://www.supercompress.dev/reduce-goose-token-usage): Compress developer-extension shell output, file reads and MCP results in Goose.
+- [Reduce OpenClaw token usage](https://www.supercompress.dev/reduce-openclaw-token-usage): Compress tool results into a session-scoped digest that OpenClaw prepends on the next prompt.
+- [Reduce Grok Build token usage](https://www.supercompress.dev/reduce-grok-build-token-usage): Compress large tool results in Grok Build. A PostToolUse hook replaces the model's copy of a large result with a query-aware digest.
+- [Reduce Gemini CLI token usage](https://www.supercompress.dev/reduce-gemini-cli-token-usage): Where Gemini CLI tokens go (shell output, file reads, MCP results, GEMINI.md) and how to cut them.
+- [Reduce OpenCode token usage](https://www.supercompress.dev/reduce-opencode-token-usage): How SuperCompress adds an MCP server and instructions to OpenCode so the agent keeps only the lines that answer your question.
+- [Reduce Hermes Agent token usage](https://www.supercompress.dev/reduce-hermes-agent-token-usage): How SuperCompress wires MCP, hooks and a plugin into Hermes Agent to keep only the lines that answer the current request.
 - [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression): Compress large MCP results against the current question.
-- [All coding agents](https://www.supercompress.dev/coding-agent-token-usage): Guides for Windsurf, Gemini CLI, Cline, OpenCode, Hermes Agent and more.
+- [All coding agents](https://www.supercompress.dev/coding-agent-token-usage): Guides for Windsurf, Gemini CLI, Cline, OpenCode, Hermes Agent, Goose, OpenClaw, Grok Build and more.
 - [Compress Claude Code tool output](https://www.supercompress.dev/compress-claude-code-tool-output): Set up SuperCompress in Claude Code so large tool output is compressed against your request through PostToolUse hooks and an MCP tool.
+- [Claude Code MCP tool output too large](https://www.supercompress.dev/claude-code-mcp-output-too-large): What to do when an MCP tool response in Claude Code is too large: MAX_MCP_OUTPUT_TOKENS, filtering and paging at the server, and compressing the result against the current question.
+- [Claude Code context limit](https://www.supercompress.dev/claude-code-context-limit): Why Claude Code runs out of context, what /context shows, and when to use /compact, /clear and subagents.
 - [Claude Code /compact vs /clear vs compression](https://www.supercompress.dev/claude-code-compact-vs-clear-vs-compression): When to use /clear, /compact, or question-aware compression in Claude Code to control context size and token costs.
 - [Cursor MCP context compression](https://www.supercompress.dev/cursor-mcp-context-compression): Add query-aware context compression to Cursor. SuperCompress installs an MCP server, hooks and a rule so bulky context is cut to relevant lines.
 - [Reduce tool call output tokens](https://www.supercompress.dev/reduce-tool-call-output-tokens): Practical ways to cut tool call output tokens in AI agents: limits, truncation contracts, offloading, and question-aware compression of logs, diffs and JSON.

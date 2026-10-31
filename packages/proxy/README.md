@@ -155,7 +155,7 @@ The default `max` policy uses a 5h window all the way to the provider's cutoff i
 
 ## Account & pricing
 
-Launch promo: **5M tokens/month free**, then **$0.10 / 1M** from the [dashboard](https://www.supercompress.dev/dashboard).
+**1M tokens/month free**, then **$0.10 / 1M** from the [dashboard](https://www.supercompress.dev/dashboard).
 
 ---
 

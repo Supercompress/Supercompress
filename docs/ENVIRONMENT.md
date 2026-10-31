@@ -63,7 +63,7 @@ print(impact.assumptions.to_dict())
 
 | Tier | Price | Allowance | Behavior |
 |------|-------|-----------|----------|
-| Free | $0 | 5M tokens/mo | Hard stop until PAYG |
+| Free | $0 | 1M tokens/mo | Hard stop until PAYG |
 | Pay as you go | $0.10 / 1M tokens after free | Unlimited | Prepaid credits; Stripe meters overage |
 
 ## Why CPU eviction matters
