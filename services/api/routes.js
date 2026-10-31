@@ -34,6 +34,7 @@ function buildMatchers() {
   const keyById = load("api/keys/[id].js");
   const billing = load("api/billing.js");
   const me = load("api/me.js");
+  const usageShare = load("api/usage-share.js");
   const stats = load("api/stats.js");
   const affiliates = load("api/affiliates.js");
   const founderUsage = load("api/founder-usage.js");
@@ -90,6 +91,7 @@ function buildMatchers() {
     ["/api/keys", { handler: keys }],
     ["/api/billing", { handler: billing }],
     ["/api/me", { handler: me }],
+    ["/api/usage-share", { handler: usageShare }],
     ["/me", { handler: me }],
     ["/api/stats", { handler: stats }],
     ["/api/affiliates", { handler: affiliates }],

@@ -1,5 +1,5 @@
 /**
- * Once-per-month quota-exhausted email when a free-tier user hits the 5M cap
+ * Once-per-month quota-exhausted email when a free-tier user hits the 1M cap
  * and compression starts returning 402. Durable on Auth claims
  * (`sc_quota_mail` = "YYYY-MM") + store queue + Resend Idempotency-Key, same
  * pattern as the power-user lane so it survives store outages.
@@ -16,7 +16,7 @@ function quotaIdempotencyKey(uid, month) {
 }
 
 function quotaMailAlreadySent(claims = {}, month = currentMonth()) {
-  return String(claims?.[QUOTA_MAIL_CLAIM] || "") === String(month);
+  return [claims?.[QUOTA_MAIL_CLAIM], claims?.sc_power_quota_mail].some(value => String(value || "") === String(month));
 }
 
 async function claimQuotaMail(uid, month, extra = {}) {
@@ -96,9 +96,35 @@ function isDrainableQuotaMail(rec, month = currentMonth()) {
   return String(rec.email || "").includes("@");
 }
 
+function quotaRecipientSuppressed(user, suppressions) {
+  const claims = user.customClaims || {};
+  const email = String(user.email || "").trim().toLowerCase();
+  const { isComped, isLegacyMetered } = require("./stripe");
+  return user.disabled || !email.includes("@") || Boolean(claims.sc_unsub) ||
+    isComped(claims) || isLegacyMetered(claims) || Number(claims.sc_credit_balance_usd) > 0 ||
+    require("./weekly").isHardBlockedRecipient({ email, first_name: user.displayName }) ||
+    /nikunj|kothari/i.test(email + " " + (user.displayName || "")) ||
+    suppressions.has(require("node:crypto").createHash("sha256").update(email).digest("hex"));
+}
+
 async function deliverQuotaMail(rec) {
   const { sendQuotaExhaustedEmail } = require("./mail");
   const key = rec.key || `${rec.month}:${rec.uid}`;
+  const { initFirebaseAdmin } = require("./auth");
+  if (!initFirebaseAdmin()) throw Error("quota_recipient_auth_unavailable");
+  let user;
+  try {
+    user = await require("firebase-admin").auth().getUser(rec.uid);
+  } catch (err) {
+    if (err.code !== "auth/user-not-found") throw err;
+    await markQuotaMail(key, { status: "suppressed", skipped_at: new Date().toISOString() });
+    return { ok: true, skipped: true };
+  }
+  const suppressions = require("./mail-suppressions").reconciledMailSuppressions();
+  if (rec.month !== currentMonth() || quotaRecipientSuppressed(user, suppressions)) {
+    await markQuotaMail(key, { status: "suppressed", skipped_at: new Date().toISOString() });
+    return { ok: true, skipped: true };
+  }
   const idempotencyKey =
     rec.idempotency_key || quotaIdempotencyKey(rec.uid, rec.month);
   await markQuotaMail(key, {
@@ -108,12 +134,14 @@ async function deliverQuotaMail(rec) {
   });
 
   const result = await sendQuotaExhaustedEmail({
-    email: rec.email,
+    email: user.email,
     firstName: rec.first_name || "",
     tokensUsed: rec.tokens_used,
     freeTokens: rec.free_tokens,
     month: rec.month,
     idempotencyKey,
+    unsubUrl: require("./weekly").unsubUrlFor(user.email),
+    listUnsubscribeUrl: require("./weekly").unsubApiUrlFor(user.email),
   });
 
   if (result.ok) {
@@ -200,7 +228,7 @@ async function maybeNotifyQuotaExhausted({
   }
 
   const result = await deliverQuotaMail({ ...record, ...extra });
-  if (result.ok) return { ok: true, sent: true };
+  if (result.ok) return { ok: true, sent: !result.skipped };
   return {
     ok: false,
     sent: false,
@@ -296,8 +324,9 @@ async function drainPendingQuotaMails() {
     pending = records.length;
     for (const rec of records) {
       const result = await deliverQuotaMail(rec);
-      if (result.ok) sent += 1;
-      else failed += 1;
+      if (result.ok) {
+        if (!result.skipped) sent += 1;
+      } else failed += 1;
     }
   } catch (err) {
     storeError = err.message || "store_unavailable";
@@ -320,6 +349,7 @@ function scheduleQuotaExhaustedEmail(opts) {
 }
 
 module.exports = {
+  quotaRecipientSuppressed,
   QUOTA_MAIL_CLAIM,
   quotaIdempotencyKey,
   quotaMailAlreadySent,

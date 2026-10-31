@@ -115,7 +115,7 @@
       "name": "Is there a free Caveman Cloud alternative?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Headroom, RTK, the Caveman skill and self-hosted Langfuse are all free and open source, and SuperCompress has a free tier of 5M tokens a month."
+        "text": "Yes. Headroom, RTK, the Caveman skill and self-hosted Langfuse are all free and open source, and SuperCompress has a free tier of 1M tokens a month."
       }
     },
     {
@@ -208,8 +208,8 @@
     <h2 id="the-list">The alternatives</h2>
     <h3 id="supercompress">1. SuperCompress</h3>
     <p>SuperCompress replaces the cost-cutting half of Caveman Cloud at the source: the bulky context in each request. Your agent or app sends a log, diff, file read or tool result together with the question being asked, and the hosted API returns only the original lines that answer it. Nothing is paraphrased, so error messages, file paths and IDs come through exactly as they were, and every call reports original and kept tokens so you can see the effect on your own traffic.</p>
-    <ul><li><strong>Best for:</strong> cutting the input tokens an agent or app sends: tool output, file reads, logs, MCP results, retrieved docs</li><li><strong>How it works:</strong> a hosted, query-aware model keeps the original lines that answer the current question, word for word, and drops the rest</li><li><strong>Runs:</strong> hosted API (<code>POST /api/v1/compress</code>) plus an MCP tool and hooks for coding agents</li><li><strong>Price:</strong> 5M free tokens a month, then $0.10 per million, per <a href="/dashboard?signup=1">the site</a></li></ul>
-<h3 id="headroom">2. <a href="https://github.com/headroomlabs-ai/headroom" rel="noopener" target="_blank">Headroom</a></h3>
+    <ul><li><strong>Best for:</strong> cutting the input tokens an agent or app sends: tool output, file reads, logs, MCP results, retrieved docs</li><li><strong>How it works:</strong> a hosted, query-aware model keeps the original lines that answer the current question, word for word, and drops the rest</li><li><strong>Runs:</strong> hosted API (<code>POST /api/v1/compress</code>) plus an MCP tool and hooks for coding agents</li><li><strong>Price:</strong> 1M free tokens a month, then $0.10 per million, per <a href="/dashboard?signup=1">the site</a></li></ul>
+<h3 id="headroom">2. <a href="https://github.com/chopratejas/headroom" rel="noopener" target="_blank">Headroom</a></h3>
     <p>Headroom is the open-source option for compressing the same kinds of context locally. It picks a compressor for each content type and keeps the originals retrievable, so the model can ask for what was cut. It suits teams that want everything on their own machines and are happy to run and tune a proxy or library.</p>
     <ul><li><strong>Best for:</strong> teams that want an open-source compression layer they run themselves</li><li><strong>How it works:</strong> content-type compressors for JSON, logs, code, search results and history, with the originals kept so the model can ask for them back</li><li><strong>Runs:</strong> locally, as a Python or TypeScript library, a proxy, an MCP server or an agent wrapper (<code>headroom wrap claude</code>)</li><li><strong>Licence:</strong> Apache 2.0</li></ul>
 <h3 id="rtk">3. <a href="https://github.com/rtk-ai/rtk" rel="noopener" target="_blank">RTK (Rust Token Killer)</a></h3>
@@ -241,7 +241,7 @@
     <h3>What is the best Caveman Cloud alternative?</h3>
     <p>It depends on the job. To send fewer tokens per request, SuperCompress (hosted) or Headroom (open source). To see agent spend, Langfuse or your provider's usage console.</p>
     <h3>Is there a free Caveman Cloud alternative?</h3>
-    <p>Yes. Headroom, RTK, the Caveman skill and self-hosted Langfuse are all free and open source, and SuperCompress has a free tier of 5M tokens a month.</p>
+    <p>Yes. Headroom, RTK, the Caveman skill and self-hosted Langfuse are all free and open source, and SuperCompress has a free tier of 1M tokens a month.</p>
     <h3>Does SuperCompress do everything Caveman Cloud does?</h3>
     <p>No. SuperCompress is a compression service: it shrinks the context in each request and reports original and kept tokens per call. It is not a team governance console.</p>
     <h3>How much does Caveman Cloud cost?</h3>

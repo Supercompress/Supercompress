@@ -102,6 +102,17 @@
       "has": [
         {
           "type": "host",
+          "value": "limitcheck.supercompress.dev"
+        }
+      ],
+      "destination": "/live",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
           "value": "api.supercompress.dev"
         }
       ],
@@ -1399,6 +1410,16 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/live",
+      "has": [
+        {
+          "type": "host",
+          "value": "limitcheck.supercompress.dev"
+        }
+      ],
+      "destination": "/limitcheck"
+    },
     {
       "source": "/wp-login.php",
       "destination": "/api/soft-probe"

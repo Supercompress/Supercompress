@@ -46,7 +46,7 @@ function connectionRecordPath() {
 // The statusline must not depend on an npx cache or a global bin that can
 // disappear, so setup copies these modules to ~/.supercompress/runway/ and
 // the statusline runs that copy.
-const RUNTIME_FILES = ["cli.js", "headers.js", "index.js", "normalize.js", "runway.js", "sources.js", "store.js", "run.js"];
+const RUNTIME_FILES = ["cli.js", "headers.js", "index.js", "normalize.js", "ping.js", "runway.js", "sources.js", "store.js", "run.js"];
 const TEE_ARGS = "ingest --provider claude-code --passthrough";
 const LEGACY_MARK = "limits ingest --provider claude-code --passthrough";
 
@@ -215,6 +215,7 @@ async function run(args) {
   } else {
     process.stdout.write(`${limits.formatText(result)}\n`);
   }
+  await require("./ping").ping({ action: result.action, surface: "cli" });
 }
 
 module.exports = { run, connectClaude, disconnectClaude, statusLineText, installRuntime, runtimeDir };

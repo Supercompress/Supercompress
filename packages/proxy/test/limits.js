@@ -17,6 +17,10 @@ process.env.HOME = tmp;
 process.env.CODEX_HOME = path.join(tmp, ".codex");
 delete process.env.SUPERCOMPRESS_LIMITS_SNAPSHOT;
 delete process.env.LIMITCHECK_SNAPSHOT;
+// Never count test runs on the public limitcheck total.
+process.env.SUPERCOMPRESS_LIMITCHECK_URL = "http://127.0.0.1:9/never";
+delete process.env.SUPERCOMPRESS_TELEMETRY;
+delete process.env.DO_NOT_TRACK;
 
 const { normalizeSnapshot } = require("../src/limits/normalize");
 const { windowsFromHeaders, snapshotFromResponse, parseDurationSeconds } = require("../src/limits/headers");
@@ -502,6 +506,84 @@ test("every shipped skill has valid, quoted frontmatter", () => {
     const desc = text.match(/^description: (.*)$/m)[1];
     assert.ok(desc.startsWith('"') && desc.endsWith('"'), `${rel}: description must be quoted`);
     assert.ok(JSON.parse(desc).length > 40, rel);
+  }
+});
+
+// ── public invocation count ───────────────────────────────────────────────
+function countServer() {
+  const hits = [];
+  const server = http.createServer((req, res) => {
+    let body = "";
+    req.on("data", (d) => (body += d));
+    req.on("end", () => {
+      hits.push({ method: req.method, body: JSON.parse(body || "{}") });
+      res.writeHead(202, { "content-type": "application/json" });
+      res.end("{\"ok\":true}");
+    });
+  });
+  return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve({ server, hits, url: `http://127.0.0.1:${server.address().port}/api/limitcheck` })));
+}
+
+test("ping: sends only verdict + surface, and every opt-out stops it", async () => {
+  const { ping, pingDisabled } = require("../src/limits/ping");
+  const { server, hits, url } = await countServer();
+  try {
+    assert.strictEqual(await ping({ action: "land", surface: "mcp" }, { SUPERCOMPRESS_LIMITCHECK_URL: url }), true);
+    assert.deepStrictEqual(hits, [{ method: "POST", body: { action: "land", surface: "mcp" } }]);
+    for (const env of [{ SUPERCOMPRESS_TELEMETRY: "0" }, { DO_NOT_TRACK: "1" }, { SUPERCOMPRESS_RUNWAY: "0" }]) {
+      assert.ok(pingDisabled(env));
+      assert.strictEqual(await ping({ action: "go", surface: "cli" }, { ...env, SUPERCOMPRESS_LIMITCHECK_URL: url }), false);
+    }
+    assert.strictEqual(hits.length, 1);
+    // Unsupported protocol and a garbage URL: resolve false, never throw.
+    assert.strictEqual(await ping({ action: "go", surface: "cli" }, { SUPERCOMPRESS_LIMITCHECK_URL: "ftp://localhost/count" }), false);
+    assert.strictEqual(await ping({ action: "go", surface: "cli" }, { SUPERCOMPRESS_LIMITCHECK_URL: "not a url" }), false);
+    // Unreachable endpoint: resolves false, never throws.
+    assert.strictEqual(await ping({ action: "go", surface: "cli" }, { SUPERCOMPRESS_LIMITCHECK_URL: "http://127.0.0.1:9/x" }), false);
+  } finally {
+    server.close();
+  }
+});
+
+test("ping: a server that never finishes is cut off at the deadline", async () => {
+  const { ping } = require("../src/limits/ping");
+  const server = http.createServer((req, res) => {
+    res.writeHead(202);
+    const t = setInterval(() => res.write("."), 200);
+    res.on("close", () => clearInterval(t));
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const started = Date.now();
+  try {
+    const ok = await ping({ action: "go", surface: "cli" }, { SUPERCOMPRESS_LIMITCHECK_URL: `http://127.0.0.1:${server.address().port}/` });
+    assert.strictEqual(ok, false);
+    assert.ok(Date.now() - started < 2500, "gave up near the 1.5 s deadline");
+  } finally {
+    server.closeAllConnections();
+    server.close();
+  }
+});
+
+test("ping: `limits --json` counts once; ingest and statusline never count", async () => {
+  const { server, hits, url } = await countServer();
+  const env = { ...process.env, SUPERCOMPRESS_LIMITCHECK_URL: url };
+  const cli = path.join(ROOT, "bin/supercompress.js");
+  const runAsync = (args, input) =>
+    new Promise((resolve) => {
+      const child = spawn(process.execPath, [cli, ...args], { env, stdio: ["pipe", "pipe", "pipe"] });
+      let out = "";
+      child.stdout.on("data", (d) => (out += d));
+      child.on("close", (code) => resolve({ code, out }));
+      child.stdin.end(input || "");
+    });
+  try {
+    const res = await runAsync(["limits", "--json", "--provider", "codex"]);
+    assert.strictEqual(res.code, 0);
+    const action = JSON.parse(res.out.trim()).action;
+    await runAsync(["limits", "statusline"], JSON.stringify({ rate_limits: { five_hour: { used_percentage: 10, resets_at: Math.floor(Date.now() / 1000) + 3600 } } }));
+    assert.deepStrictEqual(hits.map((h) => h.body), [{ action, surface: "cli" }]);
+  } finally {
+    server.close();
   }
 });
 

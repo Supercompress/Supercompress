@@ -4,6 +4,14 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+### Added
+- **Public limitcheck counter.** Each runway check (`supercompress limits` status or the MCP tool `runway_check`) sends one anonymous count to [limitcheck.supercompress.dev](https://limitcheck.supercompress.dev/live), which shows the global total live. The body is only the verdict (`go` / `land` / `pace` / `wait` / `unknown`) and `cli` or `mcp`: no ids, usage numbers, prompts or paths. Statusline updates and `limits ingest` never count. The ping times out after 1.5 s and never fails a check. Opt out with `SUPERCOMPRESS_TELEMETRY=0`, `DO_NOT_TRACK=1` or `SUPERCOMPRESS_RUNWAY=0`.
+
+### Fixed
+- **`compress_context` no longer returns more than it was given.** It returned the whole rolling session memory, twice (`compressed_context` and `compressed_text`), so small inputs came back larger than they went in, and inputs under 40 characters returned all of the memory. It now returns this call's digest once. When there is nothing to gain, it returns a one-line passthrough notice instead of echoing the text.
+- **`query` is optional.** Omit it to shrink a raw dump; the API compresses in dump mode. Session compaction without an ask uses dump mode too.
+- **Warnings reach the agent.** Deep-cut and free-quota warnings from the API appear as `warning` and `quota_warning`, first in the result. `usage_summary` warns when the free tier is used up.
+
 ## [0.5.40] — 2026-10-22
 
 ### Added

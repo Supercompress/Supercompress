@@ -67,7 +67,7 @@ async function scanAuthGrowth() {
   do {
     const page = await auth.listUsers(1000, pageToken);
     for (const user of page.users) {
-      if (user.uid === STATS_UID) continue;
+      if (user.uid === STATS_UID || user.uid.startsWith("sc_stats_")) continue;
       total += 1;
       if (!isHumanUser(user)) continue;
       if (user.email || user.providerData?.some((p) => p.email)) withEmail += 1;
