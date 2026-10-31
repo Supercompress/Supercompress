@@ -63,6 +63,38 @@ The client will launch the SuperCompress server automatically. You should see th
 
 ## Usage
 
+The `query` is optional in both the legacy local `compress` tool and the
+hosted/installed `compress_context` tool. Omit it (or pass an empty string) for
+a raw dump; provide the user's task verbatim when query-focused compression is
+wanted. Only `context` is required.
+
+Compression returns the original context with a warning when the candidate is
+empty, grows in characters, or saves less than 5% of estimated tokens. It also
+bypasses suspicious large-input collapses (at least 1,000 estimated input tokens,
+over 99% discarded, and at most 64 estimated output tokens). Other large-input
+reductions that retain less than 5% still carry an explicit warning to review
+the original evidence before relying on the digest. These are
+conservative heuristics, not semantic-preservation verification or model-token
+measurements. Delivered-text counters include cache/retrieval decoration.
+
+MCP responses preserve API `warnings`, `compression_safety`, and bypass reasons
+as metadata, not text added to the digest. The installed MCP does not append a
+bypassed dump to rolling memory or wrap it in session headings. A bypassed or
+growing compaction leaves existing memory intact.
+
+Hosted and installed MCP report quota and billing warnings only from returned
+account fields such as `free_tokens_remaining`, `credit_wallet`,
+`credit_balance_usd`, and explicit exhaustion codes. An exhausted free allowance
+does not imply prepaid credit is exhausted. Missing fields mean quota status is
+unknown, not unlimited or free. Successful compression needs an API accounting
+snapshot to provide a current quota warning; `usage_summary` also reports the
+account fields. No extra per-compression usage request is made. The legacy local
+engine does not supply hosted billing information.
+
+The standalone MCP response formatter in `api/_lib/mcp-response.js` is mirrored
+in `packages/proxy/src/mcp-response.js` for separate API/package deployments;
+`api/_lib/mcp-safety.test.js` checks byte parity and isolated module loading.
+
 ### Compress context (compiler mode)
 
 The agent calls this automatically when it needs to fit long context into a window. You can also invoke it directly:

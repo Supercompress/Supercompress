@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>How to Reduce Tokens in Tool Call Output (Agents and MCP)</title>
+  <meta name="description" content="Practical ways to cut tool call output tokens in AI agents: limits, truncation contracts, offloading, and question-aware compression of logs, diffs and JSON." />
+  <meta name="keywords" content="reduce tokens in tool call output, tool output tokens, compress tool output for LLM agents, reduce tool result size" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="How to Reduce Tokens in Tool Call Output (Agents and MCP)" />
+  <meta property="og:description" content="Practical ways to cut tool call output tokens in AI agents: limits, truncation contracts, offloading, and question-aware compression of logs, diffs and JSON." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/reduce-tool-call-output-tokens" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="How to Reduce Tokens in Tool Call Output (Agents and MCP)" />
+  <meta name="twitter:description" content="Practical ways to cut tool call output tokens in AI agents: limits, truncation contracts, offloading, and question-aware compression of logs, diffs and JSON." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/reduce-tool-call-output-tokens" />
+  <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to reduce tokens in tool call output",
+  "description": "Practical ways to cut tool call output tokens in AI agents: limits, truncation contracts, offloading, and question-aware compression of logs, diffs and JSON.",
+  "datePublished": "2026-10-19",
+  "dateModified": "2026-10-20",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/reduce-tool-call-output-tokens"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "reduce tokens in tool call output, tool output tokens, compress tool output for LLM agents, reduce tool result size"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I reduce tool output tokens in an AI agent?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Limit and paginate output at the tool, mark truncation clearly, offload very large payloads, trim old results, and compress the remainder against the current question."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is it better to truncate or compress tool output?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Truncate when the useful part is at the start or end. Compress against the question when relevant lines can be anywhere, as in logs, diffs and JSON."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress rewrite tool output?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is extractive: it keeps original lines that answer the question and drops the others, so identifiers and error text stay exact."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which tools produce the biggest outputs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Test runners, build logs, web page snapshots, database queries, file reads and search results are the usual offenders."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "How to reduce tokens in tool call output",
+      "item": "https://www.supercompress.dev/reduce-tool-call-output-tokens"
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">How-to · Updated 2026-10-19</p>
+  <h1>How to reduce tokens in tool call output</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">To reduce tokens in tool call output, stop large results from entering the conversation raw. Cap and paginate at the tool, tell the agent when output was cut, offload huge payloads to a handle, and compress what remains against the current question so only the lines that answer it stay in context.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/mcp-context-bloat">MCP context bloat</a>
+    <a href="/compress-claude-code-tool-output">Claude Code tool output hook</a>
+    <a href="/extractive-vs-abstractive-context-compression">Extractive vs abstractive</a>
+    <a href="/mcp-tool-output-compression">MCP tool output compression</a>
+  </nav>
+  <div class="article-prose">
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why does tool output cost so much?</a></li><li><a href="#limits">What should every tool do before returning output?</a></li><li><a href="#trim-old">How do you handle old tool results?</a></li><li><a href="#compress">When should you compress instead of truncate?</a></li><li><a href="#combine">How do these techniques fit together?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <h2 id="why">Why does tool output cost so much?</h2>
+    <p>Tool results persist in the message history, so an oversized result is sent to the model again on every later request for the rest of the run. A 20,000-line test log read once is paid for on every following turn. That is why the tool boundary is the best place to intervene: reduce once, and the smaller form persists.</p>
+    <h2 id="limits">What should every tool do before returning output?</h2>
+    <p>Vercel's tool design material describes a truncation contract worth copying: cap the output, say that it was truncated and by how much, and provide pagination parameters. A tool that silently truncates is worse than none, because the model believes it saw everything. Source: <a href="https://vercel.com/academy/tool-output-design">Vercel Academy, Tool Output Design</a>. Pydantic AI's harness documents similar modes: truncate, spill to storage with a preview and handle, or summarize. Source: <a href="https://pydantic.dev/docs/ai/harness/tool-output-limits/">Pydantic AI tool output limits</a>.</p>
+    <h2 id="trim-old">How do you handle old tool results?</h2>
+    <p>Results from several turns ago rarely matter at full size. The OpenAI Agents SDK ships a <code>ToolOutputTrimmer</code> that leaves recent turns intact and replaces older large outputs with a short preview. Source: <a href="https://openai.github.io/openai-agents-python/ref/extensions/tool_output_trimmer/">OpenAI Agents SDK docs</a>. Use something like it for long sessions.</p>
+    <h2 id="compress">When should you compress instead of truncate?</h2>
+    <p>Truncation keeps the head, the tail or both. That is wrong when the useful lines are in the middle: the one failing assertion in a long test run, the one stack frame in your code, the one row in a JSON array. Question-aware compression scores lines against what the agent is trying to do and keeps the matching lines.</p>
+<p>With SuperCompress you send the output and the question to the hosted API:</p>
+<pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"context":"&lt;tool output&gt;","query":"why did the checkout test fail?"}'</code></pre>
+<p>The response includes the kept text plus <code>original_tokens</code> and <code>kept_tokens</code>. Lines are kept verbatim, never rewritten. Coding agents do not need to call this by hand: <code>supercompress setup</code> installs the MCP tool and hooks.</p>
+    <h2 id="combine">How do these techniques fit together?</h2>
+    <ol><li>Filter at the source (query parameters, flags, <code>--quiet</code> modes).</li><li>Cap and paginate with an honest truncation marker.</li><li>Compress what is left against the question.</li><li>Trim stale results on later turns.</li></ol><p>Then compare your provider bill per finished task with and without each step. Fewer tokens in one place can be offset by extra retries elsewhere.</p>
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>How do I reduce tool output tokens in an AI agent?</h3>
+    <p>Limit and paginate output at the tool, mark truncation clearly, offload very large payloads, trim old results, and compress the remainder against the current question.</p>
+    <h3>Is it better to truncate or compress tool output?</h3>
+    <p>Truncate when the useful part is at the start or end. Compress against the question when relevant lines can be anywhere, as in logs, diffs and JSON.</p>
+    <h3>Does SuperCompress rewrite tool output?</h3>
+    <p>No. It is extractive: it keeps original lines that answer the question and drops the others, so identifiers and error text stay exact.</p>
+    <h3>Which tools produce the biggest outputs?</h3>
+    <p>Test runners, build logs, web page snapshots, database queries, file reads and search results are the usual offenders.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

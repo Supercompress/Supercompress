@@ -19,7 +19,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/context-compression-for-coding-agents" />
   <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-09" />
+  <meta property="article:modified_time" content="2026-10-18" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -35,7 +35,7 @@
   "headline": "Context compression for coding agents: approaches compared",
   "description": "Command output filters, MCP proxies, wire-level proxies, built-in compaction and query-aware extraction compared for Claude Code, Codex and Cursor. What each changes, where it fits, and how to measure it.",
   "datePublished": "2026-10-09",
-  "dateModified": "2026-10-09",
+  "dateModified": "2026-10-20",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -152,7 +152,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Guide · Updated 2026-10-09</p>
+  <p class="seo-kicker">Guide · Updated 2026-10-18</p>
   <div class="seo-tags">
     <span class="seo-tag seo-tag--accent">Comparison</span>
     <span class="seo-tag">Coding agents</span>
@@ -175,6 +175,7 @@
     <div class="seo-verdict">
       <strong>In short:</strong> pick by where your tokens go. Noisy shell commands: an output filter. Huge MCP results: a proxy or result compression. Long sessions: built-in compaction. Bulky output where only a few lines answer the current question: query-aware extraction such as SuperCompress. Measure on your own sessions, not on a vendor headline.
     </div>
+    <p>Related: <a href="/alternatives">compare context compression tools</a>, including <a href="/alternatives/headroom">Headroom alternatives</a>, <a href="/alternatives/caveman">Caveman alternatives</a>, and the <a href="/alternatives/caveman-cloud">Caveman Cloud alternative</a>. See also <a href="/what-is-context-compression-for-ai-agents">what is context compression for AI agents</a>, <a href="/context-rot">context rot</a>, and <a href="/llm-context-window-too-long">LLM context window too long</a>.</p>
 
     <h2 id="approaches">The approaches</h2>
     <table class="seo-table">
@@ -182,7 +183,7 @@
       <tbody>
         <tr><td><strong>Command output filters</strong></td><td>RTK, chop</td><td>Rewrites or filters known shell commands before the agent reads them.</td><td>Noisy <code>git</code>, test, build and install output.</td><td>Only known command formats; file reads and MCP results pass through.</td></tr>
         <tr><td><strong>MCP proxies with retrieval</strong></td><td>sqz, mcp_trunc_proxy, context-compress</td><td>Between the agent and MCP servers or the shell; keep the full result aside and return a preview.</td><td>Very large MCP results.</td><td>The agent has to know to fetch more.</td></tr>
-        <tr><td><strong>Wire-level proxies</strong></td><td>Headroom</td><td>Rewrites the whole request between the agent and the model provider.</td><td>Your own apps and pipelines.</td><td>Changes model routing; rewriting history can affect prompt caching.</td></tr>
+        <tr><td><strong>Wire-level proxies</strong></td><td>Headroom</td><td>Rewrites the whole request between the agent and the model provider.</td><td>Your own apps and pipelines.</td><td>Rewrites the whole request; rewriting history can affect prompt caching.</td></tr>
         <tr><td><strong>Built-in compaction</strong></td><td><code>/compact</code> in Claude Code, Codex and OpenCode; <code>/compress</code> in Gemini CLI</td><td>Summarizes the whole session once it is large.</td><td>Long sessions.</td><td>Summaries can lose exact details.</td></tr>
         <tr><td><strong>Query-aware extraction</strong></td><td>SuperCompress</td><td>One bulky result at a time, scored against the current question; keeps original lines.</td><td>Logs, diffs, file reads and MCP results where a few lines matter.</td><td>Files the agent is about to edit should stay whole.</td></tr>
       </tbody>

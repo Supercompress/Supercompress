@@ -35,7 +35,7 @@
   "headline": "MCP token reduction: cut tool definitions and tool results",
   "description": "MCP servers cost tokens two ways: tool definitions sent on every request and large tool results that stay in context. How to cut both, from disabling servers and tool allowlists to compressing results against the question.",
   "datePublished": "2026-10-09",
-  "dateModified": "2026-10-09",
+  "dateModified": "2026-10-20",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -187,8 +187,8 @@
     <ul>
       <li><strong>Enable per project.</strong> Turn on only the servers a project uses.</li>
       <li><strong>Allowlist tools.</strong> Many clients let you enable a subset of a server's tools.</li>
-      <li><strong>Load tools on demand.</strong> Some clients and gateways search for tools when needed instead of sending every definition up front.</li>
-      <li><strong>Code mode.</strong> Gateways such as Bifrost expose a few meta-tools and let the model write code against the rest.</li>
+      <li><strong>Load tools on demand.</strong> Some clients and MCP servers search for tools when needed instead of sending every definition up front.</li>
+      <li><strong>Code mode.</strong> Tools such as Bifrost expose a few meta-tools and let the model write code against the rest.</li>
     </ul>
 
     <h2 id="results">Cutting tool results</h2>
@@ -211,6 +211,7 @@
     <p><code>doctor</code> prints a per-agent health check. <code>supercompress uninstall</code> removes only the entries SuperCompress added. Setup backs up each config file before it edits it.</p>
 
     <p>More detail on results: <a href="/mcp-tool-output-compression">MCP tool output compression</a>. Claude Code users hitting the size warning: <a href="/claude-code-mcp-output-too-large">MCP output too large</a>.</p>
+    <p>Related: <a href="/mcp-context-bloat">MCP context bloat</a>.</p>
 
     <h2 id="faq">FAQ</h2>
     <h3>Why do MCP servers use so many tokens?</h3>

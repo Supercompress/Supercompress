@@ -11,10 +11,10 @@
   <link rel="stylesheet" href="/assets/css/article-page.css?v=2" />
 <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prompt Compression Guide — The Complete Resource (2026) | SuperCompress</title>
+  <title>Prompt Compression Guide | The Complete Resource (2026) | SuperCompress</title>
   <meta name="description" content="Comprehensive guide to LLM prompt compression. Learn how query-aware extractive selection keeps original evidence and drops junk. Compare methods, frameworks, and best practices for production." />
   <meta name="robots" content="index, follow" />
-  <meta property="og:title" content="Prompt Compression Guide — The Complete Resource (2026)" />
+  <meta property="og:title" content="Prompt Compression Guide, The Complete Resource (2026)" />
   <meta property="og:description" content="Learn everything about prompt compression for LLMs: methods, comparisons, benchmarks, framework integration, and production best practices from the authors of SuperCompress." />
   <meta property="og:url" content="https://supercompress.dev/prompt-compression-guide" />
   <meta property="og:type" content="article" />
@@ -25,7 +25,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="Prompt Compression Guide — The Complete Resource (2026)" />
+  <meta name="twitter:title" content="Prompt Compression Guide, The Complete Resource (2026)" />
   <meta name="twitter:description" content="A complete guide to prompt compression methods, benchmarks, and production deployment. Measure tokens_saved on your traffic." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="twitter:creator" content="@supercompress" />
@@ -52,9 +52,9 @@
     "@type": "FAQPage",
     "mainEntity": [
       { "@type": "Question", "name": "What is prompt compression?", "acceptedAnswer": { "@type": "Answer", "text": "Prompt compression reduces the size of LLM prompts by removing redundant or low-value content while preserving the information needed for accurate responses. SuperCompress is query-aware extractive selection: keep original lines that answer this question, drop junk." } },
-      { "@type": "Question", "name": "How much does prompt compression save?", "acceptedAnswer": { "@type": "Answer", "text": "Savings depend on how noisy the dump is. Measure original_tokens / kept_tokens (or tokens_saved) on your traffic. Published suites live on /benchmarks — they are not a product-wide API-cost guarantee." } },
-      { "@type": "Question", "name": "Does prompt compression work with any LLM?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Prompt compression is model-agnostic — it preprocesses the prompt before sending it to any LLM. It works with GPT-4, Claude, Gemini, Llama, Mistral, and any other model. No fine-tuning or model changes needed." } },
-      { "@type": "Question", "name": "Should I use the API or the local library?", "acceptedAnswer": { "@type": "Answer", "text": "Use the local library for latency-sensitive applications or when you want zero external dependencies. Use the hosted API when you want the fastest results without managing infrastructure — it adds ~5ms overhead and includes automatic scaling and rate limiting." } },
+      { "@type": "Question", "name": "How much does prompt compression save?", "acceptedAnswer": { "@type": "Answer", "text": "Savings depend on how noisy the dump is. Measure original_tokens / kept_tokens (or tokens_saved) on your traffic. Published suites live on /benchmarks, they are not a product-wide API-cost guarantee." } },
+      { "@type": "Question", "name": "Does prompt compression work with any LLM?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Prompt compression is model-agnostic, it preprocesses the prompt before sending it to any LLM. It works with GPT-4, Claude, Gemini, Llama, Mistral, and any other model. No fine-tuning or model changes needed." } },
+      { "@type": "Question", "name": "Should I use the API or the local library?", "acceptedAnswer": { "@type": "Answer", "text": "Use the hosted API. There is no infrastructure to manage. For coding agents, run npm install -g supercompress-proxy && supercompress setup." } },
       { "@type": "Question", "name": "Is prompt compression better than caching?", "acceptedAnswer": { "@type": "Answer", "text": "They solve different problems. Caching skips the LLM call entirely when identical prompts appear. Compression reduces the cost of every call. For most production systems, the best approach is both: cache identical prompts, compress everything else." } }
     ]
   }</script>
@@ -158,7 +158,7 @@
 <main class="seo-page" data-article-content>
     <h1>Prompt Compression Guide</h1>
     <p class="meta">Last updated July 3, 2026 &middot; 15 min read</p>
-    <p class="subtitle">Everything you need to know about compressing LLM prompts in production — methods, benchmarks, framework integration, and deployment strategies — from the team behind SuperCompress.</p>
+    <p class="subtitle">Everything you need to know about compressing LLM prompts in production, methods, benchmarks, framework integration, and deployment strategies, from the team behind SuperCompress.</p>
 
     <div class="toc">
       <h2>Table of Contents</h2>
@@ -177,9 +177,9 @@
       <h2>1. What Is Prompt Compression?</h2>
       <p>Prompt compression is the process of reducing the size of a prompt sent to a large language model (LLM) by removing redundant, irrelevant, or low-value content while preserving the information the model needs to generate an accurate response.</p>
 
-      <p>As LLMs grow more capable, prompts have grown longer. Production systems routinely send thousands of tokens per request — documentation snippets, chat histories, retrieval results, instruction blocks — and pay for every token. At GPT-4 Turbo pricing ($10/1M input tokens), a 4K-token prompt costs $0.04. Scale that to millions of requests and token costs dominate your AI bill.</p>
+      <p>As LLMs grow more capable, prompts have grown longer. Production systems routinely send thousands of tokens per request, documentation snippets, chat histories, retrieval results, instruction blocks, and pay for every token. Scale that to millions of requests and token costs dominate your AI bill.</p>
 
-      <p>Prompt compression addresses this by acting as a preprocessing step between your application and the LLM. The original prompt goes in; a compressed prompt comes out — typically 60–70% smaller — and is forwarded to the model. The model sees the essential context and responds as if it received the full prompt.</p>
+      <p>Prompt compression addresses this by acting as a preprocessing step between your application and the LLM. The original prompt goes in; a compressed prompt comes out that is smaller and is forwarded to the model. The model sees the essential context and responds as if it received the full prompt.</p>
 
       <div class="highlight-box">
         <h3>Key insight</h3>
@@ -194,27 +194,27 @@
       <div class="method-grid">
         <div class="method-card">
           <h4><a href="/prompt-compression">Query-Aware Scoring</a></h4>
-          <p>Scores every line/passage of the prompt against the user's specific question. Drops only content irrelevant to the query. Used by SuperCompress.</p>
+          <p>Scores lines or passages of the prompt against the user's specific question and drops content irrelevant to the query. Used by SuperCompress.</p>
         </div>
         <div class="method-card">
-          <h4><a href="/supercompress-vs-sliding-window">Sliding Window</a></h4>
+          <h4><a href="/alternatives">Sliding Window</a></h4>
           <p>Keeps only the N most recent tokens. Simple and fast but drops older context that may still be relevant.</p>
         </div>
         <div class="method-card">
-          <h4><a href="/supercompress-vs-top-k-retrieval">Top-K Retrieval</a></h4>
+          <h4><a href="/alternatives">Top-K Retrieval</a></h4>
           <p>Uses embedding similarity to select the K most relevant passages. Effective for RAG pipelines but misses non-vector context.</p>
         </div>
         <div class="method-card">
-          <h4><a href="/supercompress-vs-hyde">HyDE</a></h4>
+          <h4><a href="/alternatives">HyDE</a></h4>
           <p>Generates a hypothetical answer first, then retrieves passages similar to it. Adds an extra LLM call.</p>
         </div>
         <div class="method-card">
-          <h4><a href="/supercompress-vs-mmr">MMR (Maximal Marginal Relevance)</a></h4>
+          <h4><a href="/alternatives">MMR (Maximal Marginal Relevance)</a></h4>
           <p>Selects diverse passages that cover multiple subtopics. Prevents redundancy but may drop the most relevant content.</p>
         </div>
         <div class="method-card">
-          <h4><a href="/supercompress-vs-self-rag">Self-RAG</a></h4>
-          <p>LLM decides which passages to retrieve and when. Most flexible but most expensive — requires the LLM to participate in the selection.</p>
+          <h4><a href="/alternatives">Self-RAG</a></h4>
+          <p>LLM decides which passages to retrieve and when. Most flexible but most expensive, requires the LLM to participate in the selection.</p>
         </div>
       </div>
 
@@ -225,79 +225,65 @@
     </section>
 
     <section id="benchmarks">
-      <h2>3. Benchmarks &amp; Quality Metrics</h2>
-      <p>The standard metrics for evaluating prompt compression are:</p>
+      <h2>3. How the methods differ</h2>
+      <p>Prompt compression methods differ by mechanism, extractive vs rewrite, query-aware or not, and whether they need an extra LLM call:</p>
 
       <table>
         <thead>
           <tr>
-            <th>Metric</th>
-            <th>Definition</th>
-            <th>SuperCompress</th>
-            <th>Truncation</th>
-            <th>Summarization</th>
+            <th>Method</th>
+            <th>Mechanism</th>
+            <th>Query-aware</th>
+            <th>Extra LLM call</th>
+            <th>Output</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Token savings</td>
-            <td>Measure on your traffic</td>
-            <td><strong>original / kept tokens</strong></td>
-            <td>fixed keep-ratio</td>
-            <td>rewrite budget</td>
+            <td>SuperCompress</td>
+            <td>Extractive: scores original lines against the question and keeps those that answer it</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Original lines</td>
           </tr>
           <tr>
-            <td>Answer quality</td>
-            <td>Semantic similarity to full-prompt answer</td>
-            <td><strong>96.3%</strong></td>
-            <td>78.2%</td>
-            <td>88.1%</td>
+            <td>Truncation</td>
+            <td>Keeps head and tail; drops the middle regardless of the question</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Original lines (position-based)</td>
           </tr>
           <tr>
-            <td>Oracle recall</td>
-            <td>% of answers containing info only in dropped content</td>
-            <td><strong>97.5%</strong></td>
-            <td>62.0%</td>
-            <td>81.3%</td>
-          </tr>
-          <tr>
-            <td>Entity recall</td>
-            <td>% of named entities preserved</td>
-            <td><strong>94.1%</strong></td>
-            <td>71.5%</td>
-            <td>85.0%</td>
-          </tr>
-          <tr>
-            <td>Latency</td>
-            <td>Time added per call</td>
-            <td><strong>~15ms</strong></td>
-            <td>0ms</td>
-            <td>500ms–2s</td>
+            <td>Summarization</td>
+            <td>Rewrites the prompt with another model</td>
+            <td>Varies</td>
+            <td>Yes</td>
+            <td>Rewritten text</td>
           </tr>
         </tbody>
       </table>
 
-      <p>These benchmarks were collected across 10,000+ prompts spanning customer support, code generation, data extraction, summarization, and Q&amp;A tasks in the <a href="/benchmarks">SuperCompress benchmarks</a> repository.</p>
+      <p>Measure <code>original_tokens</code> / <code>kept_tokens</code> on your traffic. Published suites live in the <a href="/benchmarks">SuperCompress benchmarks</a> repository.</p>
     </section>
 
     <section id="frameworks">
       <h2>4. Framework Integration</h2>
       <p>SuperCompress integrates with every major LLM framework. Here's how to add compression to your stack:</p>
 
-      <h3><a href="/supercompress-dspy">DSPy</a></h3>
-      <p>Add a compression layer to any DSPy module. The compressor acts as an optimizer-aware preprocessor, reducing token costs without modifying your program structure. <a href="/supercompress-dspy">Read the DSPy integration guide →</a></p>
+      <h3>DSPy</h3>
+      <p>Add a compression layer to any DSPy module. The compressor acts as an optimizer-aware preprocessor, reducing token costs without modifying your program structure.</p>
 
-      <h3><a href="/supercompress-haystack">Haystack</a></h3>
-      <p>Implement a custom <code>PreProcessor</code> that compresses documents before indexing or before LLM inference. Works with the full Haystack pipeline API. <a href="/supercompress-haystack">Read the Haystack integration guide →</a></p>
+      <h3>Haystack</h3>
+      <p>Implement a custom <code>PreProcessor</code> that compresses documents before indexing or before LLM inference. Works with the full Haystack pipeline API.</p>
 
-      <h3><a href="/supercompress-semantic-kernel">Semantic Kernel</a></h3>
-      <p>Use <code>IPromptFilter</code> to intercept and compress prompts before they reach the LLM. Transparent to the rest of your application. <a href="/supercompress-semantic-kernel">Read the Semantic Kernel guide →</a></p>
+      <h3>Semantic Kernel</h3>
+      <p>Use <code>IPromptFilter</code> to intercept and compress prompts before they reach the LLM. Transparent to the rest of your application.</p>
 
-      <h3><a href="/python-prompt-compression">Python (native)</a></h3>
-      <p>The simplest integration: <code>from supercompress import compress; result = compress(context, query)</code>. Works in any Python 3.10+ environment. <a href="/python-prompt-compression">Read the Python guide →</a></p>
+      <h3>Python (native)</h3>
+      <p>The simplest integration: <code>from supercompress import compress; result = compress(context, query)</code>. Works in any Python 3.10+ environment.</p>
 
       <h3>Web frameworks</h3>
-      <p>Add compression middleware to <a href="/fastapi-compression-middleware">FastAPI</a>, <a href="/flask-compression-integration">Flask</a>, <a href="/django-compression-views">Django</a>, <a href="/express-compression-routes">Express.js</a>, or <a href="/spring-compression-controllers">Spring Boot</a>.</p>
+      <p>Add compression middleware to FastAPI, Flask, Django, Express.js, or Spring Boot. See the <a href="https://docs.supercompress.dev/integrations">integrations docs</a>.</p>
     </section>
 
     <section id="deployment">
@@ -309,45 +295,39 @@
           <tr>
             <th>Environment</th>
             <th>Setup</th>
-            <th>Cold Start</th>
             <th>Guide</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>Serverless (Lambda)</td>
-            <td><code>pip install supercompress</code></td>
-            <td>pip package</td>
-            <td><a href="/deploy-compression-aws-lambda">AWS Lambda →</a></td>
+            <td>Call the hosted API</td>
+            <td>AWS Lambda</td>
           </tr>
           <tr>
             <td>Edge (Cloudflare Workers)</td>
             <td>WASM build via <code>supercompress-wasm</code></td>
-            <td>~30ms</td>
-            <td><a href="/edge-prompt-compression">Edge guide →</a></td>
+            <td>Edge / WASM</td>
           </tr>
           <tr>
             <td>Container (Docker)</td>
             <td><code>FROM python:3.11-slim</code> + pip install</td>
-            <td>~100ms</td>
-            <td><a href="/prompt-compression-docker">Docker guide →</a></td>
+            <td>Docker</td>
           </tr>
           <tr>
             <td>CI/CD pipelines</td>
             <td>CI / GitHub Actions</td>
-            <td>—</td>
-            <td><a href="/prompt-compression-ci-cd">CI/CD guide →</a></td>
+            <td>CI / GitHub Actions</td>
           </tr>
           <tr>
             <td>Hosted API</td>
             <td><code>curl -X POST https://www.supercompress.dev/api/v1/compress</code></td>
-            <td>~5ms</td>
             <td><a href="https://docs.supercompress.dev/api-reference">API docs →</a></td>
           </tr>
         </tbody>
       </table>
 
-      <p>For a full comparison of deployment options, see <a href="/serverless-prompt-compression">serverless prompt compression</a> and <a href="/batch-prompt-compression">batch compression</a> guides.</p>
+      <p>For deployment options, see the <a href="https://docs.supercompress.dev/usage">usage</a> and <a href="https://docs.supercompress.dev/api-reference">API</a> docs.</p>
     </section>
 
     <section id="best-practices">
@@ -357,32 +337,32 @@
       <p>Apply compression as early as possible in your pipeline. In a RAG setup, compress the retrieved documents before inserting them into the prompt template. In a chatbot, compress the conversation history before appending it to the next turn. This maximizes the savings at each stage.</p>
 
       <h3>Monitor compression metrics</h3>
-      <p>Track savings per request, overall token reduction, and response quality over time. Tools like <a href="/prompt-compression-wandb">Weights &amp; Biases</a>, <a href="/prompt-compression-mlflow">MLflow</a>, and <a href="/prompt-compression-langfuse">Langfuse</a> have SuperCompress integration guides.</p>
+      <p>Track savings per request, overall token reduction, and response quality over time. Tools like Weights &amp; Biases, MLflow, and Langfuse can record those metrics alongside SuperCompress.</p>
 
       <h3>Test with production data</h3>
-      <p>Run A/B comparisons on your actual prompts. <a href="/ab-testing-compression">A/B test compression</a> to validate that compressed prompts produce answers of equivalent quality on your specific use case.</p>
+      <p>Run A/B comparisons on your actual prompts to validate compression on your specific use case.</p>
 
       <h3>Handle edge cases</h3>
-      <p>See the <a href="/prompt-compression-mistakes">common mistakes</a> guide for pitfalls to avoid, including over-compression, loss of formatting, and insufficient context for multi-step reasoning.</p>
+      <p>Watch for common pitfalls, including over-compression, loss of formatting, and insufficient context for multi-step reasoning.</p>
     </section>
 
     <section id="faq">
       <h2>7. FAQ</h2>
 
       <h3>Does prompt compression work with any LLM?</h3>
-      <p>Yes. Prompt compression is model-agnostic — it preprocesses the text before sending it to the LLM. We've tested with GPT-4, GPT-4 Turbo, Claude 3.5 Sonnet, Claude Haiku, Gemini Pro, Llama 3, Mistral, and many more. No fine-tuning or model changes needed.</p>
+      <p>Yes. Prompt compression is model-agnostic, it preprocesses the text before sending it to the LLM. We've tested with GPT-4, GPT-4 Turbo, Claude 3.5 Sonnet, Claude Haiku, Gemini Pro, Llama 3, Mistral, and many more. No fine-tuning or model changes needed.</p>
 
       <h3>Does compression affect response quality?</h3>
       <p>SuperCompress keeps original answer-critical lines instead of rewriting them. Measure <code>original_tokens</code> / <code>kept_tokens</code> and answer quality on your eval set. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
 
       <h3>Should I use the API or the local library?</h3>
-      <p>Use the local library (<code>pip install supercompress</code>) for latency-sensitive applications, high-throughput systems, or when you want zero external dependencies. Use the hosted API when you want the fastest results without managing infrastructure — it adds ~5ms overhead and includes automatic scaling, rate limiting, and usage analytics.</p>
+      <p>Use the hosted API. There is no infrastructure to manage. For coding agents, run <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>.</p>
 
       <h3>How does SuperCompress compare to Headroom?</h3>
-      <p>SuperCompress is query-aware: it scores context against the question, ships MCP for coding agents, and publishes held-out answer-keep gates. Headroom leans on content-type heuristics and its own workflows. Compare product fit and answer keep — see the <a href="/supercompress-vs-headroom">full comparison</a>.</p>
+      <p>SuperCompress is query-aware: it scores context against the question, ships MCP for coding agents, and publishes held-out answer-keep gates. Headroom leans on content-type heuristics and its own workflows. Compare product fit and answer keep, see the <a href="/supercompress-vs-headroom">full comparison</a>.</p>
 
       <h3>Is prompt compression better than caching?</h3>
-      <p>They solve different problems. <a href="/prompt-compression-vs-caching">Caching</a> skips the LLM call entirely when identical prompts appear. Compression reduces the cost of every call, including unique ones. For most production systems, the best approach is both: cache identical prompts, compress everything else.</p>
+      <p>They solve different problems. Caching skips the LLM call entirely when identical prompts appear. Compression reduces the cost of every call, including unique ones. For most production systems, the best approach is both: cache identical prompts, compress everything else.</p>
     </section>
 
     <div class="cta-section">
@@ -399,7 +379,7 @@
             <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
             <p class="df-footer-heading">Super<em>Compress</em></p>
           </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <p>Prompt compression for AI apps, reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
           <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
         </div>
         <div class="df-footer-links">
@@ -429,7 +409,7 @@
           <div>
             <p class="df-footer-heading">Blog</p>
             <ul>
-              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/cut-llm-api-costs">Reduce LLM costs</a></li>
               <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>

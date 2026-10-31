@@ -10,6 +10,7 @@
     "prod:smoke": "bash scripts/prod-smoke.sh",
     "prod:domains": "bash scripts/ensure-prod-domains.sh",
     "check:api-host": "node scripts/check-api-host-routes.js",
+    "check:firebase-auth": "node scripts/check-firebase-auth-proxy.js",
     "check:stylesheet-paths": "node scripts/check-stylesheet-paths.test.js && node scripts/check-stylesheet-paths.js",
     "check:assets": "node scripts/sync-compress-assets.js --check",
     "release:check": "bash scripts/release-check.sh",
@@ -17,14 +18,19 @@
     "mcp": "node mcp/server.js",
     "check:version": "node scripts/check-versions.js",
     "test:neural-keep": "node --test api/_lib/neural-keep.test.js",
-    "test:arena": "bash scripts/arena-smoke.sh"
+    "test:arena": "bash scripts/arena-smoke.sh",
+    "deploy:api": "bash scripts/deploy-api.sh",
+    "start:api": "node services/api/server.js",
+    "test:api": "node --test services/api/*.test.js",
+    "api:smoke": "node scripts/fly-api-smoke.js"
   },
   "dependencies": {
+    "@google-cloud/firestore": "^7.11.6",
     "@modelcontextprotocol/sdk": "^1.30.1",
     "firebase-admin": "^13.10.0",
-    "playwright": "^1.62.1",
+    "playwright": "^1.64.0",
     "stripe": "^22.6.2",
-    "supercompress-proxy": "^0.5.37"
+    "supercompress-proxy": "^0.5.40"
   },
   "overrides": {
     "ip-address": "10.3.1"

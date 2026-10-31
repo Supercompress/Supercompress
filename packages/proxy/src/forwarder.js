@@ -12,9 +12,25 @@
  */
 
 const { StringDecoder } = require("string_decoder");
+const limits = require("./limits");
 
 const OPENAI_BASE = process.env.SUPERCOMPRESS_OPENAI_BASE || "https://api.openai.com/v1";
 const ANTHROPIC_BASE = process.env.SUPERCOMPRESS_ANTHROPIC_BASE || "https://api.anthropic.com";
+
+/** fetch() to a provider, recording any rate-limit headers for runway checks. */
+async function providerFetch(provider, url, init) {
+  const response = await fetch(url, init);
+  const headers = (init && init.headers) || {};
+  limits.capture(provider, response, { apiKey: headers["x-api-key"] || extractBearer(headers.Authorization) });
+  return response;
+}
+
+function providerForBase(base) {
+  if (/x\.ai/i.test(base)) return "xai";
+  if (/openrouter/i.test(base)) return "openrouter";
+  if (/anthropic/i.test(base)) return "anthropic";
+  return "openai";
+}
 
 function extractBearer(authorization) {
   if (!authorization) return null;
@@ -166,7 +182,7 @@ async function forwardChat(model, compressed, extraParams, res, authHeader) {
 
   if (isStream) {
     setSSEHeaders(res);
-    const apiResponse = await fetch(`${OPENAI_BASE}/chat/completions`, {
+    const apiResponse = await providerFetch(providerForBase(OPENAI_BASE), `${OPENAI_BASE}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -197,7 +213,7 @@ async function forwardChat(model, compressed, extraParams, res, authHeader) {
     return;
   }
 
-  const apiResponse = await fetch(`${OPENAI_BASE}/chat/completions`, {
+  const apiResponse = await providerFetch(providerForBase(OPENAI_BASE), `${OPENAI_BASE}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -268,7 +284,7 @@ async function forwardAnthropic(model, compressed, system, extraParams, res, aut
   const beta = pick("anthropic-beta");
   if (beta) anthropicHeaders["anthropic-beta"] = beta;
 
-  const apiResponse = await fetch(`${ANTHROPIC_BASE}/v1/messages`, {
+  const apiResponse = await providerFetch("anthropic", `${ANTHROPIC_BASE}/v1/messages`, {
     method: "POST",
     headers: anthropicHeaders,
     body: JSON.stringify(body),
@@ -486,7 +502,7 @@ async function forwardResponsesViaChatFixed(
     `[supercompress] Responses permission unavailable; using Chat Completions compatibility fallback (${providerError.slice(0, 160)})`
   );
 
-  const apiResponse = await fetch(`${OPENAI_BASE}/chat/completions`, {
+  const apiResponse = await providerFetch(providerForBase(OPENAI_BASE), `${OPENAI_BASE}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -630,7 +646,7 @@ async function forwardResponses(model, compressed, extraParams, res, authHeader,
     input: useOriginal ? originalInput : messagesToResponsesInput(compressed.messages),
     stream: isStream,
   };
-  const apiResponse = await fetch(`${OPENAI_BASE}/responses`, {
+  const apiResponse = await providerFetch(providerForBase(OPENAI_BASE), `${OPENAI_BASE}/responses`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -685,4 +701,5 @@ module.exports = {
   responsesInputToMessages,
   responsesInputHasStructuredItems,
   extractBearer,
+  providerFetch,
 };

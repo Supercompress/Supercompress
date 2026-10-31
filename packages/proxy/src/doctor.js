@@ -138,6 +138,10 @@ function printInstallSummary(result, { version } = {}) {
   if (result.rulePath) {
     console.log(`  Cursor rule        ${mark(true)}  ${result.rulePath.replace(HOME, "~")}`);
   }
+  if (result.runway?.runtime) {
+    const claude = result.runway.claude ? ` · Claude Code statusline ${result.runway.claude}` : "";
+    console.log(`  Runway (limits)    ${mark(true)}  local · \`supercompress limits\` / MCP runway_check${claude}`);
+  }
   console.log("");
   console.log("  Restart your agents so MCP + hooks reload.");
   console.log("  Then: `supercompress doctor` anytime.");
@@ -202,6 +206,10 @@ async function runDoctor({ CONFIG_DIR, loadConfig, version } = {}) {
       const grok = process.env.GROK_HOME || path.join(HOME, ".grok");
       hooksOk = fileHasSupercompress(path.join(grok, "hooks", "supercompress.json"));
       instrOk = fileHasSupercompress(path.join(grok, "AGENTS.md"));
+    } else if (name === "Grok Bot") {
+      // Cloud host: paste-ready hosted MCP snippet under ~/.supercompress/hosts/grok-bot/
+      hooksOk = true;
+      instrOk = mcpOk;
     } else if (name === "fx") {
       instrOk = fileHasSupercompress(path.join(HOME, ".fx", "AGENTS.md"));
       hooksOk = fs.existsSync(path.join(HOME, ".fx", "skills", "supercompress", "SKILL.md"));

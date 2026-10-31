@@ -14,7 +14,7 @@
       "name": "supercompress",
       "source": "./integrations/plugins/supercompress",
       "description": "SuperCompress v2 \u2014 hosted ~400M Neural Keep. Compress tool dumps before they burn tokens. Hosted MCP supports OAuth 2.1 sign-in (PKCE). Plugin no-key setup is next. Free tier: 5M tokens/month, then $0.10/1M.",
-      "version": "0.5.37",
+      "version": "0.5.38",
       "author": {
         "name": "SuperCompress"
       },

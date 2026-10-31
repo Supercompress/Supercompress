@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>SuperCompress — dithered mark</title>
+  <title>SuperCompress | dithered mark</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Platypi:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -56,8 +56,8 @@
   var LOGO = "/assets/img/logo-chevrons.png";
   var WORD = "SuperCompress";
 
-  var BLUE_DEEP = [37, 99, 235];   // #2563EB — Super
-  var BLUE_SOFT = [96, 165, 250];  // #60A5FA — Compress (readable on white)
+  var BLUE_DEEP = [37, 99, 235];   // #2563EB, Super
+  var BLUE_SOFT = [96, 165, 250];  // #60A5FA, Compress (readable on white)
 
   var BAYER = [
     0,48,12,60,3,51,15,63,
@@ -103,7 +103,7 @@
         var kind = mask[gy * Sx + gx];
         if (!kind) continue;
         var thr = BAYER[(gy & 7) * 8 + (gx & 7)];
-        // Keep nearly all ink — still read as discrete dots via white gaps
+        // Keep nearly all ink, still read as discrete dots via white gaps
         if (thr > thrCut) continue;
         var col = kind === 2 ? BLUE_SOFT : BLUE_DEEP;
         list.push(ox + (gx + 0.5) * cell, oy + (gy + 0.5) * cell, dotR, col[0], col[1], col[2]);
@@ -112,7 +112,7 @@
     return list;
   }
 
-  /** Light cleanup only — don’t eat thin letter stems. */
+  /** Light cleanup only, don’t eat thin letter stems. */
   function softClean(mask, Sx, Sy) {
     var out = new Uint8Array(mask);
     for (var y = 1; y < Sy - 1; y++) {
@@ -210,7 +210,7 @@
   }
 
   function build(img) {
-    // Dense pitch — lots of dots, still readable as circles
+    // Dense pitch, lots of dots, still readable as circles
     var pitch = Math.max(2.6, Math.min(3.2, Math.min(W, H) / 120));
 
     // Mark ~24% width; wordmark gets the rest so "SuperCompress" fits fully

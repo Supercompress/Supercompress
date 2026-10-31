@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Claude Code /compact vs /clear vs Context Compression</title>
+  <meta name="description" content="When to use /clear, /compact, or question-aware compression in Claude Code to control context size and token costs. A decision guide with honest tradeoffs." />
+  <meta name="keywords" content="Claude Code compact vs clear, reduce Claude Code token costs, Claude Code context window full, Claude Code /compact" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="Claude Code /compact vs /clear vs Context Compression" />
+  <meta property="og:description" content="When to use /clear, /compact, or question-aware compression in Claude Code to control context size and token costs. A decision guide with honest tradeoffs." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/claude-code-compact-vs-clear-vs-compression" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Claude Code /compact vs /clear vs Context Compression" />
+  <meta name="twitter:description" content="When to use /clear, /compact, or question-aware compression in Claude Code to control context size and token costs. A decision guide with honest tradeoffs." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/claude-code-compact-vs-clear-vs-compression" />
+  <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Claude Code /compact vs /clear vs context compression",
+  "description": "When to use /clear, /compact, or question-aware compression in Claude Code to control context size and token costs. A decision guide with honest tradeoffs.",
+  "datePublished": "2026-10-19",
+  "dateModified": "2026-10-19",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/claude-code-compact-vs-clear-vs-compression"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "Claude Code compact vs clear, reduce Claude Code token costs, Claude Code context window full, Claude Code /compact"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Should I use /compact or /clear in Claude Code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use /clear when switching tasks and /compact when continuing the same task as the window fills."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does /compact lose information?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It summarizes, so details can be dropped. Give it focus instructions and keep exact values you need in a file."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SuperCompress replace /compact?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It compresses individual bulky outputs against your question. /compact still helps with accumulated history."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Will SuperCompress change my Claude Code login?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It adds an MCP server, instructions and hooks, and supercompress uninstall removes only what it added."
+      }
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.supercompress.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Claude Code /compact vs /clear vs context compression",
+      "item": "https://www.supercompress.dev/claude-code-compact-vs-clear-vs-compression"
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Claude Code · Updated 2026-10-19</p>
+  <h1>Claude Code /compact vs /clear vs context compression</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">Use /clear when you switch to an unrelated task, /compact when you are mid-task and the window is filling, and context compression for bulky tool output that should never have entered the window raw. They act on different things: history, summary, and individual results.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="/reduce-claude-code-token-usage">Reduce Claude Code token usage</a>
+    <a href="/claude-code-context-limit">Claude Code context limit</a>
+    <a href="/compress-claude-code-tool-output">Compress Claude Code tool output</a>
+    <a href="/context-rot">Context rot</a>
+  </nav>
+  <div class="article-prose">
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#clear">What does /clear do?</a></li><li><a href="#compact">What does /compact do?</a></li><li><a href="#compression">Where does context compression fit?</a></li><li><a href="#table">Which one should I use?</a></li><li><a href="#setup">How do I set it up?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <h2 id="clear">What does /clear do?</h2>
+    <p>It wipes the conversation and starts fresh. Your <code>CLAUDE.md</code> and project files remain available; only chat history goes. Anthropic's help center calls it the most effective lever for both quality and cost when you change tasks. Source: <a href="https://support.claude.com/en/articles/14552983-models-usage-and-limits-in-claude-code">Claude Help Center</a>.</p>
+    <h2 id="compact">What does /compact do?</h2>
+    <p>It summarizes the conversation so far into a shorter recap so you can continue. You can steer it, for example <code>/compact focus on the auth bug fix</code>. Claude Code also compacts automatically near the limit. Source: <a href="https://code.claude.com/docs/en/context-window">Claude Code docs, context window</a>. A summary is a rewrite, so exact values such as paths, error strings or IDs can be lost. If a session has already gone off track, many practitioners suggest saving state manually and clearing instead of compacting.</p>
+    <h2 id="compression">Where does context compression fit?</h2>
+    <p>Neither command touches the size of a single tool result as it arrives. A large test log or file read lands in history in full, and then is either carried forward or summarized later. Compression acts earlier: the hosted SuperCompress model reads the output and your request and keeps only the original lines that answer it, so the bulky result is smaller from the start.</p>
+<p>For Claude Code, <code>supercompress setup</code> writes <code>UserPromptSubmit</code> and <code>PostToolUse</code> hooks plus an MCP server. After large tool calls the hook compresses the new output against your request and passes the kept lines to Claude as extra context. You keep your normal Claude Code login.</p>
+    <h2 id="table">Which one should I use?</h2>
+    <table><thead><tr><th>Situation</th><th>Use</th></tr></thead><tbody>
+<tr><td>Starting an unrelated task</td><td><code>/clear</code></td></tr>
+<tr><td>Same task, window filling</td><td><code>/compact</code> with focus instructions</td></tr>
+<tr><td>Repeated huge test, build or file output</td><td>Question-aware compression of tool output</td></tr>
+<tr><td>Static instructions are huge</td><td>Shorten <code>CLAUDE.md</code>, move detail into files read on demand</td></tr></tbody></table>
+<p>They stack. Compression reduces what goes in, <code>/compact</code> handles what accumulates, <code>/clear</code> resets between tasks.</p>
+    <h2 id="setup">How do I set it up?</h2>
+    <p>Install the CLI and run setup, then restart Claude Code.</p><pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre><p>More in <a href="/reduce-claude-code-token-usage">reducing Claude Code token usage</a> and the <a href="https://docs.supercompress.dev/coding-agents">coding agents guide</a>.</p>
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>Should I use /compact or /clear in Claude Code?</h3>
+    <p>Use /clear when switching tasks and /compact when continuing the same task as the window fills.</p>
+    <h3>Does /compact lose information?</h3>
+    <p>It summarizes, so details can be dropped. Give it focus instructions and keep exact values you need in a file.</p>
+    <h3>Does SuperCompress replace /compact?</h3>
+    <p>No. It compresses individual bulky outputs against your question. /compact still helps with accumulated history.</p>
+    <h3>Will SuperCompress change my Claude Code login?</h3>
+    <p>No. It adds an MCP server, instructions and hooks, and supercompress uninstall removes only what it added.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
+      <a href="/alternatives">All alternatives</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

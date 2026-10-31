@@ -8,7 +8,6 @@ const {
   DEFAULT_CREDIT_LIMIT_USD,
   roundUsd,
   tokensToUsd,
-  TOKENS_PER_BILLING_UNIT,
 } = require("./stripe");
 const {
   paidCreditUsdFromSession,
@@ -18,8 +17,8 @@ const { mutateStore } = require("./store");
 const { initFirebaseAdmin } = require("./auth");
 const admin = require("firebase-admin");
 
-/** Thank-you grant on first successful credit top-up (1M tokens @ current PAYG rate). */
-const FIRST_PAY_BONUS_TOKENS = TOKENS_PER_BILLING_UNIT;
+/** Promotional grants are retired; existing credited balances remain unchanged. */
+const FIRST_PAY_BONUS_TOKENS = 0;
 const FIRST_PAY_BONUS_USD = tokensToUsd(FIRST_PAY_BONUS_TOKENS);
 
 function stripeAlreadyCredited(session) {
@@ -45,6 +44,16 @@ async function markStripeCredited(session) {
       await stripe.checkout.sessions.update(id, {
         metadata: { ...(session.metadata || {}), ...stamp },
       });
+      // Also stamp the PaymentIntent: applyCreditTopUp re-reads it live, so a
+      // redelivered webhook (stale session metadata) can't re-credit an older
+      // session once it has aged out of the 1KB-capped sc_credited_sessions.
+      if (session.payment_intent) {
+        const piId = String(session.payment_intent);
+        const pi = await stripe.paymentIntents.retrieve(piId);
+        await stripe.paymentIntents.update(piId, {
+          metadata: { ...(pi.metadata || {}), ...stamp },
+        });
+      }
       return;
     }
     // Synthetic PI sessions use id `pi_<PaymentIntentId>` or bare PI id.
@@ -191,10 +200,16 @@ async function applyCreditTopUp(session) {
   const autoRecharge = session.metadata?.auto_recharge !== "false";
 
   let paymentMethod = prev.sc_default_payment_method || null;
+  // Live PaymentIntent stamp is the replay guard once a session ages out of the
+  // capped claims list, so fail closed: if Stripe can't be read, don't credit
+  // (the webhook 500s and Stripe retries).
+  const livePi = session.payment_intent
+    ? await getStripe().paymentIntents.retrieve(String(session.payment_intent))
+    : null;
   try {
     const stripe = getStripe();
-    if (session.payment_intent) {
-      const pi = await stripe.paymentIntents.retrieve(String(session.payment_intent));
+    if (livePi) {
+      const pi = livePi;
       if (pi.metadata?.sc_credited === "true") {
         await markStripeCredited(session);
         return {

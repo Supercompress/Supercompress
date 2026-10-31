@@ -18,6 +18,7 @@ const API_URL = "https://www.supercompress.dev/api/v1/compress";
 const USAGE_URL = "https://www.supercompress.dev/api/usage";
 const ME_URL = process.env.SUPERCOMPRESS_ME_URL || "https://www.supercompress.dev/api/account?op=me";
 const CONNECT_URL = "https://www.supercompress.dev/dashboard?source=mcp&connect=";
+const { responseMetadata, responseError } = require("./mcp-response");
 const PROTOCOL_VERSION = "2024-11-05";
 
 function log(...args) {
@@ -88,15 +89,19 @@ const TOOLS = [
   {
     name: "compress_context",
     description:
-      "Compress *new* coding context into rolling session memory (Headroom-parity). Already-seen chunks are skipped; when memory grows large it is compacted. Pass only the new dump — not the whole history. Preserve code and facts relevant to the query.",
+      "Compress bulky new context before you reason over it: tool output, logs, stack traces, test/build runs, diffs over ~150 lines (~2K tokens), long file reads, search results, docs, pasted documents. Pass only the new text as `context` (not the whole history) and, when there is one, the user's request verbatim as `query`; work from the returned digest. Without a query, dump mode keeps about half the input. Read any `warning` before trusting the digest; `passthrough` means keep using your original text. Never compress the request itself or code you are about to edit. Already-seen chunks are skipped and rolling session memory is compacted automatically.",
     inputSchema: {
       type: "object",
       properties: {
-        context: { type: "string", description: "New context to compress (not previously seen this session)" },
-        query: { type: "string", description: "The coding task or question (never compressed)" },
+        context: { type: "string", description: "Only the new bulky text to compress (not previously sent this session)" },
+        query: {
+          type: "string",
+          description:
+            "Optional. The user's request, verbatim — used to decide what to keep; never compressed. Omit to shrink a raw dump.",
+        },
         session_id: { type: "string", description: "Optional session id for rolling memory (defaults to mcp)" },
       },
-      required: ["context", "query"],
+      required: ["context"],
     },
   },
   {
@@ -104,9 +109,38 @@ const TOOLS = [
     description: "Fetch per-coding-agent token savings tracked for the connected SuperCompress account.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
+  {
+    name: "runway_check",
+    description:
+      "Check provider rate-limit runway (5h / weekly / monthly windows) before large or multi-step work. Returns `action`: go (proceed; scope large = quota would go unused, take on more) | land (keep working, checkpoint before each step — never stop a 5h window early, it resets on its own) | wait (actually used up: checkpoint, wait `waitMinutes` or use `alternatives`) | unknown (no data; never guess). Runs locally.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        provider: { type: "string", description: "Optional harness/provider (claude-code, codex, cursor, anthropic, openai, …). Defaults to the running harness." },
+        policy: { type: "string", enum: ["max", "balanced", "conservative"], description: "max (default) drains short windows fully; conservative = 25%/10% thresholds." },
+      },
+      additionalProperties: false,
+    },
+  },
 ];
 
+function runwayCheck(args = {}) {
+  const limits = require("./limits");
+  try {
+    const result = limits.status({
+      provider: args.provider ? String(args.provider) : undefined,
+      policy: args.policy ? String(args.policy) : undefined,
+    });
+    const { providers, ...compact } = result;
+    require("./limits/ping").ping({ action: result.action, surface: "mcp" });
+    return toolText(JSON.stringify(compact));
+  } catch (err) {
+    return toolError(`runway_check failed: ${err.message}`);
+  }
+}
+
 async function handleToolCall(name, args = {}) {
+  if (name === "runway_check") return runwayCheck(args);
   if (!["compress_context", "connect_account", "usage_summary"].includes(name)) {
     return toolError(`Unknown tool: ${name}`);
   }
@@ -206,9 +240,16 @@ async function handleToolCall(name, args = {}) {
           total_tokens_saved: body.total_tokens_saved,
           tokens_used_this_period: body.tokens_used_this_period,
           free_tokens_remaining: body.free_tokens_remaining,
+          ...(body.free_tokens_remaining === 0 && body.unlimited !== true
+            ? {
+                quota_warning:
+                  "Free monthly quota is used up. Requests now bill credits or pay-as-you-go, or stop with a paywall if neither is set up: https://www.supercompress.dev/dashboard#billing",
+              }
+            : {}),
           meter: body.meter || null,
           account_usage: body.account_usage || null,
           coding_agent_usage: body.coding_agent_usage,
+          ...responseMetadata(body),
         })
       );
     } catch (err) {
@@ -239,28 +280,46 @@ async function handleToolCall(name, args = {}) {
     }
     if (result.paywall || result.skipped === "paywall") {
       return toolError(
-        result.notice ||
-          result.detail ||
-          "PAYWALL: Free 5M tokens used (or credits empty). Add credits at https://www.supercompress.dev/dashboard#billing — $0.10/1M after free."
+        responseError({ ...result, paywall: true }, "Compression paused. Review account billing.")
       );
     }
     if (String(result.skipped || "").startsWith("http_")) {
       return toolError(
-        result.detail
-          ? `Compression failed (${result.skipped}): ${result.detail}`
-          : `Compression failed (${result.skipped})`
+        responseError(result, `Compression failed (${result.skipped})`)
       );
     }
     if (result.partial || result.skipped === "partial_chunk_failure") {
       return toolError(
-        "Compression partially failed (some chunks). Retry — raw failed chunks are not published into context."
+        responseError(result, "Compression partially failed (some chunks). Retry — raw failed chunks are not published into context.")
       );
     }
     if (!result.compressed) {
-      return toolError("Nothing new to compress (empty or already in session memory).");
+      return toolError(responseError(result, "Nothing new to compress (empty or already in session memory)."));
     }
     if (!shouldPublishCompressedResult(result)) {
-      return toolError("Compression result is not safe to publish; retry.");
+      return toolError(responseError(result, "Compression result is not safe to publish; retry."));
+    }
+    // Return the digest of this call's new text, once. Rolling session memory stays in the
+    // inbox; returning all of it made small inputs come back larger than they went in.
+    const replay = result.skipped === "already_seen";
+    const digest = replay ? result.compressed : result.delta || result.compressed;
+    const digestTokens = replay ? result.compressed_tokens : result.delta_tokens ?? result.compressed_tokens;
+    // Unbilled local cases (too small, or a memory replay no smaller than the input) and API
+    // passthroughs are reported, not echoed, and never written to the inbox as a digest.
+    // A billed digest is always returned.
+    if (result.passthrough || result.compression_safety?.status === "passthrough" || result.skipped === "too_small" || (replay && String(digest || "").length >= context.trim().length)) {
+      const { notice: _notice, mode: _mode, ...metadata } = responseMetadata(result);
+      return toolText(
+        JSON.stringify({
+          ...(result.warning ? { warning: result.warning } : {}),
+          ...(result.quota_warning ? { quota_warning: result.quota_warning } : {}),
+          ...metadata,
+          passthrough: true,
+          notice: "Nothing to gain; keep using your original text.",
+          mode: result.query_mode || (query.trim() ? "query" : "dump"),
+          session_id: sessionId,
+        })
+      );
     }
     const meta =
       result.skipped === "already_seen"
@@ -275,15 +334,16 @@ async function handleToolCall(name, args = {}) {
     });
     return toolText(
       JSON.stringify({
-        compressed_context: result.compressed,
-        compressed_text: result.compressed,
-        delta: result.delta || "",
+        ...responseMetadata(result),
+        ...(result.warning ? { warning: result.warning } : {}),
+        ...(result.quota_warning ? { quota_warning: result.quota_warning } : {}),
+        ...(result.notice ? { notice: result.notice } : {}),
+        mode: result.query_mode || (query.trim() ? "query" : "dump"),
         original_tokens: result.original_tokens,
-        compressed_tokens: result.compressed_tokens,
-        kept_tokens: result.compressed_tokens,
-        tokens_saved: Math.max(0, (result.original_tokens || 0) - (result.compressed_tokens || 0)),
+        compressed_tokens: digestTokens,
+        tokens_saved: Math.max(0, (result.original_tokens || 0) - (digestTokens || 0)),
         savings_pct: result.savings_pct,
-        tokens_saved_pct: result.savings_pct,
+        compressed_context: digest,
         session_id: sessionId,
         compacted: Boolean(result.compacted),
         skipped: result.skipped || null,

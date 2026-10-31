@@ -1,0 +1,683 @@
+﻿
+
+
+
+Internet Engineering Task Force (IETF)                          K. Davis
+Request for Comments: 9562                                 Cisco Systems
+Obsoletes: 4122                                               B. Peabody
+Category: Standards Track                                        Uncloud
+ISSN: 2070-1721                                                 P. Leach
+                                                University of Washington
+                                                                May 2024
+
+
+                 Universally Unique IDentifiers (UUIDs)
+
+Abstract
+
+   This specification defines UUIDs (Universally Unique IDentifiers) --
+   also known as GUIDs (Globally Unique IDentifiers) -- and a Uniform
+   Resource Name namespace for UUIDs.  A UUID is 128 bits long and is
+   intended to guarantee uniqueness across space and time.  UUIDs were
+   originally used in the Apollo Network Computing System (NCS), later
+   in the Open Software Foundation's (OSF's) Distributed Computing
+   Environment (DCE), and then in Microsoft Windows platforms.
+
+   This specification is derived from the OSF DCE specification with the
+   kind permission of the OSF (now known as "The Open Group").
+   Information from earlier versions of the OSF DCE specification have
+   been incorporated into this document.  This document obsoletes RFC
+   4122.
+
+Status of This Memo
+
+   This is an Internet Standards Track document.
+
+   This document is a product of the Internet Engineering Task Force
+   (IETF).  It represents the consensus of the IETF community.  It has
+   received public review and has been approved for publication by the
+   Internet Engineering Steering Group (IESG).  Further information on
+   Internet Standards is available in Section 2 of RFC 7841.
+
+   Information about the current status of this document, any errata,
+   and how to provide feedback on it may be obtained at
+   https://www.rfc-editor.org/info/rfc9562.
+
+Copyright Notice
+
+   Copyright (c) 2024 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (https://trustee.ietf.org/license-info) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with respect
+   to this document.  Code Components extracted from this document must
+   include Revised BSD License text as described in Section 4.e of the
+   Trust Legal Provisions and are provided without warranty as described
+   in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction
+   2.  Motivation
+     2.1.  Update Motivation
+   3.  Terminology
+     3.1.  Requirements Language
+     3.2.  Abbreviations
+   4.  UUID Format
+     4.1.  Variant Field
+     4.2.  Version Field
+   5.  UUID Layouts
+     5.1.  UUID Version 1
+     5.2.  UUID Version 2
+     5.3.  UUID Version 3
+     5.4.  UUID Version 4
+     5.5.  UUID Version 5
+     5.6.  UUID Version 6
+     5.7.  UUID Version 7
+     5.8.  UUID Version 8
+     5.9.  Nil UUID
+     5.10. Max UUID
+   6.  UUID Best Practices
+     6.1.  Timestamp Considerations
+     6.2.  Monotonicity and Counters
+     6.3.  UUID Generator States
+     6.4.  Distributed UUID Generation
+     6.5.  Name-Based UUID Generation
+     6.6.  Namespace ID Usage and Allocation
+     6.7.  Collision Resistance
+     6.8.  Global and Local Uniqueness
+     6.9.  Unguessability
+     6.10. UUIDs That Do Not Identify the Host
+     6.11. Sorting
+     6.12. Opacity
+     6.13. DBMS and Database Considerations
+   7.  IANA Considerations
+     7.1.  IANA UUID Subtype Registry and Registration
+     7.2.  IANA UUID Namespace ID Registry and Registration
+   8.  Security Considerations
+   9.  References
+     9.1.  Normative References
+     9.2.  Informative References
+   Appendix A.  Test Vectors
+     A.1.  Example of a UUIDv1 Value
+     A.2.  Example of a UUIDv3 Value
+     A.3.  Example of a UUIDv4 Value
+     A.4.  Example of a UUIDv5 Value
+     A.5.  Example of a UUIDv6 Value
+     A.6.  Example of a UUIDv7 Value
+   Appendix B.  Illustrative Examples
+     B.1.  Example of a UUIDv8 Value (Time-Based)
+     B.2.  Example of a UUIDv8 Value (Name-Based)
+   Acknowledgements
+   Authors' Addresses
+
+1.  Introduction
+
+   This specification defines a Uniform Resource Name namespace for
+   Universally Unique IDentifiers (UUIDs), also known as Globally Unique
+   IDentifiers (GUIDs).  A UUID is 128 bits long and requires no central
+   registration process.
+
+   The use of UUIDs is extremely pervasive in computing.  They comprise
+   the core identifier infrastructure for many operating systems such as
+   Microsoft Windows and applications such as the Mozilla Web browser;
+   in many cases, they can become exposed in many non-standard ways.
+
+   This specification attempts to standardize that practice as openly as
+   possible and in a way that attempts to benefit the entire Internet.
+   The information here is meant to be a concise guide for those wishing
+   to implement services using UUIDs either in combination with URNs
+   [RFC8141] or otherwise.
+
+   There is an ITU-T Recommendation and an ISO/IEC Standard [X667] that
+   are derived from [RFC4122].  Both sets of specifications have been
+   aligned and are fully technically compatible.  Nothing in this
+   document should be construed to override the DCE standards that
+   defined UUIDs.
+
+2.  Motivation
+
+   One of the main reasons for using UUIDs is that no centralized
+   authority is required to administer them (although two formats may
+   leverage optional IEEE 802 Node IDs, others do not).  As a result,
+   generation on demand can be completely automated and used for a
+   variety of purposes.  The UUID generation algorithm described here
+   supports very high allocation rates of 10 million per second per
+   machine or more, if necessary, so that they could even be used as
+   transaction IDs.
+
+   UUIDs are of a fixed size (128 bits), which is reasonably small
+   compared to other alternatives.  This lends itself well to sorting,
+   ordering, and hashing of all sorts; storing in databases; simple
+   allocation; and ease of programming in general.
+
+   Since UUIDs are unique and persistent, they make excellent URNs.  The
+   unique ability to generate a new UUID without a registration process
+   allows for UUIDs to be one of the URNs with the lowest minting cost.
+
+2.1.  Update Motivation
+
+   Many things have changed in the time since UUIDs were originally
+   created.  Modern applications have a need to create and utilize UUIDs
+   as the primary identifier for a variety of different items in complex
+   computational systems, including but not limited to database keys,
+   file names, machine or system names, and identifiers for event-driven
+   transactions.
+
+   One area in which UUIDs have gained popularity is database keys.
+   This stems from the increasingly distributed nature of modern
+   applications.  In such cases, "auto-increment" schemes that are often
+   used by databases do not work well: the effort required to coordinate
+   sequential numeric identifiers across a network can easily become a
+   burden.  The fact that UUIDs can be used to create unique, reasonably
+   short values in distributed systems without requiring coordination
+   makes them a good alternative, but UUID versions 1-5, which were
+   originally defined by [RFC4122], lack certain other desirable
+   characteristics, such as:
+
+   1.  UUID versions that are not time ordered, such as UUIDv4
+       (described in Section 5.4), have poor database-index locality.
+       This means that new values created in succession are not close to
+       each other in the index; thus, they require inserts to be
+       performed at random locations.  The resulting negative
+       performance effects on the common structures used for this
+       (B-tree and its variants) can be dramatic.
+
+   2.  The 100-nanosecond Gregorian Epoch used in UUIDv1 timestamps
+       (described in Section 5.1) is uncommon and difficult to represent
+       accurately using a standard number format such as that described
+       in [IEEE754].
+
+   3.  Introspection/parsing is required to order by time sequence, as
+       opposed to being able to perform a simple byte-by-byte
+       comparison.
+
+   4.  Privacy and network security issues arise from using a Media
+       Access Control (MAC) address in the node field of UUIDv1.
+       Exposed MAC addresses can be used as an attack surface to locate
+       network interfaces and reveal various other information about
+       such machines (minimally, the manufacturer and, potentially,
+       other details).  Additionally, with the advent of virtual
+       machines and containers, uniqueness of the MAC address is no
+       longer guaranteed.
+
+   5.  Many of the implementation details specified in [RFC4122]
+       involved trade-offs that are neither possible to specify for all
+       applications nor necessary to produce interoperable
+       implementations.
+
+   6.  [RFC4122] did not distinguish between the requirements for
+       generating a UUID and those for simply storing one, although they
+       are often different.
+
+   Due to the aforementioned issues, many widely distributed database
+   applications and large application vendors have sought to solve the
+   problem of creating a better time-based, sortable unique identifier
+   for use as a database key.  This has led to numerous implementations
+   over the past 10+ years solving the same problem in slightly
+   different ways.
+
+   While preparing this specification, the following 16 different
+   implementations were analyzed for trends in total ID length, bit
+   layout, lexical formatting and encoding, timestamp type, timestamp
+   format, timestamp accuracy, node format and components, collision
+   handling, and multi-timestamp tick generation sequencing:
+
+   1.   [ULID]
+   2.   [LexicalUUID]
+   3.   [Snowflake]
+   4.   [Flake]
+   5.   [ShardingID]
+   6.   [KSUID]
+   7.   [Elasticflake]
+   8.   [FlakeID]
+   9.   [Sonyflake]
+   10.  [orderedUuid]
+   11.  [COMBGUID]
+   12.  [SID]
+   13.  [pushID]
+   14.  [XID]
+   15.  [ObjectID]
+   16.  [CUID]
+
+   An inspection of these implementations and the issues described above
+   has led to this document, in which new UUIDs are adapted to address
+   these issues.
+
+   Further, [RFC4122] itself was in need of an overhaul to address a
+   number of topics such as, but not limited to, the following:
+
+   1.  Implementation of miscellaneous errata reports.  Mostly around
+       bit-layout clarifications, which lead to inconsistent
+       implementations [Err1957], [Err3546], [Err4975], [Err4976],
+       [Err5560], etc.
+
+   2.  Decoupling other UUID versions from the UUIDv1 bit layout so that
+       fields like "time_hi_and_version" do not need to be referenced
+       within a UUID that is not time based while also providing
+       definition sections similar to that for UUIDv1 for UUIDv3,
+       UUIDv4, and UUIDv5.
+
+   3.  Providing implementation best practices around many real-world
+       scenarios and corner cases observed by existing and prototype
+       implementations.
+
+   4.  Addressing security best practices and considerations for the
+       modern age as it pertains to MAC addresses, hashing algorithms,
+       secure randomness, and other topics.
+
+   5.  Providing implementations a standard-based option for
+       implementation-specific and/or experimental UUID designs.
+
+   6.  Providing more test vectors that illustrate real UUIDs created as
+       per the specification.
+
+3.  Terminology
+
+3.1.  Requirements Language
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in
+   BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+3.2.  Abbreviations
+
+   The following abbreviations are used in this document:
+
+   ABNF          Augmented Backus-Naur Form
+
+   CSPRNG        Cryptographically Secure Pseudorandom Number Generator
+
+   DBMS          Database Management System
+
+   IEEE          Institute of Electrical and Electronics Engineers
+
+   ITU           International Telecommunication Union
+
+   MAC           Media Access Control
+
+   MD5           Message Digest 5
+
+   MSB           Most Significant Bit
+
+   OID           Object Identifier
+
+   SHA           Secure Hash Algorithm
+
+   SHA-1         Secure Hash Algorithm 1 (with message digest of 160
+                 bits)
+
+   SHA-3         Secure Hash Algorithm 3 (arbitrary size)
+
+   SHA-224       Secure Hash Algorithm 2 with message digest size of 224
+                 bits
+
+   SHA-256       Secure Hash Algorithm 2 with message digest size of 256
+                 bits
+
+   SHA-512       Secure Hash Algorithm 2 with message digest size of 512
+                 bits
+
+   SHAKE         Secure Hash Algorithm 3 based on the KECCAK algorithm
+
+   URN           Uniform Resource Names
+
+   UTC           Coordinated Universal Time
+
+   UUID          Universally Unique Identifier
+
+   UUIDv1        Universally Unique Identifier version 1
+
+   UUIDv2        Universally Unique Identifier version 2
+
+   UUIDv3        Universally Unique Identifier version 3
+
+   UUIDv4        Universally Unique Identifier version 4
+
+   UUIDv5        Universally Unique Identifier version 5
+
+   UUIDv6        Universally Unique Identifier version 6
+
+   UUIDv7        Universally Unique Identifier version 7
+
+   UUIDv8        Universally Unique Identifier version 8
+
+4.  UUID Format
+
+   The UUID format is 16 octets (128 bits) in size; the variant bits in
+   conjunction with the version bits described in the next sections
+   determine finer structure.  In terms of these UUID formats and
+   layout, bit definitions start at 0 and end at 127, while octet
+   definitions start at 0 and end at 15.
+
+   In the absence of explicit application or presentation protocol
+   specification to the contrary, each field is encoded with the most
+   significant byte first (known as "network byte order").
+
+   Saving UUIDs to binary format is done by sequencing all fields in
+   big-endian format.  However, there is a known caveat that Microsoft's
+   Component Object Model (COM) GUIDs leverage little-endian when saving
+   GUIDs.  The discussion of this (see [MS_COM_GUID]) is outside the
+   scope of this specification.
+
+   UUIDs MAY be represented as binary data or integers.  When in use
+   with URNs or as text in applications, any given UUID should be
+   represented by the "hex-and-dash" string format consisting of
+   multiple groups of uppercase or lowercase alphanumeric hexadecimal
+   characters separated by single dashes/hyphens.  When used with
+   databases, please refer to Section 6.13.
+
+   The formal definition of the UUID string representation is provided
+   by the following ABNF [RFC5234]:
+
+   UUID     = 4hexOctet "-"
+              2hexOctet "-"
+              2hexOctet "-"
+              2hexOctet "-"
+              6hexOctet
+   hexOctet = HEXDIG HEXDIG
+   DIGIT    = %x30-39
+   HEXDIG   = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+
+   Note that the alphabetic characters may be all uppercase, all
+   lowercase, or mixed case, as per Section 2.3 of [RFC5234].  An
+   example UUID using this textual representation from the above ABNF is
+   shown in Figure 1.
+
+   f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+
+                    Figure 1: Example String UUID Format
+
+   The same UUID from Figure 1 is represented in binary (Figure 2), as
+   an unsigned integer (Figure 3), and as a URN (Figure 4) defined by
+   [RFC8141].
+
+   111110000001110101001111101011100111110111101100000100011101000\
+   01010011101100101000000001010000011001001000111100110101111110110
+
+                       Figure 2: Example Binary UUID
+
+   329800735698586629295641978511506172918
+
+    Figure 3: Example Unsigned Integer UUID (Shown as a Decimal Number)
+
+   urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+
+                  Figure 4: Example URN Namespace for UUID
+
+   There are many other ways to define a UUID format; some examples are
+   detailed below.  Please note that this is not an exhaustive list and
+   is only provided for informational purposes.
+
+   *  Some UUID implementations, such as those found in [Python] and
+      [Microsoft], will output UUID with the string format, including
+      dashes, enclosed in curly braces.
+
+   *  [X667] provides UUID format definitions for use of UUID with an
+      OID.
+
+   *  [IBM_NCS] is a legacy implementation that produces a unique UUID
+      format compatible with Variant 0xx of Table 1.
+
+4.1.  Variant Field
+
+   The variant field determines the layout of the UUID.  That is, the
+   interpretation of all other bits in the UUID depends on the setting
+   of the bits in the variant field.  As such, it could more accurately
+   be called a "type" field; we retain the original term for
+   compatibility.  The variant field consists of a variable number of
+   the most significant bits of octet 8 of the UUID.
+
+   Table 1 lists the contents of the variant field, where the letter "x"
+   indicates a "don't-care" value.
+
+     +======+======+======+======+=========+=========================+
+     | MSB0 | MSB1 | MSB2 | MSB3 | Variant | Description             |
+     +======+======+======+======+=========+=========================+
+     | 0    | x    | x    | x    | 1-7     | Reserved.  Network      |
+     |      |      |      |      |         | Computing System (NCS)  |
+     |      |      |      |      |         | backward compatibility, |
+     |      |      |      |      |         | and includes Nil UUID   |
+     |      |      |      |      |         | as per Section 5.9.     |
+     +------+------+------+------+---------+-------------------------+
+     | 1    | 0    | x    | x    | 8-9,A-B | The variant specified   |
+     |      |      |      |      |         | in this document.       |
+     +------+------+------+------+---------+-------------------------+
+     | 1    | 1    | 0    | x    | C-D     | Reserved.  Microsoft    |
+     |      |      |      |      |         | Corporation backward    |
+     |      |      |      |      |         | compatibility.          |
+     +------+------+------+------+---------+-------------------------+
+     | 1    | 1    | 1    | x    | E-F     | Reserved for future     |
+     |      |      |      |      |         | definition and includes |
+     |      |      |      |      |         | Max UUID as per         |
+     |      |      |      |      |         | Section 5.10.           |
+     +------+------+------+------+---------+-------------------------+
+
+                           Table 1: UUID Variants
+
+   Interoperability, in any form, with variants other than the one
+   defined here is not guaranteed but is not likely to be an issue in
+   practice.
+
+   Specifically for UUIDs in this document, bits 64 and 65 of the UUID
+   (bits 0 and 1 of octet 8) MUST be set to 1 and 0 as specified in row
+   2 of Table 1.  Accordingly, all bit and field layouts avoid the use
+   of these bits.
+
+4.2.  Version Field
+
+   The version number is in the most significant 4 bits of octet 6 (bits
+   48 through 51 of the UUID).
+
+   Table 2 lists all of the versions for this UUID variant 10xx
+   specified in this document.
+
+   +======+======+======+======+=========+============================+
+   | MSB0 | MSB1 | MSB2 | MSB3 | Version | Description                |
+   +======+======+======+======+=========+============================+
+   | 0    | 0    | 0    | 0    | 0       | Unused.                    |
+   +------+------+------+------+---------+----------------------------+
+   | 0    | 0    | 0    | 1    | 1       | The Gregorian time-based   |
+   |      |      |      |      |         | UUID specified in this     |
+   |      |      |      |      |         | document.                  |
+   +------+------+------+------+---------+----------------------------+
+   | 0    | 0    | 1    | 0    | 2       | Reserved for DCE Security  |
+   |      |      |      |      |         | version, with embedded     |
+   |      |      |      |      |         | POSIX UUIDs.               |
+   +------+------+------+------+---------+----------------------------+
+   | 0    | 0    | 1    | 1    | 3       | The name-based version     |
+   |      |      |      |      |         | specified in this document |
+   |      |      |      |      |         | that uses MD5 hashing.     |
+   +------+------+------+------+---------+----------------------------+
+   | 0    | 1    | 0    | 0    | 4       | The randomly or            |
+   |      |      |      |      |         | pseudorandomly generated   |
+   |      |      |      |      |         | version specified in this  |
+   |      |      |      |      |         | document.                  |
+   +------+------+------+------+---------+----------------------------+
+   | 0    | 1    | 0    | 1    | 5       | The name-based version     |
+   |      |      |      |      |         | specified in this document |
+   |      |      |      |      |         | that uses SHA-1 hashing.   |
+   +------+------+------+------+---------+----------------------------+
+   | 0    | 1    | 1    | 0    | 6       | Reordered Gregorian time-  |
+   |      |      |      |      |         | based UUID specified in    |
+   |      |      |      |      |         | this document.             |
+   +------+------+------+------+---------+----------------------------+
+   | 0    | 1    | 1    | 1    | 7       | Unix Epoch time-based UUID |
+   |      |      |      |      |         | specified in this          |
+   |      |      |      |      |         | document.                  |
+   +------+------+------+------+---------+----------------------------+
+   | 1    | 0    | 0    | 0    | 8       | Reserved for custom UUID   |
+   |      |      |      |      |         | formats specified in this  |
+   |      |      |      |      |         | document.                  |
+   +------+------+------+------+---------+----------------------------+
+   | 1    | 0    | 0    | 1    | 9       | Reserved for future        |
+   |      |      |      |      |         | definition.                |
+   +------+------+------+------+---------+----------------------------+
+   | 1    | 0    | 1    | 0    | 10      | Reserved for future        |
+   |      |      |      |      |         | definition.                |
+   +------+------+------+------+---------+----------------------------+
+   | 1    | 0    | 1    | 1    | 11      | Reserved for future        |
+   |      |      |      |      |         | definition.                |
+   +------+------+------+------+---------+----------------------------+
+   | 1    | 1    | 0    | 0    | 12      | Reserved for future        |
+   |      |      |      |      |         | definition.                |
+   +------+------+------+------+---------+----------------------------+
+   | 1    | 1    | 0    | 1    | 13      | Reserved for future        |
+   |      |      |      |      |         | definition.                |
+   +------+------+------+------+---------+----------------------------+
+   | 1    | 1    | 1    | 0    | 14      | Reserved for future        |
+   |      |      |      |      |         | definition.                |
+   +------+------+------+------+---------+----------------------------+
+   | 1    | 1    | 1    | 1    | 15      | Reserved for future        |
+   |      |      |      |      |         | definition.                |
+   +------+------+------+------+---------+----------------------------+
+
+    Table 2: UUID Variant 10xx Versions Defined by This Specification
+
+   An example version/variant layout for UUIDv4 follows the table where
+   "M" represents the version placement for the hexadecimal
+   representation of 0x4 (0b0100) and the "N" represents the variant
+   placement for one of the four possible hexadecimal representation of
+   variant 10xx: 0x8 (0b1000), 0x9 (0b1001), 0xA (0b1010), 0xB (0b1011).
+
+   00000000-0000-4000-8000-000000000000
+   00000000-0000-4000-9000-000000000000
+   00000000-0000-4000-A000-000000000000
+   00000000-0000-4000-B000-000000000000
+   xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx
+
+                     Figure 5: UUIDv4 Variant Examples
+
+   It should be noted that the other remaining UUID variants found in
+   Table 1 leverage different sub-typing or versioning mechanisms.  The
+   recording and definition of the remaining UUID variant and sub-typing
+   combinations are outside of the scope of this document.
+
+5.  UUID Layouts
+
+   To minimize confusion about bit assignments within octets and among
+   differing versions, the UUID record definition is provided as a
+   grouping of fields within a bit layout consisting of four octets per
+   row.  The fields are presented with the most significant one first.
+
+5.1.  UUID Version 1
+
+   UUIDv1 is a time-based UUID featuring a 60-bit timestamp represented
+   by Coordinated Universal Time (UTC) as a count of 100-nanosecond
+   intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian
+   reform to the Christian calendar).
+
+   UUIDv1 also features a clock sequence field that is used to help
+   avoid duplicates that could arise when the clock is set backwards in
+   time or if the Node ID changes.
+
+   The node field consists of an IEEE 802 MAC address, usually the host
+   address or a randomly derived value per Sections 6.9 and 6.10.
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                           time_low                            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           time_mid            |  ver  |       time_high       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |var|         clock_seq         |             node              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                              node                             |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+                   Figure 6: UUIDv1 Field and Bit Layout
+
+   time_low:
+      The least significant 32 bits of the 60-bit starting timestamp.
+      Occupies bits 0 through 31 (octets 0-3).
+
+   time_mid:
+      The middle 16 bits of the 60-bit starting timestamp.  Occupies
+      bits 32 through 47 (octets 4-5).
+
+   ver:
+      The 4-bit version field as defined by Section 4.2, set to 0b0001
+      (1).  Occupies bits 48 through 51 of octet 6.
+
+   time_high:
+      The least significant 12 bits from the 60-bit starting timestamp.
+      Occupies bits 52 through 63 (octets 6-7).
+
+   var:
+      The 2-bit variant field as defined by Section 4.1, set to 0b10.
+      Occupies bits 64 and 65 of octet 8.
+
+   clock_seq:
+      The 14 bits containing the clock sequence.  Occupies bits 66
+      through 79 (octets 8-9).
+
+   node:
+      48-bit spatially unique identifier.  Occupies bits 80 through 127
+      (octets 10-15).
+
+   For systems that do not have UTC available but do have the local
+   time, they may use that instead of UTC as long as they do so
+   consistently throughout the system.  However, this is not recommended
+   since generating the UTC from local time only needs a time-zone
+   offset.
+
+   If the clock is set backwards, or if it might have been set backwards
+   (e.g., while the system was powered off), and the UUID generator
+   cannot be sure that no UUIDs were generated with timestamps larger
+   than the value to which the clock was set, then the clock sequence
+   MUST be changed.  If the previous value of the clock sequence is
+   known, it MAY be incremented; otherwise it SHOULD be set to a random
+   or high-quality pseudorandom value.
+
+   Similarly, if the Node ID changes (e.g., because a network card has
+   been moved between machines), setting the clock sequence to a random
+   number minimizes the probability of a duplicate due to slight
+   differences in the clock settings of the machines.  If the value of
+   the clock sequence associated with the changed Node ID were known,
+   then the clock sequence MAY be incremented, but that is unlikely.
+
+   The clock sequence MUST be originally (i.e., once in the lifetime of
+   a system) initialized to a random number to minimize the correlation
+   across systems.  This provides maximum protection against Node IDs
+   that may move or switch from system to system rapidly.  The initial
+   value MUST NOT be correlated to the Node ID.
+
+   Notes about nodes derived from IEEE 802:
+
+   *  On systems with multiple IEEE 802 addresses, any available one MAY
+      be used.
+
+   *  On systems with no IEEE address, a randomly or pseudorandomly
+      generated value MUST be used; see Sections 6.9 and 6.10.
+
+   *  On systems utilizing a 64-bit MAC address, the least significant,
+      rightmost 48 bits MAY be used.
+
+   *  Systems utilizing an IEEE 802.15.4 16-bit address SHOULD instead
+      utilize their 64-bit MAC address where the least significant,
+      rightmost 48 bits MAY be used.  An alternative is to generate 32
+      bits of random data and postfix at the end of the 16-bit MAC
+      address to create a 48-bit value.
+
+5.2.  UUID Version 2
+
+   UUIDv2 is for DCE Security UUIDs (see [C309] and [C311]).  As such,
+   the definition of these UUIDs is outside the scope of this
+   specification.
+
+5.3.  UUID Version 3
+
+   UUIDv3 is meant for generating UUIDs from names that are drawn from,
+   and unique within, some namespace as per Section 6.5.
+
+   UUIDv3 values are created by computing an MD5 hash [RFC1321] over a
+   given Namespace ID value (Section 6.6) concatenated with the desired
+   name value after both have been converted to a canonical sequence of
+   octets, as defined by the standards or conventions of its namespace,
+   in network byte order.  This MD5 value is then u

@@ -19,7 +19,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/claude-code-context-limit" />
   <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-09" />
+  <meta property="article:modified_time" content="2026-10-18" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -35,7 +35,7 @@
   "headline": "Claude Code context limit: why you run out and what to do",
   "description": "Why Claude Code runs out of context, how to see what is filling the window with /context, when to use /compact, /clear and subagents, and how to keep bulky tool output from piling up.",
   "datePublished": "2026-10-09",
-  "dateModified": "2026-10-09",
+  "dateModified": "2026-10-18",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -158,7 +158,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Claude Code · Updated 2026-10-09</p>
+  <p class="seo-kicker">Claude Code · Updated 2026-10-18</p>
   <div class="seo-tags">
     <span class="seo-tag seo-tag--accent">Claude Code</span>
     <span class="seo-tag">Context window</span>
@@ -181,6 +181,7 @@
     <div class="seo-verdict">
       <strong>In short:</strong> run <code>/context</code> to see what is using the window. Use <code>/clear</code> between tasks, <code>/compact</code> with a focus inside long tasks, and subagents for wide searches. To stop large logs and file reads from filling the window, run <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> so Claude Code keeps only the lines that answer the current question.
     </div>
+    <p>Related: <a href="/alternatives">compare context compression tools</a> that shrink what fills the window, including <a href="/alternatives/headroom">Headroom alternatives</a> and <a href="/alternatives/caveman">Caveman alternatives</a>.</p>
 
     <h2 id="what-fills-it">What fills the Claude Code context window</h2>
     <ul>

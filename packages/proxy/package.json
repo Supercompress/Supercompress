@@ -1,7 +1,7 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.37",
-  "description": "SuperCompress v2 for coding agents — ~400M Neural Keep via MCP/hooks across 40+ harnesses. Hosted MCP supports OAuth 2.1 sign-in (PKCE). Launch promo $0.10/1M after 5M free. Benchmarks at supercompress.dev/benchmarks.",
+  "version": "0.5.40",
+  "description": "SuperCompress v2 for coding agents — ~400M Neural Keep via MCP/hooks across 40+ harnesses. Hosted MCP supports OAuth 2.1 sign-in (PKCE). Includes Grok Bot hosted MCP. 1M free tokens/month, then $0.10/1M. Benchmarks at supercompress.dev/benchmarks.",
   "keywords": [
     "supercompress",
     "prompt-compression",
@@ -20,6 +20,7 @@
     "openclaw",
     "grok",
     "grok-build",
+    "grok-bot",
     "xai",
     "mcp",
     "agent-plugins"
@@ -49,6 +50,7 @@
   "scripts": {
     "test": "node test/run-all.js",
     "test:smoke": "node test/smoke.js",
+    "test:limits": "node test/limits.js && node test/runway-sim.js",
     "test:sse": "node test/sse-stream.js",
     "test:review": "node test/review.js",
     "test:dual": "node test/dual-launch.js",
@@ -68,7 +70,7 @@
     "express": "4.22.2"
   },
   "optionalDependencies": {
-    "@opentui/core": "0.5.12"
+    "@opentui/core": "0.6.0"
   },
   "engines": {
     "node": ">=18.0.0"

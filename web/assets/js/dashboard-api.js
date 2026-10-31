@@ -16,7 +16,7 @@ import {
   browserLocalPersistence,
   getAdditionalUserInfo,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import { createOnboardingController } from "./dashboard-onboarding.js?v=4";
+import { createOnboardingController } from "./dashboard-onboarding.js?v=5";
 
 const API_BASE = window.SC_API_BASE || "";
 const SESSION_KEY = "sc_dash_session";
@@ -31,9 +31,6 @@ try {
 
 const onboarding = createOnboardingController({
   apiFetch: (...args) => apiFetch(...args),
-  onBonusChange: () => {
-    loadSubscription().catch(() => {});
-  },
 });
 
 function cleanConfigValue(value) {
@@ -290,6 +287,16 @@ function friendlyAuthError(err, { intent = "auth" } = {}) {
     case "auth/popup-closed-by-user":
     case "auth/cancelled-popup-request":
       return "Sign-in was cancelled.";
+    case "auth/popup-blocked":
+      return "Your browser blocked the Google sign-in window. Allow pop-ups for supercompress.dev, then try again.";
+    case "auth/unauthorized-domain":
+      return "This site isn’t authorized for Google sign-in yet. Refresh and try again — if it persists, reply to support.";
+    case "auth/operation-not-allowed":
+      return "Google sign-in is temporarily unavailable. Try email and password, or refresh and retry.";
+    case "auth/internal-error":
+    case "auth/operation-not-supported-in-this-environment":
+    case "auth/web-storage-unsupported":
+      return "Google sign-in couldn’t start in this browser. Allow pop-ups for supercompress.dev, disable strict blockers, then try again — or use email and password.";
     case "auth/account-exists-with-different-credential":
       return "That email is already registered with a different sign-in method. Try Log in with email or Continue with Google.";
     default:
@@ -300,9 +307,32 @@ function friendlyAuthError(err, { intent = "auth" } = {}) {
     return "Too many sign-in attempts. Wait a few minutes, then try again — or use Continue with Google.";
   }
   if (/^Firebase:\s*Error\s*\(auth\//i.test(raw) || /\(auth\//i.test(raw)) {
-    return "Sign-in failed. Check your email and password, or try Continue with Google.";
+    return intent === "google"
+      ? "Google sign-in failed. Refresh and try Continue with Google again — or use email and password."
+      : "Sign-in failed. Check your email and password, or try Continue with Google.";
   }
   return raw || "Sign-in failed. Try again.";
+}
+
+function shouldFallbackGoogleRedirect(err) {
+  const code = authErrorCode(err);
+  return (
+    code === "auth/popup-blocked" ||
+    code === "auth/operation-not-supported-in-this-environment" ||
+    code === "auth/web-storage-unsupported" ||
+    code === "auth/internal-error" ||
+    isAuthNetworkError(err)
+  );
+}
+
+async function signInWithGoogleResilient(authInstance, provider) {
+  try {
+    return await signInWithPopup(authInstance, provider);
+  } catch (err) {
+    if (!shouldFallbackGoogleRedirect(err)) throw err;
+  }
+  await signInWithRedirect(authInstance, provider);
+  return null;
 }
 
 async function getUserToken(user, retries = 2) {
@@ -353,9 +383,42 @@ function formatNum(n) {
   return String(n);
 }
 
+/** Parse API dates in the viewer's local calendar (date-only strings are not UTC midnight). */
+function parseUserDate(iso) {
+  if (iso == null || iso === "") return null;
+  if (iso instanceof Date) return Number.isFinite(iso.getTime()) ? iso : null;
+  const s = String(iso).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split("-").map(Number);
+    const local = new Date(y, m - 1, d);
+    return Number.isFinite(local.getTime()) ? local : null;
+  }
+  if (/^\d{10}$/.test(s)) return new Date(Number(s) * 1000);
+  if (/^\d{13}$/.test(s)) return new Date(Number(s));
+  const d = new Date(s);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
 function formatDate(iso) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const d = parseUserDate(iso);
+  if (!d) return "—";
+  const raw = String(iso).trim();
+  const hasTime =
+    /T\d{2}:\d{2}/.test(raw) ||
+    /^\d{10,13}$/.test(raw) ||
+    (iso instanceof Date && (d.getHours() || d.getMinutes() || d.getSeconds()));
+  if (!hasTime) {
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  }
+  // Full timestamps: local date + time + short zone (e.g. PDT) so the dashboard matches the viewer.
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
 }
 
 function localStoreKey() {
@@ -481,6 +544,10 @@ async function apiFetch(path, opts = {}, retry = true) {
     }
 
     if (!res.ok) throw new Error(data.detail || res.statusText || `Request failed (HTTP ${res.status})`);
+    // www used to rewrite unknown /api/keys/:id to soft-probe (HTTP 200). Never treat that as success.
+    if (data && data.probe === true) {
+      throw new Error(data.detail || "API route not found");
+    }
     return data;
   } catch (err) {
     clearTimeout(timeoutId);
@@ -743,7 +810,9 @@ async function showDashboard(user, { isNewUser = false } = {}) {
   } catch (_) {}
   let celebrateAfter = false;
   try {
-    const gate = await onboarding.maybeShow({ forceNew: Boolean(isNewUser), phase: "gate" });
+    const gate = requestedDashboardPanel() === "billing"
+      ? false
+      : await onboarding.maybeShow({ forceNew: Boolean(isNewUser), phase: "gate" });
     if (gate === true) return;
     celebrateAfter = gate === "celebrate";
   } catch (_) {}
@@ -779,9 +848,10 @@ async function showDashboard(user, { isNewUser = false } = {}) {
   } catch (_) {}
   // Deep-link: /dashboard?panel=analytics (and friends)
   try {
-    const panel = (new URLSearchParams(window.location.search).get("panel") || "").trim().toLowerCase();
+    const panel = requestedDashboardPanel();
     if (panel && panel !== "keys") openDashboardPanel(panel, { updateUrl: false });
   } catch (_) {}
+  initBilling();
   if (celebrateAfter) {
     try {
       onboarding.showCelebrate();
@@ -825,23 +895,77 @@ function connectCodeFromUrl() {
   return (params.get("connect") || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+const OAUTH_PENDING_KEY = "sc_oauth_pending_v1";
+let enterDashboardPromise = null;
+
+function stashOauthAuthorize(params) {
+  if (!params?.client_id || !params?.redirect_uri || !params?.code_challenge) return;
+  try {
+    sessionStorage.setItem(
+      OAUTH_PENDING_KEY,
+      JSON.stringify({ ...params, stashed_at: Date.now() })
+    );
+  } catch {
+    /* private mode / blocked storage */
+  }
+}
+
+function clearStashedOauthAuthorize() {
+  try {
+    sessionStorage.removeItem(OAUTH_PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function readStashedOauthAuthorize() {
+  try {
+    const raw = sessionStorage.getItem(OAUTH_PENDING_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data?.client_id || !data?.redirect_uri || !data?.code_challenge) return null;
+    if (data.stashed_at && Date.now() - Number(data.stashed_at) > 30 * 60 * 1000) {
+      clearStashedOauthAuthorize();
+      return null;
+    }
+    return {
+      client_id: String(data.client_id),
+      redirect_uri: String(data.redirect_uri),
+      code_challenge: String(data.code_challenge),
+      code_challenge_method: String(data.code_challenge_method || "S256"),
+      state: String(data.state || ""),
+      resource: String(data.resource || "https://www.supercompress.dev/api/mcp"),
+      scope: String(data.scope || "mcp"),
+      response_type: "code",
+    };
+  } catch {
+    return null;
+  }
+}
+
 function oauthAuthorizeFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get("oauth") !== "1" && params.get("response_type") !== "code") return null;
-  const clientId = (params.get("client_id") || "").trim();
-  const redirectUri = (params.get("redirect_uri") || "").trim();
-  const challenge = (params.get("code_challenge") || "").trim();
-  if (!clientId || !redirectUri || !challenge) return null;
-  return {
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    code_challenge: challenge,
-    code_challenge_method: (params.get("code_challenge_method") || "S256").trim() || "S256",
-    state: params.get("state") || "",
-    resource: params.get("resource") || "https://www.supercompress.dev/api/mcp",
-    scope: params.get("scope") || "mcp",
-    response_type: "code",
-  };
+  if (params.get("oauth") === "1" || params.get("response_type") === "code") {
+    const clientId = (params.get("client_id") || "").trim();
+    const redirectUri = (params.get("redirect_uri") || "").trim();
+    const challenge = (params.get("code_challenge") || "").trim();
+    if (clientId && redirectUri && challenge) {
+      const oauth = {
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        code_challenge: challenge,
+        code_challenge_method: (params.get("code_challenge_method") || "S256").trim() || "S256",
+        state: params.get("state") || "",
+        resource: params.get("resource") || "https://www.supercompress.dev/api/mcp",
+        scope: params.get("scope") || "mcp",
+        response_type: "code",
+      };
+      // Survive Google signInWithRedirect round-trips that drop query params.
+      stashOauthAuthorize(oauth);
+      return oauth;
+    }
+  }
+  return readStashedOauthAuthorize();
 }
 
 async function completeOauthAuthorize(params) {
@@ -851,6 +975,7 @@ async function completeOauthAuthorize(params) {
     body: JSON.stringify(params),
   });
   if (res?.redirect_to) {
+    clearStashedOauthAuthorize();
     window.location.href = res.redirect_to;
     return res;
   }
@@ -898,64 +1023,72 @@ async function triggerWelcomeEmail(user, { isNewUser = false } = {}) {
 }
 
 async function enterDashboard(user, { isNewUser = false } = {}) {
-  authResolved = true;
-  const prevUid = keysCacheUid();
-  const nextUid = user?.uid || null;
-  if (prevUid && nextUid && prevUid !== nextUid) clearKeysCache();
-  idToken = await getUserToken(user);
-  currentUser = user;
-  saveSession({
-    mode: "firebase",
-    uid: user.uid,
-    email: user.email || "",
-    displayName: user.displayName || user.email?.split("@")[0] || "User",
-  });
-  const connectCode = connectCodeFromUrl();
-  const oauthParams = oauthAuthorizeFromUrl();
-  let deviceLinked = false;
-  if (oauthParams) {
-    try {
-      await completeOauthAuthorize(oauthParams);
-      return; // browser navigates to client redirect
-    } catch (err) {
-      console.warn("OAuth approve failed", err);
-      setError(err.message || "Could not authorize MCP client — try again.");
-    }
-  } else if (connectCode) {
-    for (let attempt = 0; attempt < 3 && !deviceLinked; attempt++) {
+  // getRedirectResult + onAuthStateChanged both fire after Google redirect —
+  // serialize so we only approve / paint once.
+  if (enterDashboardPromise) return enterDashboardPromise;
+  enterDashboardPromise = (async () => {
+    authResolved = true;
+    const prevUid = keysCacheUid();
+    const nextUid = user?.uid || null;
+    if (prevUid && nextUid && prevUid !== nextUid) clearKeysCache();
+    idToken = await getUserToken(user);
+    currentUser = user;
+    saveSession({
+      mode: "firebase",
+      uid: user.uid,
+      email: user.email || "",
+      displayName: user.displayName || user.email?.split("@")[0] || "User",
+    });
+    const connectCode = connectCodeFromUrl();
+    const oauthParams = oauthAuthorizeFromUrl();
+    let deviceLinked = false;
+    if (oauthParams) {
       try {
-        await completeDeviceConnect(connectCode);
-        deviceLinked = true;
-        const ok = $("auth-error");
-        if (ok) {
-          ok.textContent = "Coding agent linked. You can return to the terminal — connect finished automatically.";
-          ok.style.color = "#166534";
-          show(ok);
-          setTimeout(() => {
-            ok.style.color = "";
-            hide(ok);
-          }, 8000);
-        }
+        await completeOauthAuthorize(oauthParams);
+        return; // browser navigates to client redirect
       } catch (err) {
-        console.warn("Device connect failed", err);
-        if (attempt === 2) {
-          setError(err.message || "Account connection failed — refresh this page or re-run connect.");
-        } else {
-          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        console.warn("OAuth approve failed", err);
+        setError(err.message || "Could not authorize MCP client — try again.");
+      }
+    } else if (connectCode) {
+      for (let attempt = 0; attempt < 3 && !deviceLinked; attempt++) {
+        try {
+          await completeDeviceConnect(connectCode);
+          deviceLinked = true;
+          const ok = $("auth-error");
+          if (ok) {
+            ok.textContent = "Coding agent linked. You can return to the terminal — connect finished automatically.";
+            ok.style.color = "#166534";
+            show(ok);
+            setTimeout(() => {
+              ok.style.color = "";
+              hide(ok);
+            }, 8000);
+          }
+        } catch (err) {
+          console.warn("Device connect failed", err);
+          if (attempt === 2) {
+            setError(err.message || "Account connection failed — refresh this page or re-run connect.");
+          } else {
+            await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+          }
         }
       }
+      // Keep ?connect= on failure so a refresh can retry auto-link.
+      if (!deviceLinked) {
+        /* leave URL */
+      }
+    } else {
+      cleanAuthQuery();
+      setError("");
     }
-    // Keep ?connect= on failure so a refresh can retry auto-link.
-    if (!deviceLinked) {
-      /* leave URL */
-    }
-  } else {
-    cleanAuthQuery();
-    setError("");
-  }
-  // Fire-and-forget founder welcome for new signups (deduped server-side).
-  void triggerWelcomeEmail(user, { isNewUser });
-  await showDashboard(user, { isNewUser });
+    // Fire-and-forget founder welcome for new signups (deduped server-side).
+    void triggerWelcomeEmail(user, { isNewUser });
+    await showDashboard(user, { isNewUser });
+  })().finally(() => {
+    enterDashboardPromise = null;
+  });
+  return enterDashboardPromise;
 }
 
 /* ── Billing / Plans ── */
@@ -991,11 +1124,21 @@ function totalRequests() {
   return reqs;
 }
 
+function billingUsageState(sub = {}) {
+  const freeCap = Number(sub.free_tokens_per_month ?? sub.tokens_per_month ?? 1_000_000);
+  const used = Number(sub.tokens_used_this_period ?? 0);
+  const payg = !!(sub.payg_enabled || sub.unlimited || (sub.plan && sub.plan !== "free"));
+  const wallet = !!(sub.credit_wallet || (payg && sub.credit_balance_usd != null));
+  const freeUsed = sub.free_tokens_remaining === 0 || used >= freeCap;
+  const limitHit = !(Number(sub.credit_balance_usd) > 0) && !sub.unlimited &&
+    !!(sub.limit_reached || sub.paywall || (freeUsed && (!payg || wallet)));
+  return { freeCap, used, payg, limitHit };
+}
+
 function renderPaygNudge(sub) {
   const banner = $("dash-payg-banner");
   if (!banner) return;
-  const payg = !!(sub?.payg_enabled || sub?.unlimited || (sub?.plan && sub.plan !== "free"));
-  const limitHit = !!(sub?.limit_reached || sub?.paywall || (sub?.free_tokens_remaining === 0 && !payg));
+  const { freeCap, used, payg, limitHit } = billingUsageState(sub);
 
   if (payg && !limitHit) {
     banner.classList.add("hidden");
@@ -1003,33 +1146,30 @@ function renderPaygNudge(sub) {
     return;
   }
 
-  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 5_000_000;
-  const used = sub.tokens_used_this_period || totalTokensIn() || 0;
   const pct = freeCap > 0 ? Math.min(100, (Math.min(used, freeCap) / freeCap) * 100) : 0;
   const hasUse = used > 0 || totalRequests() > 0;
 
   let tone = "";
   let title = "Never hard-stop.";
   let copy = "";
-  let cta = "Add credits";
+  let cta = "Add $10 credits";
 
   if (limitHit) {
     tone = "dash-payg-banner--blocked";
-    title = "Compression paused — free 5M used";
+    title = "Compression paused — credits needed";
     copy =
       `You've hit your free ${formatNum(freeCap)} tokens this month (${formatNum(used)} used). ` +
-      `Add credits to unlock again — $0.10 per 1M tokens after free.`;
-    cta = "Add credits";
+      `Add $10 in prepaid credits to continue — $0.10 per 1M tokens after free. No automatic charges unless you opt in.`;
   } else if (pct >= 80) {
     tone = "dash-payg-banner--urgent";
-    copy = `You've used ${Math.round(pct)}% of your free 5M tokens. Add credits now so compression never hard-stops — $0.10/1M after free.`;
+    copy = `You've used ${Math.round(pct)}% of your free 1M tokens. Add credits now so compression never hard-stops — $0.10/1M after free.`;
   } else if (pct >= 50) {
     tone = "dash-payg-banner--warn";
-    copy = `Halfway through your free 5M this month. Add credits so a busy agent week doesn't cut you off.`;
+    copy = `Halfway through your free 1M this month. Add credits so a busy agent week doesn't cut you off.`;
   } else if (hasUse) {
     tone = "";
     copy =
-      "Nice — first compress landed. Add credits so compression never hard-stops. You still get 5M free, then $0.10/1M.";
+      "Nice — first compress landed. Add credits so compression never hard-stops. You still get 1M free, then $0.10/1M.";
   } else {
     banner.classList.add("hidden");
     banner.innerHTML = "";
@@ -1040,7 +1180,7 @@ function renderPaygNudge(sub) {
   banner.innerHTML = `
     <div class="dash-payg-banner-copy">
       <p><strong>${escapeHtml(title)}</strong> ${escapeHtml(copy)}</p>
-      ${limitHit ? `<p class="dash-payg-banner-price">$0.10 / 1M after free · load credits anytime</p>` : ""}
+      ${limitHit ? `<p class="dash-payg-banner-price">$10 minimum · review payment in checkout</p>` : ""}
     </div>
     <button type="button" class="btn-brand dash-payg-banner-cta" id="btn-payg-nudge">${escapeHtml(cta)}</button>
   `;
@@ -1050,15 +1190,6 @@ function renderPaygNudge(sub) {
     handleEnablePayg();
   });
 
-  if (limitHit) {
-    // Force billing panel into view once per session so the wall is obvious
-    try {
-      if (!sessionStorage.getItem("sc_paywall_shown")) {
-        sessionStorage.setItem("sc_paywall_shown", "1");
-        document.querySelector('.dash-topnav-item[data-panel="billing"]')?.click();
-      }
-    } catch (_) { /* ignore */ }
-  }
 }
 
 function renderActivationChecklist() {
@@ -1133,30 +1264,22 @@ function renderSubscription(sub) {
   if (!statusCard) return;
   lastBillingSub = sub;
 
-  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 5_000_000;
-  const used = sub.tokens_used_this_period || 0;
+  const { freeCap, used, payg, limitHit } = billingUsageState(sub);
   const freeUsed = Math.min(used, freeCap);
-  const pct = Math.min(100, Math.round((freeUsed / freeCap) * 10000) / 100);
+  const pct = freeCap > 0 ? Math.min(100, Math.round((freeUsed / freeCap) * 10000) / 100) : 100;
   const fillClass = pct >= 90 ? "dash-billing-usage-fill--full" : pct >= 70 ? "dash-billing-usage-fill--high" : "";
   const meterColor = pct >= 90 ? "red" : pct >= 70 ? "orange" : "brand";
-  const payg = !!(sub.payg_enabled || sub.unlimited || (sub.plan && sub.plan !== "free"));
   const creditWallet = !!(sub.credit_wallet || (payg && sub.credit_balance_usd != null));
   const creditBalance = Number(sub.credit_balance_usd);
   const hasCreditBalance = Number.isFinite(creditBalance);
-  const limitHit = !!(sub.limit_reached || sub.paywall) && !payg;
+  // Prepaid balance left means compress still works past the free allowance — not paused.
   const overageUsd = Number(sub.estimated_overage_usd || 0);
   const billable = sub.billable_tokens || Math.max(0, used - freeCap);
 
-  const title = payg || creditWallet
-    ? "Pay as you go"
-    : limitHit
-      ? "Paused — free allowance used"
-      : "Free allowance";
-  const badge = payg || creditWallet
+  const title = limitHit ? "Paused — credits needed" : payg || creditWallet ? "Pay as you go" : "Free allowance";
+  const badge = limitHit ? "LOCKED" : payg || creditWallet
     ? (sub.cancel_at_period_end ? "cancels at period end" : (sub.status || "active"))
-    : limitHit
-      ? "LOCKED"
-      : "free";
+    : "free";
 
   statusCard.innerHTML = `
     ${limitHit ? `
@@ -1164,7 +1287,7 @@ function renderSubscription(sub) {
         <div class="dash-paywall-lock-kicker">Paywall</div>
         <h2>Compression is paused</h2>
         <p>You used your free <strong>${formatNum(freeCap)}</strong> tokens this month (<strong>${formatNum(used)}</strong> in). Add credits to unlock — <strong>$0.10 / 1M</strong> after free.</p>
-        <button type="button" class="btn-brand dash-paywall-lock-cta" id="btn-paywall-unlock">Add credits</button>
+        <button type="button" class="btn-brand dash-paywall-lock-cta" id="btn-paywall-unlock">Add $10 credits</button>
       </div>
     ` : ""}
     <div class="dash-billing-status-active">
@@ -1176,7 +1299,7 @@ function renderSubscription(sub) {
             ? `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">Credit balance <strong>$${creditBalance.toFixed(2)}</strong></span>`
             : payg && sub.has_active_subscription
               ? `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">Period ends ${formatDate(sub.period_end)}</span>`
-              : `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">5M free tokens each month · then $0.10 / 1M</span>`
+              : `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">1M free tokens each month · then $0.10 / 1M</span>`
           }
         </p>
       </div>
@@ -1208,7 +1331,7 @@ function renderSubscription(sub) {
       : payg && billable > 0
       ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">Overage this month: <strong>${formatNum(billable)}</strong> tokens (~$${overageUsd.toFixed(2)} estimated)</p>`
       : payg
-        ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">No overage yet. Usage beyond 5M bills at $0.10 / 1M tokens.</p>`
+        ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">No overage yet. Usage beyond 1M bills at $0.10 / 1M tokens.</p>`
         : pct >= 100
           ? `<p style="margin:12px 0 0;font-size:14px;color:#b91c1c;font-weight:600">Free allowance used. Add credits to keep compressing.</p>`
           : ""
@@ -1287,11 +1410,10 @@ function syncCreditsPresets(amount) {
 function openCreditsModal() {
   const modal = $("modal-credits");
   if (!modal) {
-    // Modal missing: still default auto-recharge ON when jumping straight to checkout
-    handleEnablePaygCheckout(lastBillingSub?.default_credit_limit_usd || 10, true);
+    alert("Credit checkout is unavailable. Refresh the dashboard and try again.");
     return;
   }
-  const { min, max, def, rate } = creditLimitsFromSub(lastBillingSub);
+  const { min, max, rate } = creditLimitsFromSub(lastBillingSub);
   const input = $("credits-amount");
   const err = $("credits-error");
   const title = $("credits-modal-title");
@@ -1308,8 +1430,7 @@ function openCreditsModal() {
   if (input) {
     input.min = String(min);
     input.max = String(max);
-    const preferred = Number(lastBillingSub?.credit_limit_usd);
-    input.value = String(Number.isFinite(preferred) && preferred >= min ? preferred : def);
+    input.value = String(min);
   }
   if (err) {
     err.textContent = "";
@@ -1317,9 +1438,7 @@ function openCreditsModal() {
   }
   const auto = $("credits-auto-recharge");
   if (auto) {
-    // Default ON when adding / topping up credits (user can uncheck).
-    // If they previously enabled auto-recharge, keep it on; never open with it forced off.
-    auto.checked = true;
+    auto.checked = false;
   }
   syncCreditsPresets(Number(input?.value));
   syncCreditsHint();
@@ -1392,7 +1511,7 @@ function handleEnablePayg() {
   openCreditsModal();
 }
 
-async function handleEnablePaygCheckout(creditUsd, autoRecharge = true) {
+async function handleEnablePaygCheckout(creditUsd, autoRecharge = false) {
   if (apiMode === "local") {
     alert("Stripe billing is not available in local/dev mode. Set up production with STRIPE_SECRET_KEY on Vercel.");
     return;
@@ -1421,6 +1540,8 @@ async function handleEnablePaygCheckout(creditUsd, autoRecharge = true) {
 
     if (data.url) {
       window.location.href = data.url;
+    } else {
+      throw new Error("Checkout did not return a URL. Please try again.");
     }
   } catch (err) {
     const box = $("credits-error");
@@ -1448,7 +1569,7 @@ async function handleManageBilling() {
 }
 
 async function handleCancelSubscription() {
-  if (!confirm("Disable pay-as-you-go? You'll keep access until the end of the current billing period, then return to the free 5M token allowance.")) {
+  if (!confirm("Disable pay-as-you-go? You'll keep access until the end of the current billing period, then return to the free 1M token allowance.")) {
     return;
   }
   try {
@@ -1548,7 +1669,7 @@ function launchPayConfetti(durationMs = 3200) {
   };
 }
 
-function showPaySuccessCelebration({ bonusTokens = 0, bonusUsd = 0, creditedUsd = 0 } = {}) {
+function showPaySuccessCelebration({ creditedUsd = 0 } = {}) {
   launchPayConfetti();
   let modal = document.getElementById("modal-pay-success");
   if (!modal) {
@@ -1559,7 +1680,6 @@ function showPaySuccessCelebration({ bonusTokens = 0, bonusUsd = 0, creditedUsd 
       <div class="dash-modal-card" role="dialog" aria-modal="true" aria-labelledby="pay-success-title">
         <h2 id="pay-success-title">Congratulations!</h2>
         <p id="pay-success-body" class="dash-modal-lead"></p>
-        <p id="pay-success-bonus" class="dash-modal-bonus" hidden></p>
         <button type="button" class="btn-brand" id="pay-success-dismiss">Nice</button>
       </div>`;
     document.body.appendChild(modal);
@@ -1571,25 +1691,16 @@ function showPaySuccessCelebration({ bonusTokens = 0, bonusUsd = 0, creditedUsd 
     });
   }
   const body = modal.querySelector("#pay-success-body");
-  const bonusEl = modal.querySelector("#pay-success-bonus");
   if (body) {
     body.textContent = creditedUsd
       ? `You're officially on pay-as-you-go. ${formatMoneyUsd(creditedUsd)} in credits just landed.`
       : "You're officially on pay-as-you-go. Welcome aboard.";
   }
-  if (bonusEl) {
-    if (bonusTokens > 0) {
-      bonusEl.hidden = false;
-      bonusEl.textContent = `As a thank you, we added 1M tokens on the house (${formatMoneyUsd(bonusUsd || 0.1)}).`;
-    } else {
-      bonusEl.hidden = true;
-    }
-  }
   modal.classList.remove("hidden");
 }
 
 function initBilling() {
-  initCreditsModal();
+  if (!idToken) return;
   // Check URL params for billing success/cancel
   const params = new URLSearchParams(window.location.search);
   if (params.get("billing") === "success") {
@@ -1603,8 +1714,6 @@ function initBilling() {
     const celebrate = (data) => {
       showPaySuccessCelebration({
         creditedUsd: Number(data?.credited_usd || 0),
-        bonusUsd: Number(data?.first_pay_bonus_usd || 0),
-        bonusTokens: Number(data?.first_pay_bonus_tokens || 0),
       });
     };
     if (sessionId.startsWith("cs_")) {
@@ -1628,19 +1737,18 @@ function initBilling() {
           }
           await new Promise((r) => setTimeout(r, 400 * (i + 1)));
         }
-        if (last && !last.error) {
+        if (last && !last.error && (last.credited_usd > 0 || last.already || last.credit_balance_usd > 0)) {
           celebrate(last);
+          window.history.replaceState({}, document.title, `${window.location.pathname}#billing`);
         } else {
-          showPaySuccessCelebration({});
+          alert("Payment is still being confirmed. Your checkout reference has been preserved; refresh to check again. Do not pay twice.");
         }
         await loadSubscription();
       })();
     } else {
-      showPaySuccessCelebration({});
+      alert("Payment confirmation is missing its checkout reference. Check your credit balance before starting another payment.");
       setTimeout(() => loadSubscription(), 800);
     }
-    // Clean URL
-    window.history.replaceState({}, document.title, window.location.pathname);
   }
 }
 
@@ -1921,7 +2029,15 @@ async function revokeKey(keyId) {
   const key = keysData.find((k) => k.id === keyId);
   if (!confirm(`Revoke "${key?.name}"? This cannot be undone.`)) return;
   try {
-    await apiFetch(`/api/keys/${keyId}`, { method: "DELETE" });
+    const data = await apiFetch(`/api/keys/${encodeURIComponent(keyId)}`, { method: "DELETE" });
+    if (!data || data.revoked !== true) {
+      throw new Error(data?.detail || "Revoke failed — key was not removed");
+    }
+    keysData = keysData.filter((k) => k.id !== keyId);
+    delete usageData[keyId];
+    renderKeys();
+    renderUsage();
+    updateStats();
     await loadKeys();
   } catch (err) {
     alert(err.message);
@@ -1961,7 +2077,15 @@ async function createKey() {
   }
 }
 
+function requestedDashboardPanel() {
+  const url = new URL(window.location.href);
+  if (["success", "cancel"].includes(url.searchParams.get("billing"))) return "billing";
+  const panel = (url.hash.slice(1) || url.searchParams.get("panel") || "").trim().toLowerCase();
+  return ["keys", "analytics", "billing", "agents"].includes(panel) ? panel : "";
+}
+
 function openDashboardPanel(panel, { updateUrl = true } = {}) {
+  if (!["keys", "analytics", "billing", "agents"].includes(panel)) return false;
   const btn = document.querySelector(`.dash-topnav-item[data-panel="${panel}"]`);
   if (!btn) return false;
   document.querySelectorAll(".dash-topnav-item[data-panel]").forEach((b) => b.classList.remove("active"));
@@ -1994,6 +2118,7 @@ function openDashboardPanel(panel, { updateUrl = true } = {}) {
 
   if (updateUrl && window.history?.replaceState) {
     const url = new URL(window.location.href);
+    url.hash = "";
     if (panel === "keys") url.searchParams.delete("panel");
     else url.searchParams.set("panel", panel);
     const next = `${url.pathname}${url.search}${url.hash}`;
@@ -2003,6 +2128,12 @@ function openDashboardPanel(panel, { updateUrl = true } = {}) {
 }
 
 function initPanels() {
+  window.addEventListener("hashchange", () => {
+    if (idToken) openDashboardPanel(requestedDashboardPanel() || "keys", { updateUrl: false });
+  });
+  window.addEventListener("focus", () => {
+    if (idToken) loadSubscription();
+  });
   document.querySelectorAll(".dash-topnav-item[data-panel]").forEach((btn) => {
     btn.addEventListener("click", () => {
       openDashboardPanel(btn.dataset.panel);
@@ -2302,8 +2433,15 @@ async function initFirebaseAuth() {
   auth = getAuth(app);
   await setPersistence(auth, browserLocalPersistence);
 
+  // Stash early so a Google redirect that drops ?oauth=… still completes DCR.
+  oauthAuthorizeFromUrl();
+
   const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
+  // Account picker is fine for normal dashboard login; during MCP authorize it
+  // forces a second Google prompt even when the browser already has a session.
+  if (!oauthAuthorizeFromUrl()) {
+    provider.setCustomParameters({ prompt: "select_account" });
+  }
 
   try {
     const redirectResult = await getRedirectResult(auth);
@@ -2342,7 +2480,7 @@ async function initFirebaseAuth() {
       if (subtitle) {
         subtitle.textContent =
           authTab === "signup"
-            ? "5M free tokens/mo · then $0.10/1M. Google takes one click — your key is ready instantly."
+            ? "1M free tokens/mo · then $0.10/1M. Google takes one click — your key is ready instantly."
             : "Sign in to manage API keys, usage, and billing.";
       }
       document.querySelectorAll(".dash-auth-tab").forEach((t) => {
@@ -2398,20 +2536,24 @@ async function initFirebaseAuth() {
   }
 
   $("btn-google").addEventListener("click", async () => {
+    const button = $("btn-google");
+    if (button.disabled) return;
+    button.disabled = true;
     setError("");
+    const pendingOauth = oauthAuthorizeFromUrl();
+    if (pendingOauth) stashOauthAuthorize(pendingOauth);
     try {
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithGoogleResilient(auth, provider);
       if (result?.user) {
         const isNewUser = Boolean(getAdditionalUserInfo(result)?.isNewUser);
         await enterDashboard(result.user, { isNewUser });
       }
+      // null result ⇒ redirected; page will resume via getRedirectResult
     } catch (err) {
-      const code = String(err?.code || "");
-      if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment") {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
-      setError(friendlyAuthError(err));
+      if (pendingOauth) stashOauthAuthorize(pendingOauth);
+      setError(friendlyAuthError(err, { intent: "google" }));
+    } finally {
+      button.disabled = false;
     }
   });
 
@@ -2497,6 +2639,7 @@ async function loadFirebaseConfig() {
   } catch (_) {
     /* fall back to baked config */
   }
+  cfg = normalizeFirebaseConfig(cfg);
   return firebaseConfigReady(cfg);
 }
 
@@ -2514,7 +2657,7 @@ async function init() {
   initPanels();
   initModals();
   initSnippetTabs();
-  initBilling();
+  initCreditsModal();
   window.addEventListener("resize", () => {
     const track = document.querySelector("#panel-billing .dash-billing-usage-track");
     if (track && !document.getElementById("panel-billing")?.classList.contains("hidden")) {

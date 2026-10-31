@@ -333,7 +333,7 @@ Get started:
 One command for agents:
 npm install -g supercompress-proxy && supercompress setup
 
-Free: 5M tokens/month. Then $0.10 / 1M PAYG so you never hard-stop — usually cheaper than the LLM tokens you save.
+Free: 1M tokens/month. Then prepaid credits at $0.10 / 1M — add credits to keep compressing after the free allowance.
 
 Thanks again,
 Arjun
@@ -356,7 +356,7 @@ npx supercompress setup</pre>
   · <a href="${SITE}/playground" style="color:${BRAND};text-decoration:none;font-weight:600;">Playground</a>
   · <a href="${SITE}/reduce-llm-costs" style="color:${BRAND};text-decoration:none;font-weight:600;">Cut API costs</a>
 </p>
-${proofCallout("Free: 5M tokens/month · then $0.10 / 1M PAYG so you never hard-stop.")}
+${proofCallout("Free: 1M tokens/month · then prepaid credits at $0.10 / 1M.")}
 ${signatureBlock()}`;
 
   const html = brandedEmailHtml({
@@ -377,7 +377,7 @@ const WEEKLY_TIPS_FALLBACK = [
     tipTitle: "Stop paying for every log dump in Cursor / Claude Code",
     tipBody:
       "Agents re-send huge context every turn. SuperCompress installs as MCP, keeps your login, and compresses dumps before they hit the model — typically 64% less context on our coding-agent benchmark with 24/24 benchmark evidence-retention passes on our held-out suites.",
-    proof: "Install once. Works with Cursor, Claude Code, Codex, and more.",
+    proof: "Install once. Works with Cursor, Claude Code, Codex, Grok Bot, and more.",
     ctaLabel: "Install coding agent plugin →",
     ctaUrl: `${SITE}/docs/coding-agents`,
     command: "npm install -g supercompress-proxy && supercompress setup",
@@ -522,19 +522,25 @@ async function sendViaResend({
     reqHeaders["Idempotency-Key"] = String(idempotencyKey).slice(0, 256);
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: reqHeaders,
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      text,
-      html,
-      reply_to: REPLY_TO,
-      headers,
-    }),
-  });
+  let res;
+  try {
+    res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: reqHeaders,
+      signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject,
+        text,
+        html,
+        reply_to: REPLY_TO,
+        headers,
+      }),
+    });
+  } catch {
+    return { ok: false, provider: "resend", error: "resend_request_failed" };
+  }
 
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -883,19 +889,25 @@ async function sendPowerUserEmail(opts) {
 }
 
 /**
- * Quota-exhausted email — once per month when a free-tier user hits the
- * free cap and compression 402s. Distinct from the once-ever power-user
- * congrats: this one tells them they're paused and how to unlock.
+ * Monthly quota/upgrade email with actual allowance usage. Distinct from the
+ * once-ever power-user congratulations; does not imply a blocked request.
  * @param {{ email: string, firstName?: string, tokensUsed?: number, freeTokens?: number, month?: string }} opts
  */
-function quotaExhaustedCopy({ email, firstName, tokensUsed, freeTokens, month }) {
+function quotaExhaustedCopy({ email, firstName, tokensUsed, freeTokens, month, unsubUrl, followupStage = 0 }) {
   const hi = firstName ? `Hey ${firstName}` : "Hey";
   const billingUrl = `${SITE}/dashboard?panel=billing`;
-  const free = Number(freeTokens || 5_000_000);
-  const used = Math.max(Number(tokensUsed || 0), free);
+  const free = Number(freeTokens || require("./stripe").FREE_TOKENS_PER_MONTH);
+  const used = Math.max(0, Number(tokensUsed) || 0);
+  const remaining = Math.max(0, free - used);
+  const exhausted = remaining === 0;
   const freeM = (free / 1e6).toFixed(free % 1e6 === 0 ? 0 : 1);
   const usedM = (used / 1e6).toFixed(2);
-  const subject = `Compression paused — add credits to keep cutting tokens`;
+  const subject = followupStage === 2 ? "Last reminder about your SuperCompress allowance" : followupStage === 1 ? "A quick check on your SuperCompress allowance" : exhausted
+    ? "Free allowance used — add credits to keep compressing"
+    : "Your SuperCompress allowance — keep your next session running";
+  const usageLine = exhausted
+    ? `You've used your free ${freeM}M tokens this month (${usedM}M so far). Add credits to keep compressing, or wait for your free allowance to reset.`
+    : `You've compressed ${used.toLocaleString("en-US")} tokens this month. You have ${remaining.toLocaleString("en-US")} of your ${free.toLocaleString("en-US")} free monthly tokens remaining. You can keep using that allowance without paying.`;
 
   let resetLine = "Your free allowance resets on the 1st of next month.";
   const m = /^(\d{4})-(\d{2})$/.exec(String(month || ""));
@@ -911,32 +923,36 @@ function quotaExhaustedCopy({ email, firstName, tokensUsed, freeTokens, month })
 
   const text = `${hi},
 
-You've used your free ${freeM}M tokens this month (${usedM}M so far). Compression is paused until you add credits.
+${usageLine}
 
-Keep shipping for $0.10 per million tokens after free (min $10 load — credits never expire). Most power users unlock in under a minute:
+${followupStage === 2 ? "This is the last follow-up in this upgrade sequence.\n" : ""}
+
+Add credits before your allowance runs out: $0.10 per million tokens after free (minimum $10 load — credits never expire):
 
 ${billingUrl}
 
-That's usually cheaper than the LLM tokens SuperCompress just saved you.
-
 ${resetLine} Waiting is fine — your keys and integrations stay put. Or load credits now and don't lose a session.
+
+${unsubUrl ? `Unsubscribe from product reminders: ${unsubUrl}\n` : ""}
 
 — Arjun
 Founder, SuperCompress
 `;
 
   const bodyHtml = `
-    ${eyebrow("Paywall")}
-    ${displayHeadline(`${hi} — compression is paused`)}
-    <p style="margin:0 0 14px;">You've used your free <strong>${escapeHtml(freeM)}M tokens</strong> this month (<strong>${escapeHtml(usedM)}M</strong> so far). Nice volume — now unlock to keep going.</p>
-    <p style="margin:0 0 12px;">Pay-as-you-go is <strong>$0.10 per million tokens</strong> after free (minimum $10 load, credits never expire). Most people are back compressing in under a minute.</p>
-    ${ctaButton("Add credits — unlock now", billingUrl)}
+    ${eyebrow(exhausted ? "Free allowance used" : "Power-user allowance")}
+    ${displayHeadline(`${hi} — ${exhausted ? "keep compressing with credits" : "keep your next session running"}`)}
+    <p style="margin:0 0 14px;">${escapeHtml(usageLine)}</p>
+    ${followupStage === 2 ? `<p style="margin:0 0 14px;">This is the last follow-up in this upgrade sequence.</p>` : ""}
+    <p style="margin:0 0 12px;">Pay-as-you-go is <strong>$0.10 per million tokens</strong> after free (minimum $10 load, credits never expire).</p>
+    ${ctaButton(exhausted ? "Add credits — keep compressing" : "Add credits before the free limit", billingUrl)}
     <p style="margin:16px 0 0;font-size:14px;line-height:1.55;color:${MUTED};">${escapeHtml(resetLine)} Or load credits now so you don't lose a coding-agent session mid-flight.</p>
     ${signatureBlock()}
+    ${unsubUrl ? `<p style="font-size:12px;"><a href="${escapeHtml(unsubUrl)}">Unsubscribe from product reminders</a></p>` : ""}
   `;
 
   const html = brandedEmailHtml({
-    preheader: `Free ${freeM}M used — unlock at $0.10/1M (min $10).`,
+    preheader: exhausted ? `Free ${freeM}M used — $0.10/1M after free (min $10).` : `${remaining.toLocaleString("en-US")} free tokens remaining this month.`,
     title: subject,
     bodyHtml,
     kind: "welcome",
@@ -953,6 +969,8 @@ async function sendQuotaExhaustedEmail(opts) {
   const result = await sendViaResend({
     ...copy,
     idempotencyKey: opts.idempotencyKey || null,
+    unsubUrl: opts.unsubUrl,
+    listUnsubscribeUrl: opts.listUnsubscribeUrl,
   });
   return { ...result, subject: copy.subject, text: copy.text, html: copy.html };
 }
@@ -1287,7 +1305,7 @@ On our coding-agent benchmark, v2:
 - took 16,647 tokens → 5,148
 - reached 96.6% reduction on an individual case at ≥99% evidence retention
 
-Launch promo: 5M tokens/month free, then $0.10 per million. Open source. API, plus an agent plugin for 40+ harnesses.
+1M tokens/month free, then $0.10 per million with prepaid credits. Open source. API, plus an agent plugin for 40+ harnesses.
 
 Get an API key: ${SITE}/dashboard?signup=1
 Agent plugin: https://docs.supercompress.dev/coding-agents
@@ -1313,7 +1331,7 @@ Unsubscribe: ${unsub}
 <li>took 16,647 tokens → 5,148</li>
 <li>reached 96.6% reduction on an individual case at ≥99% evidence retention</li>
 </ul>
-<p>Launch promo: 5M tokens/month free, then $0.10 per million. Open source. API, plus an agent plugin for 40+ harnesses.</p>
+<p>1M tokens/month free, then $0.10 per million with prepaid credits. Open source. API, plus an agent plugin for 40+ harnesses.</p>
 <p><a href="${SITE}/dashboard?signup=1">Get an API key</a> · <a href="https://docs.supercompress.dev/coding-agents">Install the agent plugin</a> · <a href="${SITE}/playground">Playground</a></p>
 <p>— Arjun<br>Founder, SuperCompress</p>`,
   });

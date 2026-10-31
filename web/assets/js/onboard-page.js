@@ -8,7 +8,7 @@ import {
   setPersistence,
   browserLocalPersistence,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import { createOnboardingController } from "./dashboard-onboarding.js?v=4";
+import { createOnboardingController } from "./dashboard-onboarding.js?v=5";
 
 const API_BASE = window.SC_API_BASE || "";
 
