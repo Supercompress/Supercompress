@@ -70,7 +70,7 @@
     "express": "4.22.2"
   },
   "optionalDependencies": {
-    "@opentui/core": "0.6.0"
+    "@opentui/core": "0.6.8"
   },
   "engines": {
     "node": ">=18.0.0"
