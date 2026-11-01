@@ -104,3 +104,18 @@ test("POST off Vercel waits for the bump and reports failure as 503", async () =
   await withContext(undefined, () => bad(post("10.0.0.4"), res2));
   assert.equal(res2.code, 503);
 });
+
+test("POST on Fly replies before the bump settles", async () => {
+  const prev = process.env.FLY_APP_NAME;
+  process.env.FLY_APP_NAME = "supercompress-api";
+  try {
+    let release;
+    const slow = createHandler({ bump: () => new Promise((r) => { release = r; }) });
+    const res = fakeRes();
+    await withContext(undefined, () => slow(post("10.0.0.9"), res));
+    assert.equal(res.code, 202);
+    release();
+  } finally {
+    if (prev === undefined) delete process.env.FLY_APP_NAME; else process.env.FLY_APP_NAME = prev;
+  }
+});
