@@ -23,9 +23,8 @@ function drainSecretOk(req, body = {}) {
     if (expected && token === expected) return true;
     if (cronSecret && token === cronSecret) return true;
   }
-  if (req.headers["x-vercel-cron"] === "1" && (expected || cronSecret)) {
-    return Boolean(expected || cronSecret);
-  }
+  // No x-vercel-cron trust: the API runs on Fly, where any client can send that
+  // header. Vercel crons authenticate with Authorization: Bearer $CRON_SECRET.
   return false;
 }
 
@@ -34,7 +33,6 @@ function hasDrainCredentials(req, body = {}) {
   if (typeof req.query?.secret === "string" && req.query.secret.trim()) return true;
   if (body && typeof body.secret === "string" && body.secret.trim()) return true;
   if (req.headers?.["x-welcome-secret"] && String(req.headers["x-welcome-secret"]).trim()) return true;
-  if (req.headers?.["x-vercel-cron"] === "1") return true;
   const auth = String(req.headers?.authorization || "");
   if (auth.toLowerCase().startsWith("bearer ") && auth.slice(7).trim()) return true;
   return false;
