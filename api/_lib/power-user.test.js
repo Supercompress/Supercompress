@@ -67,13 +67,12 @@ assert.strictEqual(isDrainablePowerUser(null), false);
     cutPct: 40,
     morePct: 67,
   });
-  assert.match(copy.subject, /power user/i);
-  assert.match(copy.text, /SuperCompress power user/i);
+  assert.match(copy.subject, /1M tokens/i);
   assert.match(copy.text, /million tokens/i);
   assert.doesNotMatch(copy.text, /leaderboard/i);
   assert.doesNotMatch(copy.html, /leaderboard/i);
-  assert.match(copy.html, /\$0\.10\s*\/\s*1M/i);
-  assert.match(copy.text, /\$0\.10 per million/i);
+  assert.doesNotMatch(copy.text, /\$\d|twitter\.com|Brag/i);
+  assert.doesNotMatch(copy.html, /<img|<table/i);
 }
 
 {
