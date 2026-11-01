@@ -47,7 +47,7 @@ describe("password reset helpers", () => {
       firstName: "Arjun",
     });
     assert.match(copy.subject, /password/i);
-    assert.match(copy.text, /Reset your password/i);
+    assert.match(copy.text, /Reset password/i);
     assert.ok(copy.text.includes(url));
     assert.ok(copy.html.includes("Reset password"));
     assert.ok(copy.html.includes("oobCode=abc") || copy.html.includes(url.replace(/&/g, "&amp;")));
