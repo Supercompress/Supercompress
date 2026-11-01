@@ -1,8 +1,13 @@
 /**
  * Transactional product email helpers (welcome / weekly / receipts).
  * Sends via Resend only (`RESEND_API_KEY`). From / reply-to:
- *   WELCOME_FROM_EMAIL (default hello@supercompress.dev on verified Resend domain)
- *   WELCOME_REPLY_TO (default support@supercompress.dev)
+ *   WELCOME_FROM_EMAIL (default "Arjun Shah <arjun@supercompress.dev>")
+ *   WELCOME_REPLY_TO (default arjun@supercompress.dev)
+ *
+ * Deliverability: every email is sent as plain text plus a minimal HTML twin
+ * (no images, buttons, fonts, tracking pixels or layout tables) so it reads
+ * like a 1:1 note. Open/click tracking must stay OFF on the Resend domain
+ * (see scripts/resend-disable-tracking.js).
  *
  * Campaign copy is NOT in the OSS tree. Load order:
  *   1. WEEKLY_TIPS_JSON / WEEKLY_SHIP_JSON env (Vercel)
@@ -13,10 +18,11 @@
 const fs = require("fs");
 const path = require("path");
 
+// Person-style sender. Gmail weighs "a person wrote this" signals heavily when
+// choosing Primary vs Promotions, so avoid brand/noreply identities here.
 const DEFAULT_FROM =
-  process.env.WELCOME_FROM_EMAIL ||
-  "Arjun at SuperCompress <hello@supercompress.dev>";
-const REPLY_TO = process.env.WELCOME_REPLY_TO || "support@supercompress.dev";
+  process.env.WELCOME_FROM_EMAIL || "Arjun Shah <arjun@supercompress.dev>";
+const REPLY_TO = process.env.WELCOME_REPLY_TO || "arjun@supercompress.dev";
 const SITE = "https://www.supercompress.dev";
 const LOGO = `${SITE}/assets/img/logo-chevrons.png`;
 // Match live site chrome (landing-chrome.css)
@@ -151,7 +157,43 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
+
+/** Strip em/en dashes and arrows so copy reads like a hand-written note. */
+function plainCopy(s) {
+  return String(s == null ? "" : s)
+    .replace(/[ \t]*[\u2014\u2013][ \t]*/g, ", ")
+    .replace(/^, /gm, "")
+    .replace(/[ \t]*[\u2192\u2190][ \t]*/g, " ")
+    .replace(/\u2022/g, "-")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 /**
+ * Minimal HTML twin of a plain-text email: no images, buttons, styles, fonts
+ * or tables. Mirrors what Gmail itself produces for a personal message.
+ */
+function textToMinimalHtml(text) {
+  const linkify = (line) =>
+    escapeHtml(line).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}">${u}</a>`);
+  const paras = String(text || "")
+    .split(/\n{2,}/)
+    .map((p) => p.split("\n").map(linkify).join("<br>"))
+    .map((p) => `<div>${p}</div><div><br></div>`)
+    .join("");
+  return `<div dir="ltr">${paras}</div>`;
+}
+
+/** One-line footer appended to every product email (CAN-SPAM / Gmail bulk rules). */
+function footerLine(unsubUrl) {
+  if (unsubUrl && String(unsubUrl).includes("http")) {
+    return `You're getting this because you have a SuperCompress account. Unsubscribe: ${unsubUrl}`;
+  }
+  return "You're getting this because you have a SuperCompress account.";
+}
+
+/**
+ * @deprecated Not used for sending (Promotions-tab signals). Kept for previews.
  * Branded email chrome — table layout for Gmail/Outlook.
  * Every product email (welcome, Sunday tip, Friday ship) goes through this.
  *
@@ -313,60 +355,20 @@ function shipBulletCards(bullets) {
 
 function welcomeCopy({ firstName, email }) {
   const hi = firstName ? `Hi ${firstName}` : "Hi";
-  const subjectFinal = firstName
-    ? `${firstName}, quick note from Arjun @ SuperCompress`
-    : "Quick note from Arjun @ SuperCompress";
+  const subject = firstName ? `${firstName}, quick question` : "Quick question";
+  const text = plainCopy(`${hi},
 
-  const text = `${hi},
+I'm Arjun, I build SuperCompress. I saw you signed up, thank you.
 
-I'm Arjun, founder of SuperCompress. Saw you signed up — thanks, that means a lot.
+How is it going so far? If anything is confusing or missing, just reply to this email. I read every reply myself and I'm happy to help you get set up.
 
-How are you liking the product so far? Anything confusing, missing, or that you'd want next? Even a one-liner reply helps.
-
-If you're stuck, just reply to this email and I'll help personally.
-
-Get started:
-• Dashboard: ${SITE}/dashboard
-• Coding agents (Cursor / Claude Code): ${SITE}/docs/coding-agents
-• Playground: ${SITE}/playground
-
-One command for agents:
+If you use Cursor or Claude Code, this is the quickest start:
 npm install -g supercompress-proxy && supercompress setup
 
-Free: 1M tokens/month. Then prepaid credits at $0.10 / 1M — add credits to keep compressing after the free allowance.
+Setup guide: ${SITE}/docs/coding-agents
 
-Thanks again,
-Arjun
-Founder, SuperCompress
-${REPLY_TO}`;
-
-  const bodyHtml = `
-<p style="margin:0 0 16px;font-size:16px;">${escapeHtml(hi)},</p>
-${eyebrow("Welcome")}
-${displayHeadline("Thanks for signing up")}
-<p style="margin:0 0 16px;">I'm <strong>Arjun</strong>, founder of SuperCompress. Saw you signed up — that means a lot.</p>
-<p style="margin:0 0 16px;">How are you liking it so far? Anything confusing, missing, or that you'd want next? Even a one-liner reply helps.</p>
-<p style="margin:0 0 8px;">If you're stuck, <strong>reply to this email</strong> and I'll help personally.</p>
-${ctaButton("Open your dashboard →", `${SITE}/dashboard`)}
-<p style="margin:18px 0 8px;font-size:14px;color:${MUTED};">Or install for coding agents (keep your normal login):</p>
-<pre style="margin:0 0 16px;padding:14px 16px;background:#0a0a0a;color:#e8e8e8;border-radius:8px;font-size:12px;line-height:1.55;overflow:auto;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">npm install -g supercompress-proxy
-npx supercompress setup</pre>
-<p style="margin:0 0 8px;font-size:14px;">
-  <a href="${SITE}/docs/coding-agents" style="color:${BRAND};text-decoration:none;font-weight:600;">Coding agents</a>
-  · <a href="${SITE}/playground" style="color:${BRAND};text-decoration:none;font-weight:600;">Playground</a>
-  · <a href="${SITE}/reduce-llm-costs" style="color:${BRAND};text-decoration:none;font-weight:600;">Cut API costs</a>
-</p>
-${proofCallout("Free: 1M tokens/month · then prepaid credits at $0.10 / 1M.")}
-${signatureBlock()}`;
-
-  const html = brandedEmailHtml({
-    preheader: "Thanks for signing up — how's SuperCompress so far? Reply anytime.",
-    title: subjectFinal,
-    bodyHtml,
-    kind: "welcome",
-  });
-
-  return { subject: subjectFinal, text, html, to: email };
+Arjun`);
+  return { subject, text, html: textToMinimalHtml(text), to: email };
 }
 
 /** Minimal product fallback when private campaign JSON is unavailable. */
@@ -376,9 +378,9 @@ const WEEKLY_TIPS_FALLBACK = [
     subject: "Your coding agent is burning tokens you can reclaim",
     tipTitle: "Stop paying for every log dump in Cursor / Claude Code",
     tipBody:
-      "Agents re-send huge context every turn. SuperCompress installs as MCP, keeps your login, and compresses dumps before they hit the model — typically 64% less context on our coding-agent benchmark with 24/24 benchmark evidence-retention passes on our held-out suites.",
-    proof: "Install once. Works with Cursor, Claude Code, Codex, Grok Bot, and more.",
-    ctaLabel: "Install coding agent plugin →",
+      "Agents re-send huge context every turn. SuperCompress installs as MCP, keeps your login, and trims tool dumps before they hit the model.",
+    proof: "You install it once and it works with Cursor, Claude Code, Codex and others.",
+    ctaLabel: "Setup guide",
     ctaUrl: `${SITE}/docs/coding-agents`,
     command: "npm install -g supercompress-proxy && supercompress setup",
     secondaryLabel: "See held-out benchmarks",
@@ -439,63 +441,31 @@ function weeklyCopy({ firstName, email, campaignId, unsubUrl }) {
     };
   }
   const hi = firstName ? `Hi ${firstName}` : "Hi";
-  const subject = tip.subject;
+  const subject = plainCopy(tip.subject);
+  const label = String(tip.ctaLabel || "Link").replace(/[\u2192>]/g, "").trim();
+  // One link only (plus the unsubscribe footer the sender appends).
+  const text = plainCopy(`${hi},
 
-  const cmdBlock = tip.command ? `\n${tip.command}\n` : "";
-  const text = `${hi},
+${tip.tipTitle || ""}
 
-${tip.tipTitle}
+${tip.tipBody || ""}
 
-${tip.tipBody}
+${tip.proof || ""}
 
-${tip.proof}
-${cmdBlock}
-→ ${tip.ctaLabel.replace(/→/g, "").trim()}: ${tip.ctaUrl}
-${tip.secondaryLabel ? `Also: ${tip.secondaryLabel}: ${tip.secondaryUrl}` : ""}
+${tip.command || ""}
 
-Dashboard: ${SITE}/dashboard
+${tip.ctaUrl ? `${label}: ${tip.ctaUrl}` : ""}
 
-— Arjun
-Founder, SuperCompress
+If you try it, reply and tell me how it went.
 
-Unsubscribe: ${unsub}
-`;
-
-  const cmdHtml = tip.command
-    ? `<pre style="margin:16px 0;padding:14px 16px;background:#0a0a0a;color:#e8e8e8;border-radius:8px;font-size:12px;line-height:1.55;overflow:auto;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">${escapeHtml(tip.command)}</pre>`
-    : "";
-
-  const bodyHtml = `
-<p style="margin:0 0 16px;font-size:16px;">${escapeHtml(hi)},</p>
-${eyebrow("Sunday tip")}
-${displayHeadline(tip.tipTitle)}
-<p style="margin:0 0 16px;">${escapeHtml(tip.tipBody)}</p>
-${proofCallout(tip.proof)}
-${cmdHtml}
-${ctaButton(tip.ctaLabel, tip.ctaUrl)}
-${
-  tip.secondaryUrl
-    ? `<p style="margin:12px 0 0;font-size:14px;"><a href="${escapeHtml(tip.secondaryUrl)}" style="color:${BRAND};text-decoration:none;font-weight:600;">${escapeHtml(tip.secondaryLabel)} →</a></p>`
-    : ""
-}
-${signatureBlock()}`;
-
-  const html = brandedEmailHtml({
-    preheader: tip.tipBody.slice(0, 120),
-    title: subject,
-    bodyHtml,
-    unsubUrl: unsub,
-    kind: "tip",
-  });
-
-  return { subject, text, html, to: email, tip_id: tip.id, unsubUrl: unsub };
+Arjun`);
+  return { subject, text, html: textToMinimalHtml(text), to: email, tip_id: tip.id, unsubUrl: unsub };
 }
 
 async function sendViaResend({
   to,
   subject,
   text,
-  html,
   from = DEFAULT_FROM,
   unsubUrl,
   listUnsubscribeUrl,
@@ -506,10 +476,16 @@ async function sendViaResend({
     return { ok: false, provider: "resend", error: "RESEND_API_KEY not configured" };
   }
 
+  // Always send plain text + a minimal HTML twin built from it. Any rich `html`
+  // a caller passes is ignored on purpose: logos, buttons, web fonts and
+  // layout tables are top Gmail Promotions signals.
+  const body = `${plainCopy(text)}\n\n--\n${footerLine(unsubUrl || listUnsubscribeUrl)}`;
+  const html = textToMinimalHtml(body);
+
   const headers = {};
   const oneClickUrl = listUnsubscribeUrl || unsubUrl;
   if (oneClickUrl && String(oneClickUrl).includes("http")) {
-    // One-click List-Unsubscribe (RFC 8058) — must POST to an API route, not a static page.
+    // One-click List-Unsubscribe (RFC 8058). Required by Gmail for bulk senders.
     headers["List-Unsubscribe"] = `<${oneClickUrl}>`;
     headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
   }
@@ -528,11 +504,12 @@ async function sendViaResend({
       method: "POST",
       headers: reqHeaders,
       signal: AbortSignal.timeout(20000),
+      // No `tags`: keep marketing/category metadata off product mail.
       body: JSON.stringify({
         from,
         to: [to],
-        subject,
-        text,
+        subject: plainCopy(subject),
+        text: body,
         html,
         reply_to: REPLY_TO,
         headers,
@@ -542,15 +519,15 @@ async function sendViaResend({
     return { ok: false, provider: "resend", error: "resend_request_failed" };
   }
 
-  const body = await res.json().catch(() => ({}));
+  const resBody = await res.json().catch(() => ({}));
   if (!res.ok) {
     return {
       ok: false,
       provider: "resend",
-      error: body?.message || body?.error || `HTTP ${res.status}`,
+      error: resBody?.message || resBody?.error || `HTTP ${res.status}`,
     };
   }
-  return { ok: true, provider: "resend", id: body?.id || null };
+  return { ok: true, provider: "resend", id: resBody?.id || null };
 }
 
 async function sendWelcomeEmail({ email, firstName, idempotencyKey }) {
@@ -574,55 +551,17 @@ function paymentThankYouCopy({ firstName, email, creditUsd, autoRecharge }) {
   const amount = Number(creditUsd);
   const amountLabel =
     Number.isFinite(amount) && amount > 0 ? `$${amount.toFixed(amount % 1 ? 2 : 0)}` : null;
-  const subject = firstName
-    ? `${firstName}, thank you — means more than you know`
-    : "Thank you — means more than you know";
+  const subject = firstName ? `${firstName}, thank you` : "Thank you";
+  const text = plainCopy(`${hi},
 
-  const text = `${hi},
+It's Arjun from SuperCompress. I just saw your payment come through${amountLabel ? ` (${amountLabel})` : ""}, thank you. Every person who backs SuperCompress with real money is a big deal to me.
 
-It's Arjun, founder of SuperCompress.
+If anything feels off, confusing or missing, or you just wish it did X, hit reply. I read every note myself.
 
-I just saw your payment come through${amountLabel ? ` (${amountLabel})` : ""} — thank you. Seriously. Building this is lonely sometimes, and every person who puts real money behind SuperCompress is a huge deal to me.
+${autoRecharge ? "Auto-recharge is on, so you shouldn't hit a wall mid-session. You can change that anytime in Billing.\n\n" : ""}Dashboard: ${SITE}/dashboard
 
-We're going to make the product 100× better for you and everyone else using it. If anything feels off, confusing, missing, or just "I wish it did X" — hit reply. I read every note myself.
-
-Dashboard: ${SITE}/dashboard
-Coding agents: ${SITE}/docs/coding-agents
-
-${autoRecharge ? "Auto-recharge is on so you shouldn't hit a wall mid-session — you can change that anytime in Billing.\n\n" : ""}Thanks again for trusting us with this.
-Arjun
-Founder, SuperCompress
-${REPLY_TO}`;
-
-  const bodyHtml = `
-<p style="margin:0 0 16px;font-size:16px;">${escapeHtml(hi)},</p>
-${eyebrow("Thank you")}
-${displayHeadline("Means more than you know")}
-<p style="margin:0 0 16px;">It's <strong>Arjun</strong>, founder of SuperCompress.</p>
-<p style="margin:0 0 16px;">I just saw your payment come through${
-    amountLabel ? ` (<strong>${escapeHtml(amountLabel)}</strong>)` : ""
-  } — thank you. Seriously. Building this is lonely sometimes, and every person who puts real money behind SuperCompress is a huge deal to me.</p>
-<p style="margin:0 0 16px;">We're going to make the product <strong>100× better</strong> for you and everyone else using it. If anything feels off, confusing, missing, or just “I wish it did X” — <strong>hit reply</strong>. I read every note myself.</p>
-${
-    autoRecharge
-      ? proofCallout("Auto-recharge is on so you shouldn’t hit a wall mid-session. Change it anytime in Billing.")
-      : ""
-  }
-${ctaButton("Open your dashboard →", `${SITE}/dashboard`)}
-<p style="margin:12px 0 0;font-size:14px;">
-  <a href="${SITE}/docs/coding-agents" style="color:${BRAND};text-decoration:none;font-weight:600;">Coding agents setup</a>
-  · <a href="${SITE}/dashboard#billing" style="color:${BRAND};text-decoration:none;font-weight:600;">Billing</a>
-</p>
-${signatureBlock()}`;
-
-  const html = brandedEmailHtml({
-    preheader: "Thank you for paying for SuperCompress — reply anytime with feedback.",
-    title: subject,
-    bodyHtml,
-    kind: "payment_thanks",
-  });
-
-  return { subject, text, html, to: email };
+Arjun`);
+  return { subject, text, html: textToMinimalHtml(text), to: email };
 }
 
 async function sendPaymentThankYouEmail({
@@ -667,57 +606,27 @@ function autoRechargeRecoveryCopy({
       : "your prepaid pack";
   const why =
     reason === "india_requires_checkout"
-      ? "Your card is issued in India, so RBI rules require a one-tap on-session confirm for each top-up (we cannot silently debit it)."
+      ? "your card is issued in India, so RBI rules require a one-tap confirm for each top-up (we cannot silently debit it)."
       : reason === "no_payment_method"
-        ? "We don’t have a card on file that can complete auto-recharge."
+        ? "we don't have a card on file that can complete auto-recharge."
         : reason === "authentication_required" ||
             /requires_action|requires_confirmation/i.test(String(reason || ""))
-          ? "Your bank asked for an extra confirmation (3-D Secure / mandate), so the silent charge could not finish."
-          : "The silent auto-recharge charge could not complete.";
-
+          ? "your bank asked for an extra confirmation (3-D Secure / mandate), so the silent charge could not finish."
+          : "the silent auto-recharge charge could not complete.";
   const subject = `Confirm ${amt} SuperCompress recharge to keep compressing`;
   const billingUrl = `${SITE}/dashboard#billing`;
   const safeCheckout = String(checkoutUrl || billingUrl).trim();
+  const text = plainCopy(`${hi},
 
-  const text = `${hi},
+It's Arjun from SuperCompress. Your prepaid balance hit $0 and auto-recharge is on, but ${why}
 
-It's Arjun from SuperCompress.
-
-Your prepaid balance hit $0 and auto-recharge is on, but ${why}
-
-Confirm once here to add ${amt} and resume immediately:
+Confirm ${amt} recharge here to resume right away:
 ${safeCheckout}
 
-Billing: ${billingUrl}
+Nothing was charged for the failed silent attempts. This checkout is the real top-up.
 
-Nothing was charged for the failed silent attempts — this Checkout is the real top-up.
-
-— Arjun
-Founder, SuperCompress
-${REPLY_TO}`;
-
-  const bodyHtml = `
-<p style="margin:0 0 16px;font-size:16px;">${escapeHtml(hi)},</p>
-${eyebrow("Billing")}
-${displayHeadline(`Confirm ${amt} to keep compressing`)}
-<p style="margin:0 0 16px;">It’s <strong>Arjun</strong> from SuperCompress.</p>
-<p style="margin:0 0 16px;">Your prepaid balance hit <strong>$0</strong> and auto-recharge is on, but ${escapeHtml(why)}</p>
-${proofCallout("Nothing was charged for the failed silent attempts — this Checkout is the real top-up.")}
-${ctaButton(`Confirm ${amt} recharge →`, safeCheckout)}
-<p style="margin:12px 0 0;font-size:13px;line-height:1.5;color:${MUTED};">If the button doesn’t work, paste this into your browser:<br /><a href="${escapeHtml(safeCheckout)}" style="color:${BRAND};word-break:break-all;">${escapeHtml(safeCheckout)}</a></p>
-<p style="margin:16px 0 0;font-size:14px;">
-  <a href="${billingUrl}" style="color:${BRAND};text-decoration:none;font-weight:600;">Open Billing</a>
-</p>
-${signatureBlock()}`;
-
-  const html = brandedEmailHtml({
-    preheader: `Confirm ${amt} SuperCompress recharge — one tap to resume.`,
-    title: subject,
-    bodyHtml,
-    kind: "billing",
-  });
-
-  return { subject, text, html, to: email };
+Arjun`);
+  return { subject, text, html: textToMinimalHtml(text), to: email };
 }
 
 async function sendAutoRechargeRecoveryEmail({
@@ -764,10 +673,9 @@ function powerUserCopy({
   cutPct,
 }) {
   const hi = firstName ? `Hey ${firstName}` : "Hey";
-  const name = firstName || "there";
   const subject = firstName
-    ? `${firstName}, congrats — you're a SuperCompress power user`
-    : "Congrats — you're a SuperCompress power user";
+    ? `${firstName}, you just crossed 1M tokens`
+    : "You just crossed 1M tokens";
   const billingUrl = `${SITE}/dashboard?panel=billing`;
   const tin = Number(tokensIn || 0);
   const saved = Number(tokensSaved || 0);
@@ -796,84 +704,27 @@ function powerUserCopy({
         return `${v}th`;
     }
   };
-
   const leadText = hasRank
-    ? `You've crossed a million tokens. Congratulations — you're ${ordinal(rank)} all-time.`
-    : "You've crossed a million tokens. Congratulations — you're officially a SuperCompress power user.";
-
+    ? `You've crossed a million tokens on SuperCompress. That puts you ${ordinal(rank)} on the all-time leaderboard.`
+    : "You've crossed a million tokens on SuperCompress. That makes you one of our heaviest users.";
   const statsLines = [];
   if (tin > 0) statsLines.push(`${fmt(tin)} tokens in`);
-  if (saved > 0) statsLines.push(`${fmt(saved)} tokens saved${cut > 0 ? ` (~${cut}% cut)` : ""}`);
+  if (saved > 0) statsLines.push(`${fmt(saved)} tokens saved${cut > 0 ? ` (about ${cut}% cut)` : ""}`);
   if (reqs > 0) statsLines.push(`${fmt(reqs)} requests`);
-  if (more > 0) statsLines.push(`~${more}% more usage from the same context budget`);
-  const statsText = statsLines.length
-    ? `\nWith SuperCompress: ${statsLines.join("; ")}.\n`
-    : "\n";
-
-  const text = `${hi},
-
-You're a SuperCompress power user.
+  if (more > 0) statsLines.push(`about ${more}% more usage from the same context budget`);
+  const text = plainCopy(`${hi},
 
 ${leadText}
-${statsText}
-You're clearly getting value. Don't let the free wall interrupt a session — load credits for $0.10 per million tokens (min $10, never expire):
+
+${statsLines.length ? `Your numbers so far: ${statsLines.join("; ")}.` : ""}
+
+So the free monthly allowance doesn't cut off a session, you can load credits from Billing whenever you want:
 ${billingUrl}
 
-Brag about it on X: ${SITE}/dashboard?power=1
-Or post now: https://twitter.com/intent/tweet?text=${encodeURIComponent(
-    `Just hit power user on SuperCompress — 1M+ tokens compressed.\n\nCut agent context, keep the answer → ${SITE}`
-  )}
+I'd love to hear what you're using it for. Just reply.
 
-— Arjun
-Founder, SuperCompress
-`;
-
-  const statItems = [];
-  if (tin > 0) statItems.push(`<li style="margin:0 0 6px;"><strong>${fmt(tin)}</strong> tokens in</li>`);
-  if (saved > 0) {
-    statItems.push(
-      `<li style="margin:0 0 6px;"><strong>${fmt(saved)}</strong> tokens saved${cut > 0 ? ` (~${cut}% cut)` : ""}</li>`
-    );
-  }
-  if (reqs > 0) statItems.push(`<li style="margin:0 0 6px;"><strong>${fmt(reqs)}</strong> requests</li>`);
-  if (more > 0) {
-    statItems.push(
-      `<li style="margin:0 0 6px;">~<strong>${more}%</strong> more usage from the same context budget</li>`
-    );
-  }
-
-  const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-    `Just hit power user on SuperCompress — 1M+ tokens compressed.\n\nCut agent context, keep the answer → ${SITE}`
-  )}`;
-
-  const bodyHtml = `
-    ${eyebrow("Power user")}
-    ${displayHeadline(`${hi} — you're a SuperCompress power user`)}
-    <p style="margin:0 0 14px;">${escapeHtml(leadText)}</p>
-    ${hasRank ? proofCallout(`All-time leaderboard: ${ordinal(rank)} overall.`) : ""}
-    ${
-      statItems.length
-        ? `<p style="margin:0 0 12px;">Your stats with SuperCompress:</p>
-    <ul style="margin:0 0 16px;padding-left:18px;color:${INK};">
-      ${statItems.join("\n      ")}
-    </ul>`
-        : ""
-    }
-    <p style="margin:0 0 12px;">Don't lose a coding-agent turn at the free wall — unlock for <strong>$0.10 / 1M</strong> (min $10).</p>
-    ${ctaButton("Load credits — keep compressing", billingUrl)}
-    <p style="margin:16px 0 12px;">Tell the timeline — post about it on X.</p>
-    ${ctaButton("Post on X", xShareUrl)}
-    ${signatureBlock()}
-  `;
-
-  const html = brandedEmailHtml({
-    preheader: `${name}, you crossed 1M tokens. Congrats — you're a SuperCompress power user.`,
-    title: subject,
-    bodyHtml,
-    kind: "welcome",
-  });
-
-  return { subject, text, html, to: email };
+Arjun`);
+  return { subject, text, html: textToMinimalHtml(text), to: email };
 }
 
 async function sendPowerUserEmail(opts) {
@@ -902,63 +753,32 @@ function quotaExhaustedCopy({ email, firstName, tokensUsed, freeTokens, month, u
   const exhausted = remaining === 0;
   const freeM = (free / 1e6).toFixed(free % 1e6 === 0 ? 0 : 1);
   const usedM = (used / 1e6).toFixed(2);
-  const subject = followupStage === 2 ? "Last reminder about your SuperCompress allowance" : followupStage === 1 ? "A quick check on your SuperCompress allowance" : exhausted
-    ? "Free allowance used — add credits to keep compressing"
-    : "Your SuperCompress allowance — keep your next session running";
+  const subject = followupStage === 2 ? "Last note about your SuperCompress allowance" : followupStage === 1 ? "A quick check on your SuperCompress allowance" : exhausted
+    ? "Your free SuperCompress allowance is used up"
+    : "Your SuperCompress allowance this month";
   const usageLine = exhausted
     ? `You've used your free ${freeM}M tokens this month (${usedM}M so far). Add credits to keep compressing, or wait for your free allowance to reset.`
     : `You've compressed ${used.toLocaleString("en-US")} tokens this month. You have ${remaining.toLocaleString("en-US")} of your ${free.toLocaleString("en-US")} free monthly tokens remaining. You can keep using that allowance without paying.`;
-
   let resetLine = "Your free allowance resets on the 1st of next month.";
   const m = /^(\d{4})-(\d{2})$/.exec(String(month || ""));
   if (m) {
     const next = new Date(Date.UTC(Number(m[1]), Number(m[2]), 1));
-    const label = next.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      timeZone: "UTC",
-    });
+    const label = next.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
     resetLine = `Your free allowance resets on ${label}.`;
   }
-
-  const text = `${hi},
+  const text = plainCopy(`${hi},
 
 ${usageLine}
 
-${followupStage === 2 ? "This is the last follow-up in this upgrade sequence.\n" : ""}
+${followupStage === 2 ? "This is my last follow-up about this." : ""}
 
-Add credits before your allowance runs out: $0.10 per million tokens after free (minimum $10 load — credits never expire):
-
+${resetLine} Waiting is fine, your keys and integrations stay put. If you'd rather not lose a session, you can add credits in Billing:
 ${billingUrl}
 
-${resetLine} Waiting is fine — your keys and integrations stay put. Or load credits now and don't lose a session.
+Any questions, just reply.
 
-${unsubUrl ? `Unsubscribe from product reminders: ${unsubUrl}\n` : ""}
-
-— Arjun
-Founder, SuperCompress
-`;
-
-  const bodyHtml = `
-    ${eyebrow(exhausted ? "Free allowance used" : "Power-user allowance")}
-    ${displayHeadline(`${hi} — ${exhausted ? "keep compressing with credits" : "keep your next session running"}`)}
-    <p style="margin:0 0 14px;">${escapeHtml(usageLine)}</p>
-    ${followupStage === 2 ? `<p style="margin:0 0 14px;">This is the last follow-up in this upgrade sequence.</p>` : ""}
-    <p style="margin:0 0 12px;">Pay-as-you-go is <strong>$0.10 per million tokens</strong> after free (minimum $10 load, credits never expire).</p>
-    ${ctaButton(exhausted ? "Add credits — keep compressing" : "Add credits before the free limit", billingUrl)}
-    <p style="margin:16px 0 0;font-size:14px;line-height:1.55;color:${MUTED};">${escapeHtml(resetLine)} Or load credits now so you don't lose a coding-agent session mid-flight.</p>
-    ${signatureBlock()}
-    ${unsubUrl ? `<p style="font-size:12px;"><a href="${escapeHtml(unsubUrl)}">Unsubscribe from product reminders</a></p>` : ""}
-  `;
-
-  const html = brandedEmailHtml({
-    preheader: exhausted ? `Free ${freeM}M used — $0.10/1M after free (min $10).` : `${remaining.toLocaleString("en-US")} free tokens remaining this month.`,
-    title: subject,
-    bodyHtml,
-    kind: "welcome",
-  });
-
-  return { subject, text, html, to: email };
+Arjun`);
+  return { subject, text, html: textToMinimalHtml(text), to: email };
 }
 
 async function sendQuotaExhaustedEmail(opts) {
@@ -983,39 +803,17 @@ function passwordResetCopy({ email, resetUrl, firstName, intent = "reset" }) {
   const isChange = String(intent || "").toLowerCase() === "change";
   const subject = isChange ? "Change your SuperCompress password" : "Reset your SuperCompress password";
   const verb = isChange ? "change" : "reset";
-  const ctaLabel = isChange ? "Set new password" : "Reset password";
-  const text = `${hi},
+  const text = plainCopy(`${hi},
 
 Someone requested a password ${verb} for your SuperCompress account (${email}).
 
-${isChange ? "Set a new password" : "Reset your password"} (link expires in about an hour):
+${isChange ? "Set new password" : "Reset password"} (link expires in about an hour):
 ${resetUrl}
 
-If you didn't ask for this, you can ignore this email — your password stays the same.
+If you didn't ask for this, you can ignore this email and your password stays the same.
 
-— Arjun
-Founder, SuperCompress
-`;
-
-  const bodyHtml = `
-    ${eyebrow("Account")}
-    ${displayHeadline(isChange ? "Change your password" : "Reset your password")}
-    <p style="margin:0 0 14px;">${escapeHtml(hi)},</p>
-    <p style="margin:0 0 14px;">Someone requested a password ${escapeHtml(verb)} for <strong>${escapeHtml(email)}</strong>. Use the button below — the link expires in about an hour.</p>
-    ${ctaButton(ctaLabel, resetUrl)}
-    <p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:${MUTED};">If the button doesn’t work, paste this into your browser:<br /><a href="${escapeHtml(resetUrl)}" style="color:${BRAND};word-break:break-all;">${escapeHtml(resetUrl)}</a></p>
-    <p style="margin:18px 0 0;font-size:14px;line-height:1.55;color:${MUTED};">Didn’t request this? Ignore the email — your password won’t change.</p>
-    ${signatureBlock()}
-  `;
-
-  const html = brandedEmailHtml({
-    preheader: "Reset your SuperCompress password — link inside.",
-    title: subject,
-    bodyHtml,
-    kind: "welcome",
-  });
-
-  return { subject, text, html, to: email };
+Arjun`);
+  return { subject, text, html: textToMinimalHtml(text), to: email };
 }
 
 async function sendPasswordResetEmail({ email, resetUrl, firstName, idempotencyKey, intent = "reset" }) {
@@ -1168,72 +966,30 @@ function shipCopy({ firstName, email, campaignId, unsubUrl }) {
   const hi = firstName ? `Hi ${firstName}` : "Hi";
   const unsub = unsubUrl || `${SITE}/unsubscribe`;
   const digest = loadShipDigest(10, campaignId);
-  const headline =
-    digest.headline ||
-    (digest.versions.length
-      ? `What just got better for you`
-      : `What we made better this week`);
   const intro =
     digest.intro ||
-    `SuperCompress shrinks the bulky context your AI reads (logs, dumps, long chats) so you pay for fewer tokens and keep the parts that answer your question. Here’s what we improved for everyday use.`;
-  const subject =
-    digest.subject ||
-    `What we made better this week (for your AI agents)`;
-
+    "Quick update on what I changed in SuperCompress this week:";
+  const subject = digest.subject || "What I changed in SuperCompress this week";
   const bullets = digest.bullets.length
     ? digest.bullets
     : [
-        "Setup — linking Cursor / Claude / your API key is clearer when something goes wrong",
-        "Agents — compression is more likely to actually run on big tool dumps",
-        "Reliability — fewer silent fails when streaming long replies",
+        "Setup: linking Cursor, Claude or your API key is clearer when something goes wrong",
+        "Agents: compression is more likely to actually run on big tool dumps",
+        "Reliability: fewer silent fails when streaming long replies",
       ];
+  const text = plainCopy(`${hi},
 
-  const bulletText = bullets.map((b) => `• ${b}`).join("\n");
-  const text = `${hi},
+${digest.headline ? `${digest.headline}\n\n` : ""}${intro}
 
-${headline}
+${bullets.slice(0, 6).map((b) => `- ${b}`).join("\n")}
 
-${intro}
+If any of this breaks for you, or there's something you want next, just reply.
 
-${bulletText}
-
-Open your dashboard: ${SITE}/dashboard
-Set up coding agents: ${SITE}/docs/coding-agents
-
-— Arjun
-Founder, SuperCompress
-
-Unsubscribe: ${unsub}
-`;
-
-  const bodyHtml = `
-<p style="margin:0 0 16px;font-size:16px;">${escapeHtml(hi)},</p>
-${eyebrow("This week")}
-${displayHeadline(headline)}
-<p style="margin:0 0 14px;">${escapeHtml(intro)}</p>
-${proofCallout(
-  "In plain English: SuperCompress cuts filler from what your AI reads before it answers — so chats stay useful and cost less."
-)}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
-${shipBulletCards(bullets)}
-</table>
-${ctaButton("Open your dashboard →", `${SITE}/dashboard`)}
-<p style="margin:14px 0 0;font-size:14px;">
-  <a href="${SITE}/docs/coding-agents" style="color:${BRAND};text-decoration:none;font-weight:600;">Set up coding agents</a>
-  · <a href="${SITE}/playground" style="color:${BRAND};text-decoration:none;font-weight:600;">Try the playground</a>
-</p>
-${signatureBlock()}`;
-
+Arjun`);
   return {
-    subject,
+    subject: plainCopy(subject),
     text,
-    html: brandedEmailHtml({
-      title: subject,
-      preheader: intro.slice(0, 110),
-      bodyHtml,
-      unsubUrl: unsub,
-      kind: "ship",
-    }),
+    html: textToMinimalHtml(text),
     to: email,
     tip_id: `ship-${campaignId || "week"}`,
     kind: "ship",
@@ -1290,55 +1046,25 @@ async function sendWeeklyEmail({ email, firstName, campaignId, unsubUrl, listUns
 function launchV2Copy({ firstName, unsubUrl } = {}) {
   const hi = firstName ? `Hi ${firstName}` : "Hi";
   const unsub = unsubUrl || `${SITE}/unsubscribe`;
-  const subject = "SuperCompress v2 is live";
-  const text = `${hi},
+  const subject = "SuperCompress v2 is out";
+  const text = plainCopy(`${hi},
 
-SuperCompress v2 is live.
+I just shipped SuperCompress v2.
 
-We built a 400M-parameter engine that looks at all of your context, figures out what's relevant to answering the query, and cuts the rest.
+It's a 400M-parameter engine that looks at all of your context, figures out what's relevant to the query, and cuts the rest. It is strongest on coding-agent dumps (tool output, logs, diffs, stack traces) where the answer is a few original lines. It keeps those lines as they are, and the question itself is never compressed.
 
-It is strongest on coding-agent dumps: tool output, logs, diffs, and stack traces, where the answer is a few original lines. It keeps those lines. It does not rewrite them. The question itself is never compressed.
-
-On our coding-agent benchmark, v2:
-- cut context by 64.1% on average
-- preserved the required evidence in 24/24 cases
-- took 16,647 tokens → 5,148
-- reached 96.6% reduction on an individual case at ≥99% evidence retention
-
-1M tokens/month free, then $0.10 per million with prepaid credits. Open source. API, plus an agent plugin for 40+ harnesses.
+On our coding-agent benchmark, v2 cut context by 64.1% on average and kept the required evidence in 24/24 cases.
 
 Get an API key: ${SITE}/dashboard?signup=1
-Agent plugin: https://docs.supercompress.dev/coding-agents
-Playground: ${SITE}/playground
+Agent plugin setup: https://docs.supercompress.dev/coding-agents
 
-— Arjun
-Founder, SuperCompress
+Would love to hear what you think, just reply.
 
-Unsubscribe: ${unsub}
-`;
-  const html = brandedEmailHtml({
-    preheader: "Coding-agent dumps: 64.1% mean cut, 24/24 evidence held. Launch promo $0.10/1M.",
-    title: "SuperCompress v2 is live",
-    kind: "ship",
-    unsubUrl: unsub,
-    bodyHtml: `<p>${escapeHtml(hi)},</p>
-<p>We built a 400M-parameter engine that looks at all of your context, figures out what's relevant to answering the query, and cuts the rest.</p>
-<p>It is strongest on coding-agent dumps: tool output, logs, diffs, and stack traces, where the answer is a few original lines. It keeps those lines. It does not rewrite them. The question itself is never compressed.</p>
-<p>On our coding-agent benchmark, v2:</p>
-<ul>
-<li>cut context by 64.1% on average</li>
-<li>preserved the required evidence in 24/24 cases</li>
-<li>took 16,647 tokens → 5,148</li>
-<li>reached 96.6% reduction on an individual case at ≥99% evidence retention</li>
-</ul>
-<p>1M tokens/month free, then $0.10 per million with prepaid credits. Open source. API, plus an agent plugin for 40+ harnesses.</p>
-<p><a href="${SITE}/dashboard?signup=1">Get an API key</a> · <a href="https://docs.supercompress.dev/coding-agents">Install the agent plugin</a> · <a href="${SITE}/playground">Playground</a></p>
-<p>— Arjun<br>Founder, SuperCompress</p>`,
-  });
+Arjun`);
   return {
     subject,
     text,
-    html,
+    html: textToMinimalHtml(text),
     tip_id: "launch-v2-2026-09-29",
     kind: "ship",
     unsubUrl: unsub,
@@ -1362,6 +1088,9 @@ module.exports = {
   weeklyTipForCampaign,
   WEEKLY_TIPS,
   brandedEmailHtml,
+  textToMinimalHtml,
+  plainCopy,
+  footerLine,
   sendViaResend,
   sendWelcomeEmail,
   sendPowerUserEmail,

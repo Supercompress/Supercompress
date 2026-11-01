@@ -73,7 +73,7 @@ assert.ok(thankYouIdempotencyKey("cs_test").startsWith("payment-thanks-"));
   assert.match(copy.text, /Arjun/);
   assert.match(copy.text, /\$10/);
   assert.match(copy.text, /Auto-recharge/);
-  assert.match(copy.html, /100× better/);
+  assert.doesNotMatch(copy.html, /<img|<table/i);
   assert.match(copy.html, /hit reply/i);
 }
 

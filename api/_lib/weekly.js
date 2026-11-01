@@ -728,7 +728,7 @@ async function sendUnsubscribeLink(email) {
   const { sendViaResend } = require("./mail");
   const link = unsubUrlFor(clean);
   const apiLink = unsubApiUrlFor(clean);
-  const subject = "Confirm unsubscribe — SuperCompress";
+  const subject = "Confirm your SuperCompress unsubscribe";
   const text = `Click to unsubscribe from SuperCompress weekly emails:
 
 ${link}

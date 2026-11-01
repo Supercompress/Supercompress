@@ -82,7 +82,7 @@ describe("quota mail gating", () => {
 });
 
 describe("quota mail copy", () => {
-  it("includes usage, price, billing link, and reset date", () => {
+  it("includes usage, billing link, and reset date as a plain note", () => {
     const copy = quotaExhaustedCopy({
       email: "a@b.com",
       firstName: "Sam",
@@ -90,13 +90,14 @@ describe("quota mail copy", () => {
       freeTokens: 5_000_000,
       month: "2026-08",
     });
-    assert.match(copy.subject, /Compression paused|add credits/i);
+    assert.match(copy.subject, /allowance/i);
     assert.match(copy.text, /Hey Sam/);
     assert.match(copy.text, /5\.23M/);
-    assert.match(copy.text, /\$0\.10 per million/);
+    assert.doesNotMatch(copy.text, /\$\d/);
     assert.match(copy.text, /dashboard\?panel=billing/);
     assert.match(copy.text, /resets on September 1/);
-    assert.match(copy.html, /Add credits/);
+    assert.match(copy.html, /add credits/);
+    assert.doesNotMatch(copy.html, /<img|<table/i);
     assert.equal(copy.to, "a@b.com");
   });
 
