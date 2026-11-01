@@ -66,7 +66,7 @@ function createConversionRunner({ getAuth, getUnsubscribes, getPaidUserIds, getS
         const user = { ...live, customClaims: { ...live.customClaims, [CONVERSION_CLAIM]: await getState(live) } };
         const candidate = conversionCandidate(user, date, paidUserIds);
         if (!candidate || unsubscribes.has(crypto.createHash("sha256").update(candidate.email).digest("hex")) ||
-            user.customClaims?.sc_unsub || isBlocked({ email: candidate.email, first_name: candidate.firstName })) continue;
+            user.customClaims?.sc_unsub || isBlocked({ email: candidate.email, first_name: user.displayName || candidate.firstName })) continue;
         result.eligible += 1;
         if (candidate.action === "seed") result.due_seed += 1;
         else if (candidate.stage === 0) result.due_initial += 1;

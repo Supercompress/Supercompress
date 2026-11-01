@@ -58,6 +58,7 @@ jobs:
           node --check packages/proxy/src/server.js
       - name: Proxy relay + uninstall tests
         run: |
+          node packages/proxy/test/tui-quota.js
           node packages/proxy/test/sse-stream.js
           node packages/proxy/test/protocol-safety.js
           node packages/proxy/test/uninstall-clean.js
@@ -106,6 +107,7 @@ jobs:
       - name: Proxy package tests
         run: |
           cd packages/proxy
+          node test/tui-quota.js
           node test/smoke.js
           node test/agent-plugins.js
           node test/uninstall-clean.js

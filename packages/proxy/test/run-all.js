@@ -7,6 +7,7 @@ const path = require("path");
 
 const ROOT = path.join(__dirname, "..");
 const suites = [
+  ["tui-quota", "test/tui-quota.js"],
   ["smoke", "test/smoke.js"],
   ["protocol-safety", "test/protocol-safety.js"],
   ["mcp-safety", "test/mcp-safety.test.js"],

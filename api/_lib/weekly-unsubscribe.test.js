@@ -4,7 +4,7 @@ const vm = require("node:vm");
 const { test } = require("node:test");
 const { reconciledMailSuppressions } = require("./mail-suppressions");
 
-function harness({ stamp = true, authReady = true, lookupError, storeError, initialStore = {}, disabled = false } = {}) {
+function harness({ stamp = true, authReady = true, lookupError, storeError, initialStore = {}, disabled = false, liveEmail = "recipient@product.example.test" } = {}) {
   const stored = initialStore;
   const claims = {};
   const messages = [];
@@ -26,6 +26,11 @@ function harness({ stamp = true, authReady = true, lookupError, storeError, init
         },
       };
       if (name === "firebase-admin") return { auth: () => ({
+        getUser: async uid => {
+          assert.equal(uid, "recipient");
+          if (lookupError) throw lookupError;
+          return { uid, email: liveEmail, customClaims: claims, disabled };
+        },
         getUserByEmail: async () => {
           if (lookupError) throw lookupError;
           return { uid: "recipient", customClaims: claims, disabled };
@@ -41,7 +46,7 @@ function harness({ stamp = true, authReady = true, lookupError, storeError, init
 }
 
 test("queued weekly delivery checks an Auth-only unsubscribe even after the store recovers", async () => {
-  const initialStore = { weekly_emails: { queued: { key: "queued", email: "recipient@product.example.test", status: "pending" } } };
+  const initialStore = { weekly_emails: { queued: { key: "queued", uid: "recipient", email: "recipient@product.example.test", status: "pending" } } };
   const failedStore = harness({ storeError: Error("offline"), initialStore });
   await failedStore.weekly.unsubscribeEmail("recipient@product.example.test", null, { confirmOnly: true });
   const recovered = harness({ initialStore });
@@ -57,7 +62,7 @@ test("queued weekly delivery fails closed for unavailable Auth and missing or di
     { authReady: false }, { lookupError: Error("transient") },
     { lookupError: Object.assign(Error("missing"), { code: "auth/user-not-found" }) }, { disabled: true },
   ]) {
-    const initialStore = { weekly_emails: { queued: { key: "queued", email: "recipient@product.example.test", status: "pending" } } };
+    const initialStore = { weekly_emails: { queued: { key: "queued", uid: "recipient", email: "recipient@product.example.test", status: "pending" } } };
     const fixture = harness({ ...options, initialStore });
     await fixture.weekly.drainPendingWeekly();
     assert.equal(fixture.messages.length, 0);
@@ -65,11 +70,26 @@ test("queued weekly delivery fails closed for unavailable Auth and missing or di
 });
 
 test("queued weekly delivery still sends to a confirmed subscribed user", async () => {
-  const initialStore = { weekly_emails: { queued: { key: "queued", email: "recipient@product.example.test", status: "pending" } } };
+  const initialStore = { weekly_emails: { queued: { key: "queued", uid: "recipient", email: "recipient@product.example.test", status: "pending" } } };
   const fixture = harness({ initialStore });
   const result = await fixture.weekly.drainPendingWeekly();
   assert.equal(result.sent, 1);
   assert.equal(initialStore.weekly_emails.queued.status, "sent");
+});
+
+test("weekly queue suppresses changed emails, missing identity, and deleted original accounts", async () => {
+  for (const options of [
+    { liveEmail: "changed@product.example.test" },
+    { missingUid: true },
+    { lookupError: Object.assign(Error("original user deleted"), { code: "auth/user-not-found" }) },
+  ]) {
+    const rec = { key: "queued", uid: "recipient", email: "recipient@product.example.test", status: "pending" };
+    if (options.missingUid) delete rec.uid;
+    const fixture = harness({ ...options, initialStore: { weekly_emails: { queued: rec } } });
+    await fixture.weekly.drainPendingWeekly();
+    assert.equal(fixture.messages.length, 0);
+    assert.equal(fixture.stored.weekly_emails.queued.status, "suppressed");
+  }
 });
 
 test("production recipient block predicate is exported and callable", () => {
