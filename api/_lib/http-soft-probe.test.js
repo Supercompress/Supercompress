@@ -38,3 +38,18 @@ json(res2, 401, { detail: "nope" });
 assert.strictEqual(res2.out.statusCode, 401);
 
 console.log("http-soft-probe.test.js: ok");
+
+const { drainSecretOk } = require("./welcome");
+{
+  const prev = { w: process.env.WELCOME_DRAIN_SECRET, c: process.env.CRON_SECRET };
+  process.env.WELCOME_DRAIN_SECRET = "drain-test";
+  process.env.CRON_SECRET = "cron-test";
+  // A spoofed Vercel cron header alone must not authenticate a drain on Fly.
+  assert.strictEqual(drainSecretOk({ headers: { "x-vercel-cron": "1" }, query: {} }, {}), false);
+  assert.strictEqual(drainSecretOk({ headers: { authorization: "Bearer cron-test" }, query: {} }, {}), true);
+  assert.strictEqual(drainSecretOk({ headers: { authorization: "Bearer drain-test" }, query: {} }, {}), true);
+  assert.strictEqual(drainSecretOk({ headers: { authorization: "Bearer nope" }, query: {} }, {}), false);
+  for (const [k, v] of [["WELCOME_DRAIN_SECRET", prev.w], ["CRON_SECRET", prev.c]]) {
+    if (v === undefined) delete process.env[k]; else process.env[k] = v;
+  }
+}

@@ -17,13 +17,16 @@ let cache = { at: 0, payload: null };
 
 /**
  * Keep work running after the response, via the Vercel request context
- * (what @vercel/functions' waitUntil reads). Returns false off-Vercel.
+ * (what @vercel/functions' waitUntil reads) or the Fly process. Returns false elsewhere.
  */
 function runAfterResponse(promise) {
   const ctx = globalThis[Symbol.for("@vercel/request-context")]?.get?.();
-  if (typeof ctx?.waitUntil !== "function") return false;
-  ctx.waitUntil(promise);
-  return true;
+  if (typeof ctx?.waitUntil === "function") {
+    ctx.waitUntil(promise);
+    return true;
+  }
+  // Fly runs one long-lived process, so the bump can finish after the reply.
+  return Boolean(process.env.FLY_APP_NAME);
 }
 
 function parseEvent(body) {

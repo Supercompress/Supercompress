@@ -43,6 +43,7 @@ function buildMatchers() {
   const demoCompress = load("api/demo/compress.js");
   const arenaCompare = load("api/arena/compare.js");
   const weeklyUnsub = load("api/weekly/unsubscribe.js");
+  const limitcheck = load("api/limitcheck.js");
 
   /** @type {Map<string, Route>} */
   const exact = new Map([
@@ -101,6 +102,7 @@ function buildMatchers() {
     ["/api/demo/compress", { handler: demoCompress }],
     ["/api/arena/compare", { handler: arenaCompare }],
     ["/api/weekly/unsubscribe", { handler: weeklyUnsub }],
+    ["/api/limitcheck", { handler: limitcheck }],
 
     // account ops (aliases)
     ["/api/account", { handler: account }],

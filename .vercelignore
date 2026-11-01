@@ -1,3 +1,7 @@
+# API runs on Fly (supercompress-api). Do not ship serverless /api to Vercel Fluid.
+api
+services/api
+services/neural-keep
 node_modules
 tmp
 /tmp

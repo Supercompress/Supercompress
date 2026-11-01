@@ -37,6 +37,7 @@ test("rewrite operations cannot be overridden by URL parameters", () => {
   assert.equal(resolveRoute("/.well-known/oauth-protected-resource/mcp").query.op, "metadata-pr");
   assert.equal(resolveRoute("/.well-known/oauth-authorization-server/api/mcp").query.op, "metadata-as");
   assert.equal(resolveRoute("/api/keys/key%20id").query.id, "key id");
+  assert.ok(resolveRoute("/api/limitcheck"), "limitcheck counter must be served by Fly");
 });
 
 test("unknown routes are JSON 404, not marketing HTML", async (context) => {
