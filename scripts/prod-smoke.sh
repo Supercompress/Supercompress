@@ -45,46 +45,6 @@ expect_body() {
   fi
 }
 
-# api.supercompress.dev/ must redirect to www (not serve marketing).
-# Retries briefly — Vercel promotion can lag a push by a few seconds.
-check_api_root_redirect() {
-  local attempts="${1:-8}"
-  local i code loc final
-  for ((i = 1; i <= attempts; i++)); do
-    code="$(curl -sS -o /dev/null --max-time 25 -w '%{http_code}' "$API/" || echo 000)"
-    loc="$(curl -sS -o /dev/null --max-time 25 -w '%{redirect_url}' "$API/" || true)"
-    final="$(curl -sS -L -o /dev/null --max-time 25 -w '%{url_effective}' "$API/" || true)"
-    # Normalize trailing slash for compare
-    local want="$WWW"
-    local want_slash="${WWW%/}/"
-    if [[ "$code" == "301" || "$code" == "308" || "$code" == "302" ]]; then
-      if [[ "$loc" == "$want" || "$loc" == "$want_slash" || "$loc" == "${want_slash%/}" ]]; then
-        echo "PASS api root redirect ($code → $loc)"
-        pass=$((pass + 1))
-        return 0
-      fi
-      if [[ "$final" == "$want" || "$final" == "$want_slash" ]]; then
-        echo "PASS api root redirect ($code → $final)"
-        pass=$((pass + 1))
-        return 0
-      fi
-      echo "FAIL api root redirect went to wrong place (HTTP $code loc=$loc final=$final)"
-      fail=$((fail + 1))
-      return 1
-    fi
-    if [[ "$final" == "$want" || "$final" == "$want_slash" ]]; then
-      echo "PASS api root → www ($code)"
-      pass=$((pass + 1))
-      return 0
-    fi
-    echo "  api root not ready yet (HTTP $code → $final), retry $i/$attempts..."
-    sleep 5
-  done
-  echo "FAIL api root should redirect to www (got HTTP $code → $final)"
-  fail=$((fail + 1))
-  return 1
-}
-
 echo "=== SuperCompress production smoke ==="
 echo "www=$WWW"
 echo "api=$API"
@@ -97,7 +57,8 @@ node scripts/check-firebase-auth-proxy.js
 
 # Domains / edge
 check "www home" 200 "$WWW/"
-check_api_root_redirect 8 || true
+check "api root (Fly JSON)" 200 "$API/"
+expect_body "api root served by Fly" '"host":"fly"' "$TMP/body"
 check "api health" 200 "$API/api/health"
 check "www health" 200 "$WWW/api/health"
 expect_body "www health body" '"ok":true' "$TMP/body"
@@ -137,7 +98,7 @@ check "firebase-config" 200 "$WWW/api/firebase-config"
 expect_body "firebase-config key" 'apiKey' "$TMP/body"
 # First-party Google auth: /__/auth must proxy to Firebase (not marketing 404)
 check "firebase auth handler proxy" 200 "$WWW/__/auth/handler"
-expect_body "firebase auth handler html" "gstatic" "$TMP/body"
+expect_body "firebase auth handler html" "handler.js" "$TMP/body"
 check "usage requires auth" 401 "$WWW/api/usage"
 check "billing requires auth" 401 "$WWW/api/billing"
 

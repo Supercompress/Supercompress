@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Keep critical SuperCompress hostnames attached to the Vercel production
-# deployment. Missing aliases (esp. api.supercompress.dev) cause edge
-# DEPLOYMENT_NOT_FOUND / 100% API outages under the wildcard DNS.
+# deployment. Missing aliases cause edge DEPLOYMENT_NOT_FOUND under the
+# wildcard DNS. api.supercompress.dev is NOT a Vercel host: its explicit
+# A/AAAA records point at the Fly app supercompress-api, so it is only
+# checked by the final edge gate, never re-attached here.
 #
 # Safety: never DELETE a healthy canonical domain (www). A repair script must
 # not detach production to "re-promote" ordering.
@@ -42,11 +44,9 @@ import json, os, sys, urllib.error, urllib.request
 REQUIRED = [
     "www.supercompress.dev",
     "docs.supercompress.dev",
-    "api.supercompress.dev",
     "supercompress.dev",
 ]
 ALIAS_HOSTS = [
-    "api.supercompress.dev",
     "docs.supercompress.dev",
     "www.supercompress.dev",
 ]

@@ -20,7 +20,7 @@ npm run release:check
 node scripts/check-api-host-routes.js
 vercel deploy --prod --yes
 
-# Critical: api.supercompress.dev (and siblings) must stay aliased or the API
-# returns DEPLOYMENT_NOT_FOUND under wildcard DNS — total outage class.
+# Critical: www/docs/apex must stay aliased or they return DEPLOYMENT_NOT_FOUND
+# under wildcard DNS. api.supercompress.dev is served by Fly (explicit DNS).
 bash scripts/ensure-prod-domains.sh
 bash scripts/prod-smoke.sh
