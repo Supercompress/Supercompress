@@ -5,7 +5,19 @@
 
 const ONBOARD_ACTION_TOKENS = 0;
 const ONBOARD_ACTIONS = ["star", "x_follow", "plugin"];
-const HEARD_SOURCES = ["x", "reddit", "linkedin", "instagram", "word_of_mouth"];
+const HEARD_SOURCES = [
+  "x",
+  "reddit",
+  "linkedin",
+  "instagram",
+  "word_of_mouth",
+  "github",
+  "hacker_news",
+  "youtube",
+  "search",
+  "ai",
+  "other",
+];
 const ONBOARD_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000; // new accounts (2 weeks — covers late deploys)
 
 const REPO_URL = "https://github.com/Supercompress/Supercompress";
