@@ -19,7 +19,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/coding-agent-token-usage" />
   <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-30" />
+  <meta property="article:modified_time" content="2026-11-02" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -35,7 +35,7 @@
   "headline": "Reduce coding agent token usage",
   "description": "Guides to cutting token usage in Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, OpenCode, Goose, OpenClaw and Grok Build, plus what SuperCompress setup adds to each agent.",
   "datePublished": "2026-10-09",
-  "dateModified": "2026-10-30",
+  "dateModified": "2026-11-02",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -150,36 +150,42 @@
     {
       "@type": "ListItem",
       "position": 12,
+      "name": "Claude Desktop",
+      "url": "https://www.supercompress.dev/reduce-claude-desktop-token-usage"
+    },
+    {
+      "@type": "ListItem",
+      "position": 13,
       "name": "Context compression for coding agents: approaches compared",
       "url": "https://www.supercompress.dev/context-compression-for-coding-agents"
     },
     {
       "@type": "ListItem",
-      "position": 13,
+      "position": 14,
       "name": "MCP token reduction",
       "url": "https://www.supercompress.dev/mcp-token-reduction"
     },
     {
       "@type": "ListItem",
-      "position": 14,
+      "position": 15,
       "name": "MCP tool output compression",
       "url": "https://www.supercompress.dev/mcp-tool-output-compression"
     },
     {
       "@type": "ListItem",
-      "position": 15,
+      "position": 16,
       "name": "Claude Code context limit",
       "url": "https://www.supercompress.dev/claude-code-context-limit"
     },
     {
       "@type": "ListItem",
-      "position": 16,
+      "position": 17,
       "name": "Claude Code MCP output too large",
       "url": "https://www.supercompress.dev/claude-code-mcp-output-too-large"
     },
     {
       "@type": "ListItem",
-      "position": 17,
+      "position": 18,
       "name": "SuperCompress FAQ",
       "url": "https://www.supercompress.dev/faq"
     }
@@ -281,9 +287,10 @@
         <tr><td><a href="/reduce-goose-token-usage"><strong>Goose</strong></a></td><td>MCP server in config.yaml and AGENTS.md instructions. No SuperCompress hooks.</td></tr>
         <tr><td><a href="/reduce-openclaw-token-usage"><strong>OpenClaw</strong></a></td><td>MCP server, bootstrap and compact hooks, plugin, skill and AGENTS.md. The plugin writes a session digest and prepends it on the next prompt. It does not replace tool output.</td></tr>
         <tr><td><a href="/reduce-grok-build-token-usage"><strong>Grok Build</strong></a></td><td>MCP server in config.toml, hooks, AGENTS.md instructions and a skill. A PostToolUse hook replaces the model&#x27;s copy of a large tool result with a compressed digest.</td></tr>
+        <tr><td><a href="/reduce-claude-desktop-token-usage"><strong>Claude Desktop</strong></a></td><td>MCP server in claude_desktop_config.json on macOS and Windows. MCP only, no hooks: Claude calls compress_context when the chat holds bulky text.</td></tr>
       </tbody>
     </table>
-    <p>Setup also detects Zed, Continue, Amp, Crush, GitHub Copilot in VS Code, Claude Desktop, <a href="/reduce-grok-build-token-usage">Grok Build</a> and more. Run <code>supercompress doctor</code> to see what it found on your machine.</p>
+    <p>Setup also detects Zed, Continue, Amp, Crush, GitHub Copilot in VS Code, <a href="/reduce-claude-desktop-token-usage">Claude Desktop</a>, <a href="/reduce-grok-build-token-usage">Grok Build</a> and more. Run <code>supercompress doctor</code> to see what it found on your machine.</p>
 
     <h2 id="guides">Guides</h2>
     <ul>

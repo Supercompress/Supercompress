@@ -422,6 +422,10 @@
       "url": "https://www.supercompress.dev/reduce-grok-build-token-usage"
     },
     {
+      "name": "Reduce Claude Desktop token usage",
+      "url": "https://www.supercompress.dev/reduce-claude-desktop-token-usage"
+    },
+    {
       "name": "Reduce Gemini CLI token usage",
       "url": "https://www.supercompress.dev/reduce-gemini-cli-token-usage"
     },

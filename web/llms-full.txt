@@ -443,6 +443,27 @@ A: Grok Build truncates MCP tool results at 20KB unless the cap is raised, and c
 Q: How do I remove the Grok Build setup?
 A: Run supercompress uninstall. It restores config.toml and AGENTS.md byte-for-byte to your originals, removes the [mcp] output cap it added, and removes the hooks file and the skill.
 
+### Reduce Claude Desktop Token Usage: Compress Long Context with MCP
+
+URL: https://www.supercompress.dev/reduce-claude-desktop-token-usage
+
+Where Claude Desktop tokens go (pasted logs and stack traces, long files and docs, output from other MCP servers, long chats) and what supercompress setup changes. Setup adds mcpServers.supercompress to claude_desktop_config.json, at ~/Library/Application Support/Claude/claude_desktop_config.json on macOS and %APPDATA%\Claude\claude_desktop_config.json on Windows, keeping existing mcpServers entries. No API key is written into the file: the MCP server reads the linked account from ~/.supercompress/config.json. Claude Desktop has no hooks, so nothing is compressed automatically. Claude calls compress_context with the bulky text and the question, gets back the original lines that answer it, and the rest is dropped. Quit and restart Claude Desktop after setup.
+
+Q: Does SuperCompress change my existing Claude Desktop MCP servers?
+A: No. Setup reads claude_desktop_config.json, keeps every mcpServers entry you already have and adds one mcpServers.supercompress entry next to them. supercompress uninstall restores the file from the backup taken before the first write.
+
+Q: Does SuperCompress compress Claude Desktop messages automatically?
+A: No. Claude Desktop has no hooks, so nothing is replaced behind the scenes. Claude calls compress_context when the conversation holds bulky text, such as pasted logs, long files or large output from other MCP servers, and works from the lines that come back.
+
+Q: Does SuperCompress rewrite or summarize what Claude reads?
+A: No. It is extractive and query-aware. It keeps original lines chosen against the question and drops the rest. It never rewrites or summarizes, so file paths, error messages and code stay as they were.
+
+Q: Which operating systems does setup support for Claude Desktop?
+A: macOS and Windows. Setup writes ~/Library/Application Support/Claude/claude_desktop_config.json on macOS and %APPDATA%\Claude\claude_desktop_config.json on Windows, the same files Claude Desktop reads for MCP servers.
+
+Q: How do I remove the Claude Desktop setup?
+A: Run supercompress uninstall. It restores claude_desktop_config.json from the backup taken before the first write, so your own MCP servers are back exactly as they were. Quit and restart Claude Desktop afterwards.
+
 ### Claude Code context limit: why you run out and what to do
 
 URL: https://www.supercompress.dev/claude-code-context-limit
