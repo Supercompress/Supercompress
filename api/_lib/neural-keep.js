@@ -115,7 +115,7 @@ async function waitReady(budgetMs) {
  * @param {string} query
  * @returns {Promise<{compressed_text:string, original_tokens:number, kept_tokens:number, tokens_saved_pct:number, policy_name:string, mode:string, neural_keep_latency_ms:number}|null>}
  */
-async function compressViaNeuralKeep(context, query) {
+async function compressViaNeuralKeep(context, query, opts = {}) {
   if (!neuralKeepEnabled()) return null;
   // Tiny contexts: fall through to local compiler — saves Fly CPU and avoids busy storms.
   if (belowNeuralMinTokens(context)) return null;
@@ -127,20 +127,23 @@ async function compressViaNeuralKeep(context, query) {
   const secret = String(process.env.SC_NEURAL_KEEP_SECRET || "").trim();
   if (secret) headers.Authorization = `Bearer ${secret}`;
 
-  const budget = timeoutMs();
+  // Callers in a latency-sensitive path (the gateway) pass a short budget, one attempt and
+  // no warm-up wait, so a busy worker falls through to the local compiler quickly.
+  const budget = opts.budgetMs > 0 ? Number(opts.budgetMs) : timeoutMs();
   const tStart = Date.now();
   let lastErr = null;
   // Serial Fly worker: at most 2 attempts. Extra retries were the busy-storm source.
-  const maxAttempts = 2;
+  const maxAttempts = opts.maxAttempts > 0 ? Number(opts.maxAttempts) : 2;
+  const minRemaining = opts.minRemainingMs != null ? Number(opts.minRemainingMs) : 3_000;
 
   // Prefer a warm worker before the first compress (v4-large cold load is slow).
   // Cap so we don't stampede /ready under load.
-  await waitReady(Math.min(25_000, Math.max(4_000, budget / 6)));
+  if (opts.waitReady !== false) await waitReady(Math.min(25_000, Math.max(4_000, budget / 6)));
 
   // Retry once on 503 busy / model_loading / transient 502/504.
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const remaining = budget - (Date.now() - tStart);
-    if (remaining < 3_000) break;
+    if (remaining < Math.max(minRemaining, 1)) break;
     try {
       const { res, body, ms } = await fetchOnce(url, headers, context, query, remaining);
       const detail = detailText(body) || body.error || res.statusText;

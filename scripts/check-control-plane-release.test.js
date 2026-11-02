@@ -28,3 +28,41 @@ test("Fly secrets cannot override the release gate", () => {
   assert.throws(() => checkSecrets([{}]), /inventory entry/);
   assert.throws(() => checkSecrets([null]), /inventory entry/);
 });
+
+{
+  const {
+    checkGatewayRelease,
+    checkVercel,
+    checkSecrets: secrets,
+  } = require("./check-control-plane-release");
+  const gatewayToml = fs.readFileSync(path.join(__dirname, "../fly.gateway.toml"), "utf8");
+
+  test("gateway guard: accepts the committed gateway config and rejects unapproved flags", () => {
+    checkGatewayRelease({}, gatewayToml);
+    assert.throws(() => checkGatewayRelease({ SC_CP_ENTERPRISE: "1" }, gatewayToml), /not approved/);
+    assert.throws(
+      () => checkGatewayRelease({}, gatewayToml.replace('SC_CP_GATEWAY = "1"', 'SC_CP_GATEWAY = "0"')),
+      /requires SC_CP_GATEWAY|must be on/
+    );
+    assert.throws(
+      () => checkGatewayRelease({}, gatewayToml.replace('SC_API_SURFACE = "gateway"', 'SC_API_SURFACE = "api"')),
+      /SC_API_SURFACE/
+    );
+    assert.throws(() => checkGatewayRelease({}, `${gatewayToml.replace("[env]", '[env]\n  SC_CP_ALLOW_STUB = "1"')}`), /SC_CP_ALLOW_STUB/);
+  });
+
+  test("gateway guard: www may not run control-plane code on Vercel", () => {
+    checkVercel(fs.readFileSync(path.join(__dirname, "../vercel.json"), "utf8"));
+    assert.throws(() => checkVercel({ functions: { "api/v1/chat-completions.js": {} } }), /functions/);
+    assert.throws(
+      () => checkVercel({ rewrites: [{ source: "/v1/chat/completions", destination: "/api/v1/chat-completions" }] }),
+      /Fly|Vercel function/
+    );
+  });
+
+  test("gateway guard: gateway secrets cannot override the Firestore switch", () => {
+    secrets([{ Name: "SUPERCOMPRESS_USE_FIRESTORE" }]);
+    assert.throws(() => secrets([{ Name: "SUPERCOMPRESS_USE_FIRESTORE" }], { gateway: true }), /overrides/);
+    assert.throws(() => secrets([{ Name: "SC_CP_ALLOW_STUB" }]), /overrides/);
+  });
+}

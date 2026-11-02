@@ -119,7 +119,7 @@ describe("openai adapter", () => {
     };
     await call(ctx);
     const pieces = [];
-    for await (const p of ctx.provider_result.stream) pieces.push(p);
+    for await (const p of ctx.provider_result.stream) pieces.push(p.content || "");
     assert.equal(pieces.join(""), "hello");
     assert.equal(ctx.provider_result.output.content, "hello");
   });
@@ -145,7 +145,7 @@ describe("openai adapter", () => {
 describe("anthropic adapter", () => {
   it("maps system + messages", () => {
     const body = buildAnthropicBody({
-      model_routed: "claude-haiku-3.5",
+      model_routed: "claude-haiku-5-5",
       normalized: {
         messages: [
           { role: "system", content: "ctx" },
@@ -156,7 +156,7 @@ describe("anthropic adapter", () => {
     });
     assert.equal(body.system, "ctx");
     assert.equal(body.messages[0].role, "user");
-    assert.equal(body.messages[0].content, "ask");
+    assert.deepEqual(body.messages[0].content, [{ type: "text", text: "ask" }]);
     assert.equal(body.max_tokens, 64);
   });
 
@@ -166,14 +166,14 @@ describe("anthropic adapter", () => {
       fetchImpl: mockFetchSequence([
         () =>
           jsonResponse({
-            model: "claude-haiku-3.5",
+            model: "claude-haiku-5-5",
             content: [{ type: "text", text: "yo" }],
             usage: { input_tokens: 4, output_tokens: 1 },
           }),
       ]),
     });
     const ctx = {
-      model_routed: "claude-haiku-3.5",
+      model_routed: "claude-haiku-5-5",
       normalized: {
         messages: [
           { role: "system", content: "s" },
@@ -212,12 +212,12 @@ describe("anthropic adapter", () => {
       ]),
     });
     const ctx = {
-      model_routed: "claude-sonnet-4",
+      model_routed: "claude-sonnet-5-5",
       normalized: { messages: [{ role: "user", content: "hi" }], stream: true },
     };
     await call(ctx);
     const pieces = [];
-    for await (const p of ctx.provider_result.stream) pieces.push(p);
+    for await (const p of ctx.provider_result.stream) pieces.push(p.content || "");
     assert.equal(pieces.join(""), "abc");
     assert.equal(ctx.provider_result.usage.output_tokens, 3);
   });

@@ -13,7 +13,12 @@ const {
 } = require("./index");
 
 /** Explicit CP primitives for tests — production flags default off. */
-const CP_ON = { enableLedger: true, enforceReserve: true };
+const CP_ON = { enableLedger: true, enforceReserve: true, allowStubFallback: true };
+
+/** A bulky tool result: the kind of context the gateway compresses. */
+const TOOL_LOG = Array.from({ length: 80 }, (_, i) =>
+  i % 9 === 0 ? `ERROR worker ${i} failed: timeout while reading shard ${i}` : `info step ${i} ok, 120ms, cache hit`
+).join("\n");
 
 describe("gateway pipeline order", () => {
   it("executes stages in contract order", async () => {
@@ -58,8 +63,10 @@ describe("wired gateway phase 2", () => {
       {
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "x".repeat(400) },
-          { role: "user", content: "summarize" },
+          { role: "system", content: "You are terse." },
+          { role: "user", content: "run the job" },
+          { role: "tool", tool_call_id: "c1", content: TOOL_LOG },
+          { role: "user", content: "summarize the failures" },
         ],
         idempotency_key: "wire-1",
       },
@@ -203,7 +210,7 @@ describe("wired gateway phase 3 routing", () => {
       {
         model: "tiny",
         messages: [
-          { role: "system", content: "big" },
+          { role: "system", content: "big ".repeat(500) },
           { role: "user", content: "ask" },
         ],
         idempotency_key: "route-nofit",
@@ -228,6 +235,7 @@ describe("wired gateway phase 3 routing", () => {
         routing: {
           strategy: "prefer_order",
           prefer: ["gpt-4o", "gpt-4o-mini"],
+          fallbacks: ["gpt-4o-mini"],
           max_retries: 1,
         },
       },
@@ -352,7 +360,9 @@ describe("wired gateway phase 6 live path (mocked providers)", () => {
         model: "gpt-4o",
         stream: true,
         messages: [
-          { role: "system", content: "x".repeat(800) },
+          { role: "system", content: "Keep answers short." },
+          { role: "user", content: "here is the log" },
+          { role: "tool", tool_call_id: "c1", content: TOOL_LOG },
           { role: "user", content: ask },
         ],
         idempotency_key: "phase6-stream",
@@ -517,6 +527,7 @@ describe("wired gateway flag gating", () => {
     const gw = createWiredGateway({
       enforceReserve: false,
       enableLedger: false,
+      allowStubFallback: true,
       seedBalance: 20,
       estimated_max_usd: 1,
     });
@@ -631,7 +642,7 @@ describe("wired gateway phase 8 hardening", () => {
       neuralKeep: async () => null,
       policy: {
         version: 1,
-        allow_models: ["gpt-4o-mini", "claude-haiku-3.5"],
+        allow_models: ["gpt-4o-mini", "claude-haiku-5-5"],
         routing: { strategy: "cheapest_fit", output_tokens_reserve: 100 },
       },
     });
@@ -647,6 +658,6 @@ describe("wired gateway phase 8 hardening", () => {
       { key_id: "k1" }
     );
     assert.equal(ctx.aborted, false);
-    assert.equal(ctx.model_routed, "claude-haiku-3.5");
+    assert.equal(ctx.model_routed, "claude-haiku-5-5");
   });
 });

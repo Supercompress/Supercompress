@@ -10,6 +10,8 @@
 
 let stripeClient = null;
 
+const STRIPE_API_VERSION = "2026-09-30.endive";
+
 function getStripe() {
   if (stripeClient) return stripeClient;
 
@@ -22,6 +24,9 @@ function getStripe() {
 
   const Stripe = require("stripe");
   stripeClient = new Stripe(secretKey, {
+    // Pinned: an SDK major bump must not silently change the Stripe API version billing
+    // runs on. This is stripe@23's default; change it only with a test-mode billing pass.
+    apiVersion: STRIPE_API_VERSION,
     maxNetworkRetries: 2,
   });
 
@@ -633,6 +638,7 @@ async function attemptAutoRecharge(owner) {
 }
 
 module.exports = {
+  STRIPE_API_VERSION,
   getStripe,
   PLANS,
   getPlan,

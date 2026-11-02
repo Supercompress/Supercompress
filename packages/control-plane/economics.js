@@ -80,14 +80,18 @@ function attachEconomicsToTrace(trace, economics, opts = {}) {
   const tokenAvoided =
     Math.max(0, (trace.original_tokens || 0) - (trace.retained_tokens || 0)) / 1e6;
   const tokenDollars = Math.round(tokenAvoided * usdPerMTok * 1e6) / 1e6;
-  const routeDollars = Number(economics?.dollars_saved_est) || 0;
+  const hasRoute = economics && economics.dollars_saved_est != null;
+  // dollars_saved_est = price(original) - price(retained) already includes the token saving,
+  // so it is the total. The flat token rate is only the fallback when there is no catalog price.
+  const total = hasRoute ? Number(economics.dollars_saved_est) || 0 : tokenDollars;
+  const routeDollars = hasRoute ? Math.max(0, Math.round((total - tokenDollars) * 1e6) / 1e6) : 0;
   return {
     ...trace,
-    dollars_avoided_est: Math.round((tokenDollars + routeDollars) * 1e6) / 1e6,
+    dollars_avoided_est: Math.round(total * 1e6) / 1e6,
     meta: {
       ...(trace.meta || {}),
       economics,
-      dollars_avoided_tokens_est: tokenDollars,
+      dollars_avoided_tokens_est: hasRoute ? Math.round((total - routeDollars) * 1e6) / 1e6 : tokenDollars,
       dollars_avoided_route_est: routeDollars,
     },
   };

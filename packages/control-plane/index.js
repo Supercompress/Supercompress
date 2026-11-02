@@ -21,7 +21,7 @@ const {
   normalizeCatalog,
   defaultCatalog,
 } = require("./router");
-const { DEFAULT_CATALOG } = require("./catalog");
+const { DEFAULT_CATALOG, STUB_MODEL, priceUsd } = require("./catalog");
 const { createMemoryDurableStore, assertDurableStore } = require("./durable-store");
 const {
   createDurableLedgerStore,
@@ -88,4 +88,6 @@ module.exports = {
   normalizeCatalog,
   defaultCatalog,
   DEFAULT_CATALOG,
+  STUB_MODEL,
+  priceUsd,
 };

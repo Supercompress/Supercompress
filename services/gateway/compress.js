@@ -133,125 +133,200 @@ function heuristicCompress(context, ask) {
   };
 }
 
+/** Default scope: bulky blocks of at least this many characters (~500 tokens). */
+const DEFAULT_MIN_CHARS = 2000;
+/** At most this many blocks per request, largest first (each is one compress call). */
+const DEFAULT_MAX_BLOCKS = 4;
+
+function messageText(m) {
+  return typeof m?.content === "string" ? m.content : null;
+}
+
+/**
+ * Which messages the gateway may compress. Never the latest user message (the ask) and never
+ * system/developer instructions unless the policy opts in (compress_system: true), because
+ * rewriting instructions changes model behaviour. Tool results and earlier turns are the
+ * bulky context compression is for.
+ */
+function eligibleBlocks(messages, opts = {}) {
+  const minChars = opts.minChars ?? DEFAULT_MIN_CHARS;
+  const maxBlocks = opts.maxBlocks ?? DEFAULT_MAX_BLOCKS;
+  let lastUser = -1;
+  messages.forEach((m, i) => {
+    if (m.role === "user") lastUser = i;
+  });
+  const out = [];
+  messages.forEach((m, i) => {
+    const text = messageText(m);
+    if (text == null || text.length < minChars) return;
+    if (i === lastUser) return;
+    const role = m.role;
+    const ok =
+      role === "tool" ||
+      role === "user" ||
+      (role === "assistant" && !m.tool_calls) ||
+      (opts.includeSystem && (role === "system" || role === "developer"));
+    if (ok) out.push({ index: i, length: text.length });
+  });
+  return out.sort((a, b) => b.length - a.length).slice(0, maxBlocks);
+}
+
 /**
  * @param {{
  *   neuralKeep?: (context: string, query: string) => Promise<object|null>,
- *   localCompress?: (context: string, query: string) => Promise<object>,
+ *   localCompress?: (context: string, query: string) => Promise<object>|object,
  *   preferNeural?: boolean,
+ *   heuristicFallback?: boolean,
+ *   minChars?: number,
+ *   maxBlocks?: number,
  * }} [options]
  */
 function createCompressFn(options = {}) {
   const preferNeural = options.preferNeural !== false;
 
-  return async function compressCtx(ctx) {
-    const ask = ctx.user_ask || "";
-    const context = ctx.context || "";
-
-    let result = null;
-    let strategy = "unknown";
-
-    if (preferNeural && typeof options.neuralKeep === "function" && context) {
+  async function compressText(context, ask) {
+    if (preferNeural && typeof options.neuralKeep === "function") {
       try {
         const remote = await options.neuralKeep(context, ask);
         if (remote && remote.compressed_text != null) {
-          result = {
+          const original = remote.original_tokens || estimateTokens(context);
+          const kept = remote.kept_tokens || estimateTokens(remote.compressed_text);
+          return {
             compressed_text: remote.compressed_text,
-            original_tokens: remote.original_tokens || estimateTokens(context),
-            kept_tokens: remote.kept_tokens || estimateTokens(remote.compressed_text),
-            tokens_saved: 0,
+            original_tokens: original,
+            kept_tokens: kept,
             engine: "neural_keep",
             strategy: "neural_keep",
-            neural_keep: true,
-            mode: remote.mode || "neural-keep",
           };
-          result.tokens_saved = Math.max(
-            0,
-            result.original_tokens - result.kept_tokens
-          );
-          strategy = "neural_keep";
         }
       } catch (_) {
-        // fall through — never fail the gateway solely on NK
+        /* fall through to the local compiler */
       }
     }
-
-    if (!result && typeof options.localCompress === "function" && context) {
+    if (typeof options.localCompress === "function") {
       try {
         const local = await options.localCompress(context, ask);
         if (local && local.compressed_text != null) {
-          result = {
+          return {
             compressed_text: local.compressed_text,
             original_tokens: local.original_tokens || estimateTokens(context),
             kept_tokens:
               local.kept_tokens ?? local.compressed_tokens ?? estimateTokens(local.compressed_text),
-            tokens_saved: local.tokens_saved,
-            engine: local.mode === "compiler" || local.engine === "compiler" ? "compiler" : local.engine || "compiler",
+            engine: "compiler",
             strategy: local.mode === "neural-keep" ? "neural_keep" : "compiler",
           };
-          strategy = result.strategy;
         }
       } catch (_) {
         /* fall through */
       }
     }
+    if (options.heuristicFallback) return heuristicCompress(context, ask);
+    return null;
+  }
 
-    if (!result) {
-      result = heuristicCompress(context, ask);
-      strategy = "compiler";
-    }
-
-    // Never put ask into compress_result fields that leak into traces
-    ctx.compress_result = {
-      original_tokens: result.original_tokens,
-      kept_tokens: result.kept_tokens,
-      tokens_saved: result.tokens_saved ?? Math.max(0, result.original_tokens - result.kept_tokens),
-      compressed: result.compressed_text,
-      engine: result.engine,
-      strategy,
-    };
-
-    ctx.compression = traceFromCompressResult(ctx.compress_result, {
-      strategy,
-      dollars_avoided_est: estimateDollarsAvoided(
-        ctx.compress_result.original_tokens,
-        ctx.compress_result.kept_tokens
-      ),
+  return async function compressCtx(ctx) {
+    const ask = ctx.user_ask || "";
+    const messages = Array.isArray(ctx.normalized?.messages) ? ctx.normalized.messages : [];
+    const blocks = eligibleBlocks(messages, {
+      minChars: ctx.compress_opts?.min_chars ?? options.minChars,
+      maxBlocks: ctx.compress_opts?.max_blocks ?? options.maxBlocks,
+      includeSystem: ctx.compress_opts?.include_system === true,
     });
 
-    // Apply compressed context to normalized messages; ask untouched
-    if (ctx.normalized) {
-      ctx.normalized = applyCompressedToMessages(
-        ctx.normalized,
-        result.compressed_text,
-        ask
-      );
+    if (!blocks.length) {
+      ctx.compress_result = { original_tokens: 0, kept_tokens: 0, tokens_saved: 0, strategy: "skip" };
+      ctx.compression = traceFromCompressResult({
+        original_tokens: 0,
+        kept_tokens: 0,
+        strategy: "skip",
+        skip_reason: "nothing_to_compress",
+      });
+      return ctx;
     }
-    ctx.context = result.compressed_text;
+
+    const next = messages.map((m) => ({ ...m }));
+    let original = 0;
+    let kept = 0;
+    const strategies = new Set();
+    for (const b of blocks) {
+      const text = next[b.index].content;
+      const r = await compressText(text, ask);
+      const before = estimateTokens(text);
+      if (r && r.compressed_text && Number(r.kept_tokens) < Number(r.original_tokens)) {
+        next[b.index].content = r.compressed_text;
+        original += r.original_tokens;
+        kept += Math.min(r.kept_tokens, r.original_tokens);
+        strategies.add(r.strategy);
+      } else {
+        original += before;
+        kept += before;
+      }
+    }
+    const strategy = strategies.has("neural_keep")
+      ? "neural_keep"
+      : strategies.size
+        ? "compiler"
+        : "skip";
+
+    // Never put the ask into compress_result fields that leak into traces.
+    ctx.compress_result = {
+      original_tokens: original,
+      kept_tokens: kept,
+      tokens_saved: Math.max(0, original - kept),
+      engine: strategy === "neural_keep" ? "neural_keep" : "compiler",
+      strategy,
+      blocks: blocks.length,
+    };
+    ctx.compression = traceFromCompressResult(ctx.compress_result, {
+      strategy,
+      ...(strategy === "skip" ? { skip_reason: "compressor_unavailable" } : {}),
+      dollars_avoided_est: estimateDollarsAvoided(original, kept),
+    });
+    if (ctx.normalized) ctx.normalized = { ...ctx.normalized, messages: next };
     return ctx;
   };
 }
 
 /**
- * Default factory: lazy-require Neural Keep client when available.
+ * Default factory for the gateway: Neural Keep with a short budget (no warm-up wait, one
+ * attempt) so a busy worker never stalls the model call, then the local compiler.
  */
 function createDefaultCompressFn(options = {}) {
   let neuralKeep = options.neuralKeep;
   if (neuralKeep === undefined) {
     try {
       const nk = require("../../api/_lib/neural-keep");
-      neuralKeep = (context, query) => nk.compressViaNeuralKeep(context, query);
+      const budgetMs = Number(process.env.SC_CP_NK_BUDGET_MS) || 1500;
+      neuralKeep = (context, query) =>
+        nk.compressViaNeuralKeep(context, query, {
+          budgetMs,
+          waitReady: false,
+          maxAttempts: 1,
+          minRemainingMs: 0,
+        });
     } catch {
       neuralKeep = null;
+    }
+  }
+  let localCompress = options.localCompress;
+  if (localCompress === undefined) {
+    try {
+      const engine = require("../../api/_lib/engine");
+      localCompress = (context, query) => engine.compress(context, query);
+    } catch {
+      localCompress = null;
     }
   }
   return createCompressFn({
     ...options,
     neuralKeep: neuralKeep || undefined,
-    localCompress: options.localCompress,
+    localCompress: localCompress || undefined,
   });
 }
 
 module.exports = {
+  eligibleBlocks,
+  DEFAULT_MIN_CHARS,
   createCompressFn,
   createDefaultCompressFn,
   applyCompressedToMessages,

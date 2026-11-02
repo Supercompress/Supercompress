@@ -1641,6 +1641,14 @@
       "destination": "https://supercompress-api.fly.dev/api/v1/chat-completions"
     },
     {
+      "source": "/v1/models",
+      "destination": "https://supercompress-api.fly.dev/v1/models"
+    },
+    {
+      "source": "/v1/models/:id",
+      "destination": "https://supercompress-api.fly.dev/v1/models/:id"
+    },
+    {
       "source": "/v1/ops/insights",
       "destination": "https://supercompress-api.fly.dev/api/v1/ops"
     },
@@ -1655,14 +1663,6 @@
     {
       "source": "/api/v1/ops/otel",
       "destination": "https://supercompress-api.fly.dev/api/v1/ops?export=otel"
-    },
-    {
-      "source": "/v1/ops/console",
-      "destination": "https://supercompress-api.fly.dev/api/v1/ops-console"
-    },
-    {
-      "source": "/api/v1/ops/console",
-      "destination": "https://supercompress-api.fly.dev/api/v1/ops-console"
     },
     {
       "source": "/retrieve",

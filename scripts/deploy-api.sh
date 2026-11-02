@@ -15,6 +15,8 @@ if [[ "${1:-}" == "--check" || "${1:-}" == "--dry-run" ]]; then
   exit 0
 fi
 
+bash scripts/require-clean-main.sh
+
 FLY="${FLYCTL_BIN:-$(command -v flyctl || command -v fly || true)}"
 if [[ -z "$FLY" ]]; then
   echo "Missing Fly CLI: install flyctl before deploying." >&2

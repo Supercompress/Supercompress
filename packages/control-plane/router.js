@@ -7,7 +7,7 @@
  * Strategies beat naive proxies: cheapest_fit / prefer_order / fixed / latency_prefer / weighted.
  */
 
-const { normalizeCatalog, defaultCatalog } = require("./catalog");
+const { normalizeCatalog, defaultCatalog, priceUsd } = require("./catalog");
 const { normalizePolicy } = require("./policy");
 
 const STRATEGIES = new Set([
@@ -37,12 +37,7 @@ function normalizeRouting(raw = {}) {
 }
 
 function estimateRequestUsd(model, retainedTokens, outputTokensEst) {
-  const inTok = Math.max(0, Number(retainedTokens) || 0);
-  const outTok = Math.max(0, Number(outputTokensEst) || 0);
-  const usd =
-    (inTok / 1e6) * Number(model.input_usd_per_mtok || 0) +
-    (outTok / 1e6) * Number(model.output_usd_per_mtok || 0);
-  return Math.round(usd * 1e6) / 1e6;
+  return priceUsd(model, retainedTokens, outputTokensEst);
 }
 
 /**
@@ -161,8 +156,20 @@ function scoreCheapest(entry, routing) {
   return usd;
 }
 
-function pickWeighted(viable, candidates) {
-  // Deterministic weighted pick: highest weight, then cheapest, then candidate order.
+function pickWeighted(viable, candidates, random) {
+  // Weighted split: draw proportional to weight. Pass random=null for the deterministic
+  // pick (highest weight, then cheapest, then candidate order), used by tests and replays.
+  if (typeof random === "function") {
+    const total = viable.reduce((s, v) => s + Math.max(0, Number(v.model.weight) || 0), 0);
+    if (total > 0) {
+      let r = random() * total;
+      for (const v of viable) {
+        r -= Math.max(0, Number(v.model.weight) || 0);
+        if (r < 0) return v;
+      }
+      return viable[viable.length - 1];
+    }
+  }
   const sorted = [...viable].sort((a, b) => {
     const dw = (b.model.weight || 1) - (a.model.weight || 1);
     if (dw !== 0) return dw;
@@ -246,7 +253,11 @@ function selectRoute(input = {}) {
       chosen = viable[0];
       reason = "latency_prefer";
     } else if (routing.strategy === "weighted") {
-      chosen = pickWeighted(viable, candidates);
+      chosen = pickWeighted(
+        viable,
+        candidates,
+        input.random === undefined ? Math.random : input.random
+      );
       reason = "weighted";
     } else {
       // prefer_order / fixed: first viable in candidate order
@@ -258,13 +269,22 @@ function selectRoute(input = {}) {
     }
   }
 
-  // Fallback chain: primary then remaining viable sorted by cheapest (good retry order)
-  const rest = viable
-    .filter((v) => !chosen || v.id !== chosen.id)
-    .sort((a, b) => scoreCheapest(a, routing) - scoreCheapest(b, routing));
-  const fallback_chain = chosen
-    ? [chosen.id, ...rest.map((v) => v.id)]
-    : viable.map((v) => v.id);
+  // Fallback chain: the chosen model, then the operator's configured fallbacks in their
+  // configured order, then any other viable model that is not a lower tier than the chosen
+  // one (cheapest first). Never step down to a weaker model the operator did not list.
+  const viableById = new Map(viable.map((v) => [v.id, v]));
+  const fallback_chain = [];
+  if (chosen) {
+    fallback_chain.push(chosen.id);
+    for (const id of routing.fallbacks) {
+      if (viableById.has(id) && !fallback_chain.includes(id)) fallback_chain.push(id);
+    }
+    const chosenTier = Number(chosen.model.tier) || 0;
+    const rest = viable
+      .filter((v) => !fallback_chain.includes(v.id) && (Number(v.model.tier) || 0) >= chosenTier)
+      .sort((a, b) => scoreCheapest(a, routing) - scoreCheapest(b, routing));
+    for (const v of rest) fallback_chain.push(v.id);
+  }
 
   const decision = {
     model: chosen ? chosen.id : null,

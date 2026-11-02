@@ -90,12 +90,13 @@ function estimateBodyBytes(value) {
   }
 }
 
-function readBody(req) {
+function readBody(req, opts = {}) {
+  const maxBytes = Number(opts.maxBytes) > 0 ? Number(opts.maxBytes) : MAX_BODY_BYTES;
   // Vercel serverless parses JSON bodies before the handler — req.body is already an object
   if (typeof req.body === "object" && req.body !== null && !Array.isArray(req.body)) {
     const bytes = estimateBodyBytes(req.body);
-    if (bytes > MAX_BODY_BYTES) {
-      const err = new Error(`Request body too large (max ${MAX_BODY_BYTES / 1000}KB)`);
+    if (bytes > maxBytes) {
+      const err = new Error(`Request body too large (max ${maxBytes / 1000}KB)`);
       err.status = 413;
       throw err;
     }
@@ -104,8 +105,8 @@ function readBody(req) {
   // Raw string body (bodyParser disabled or non-JSON content type)
   if (typeof req.body === "string") {
     const bytes = Buffer.byteLength(req.body, "utf8");
-    if (bytes > MAX_BODY_BYTES) {
-      const err = new Error(`Request body too large (max ${MAX_BODY_BYTES / 1000}KB)`);
+    if (bytes > maxBytes) {
+      const err = new Error(`Request body too large (max ${maxBytes / 1000}KB)`);
       err.status = 413;
       throw err;
     }

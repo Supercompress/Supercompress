@@ -23,7 +23,8 @@ function buildMatchers() {
   const compress = load("api/v1/compress.js");
   const chatCompletions = load("api/v1/chat-completions.js");
   const ops = load("api/v1/ops.js");
-  const opsConsole = load("api/v1/ops-console.js");
+  const models = load("api/v1/models.js");
+  const key = load("api/key.js");
   const retrieve = load("api/retrieve.js");
   const billingWebhook = load("api/billing-webhook.js");
   const account = load("api/account.js");
@@ -52,9 +53,12 @@ function buildMatchers() {
     ["/api/compress", { handler: compress }],
     ["/v1/compress", { handler: compress }],
 
-    ["/api/v1/chat-completions", { handler: chatCompletions }],
-    ["/v1/chat/completions", { handler: chatCompletions }],
-    ["/api/v1/chat/completions", { handler: chatCompletions }],
+    // Chat bodies carry whole agent contexts and images: allow up to 16 MB.
+    ["/api/v1/chat-completions", { handler: chatCompletions, maxBodyBytes: 16 * 1024 * 1024 }],
+    ["/v1/chat/completions", { handler: chatCompletions, maxBodyBytes: 16 * 1024 * 1024 }],
+    ["/api/v1/chat/completions", { handler: chatCompletions, maxBodyBytes: 16 * 1024 * 1024 }],
+    ["/v1/models", { handler: models }],
+    ["/api/v1/models", { handler: models }],
 
     ["/api/v1/ops", { handler: ops }],
     ["/v1/ops/insights", { handler: ops }],
@@ -62,9 +66,7 @@ function buildMatchers() {
     ["/v1/ops/otel", { handler: ops, query: { export: "otel" } }],
     ["/api/v1/ops/otel", { handler: ops, query: { export: "otel" } }],
 
-    ["/api/v1/ops-console", { handler: opsConsole }],
-    ["/v1/ops/console", { handler: opsConsole }],
-    ["/api/v1/ops/console", { handler: opsConsole }],
+
 
     ["/api/retrieve", { handler: retrieve }],
     ["/retrieve", { handler: retrieve }],
@@ -90,6 +92,8 @@ function buildMatchers() {
     ["/api/aiscore", { handler: health, query: { op: "aiscore" } }],
 
     ["/api/keys", { handler: keys }],
+    // Dashboard rename / revoke / usage call /api/key?id=…
+    ["/api/key", { handler: key }],
     ["/api/billing", { handler: billing }],
     ["/api/me", { handler: me }],
     ["/api/usage-share", { handler: usageShare }],
@@ -115,7 +119,7 @@ function buildMatchers() {
     ["/api/welcome/drain", { handler: account, query: { op: "welcome-drain" } }],
   ]);
 
-  return { exact, keyById, account };
+  return { exact, keyById, account, models };
 }
 
 let cached = null;
@@ -126,11 +130,28 @@ function getMatchers() {
 }
 
 /**
+ * SC_API_SURFACE=gateway (fly.gateway.toml) serves only the control-plane gateway; every
+ * other path 404s there. Unset or "api": the full API.
+ */
+const GATEWAY_SURFACE_PATHS = /^\/(?:api\/)?(?:v1\/chat\/completions|v1\/chat-completions|v1\/models(?:\/.+)?|v1\/ops(?:\/insights|\/otel)?|health)$/;
+
+function onSurface(clean) {
+  if (process.env.SC_API_SURFACE !== "gateway") return true;
+  return clean === "/" || GATEWAY_SURFACE_PATHS.test(clean);
+}
+
+/**
  * @param {string} pathname
  * @param {URLSearchParams} searchParams
  * @returns {Route | null}
  */
 function resolveRoute(pathname, searchParams = new URLSearchParams()) {
+  const cleanPath = pathname.replace(/\/+$/, "") || "/";
+  if (!onSurface(cleanPath)) return null;
+  return resolveAnyRoute(pathname, searchParams);
+}
+
+function resolveAnyRoute(pathname, searchParams = new URLSearchParams()) {
   const clean = pathname.replace(/\/+$/, "") || "/";
   const { exact, keyById, account } = getMatchers();
 
@@ -138,7 +159,13 @@ function resolveRoute(pathname, searchParams = new URLSearchParams()) {
       clean.startsWith("/.well-known/oauth-authorization-server/")) {
     const metadata = clean.startsWith("/.well-known/oauth-protected-resource/")
       ? "/.well-known/oauth-protected-resource" : "/.well-known/oauth-authorization-server";
-    return resolveRoute(metadata, searchParams);
+    return resolveAnyRoute(metadata, searchParams);
+  }
+
+  // /v1/models/:id (OpenAI-compatible model lookup)
+  const modelMatch = clean.match(/^\/(?:api\/)?v1\/models\/(.+)$/);
+  if (modelMatch) {
+    return { handler: getMatchers().models, query: { id: decodeURIComponent(modelMatch[1]) } };
   }
 
   // /api/keys/:id

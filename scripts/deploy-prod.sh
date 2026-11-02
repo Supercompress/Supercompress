@@ -10,6 +10,8 @@ if [[ "${1:-}" == "--check" || "${1:-}" == "--dry-run" ]]; then
   exit 0
 fi
 
+bash scripts/require-clean-main.sh
+
 if ! command -v vercel >/dev/null 2>&1; then
   echo "Missing Vercel CLI. Install it with: npm install --global vercel" >&2
   exit 1

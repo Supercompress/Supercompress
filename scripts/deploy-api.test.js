@@ -8,7 +8,8 @@ const { spawnSync } = require("node:child_process");
 const { test } = require("node:test");
 
 const root = path.resolve(__dirname, "..");
-const childEnv = { ...process.env };
+// The clean-main check (scripts/require-clean-main.sh) is not under test here.
+const childEnv = { ...process.env, SC_DEPLOY_ALLOW_DIRTY: "1" };
 delete childEnv.NODE_TEST_CONTEXT;
 
 test("API preflight works without Fly credentials and cannot deploy", () => {

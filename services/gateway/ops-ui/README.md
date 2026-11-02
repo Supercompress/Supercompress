@@ -13,9 +13,9 @@ Demo mode works offline (`demo.json` from real `computeRouteEconomics` math).
 
 ## Live
 
-1. `SC_CP_OPS=1` (+ `SC_CP_TRACE=1` for rich traces)
-2. Open `/v1/ops/console` on the API host (404 when flag off)
-3. Paste `sc_` key → **Load live**
+The console is not served by the API (it was unauthenticated). Run it locally with the
+script above and point it at `/v1/ops/insights` with an `sc_` key; the data API needs
+`SC_CP_OPS=1` (+ `SC_CP_TRACE=1` for rich traces).
 
 ## Moat
 

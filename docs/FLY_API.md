@@ -25,14 +25,14 @@ flyctl auth login # once on this computer, or supply FLY_ACCESS_TOKEN in CI
 npm run deploy:api
 ```
 
-Control plane remains unreleased. The Fly config explicitly disables its seven
-feature flags; both deploy scripts reject enabled local flags. API deployment
-also checks the remote secret names and refuses any control-plane flag secret,
-because secrets can override config values. Clear those flag secrets before a
-normal product deployment. Arbitrary Fly argument overrides are not accepted by
-this wrapper. The post-deploy smoke requires gateway and ops endpoints to stay
-404. A future control-plane launch needs a deliberate reviewed change to these
-guards, not just an environment toggle.
+The control plane never runs on `supercompress-api`: its Fly config explicitly
+disables all seven feature flags, and both deploy scripts reject enabled local
+flags. API deployment also checks the remote secret names and refuses any
+control-plane flag secret, because secrets can override config values. Arbitrary
+Fly argument overrides are not accepted by this wrapper. The post-deploy smoke
+requires gateway and ops endpoints to stay 404 on this app. The gateway runs as
+its own app, `supercompress-gateway` (`fly.gateway.toml`); see
+[CP_RUNBOOK.md](CP_RUNBOOK.md) for its environment, launch steps and rollback.
 
 `fly.api.toml` at the repository root is the only API deployment config. The deploy command checks authentication, routing, adapter tests, and config before deploying; then it smokes the Fly origin. It uses `--ha=false` to avoid creating a spare Machine automatically, not to resize or remove existing Machines. Review `flyctl machine list -a supercompress-api` separately before changing capacity. The paid Fly account does not establish which Machines, credits, or usage are covered; check billing rather than assuming a fixed monthly runtime cost.
 

@@ -51,6 +51,7 @@ describe("day spend", () => {
       seedBalance: 50,
       estimated_max_usd: 1,
       walletId: "wallet_day",
+      allowStubFallback: true,
       neuralKeep: async () => null,
       policy: { version: 1, max_usd_per_day: 1, compress_default: true },
     });

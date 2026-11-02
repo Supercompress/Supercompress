@@ -10,7 +10,7 @@ const {
   estimateRequestUsd,
   normalizeCatalog,
 } = require("./router");
-const { DEFAULT_CATALOG } = require("./catalog");
+const { DEFAULT_CATALOG, STUB_MODEL } = require("./catalog");
 
 describe("control-plane router", () => {
   it("routes to cheapest fit after compress shrinks context", () => {
@@ -19,7 +19,7 @@ describe("control-plane router", () => {
       retained_tokens: 2_000,
       policy: {
         version: 1,
-        allow_models: ["gpt-4o", "gpt-4o-mini", "claude-haiku-3.5"],
+        allow_models: ["gpt-4o", "gpt-4o-mini"],
         max_usd_per_request: 1,
         routing: { strategy: "cheapest_fit", fallbacks: ["gpt-4o-mini"] },
       },
@@ -73,12 +73,12 @@ describe("control-plane router", () => {
       health: { "gpt-4o-mini": "down" },
       policy: {
         version: 1,
-        allow_models: ["gpt-4o", "gpt-4o-mini", "claude-haiku-3.5"],
+        allow_models: ["gpt-4o", "gpt-4o-mini", "claude-haiku-5-5"],
         deny_models: ["gpt-4o"],
-        routing: { strategy: "cheapest_fit", fallbacks: ["gpt-4o-mini", "claude-haiku-3.5"] },
+        routing: { strategy: "cheapest_fit", fallbacks: ["gpt-4o-mini", "claude-haiku-5-5"] },
       },
     });
-    assert.equal(decision.model, "claude-haiku-3.5");
+    assert.equal(decision.model, "claude-haiku-5-5");
     assert.ok(decision.eligibility.find((e) => e.model === "gpt-4o-mini").reasons.includes("health_down"));
   });
 
@@ -97,16 +97,16 @@ describe("control-plane router", () => {
 
   it("fixed strategy keeps requested when it fits", () => {
     const decision = selectRoute({
-      requested_model: "claude-sonnet-4",
+      requested_model: "claude-sonnet-5-5",
       retained_tokens: 1000,
       policy: {
         version: 1,
-        allow_models: ["claude-sonnet-4", "gpt-4o-mini"],
+        allow_models: ["claude-sonnet-5-5", "gpt-4o-mini"],
         max_usd_per_request: 50,
         routing: { strategy: "fixed", fallbacks: ["gpt-4o-mini"] },
       },
     });
-    assert.equal(decision.model, "claude-sonnet-4");
+    assert.equal(decision.model, "claude-sonnet-5-5");
     assert.equal(decision.reason, "requested_fit");
   });
 
@@ -132,10 +132,11 @@ describe("control-plane router", () => {
       retained_tokens: 500,
       policy: {
         version: 1,
-        allow_models: ["gpt-4o", "gpt-4o-mini", "claude-haiku-3.5"],
+        allow_models: ["gpt-4o", "gpt-4o-mini", "claude-haiku-5-5"],
         routing: {
           strategy: "prefer_order",
-          prefer: ["gpt-4o", "gpt-4o-mini", "claude-haiku-3.5"],
+          prefer: ["gpt-4o", "gpt-4o-mini", "claude-haiku-5-5"],
+          fallbacks: ["gpt-4o-mini", "claude-haiku-5-5"],
           max_retries: 1,
         },
       },
@@ -157,6 +158,32 @@ describe("control-plane router", () => {
     assert.equal(isRetryableProviderError({ message: "rate limit" }), true);
   });
 
+  it("default catalog never contains the stub model", () => {
+    assert.equal(normalizeCatalog(DEFAULT_CATALOG).get("stub-model"), null);
+    const d = selectRoute({ retained_tokens: 500, policy: { version: 1 } });
+    assert.notEqual(d.model, "stub-model");
+  });
+
+  it("long-context pricing applies above the threshold", () => {
+    const haiku = DEFAULT_CATALOG.find((x) => x.id === "claude-haiku-5-5");
+    assert.equal(estimateRequestUsd(haiku, 80_000, 0), 0.008);
+    assert.equal(estimateRequestUsd(haiku, 224_000, 0), 0.112);
+  });
+
+  it("fallbacks follow the configured order and never step down a tier", () => {
+    const d = selectRoute({
+      requested_model: "gpt-4o",
+      retained_tokens: 500,
+      policy: {
+        version: 1,
+        allow_models: ["gpt-4o", "gpt-4o-mini", "claude-sonnet-5-5", "claude-haiku-5-5"],
+        routing: { strategy: "fixed", fallbacks: ["claude-sonnet-5-5"] },
+      },
+    });
+    assert.deepEqual(d.fallback_chain.slice(0, 2), ["gpt-4o", "claude-sonnet-5-5"]);
+    assert.ok(!d.fallback_chain.includes("gpt-4o-mini"));
+  });
+
   it("estimateRequestUsd is deterministic", () => {
     const m = DEFAULT_CATALOG.find((x) => x.id === "gpt-4o-mini");
     const usd = estimateRequestUsd(m, 1_000_000, 0);
@@ -164,7 +191,7 @@ describe("control-plane router", () => {
   });
 
   it("evaluateEligibility marks overflow", () => {
-    const m = normalizeCatalog(DEFAULT_CATALOG).get("stub-model");
+    const m = normalizeCatalog([STUB_MODEL]).get("stub-model");
     const elig = evaluateEligibility(m, {
       retained_tokens: 40_000,
       output_tokens_reserve: 0,

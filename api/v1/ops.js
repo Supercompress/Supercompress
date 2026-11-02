@@ -63,7 +63,11 @@ module.exports = async function opsEdge(req, res) {
 
   const url = new URL(req.url || "/", "http://localhost");
   const surface = resolveOpsSurface(req.url || "/", req.headers || {});
-  const orgId = owner.orgId || owner.uid || owner.owner_uid;
+  // authenticateKey returns { ownerUid, keyId }: scope every read to the key owner.
+  const orgId = owner.ownerUid || owner.owner?.uid || null;
+  if (!orgId) {
+    return json(res, 401, { error: { message: "Invalid API key", type: "authentication_error" } });
+  }
   const budget = url.searchParams.get("budget_usd");
 
   if (surface === "otel") {
