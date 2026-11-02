@@ -91,7 +91,20 @@ describe("heard sources", () => {
     assert.equal(normalizeHeard("spam"), null);
   });
   it("has the onboarding choices", () => {
-    for (const id of ["x", "reddit", "linkedin", "instagram", "word_of_mouth"]) {
+    // Every id the dashboard sends (HEARD_SOURCE in client-api.js).
+    for (const id of [
+      "x",
+      "reddit",
+      "linkedin",
+      "instagram",
+      "word_of_mouth",
+      "github",
+      "hacker_news",
+      "youtube",
+      "search",
+      "ai",
+      "other",
+    ]) {
       assert.ok(HEARD_SOURCES.includes(id));
     }
   });
