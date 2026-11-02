@@ -2,8 +2,10 @@
 
 /**
  * The gateway's default routing catalog for this environment:
- *   1. DEFAULT_CATALOG (OpenAI + Anthropic + stub), unchanged for existing deployments;
- *   2. PROVIDER_CATALOG entries whose provider is configured (its API key is set);
+ *   1. DEFAULT_CATALOG (OpenAI + Anthropic) and PROVIDER_CATALOG entries whose provider is
+ *      configured (its API key is set), so routing never picks a model it cannot call;
+ *      with no provider configured at all (local dev, tests) the full DEFAULT_CATALOG is kept;
+ *   2. the stub model is never included; tests pass it explicitly;
  *   3. operator entries from SC_CP_CATALOG (JSON array or { models: [...] }) or
  *      SC_CP_CATALOG_FILE (path to the same JSON). Operator entries replace defaults by id.
  */
@@ -31,7 +33,8 @@ function parseOperatorCatalog(env) {
 
 function catalogFromEnv(env = process.env) {
   const byId = new Map();
-  for (const m of DEFAULT_CATALOG) byId.set(m.id, m);
+  const anyConfigured = [...DEFAULT_CATALOG, ...PROVIDER_CATALOG].some((m) => isConfigured(m.provider, env));
+  for (const m of DEFAULT_CATALOG) if (!anyConfigured || isConfigured(m.provider, env)) byId.set(m.id, m);
   for (const m of PROVIDER_CATALOG) if (isConfigured(m.provider, env)) byId.set(m.id, m);
   for (const m of parseOperatorCatalog(env)) if (m && m.id) byId.set(String(m.id), m);
   return [...byId.values()];

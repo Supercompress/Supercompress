@@ -22,6 +22,7 @@
     "deploy:api": "bash scripts/deploy-api.sh",
     "start:api": "node services/api/server.js",
     "test:api": "node --test services/api/*.test.js",
+    "test:cp": "node --test packages/control-plane/*.test.js services/gateway/*.test.js services/gateway/providers/*.test.js services/gateway/ops-ui/*.test.js api/_lib/cp-billing.test.js api/v1/*.test.js scripts/check-control-plane-release.test.js",
     "api:smoke": "node scripts/fly-api-smoke.js"
   },
   "dependencies": {

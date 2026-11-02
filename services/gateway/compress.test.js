@@ -2,20 +2,25 @@
 
 const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
-const { createCompressFn, applyCompressedToMessages } = require("./compress");
+const { createCompressFn, applyCompressedToMessages, eligibleBlocks } = require("./compress");
+
+const BULK = Array.from({ length: 120 }, (_, i) => `line ${i}: build output for module ${i} ok`).join("\n");
 
 describe("gateway compress in-path", () => {
-  it("never puts ask on compression trace; keeps user message", async () => {
+  it("never puts ask on compression trace; keeps user message and system prompt", async () => {
     const compress = createCompressFn({
       neuralKeep: async () => null,
+      heuristicFallback: true,
     });
     const ask = "what is the secret passphrase?";
+    const system = "You are a careful assistant. ".repeat(100);
     const ctx = {
       user_ask: ask,
-      context: "big context ".repeat(40),
       normalized: {
         messages: [
-          { role: "system", content: "big context ".repeat(40) },
+          { role: "system", content: system },
+          { role: "user", content: "check the build" },
+          { role: "tool", tool_call_id: "t1", content: BULK },
           { role: "user", content: ask },
         ],
       },
@@ -25,10 +30,10 @@ describe("gateway compress in-path", () => {
     assert.ok(ctx.compression.retained_tokens < ctx.compression.original_tokens);
     assert.equal(ctx.compression.query, undefined);
     assert.ok(!JSON.stringify(ctx.compression).includes("passphrase"));
-    const user = ctx.normalized.messages.find((m) => m.role === "user");
-    assert.equal(user.content, ask);
-    const system = ctx.normalized.messages.find((m) => m.role === "system");
-    assert.ok(system.content.length < "big context ".repeat(40).length);
+    const msgs = ctx.normalized.messages;
+    assert.equal(msgs[0].content, system, "system prompt is not rewritten by default");
+    assert.equal(msgs[3].content, ask);
+    assert.ok(msgs[2].content.length < BULK.length);
   });
 
   it("uses Neural Keep when injectable returns result", async () => {
@@ -42,10 +47,9 @@ describe("gateway compress in-path", () => {
     });
     const ctx = {
       user_ask: "q",
-      context: "lots of stuff",
       normalized: {
         messages: [
-          { role: "system", content: "lots of stuff" },
+          { role: "tool", tool_call_id: "t1", content: BULK },
           { role: "user", content: "q" },
         ],
       },
@@ -53,7 +57,38 @@ describe("gateway compress in-path", () => {
     await compress(ctx);
     assert.equal(ctx.compression.strategy, "neural_keep");
     assert.equal(ctx.compression.retained_tokens, 10);
-    assert.equal(ctx.context, "kept bits");
+    assert.equal(ctx.normalized.messages[0].content, "kept bits");
+  });
+
+  it("skips (no toy heuristic) when no compressor is available", async () => {
+    const compress = createCompressFn({ neuralKeep: async () => null });
+    const ctx = {
+      user_ask: "q",
+      normalized: {
+        messages: [
+          { role: "tool", tool_call_id: "t1", content: BULK },
+          { role: "user", content: "q" },
+        ],
+      },
+    };
+    await compress(ctx);
+    assert.equal(ctx.compression.strategy, "skip");
+    assert.equal(ctx.normalized.messages[0].content, BULK);
+  });
+
+  it("eligibleBlocks: tool results and earlier turns, never the ask or system by default", () => {
+    const msgs = [
+      { role: "system", content: BULK },
+      { role: "user", content: BULK },
+      { role: "assistant", content: BULK },
+      { role: "tool", content: BULK },
+      { role: "user", content: BULK },
+    ];
+    assert.deepEqual(
+      eligibleBlocks(msgs).map((b) => b.index).sort(),
+      [1, 2, 3]
+    );
+    assert.ok(eligibleBlocks(msgs, { includeSystem: true }).some((b) => b.index === 0));
   });
 
   it("applyCompressedToMessages preserves ask", () => {

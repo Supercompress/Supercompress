@@ -35,6 +35,14 @@ function createStoreFromEnv(options = {}) {
     });
   }
   const dir = options.durableDir || process.env.SC_CP_DURABLE_DIR || "";
+  if (dir && process.env.NODE_ENV === "production" && !options.allowFileInProduction) {
+    // The file store's lock is per-process: across machines or restarts it oversubscribes
+    // and strands held funds. Production uses Postgres, or the in-memory store with
+    // prepaid-credit billing (services/gateway, api/_lib/cp-billing.js).
+    const err = new Error("file_store_not_allowed_in_production");
+    err.code = "file_store_not_allowed_in_production";
+    throw err;
+  }
   if (dir) {
     const root = path.resolve(String(dir));
     return {

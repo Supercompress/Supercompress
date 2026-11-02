@@ -13,6 +13,7 @@ async function smoke(base = process.env.SUPERCOMPRESS_API_HOST || "https://api.s
     ["/api/v1/compress", 401, "POST"],
     ["/api/usage", 401, "GET"],
     ["/v1/chat/completions", 404, "POST"],
+    ["/v1/models", 404, "GET"],
     ["/v1/ops/insights", 404, "GET"],
     ["/v1/ops/otel", 404, "GET"],
     ["/v1/ops/console", 404, "GET"],

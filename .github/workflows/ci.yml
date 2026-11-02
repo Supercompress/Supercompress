@@ -66,6 +66,10 @@ jobs:
           node packages/proxy/test/runway-sim.js
       - name: CCR storage-key collision tests
         run: node web/assets/js/compress-engine-ccr.test.js
+      - name: Control plane + gateway tests (money, ledger, routing, billing bridge, release guard)
+        run: npm run test:cp
+      - name: API route + server tests
+        run: npm run test:api
       - name: Billing ledger unit tests
         run: node api/_lib/billing-ledger.test.js
       - name: Credit amount helpers

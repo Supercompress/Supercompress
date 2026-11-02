@@ -1,0 +1,69 @@
+# SuperCompress Control Plane gateway on Fly: OpenAI-compatible /v1/chat/completions and
+# /v1/models at https://gateway.supercompress.dev. Runs the same image as the API, but
+# SC_API_SURFACE=gateway serves only the gateway routes, so long model streams never take
+# request slots from compress, billing or MCP on supercompress-api.
+#
+# Launch runbook: docs/CP_RUNBOOK.md. Deploy: scripts/deploy-gateway.sh
+# Guard: node scripts/check-control-plane-release.js --gateway
+
+app = "supercompress-gateway"
+primary_region = "sjc"
+kill_signal = "SIGTERM"
+# Let in-flight streams finish (and settle billing) before the machine stops.
+kill_timeout = 300
+
+[build]
+  dockerfile = "services/api/Dockerfile"
+  ignorefile = "services/api/Dockerfile.dockerignore"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  SC_API_SURFACE = "gateway"
+  # Billing runs on Auth claims (same as supercompress-api). The gateway's credit billing
+  # refuses to run if this is not "0".
+  SUPERCOMPRESS_USE_FIRESTORE = "0"
+  # Approved launch flags. RESERVE stays off: holds go through prepaid-credit billing
+  # (api/_lib/cp-billing.js), not the local money store. ENTERPRISE and OPS stay off.
+  SC_CP_GATEWAY = "1"
+  SC_CP_LEDGER = "1"
+  SC_CP_TRACE = "1"
+  SC_CP_ROUTE = "1"
+  SC_CP_RESERVE = "0"
+  SC_CP_ENTERPRISE = "0"
+  SC_CP_OPS = "0"
+  # Per-account default daily gateway spend cap (USD); per-account override: sc_cp_daily_cap_usd claim.
+  SC_CP_DAILY_CAP_USD = "25"
+  # Neural Keep budget inside the request path; past it the local compiler runs instead.
+  SC_CP_NK_BUDGET_MS = "1500"
+  SC_CP_UPSTREAM_TIMEOUT_MS = "300000"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    # Requests are I/O-bound (waiting on providers); compress work is bounded per request.
+    hard_limit = 200
+    soft_limit = 150
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 2
+
+[checks]
+  [checks.alive]
+    type = "tcp"
+    port = 8080
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "20s"
+
+# Single machine on purpose: credit holds and the replay cache are in-process
+# (see docs/CP_RUNBOOK.md before scaling out).

@@ -85,14 +85,31 @@ describe("router strategies", () => {
     assert.equal(d.reason, "latency_prefer");
   });
 
-  it("weighted prefers higher weight", () => {
+  it("weighted prefers higher weight (deterministic mode)", () => {
     const d = selectRoute({
       retained_tokens: 1000,
       catalog,
+      random: null,
       policy: { routing: { strategy: "weighted", output_tokens_reserve: 100 } },
     });
     assert.equal(d.model, "fast-pricey");
     assert.equal(d.reason, "weighted");
+  });
+
+  it("weighted splits traffic in proportion to weight", () => {
+    const counts = {};
+    let seed = 7;
+    const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 2000; i++) {
+      const d = selectRoute({
+        retained_tokens: 1000,
+        catalog,
+        random,
+        policy: { routing: { strategy: "weighted", output_tokens_reserve: 100 } },
+      });
+      counts[d.model] = (counts[d.model] || 0) + 1;
+    }
+    assert.ok(Object.keys(counts).length > 1, JSON.stringify(counts));
   });
 
   it("max_tier excludes flagship", () => {

@@ -41,6 +41,7 @@ describe("first-class stream passthrough", () => {
     const gw = createWiredGateway({
       seedBalance: 20,
       estimated_max_usd: 1,
+      catalog: [require("../../packages/control-plane").STUB_MODEL],
       enableRouting: false,
       enableLedger: false,
       enforceReserve: false,
@@ -73,7 +74,7 @@ describe("first-class stream passthrough", () => {
     assert.ok(ctx.stream);
     const seen = [];
     for await (const p of ctx.stream) seen.push(p);
-    assert.deepEqual(seen, ["hel", "lo"]);
+    assert.deepEqual(seen, [{ content: "hel" }, { content: "lo" }]);
     assert.equal(ctx.provider_result.output.content, "hello");
     await gw.finalizeDeferred(ctx);
     assert.equal(ctx._deferred_finalize, false);

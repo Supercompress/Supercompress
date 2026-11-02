@@ -111,7 +111,13 @@ describe("createProvider across providers", () => {
 describe("catalog from env", () => {
   it("keeps the default catalog when no extra provider is configured", () => {
     const ids = catalogFromEnv({}).map((m) => m.id);
-    assert.deepEqual(ids.sort(), ["claude-haiku-3.5", "claude-sonnet-4", "gpt-4o", "gpt-4o-mini", "stub-model"]);
+    assert.deepEqual(ids.sort(), ["claude-haiku-5-5", "claude-opus-5-5", "claude-sonnet-5-5", "gpt-4o", "gpt-4o-mini"]);
+  });
+
+  it("drops default models whose provider has no key once any provider is configured", () => {
+    const ids = catalogFromEnv({ OPENAI_API_KEY: "sk" }).map((m) => m.id);
+    assert.ok(ids.includes("gpt-4o-mini"));
+    assert.ok(!ids.some((id) => id.startsWith("claude-")));
   });
 
   it("adds a provider's models only when its key is set", () => {
@@ -130,9 +136,9 @@ describe("catalog from env", () => {
 
   it("routes a context too big for every default model to a long-context provider once configured", () => {
     const retained = 400_000;
-    const without = selectRoute({ requested_model: "gpt-4o-mini", retained_tokens: retained, catalog: catalogFromEnv({}), policy: { version: 1, routing: { strategy: "cheapest_fit" } } });
+    const without = selectRoute({ requested_model: "gpt-4o-mini", retained_tokens: retained, catalog: catalogFromEnv({ OPENAI_API_KEY: "sk" }), policy: { version: 1, routing: { strategy: "cheapest_fit" } } });
     assert.equal(without.allow, false);
-    const withGemini = selectRoute({ requested_model: "gpt-4o-mini", retained_tokens: retained, catalog: catalogFromEnv({ GEMINI_API_KEY: "g" }), policy: { version: 1, routing: { strategy: "cheapest_fit" } } });
+    const withGemini = selectRoute({ requested_model: "gpt-4o-mini", retained_tokens: retained, catalog: catalogFromEnv({ OPENAI_API_KEY: "sk", GEMINI_API_KEY: "g" }), policy: { version: 1, routing: { strategy: "cheapest_fit" } } });
     assert.equal(withGemini.allow, true);
     assert.equal(withGemini.model, "gemini-2.5-flash");
   });
