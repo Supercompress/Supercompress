@@ -163,11 +163,11 @@ Policy: SuperCompress</code></pre>
         <p>If you don't want to install anything, call the hosted API directly. One-liner form-encoded POST works with any HTTP client:</p>
         <pre><code><span class="cm"># Quick one-liner</span>
 <span class="kw">curl</span> -d <span class="str">"context=Your long context here...&query=What do you want to know?"</span> \
-  <span class="kw">https://supercompress.dev/compress</span> \
+  <span class="kw">https://www.supercompress.dev/compress</span> \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span>
 
 <span class="cm"># Or as JSON (standard)</span>
-<span class="kw">curl</span> -X POST https://supercompress.dev/api/v1/compress \
+<span class="kw">curl</span> -X POST https://www.supercompress.dev/api/v1/compress \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
   -H <span class="str">"Content-Type: application/json"</span> \
   -d <span class="str">'{"context":"Your long context here…","query":"What do you want to know?"}'</span>
