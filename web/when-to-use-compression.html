@@ -115,14 +115,14 @@
 <li><strong>Context exceeds 1,000 tokens</strong>, Below this, the savings may not justify the overhead</li>
 <li><strong>Context contains irrelevant information</strong>, Standards table with update data for many questions, only some questions touch most standards</li>
 <li><strong>Cost is a primary concern</strong>, If you are tracking LLM spending, compression is your highest-ROI optimization</li>
-<li><strong>Latency matters</strong>, Compressing large contexts reduces LLM prefill time, often netting faster responses</li>
+<li><strong>Long sessions hit the context limit</strong>, Trimming large tool outputs before they reach the model leaves more room in the context window for the actual task</li>
 </ul>
       </section>
     <section class="seo-section">
         <h2>Skip when:</h2>
         <ul>
 <li><strong>Context is under 500 tokens</strong>, Minimal savings, and the compression overhead may not be worth it</li>
-<li><strong>Every token matters</strong>, Some critical applications need every line of context available, regardless of relevance</li>
+<li><strong>You need the full original text</strong>, Some applications, such as legal review or exact audits, must pass the complete source to the model, so compression is the wrong tool</li>
 <li><strong>You are debugging prompt quality</strong>, Compression adds a variable that complicates debugging</li>
 </ul>
       </section>

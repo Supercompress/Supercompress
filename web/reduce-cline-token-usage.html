@@ -96,7 +96,7 @@
     {
       "@type": "HowToStep",
       "name": "Install the CLI and run setup",
-      "text": "Run npm install -g supercompress-proxy && supercompress setup in a terminal. Setup detects Cline and wires it."
+      "text": "Run npm install -g supercompress-proxy && supercompress setup in a terminal. Setup links your SuperCompress account and installs the supercompress-mcp server. Then add one supercompress entry in Cline's own MCP settings, as shown in the manual step on this page."
     },
     {
       "@type": "HowToStep",
@@ -137,7 +137,7 @@
       "name": "How do I undo the Cline setup?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Run supercompress uninstall. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were."
+        "text": "Run supercompress uninstall for what setup added. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were. The supercompress entry you added by hand is removed by deleting it from ~/.cline/data/settings/cline_mcp_settings.json."
       }
     }
   ]
@@ -198,7 +198,7 @@
 
   <div class="article-prose">
     <div class="seo-verdict">
-      <strong>In short:</strong> keep tasks small, use the ignore file for generated code and switch off unused MCP servers. Then run <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>; setup finds Cline, Roo Code and Kilo Code in VS Code and adds the SuperCompress MCP server to each.
+      <strong>In short:</strong> keep tasks small, use the ignore file for generated code and switch off unused MCP servers. Then run <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> to link your account and install the <code>supercompress-mcp</code> server, and add one <code>supercompress</code> entry in the MCP settings of Cline, Roo Code or Kilo Code (shown below).
     </div>
 
     <h2 id="where-tokens-go">Where Cline tokens go</h2>
@@ -222,13 +222,13 @@
     <p>SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. Our Neural Keep model scores the lines against that question, keeps the original lines that answer it, and drops the rest. It never rewrites or summarizes, so file paths, error messages, IDs and code come back exactly as they were. The question itself is never compressed.</p>
     <p>Every compress call reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see what was dropped on your own work instead of trusting a headline number. The <code>usage_summary</code> MCP tool shows totals per agent for your account.</p>
 
-    <h2 id="what-setup-adds">What <code>supercompress setup</code> adds to Cline</h2>
+    <h2 id="what-setup-adds">What the SuperCompress MCP entry adds to Cline</h2>
     <table class="seo-table">
       <thead>
         <tr><th>What</th><th>Where</th><th>What it does</th></tr>
       </thead>
       <tbody>
-        <tr><td><strong>MCP server</strong></td><td>The extension's <code>cline_mcp_settings.json</code> in VS Code storage (Cline, Roo Code, Kilo Code)</td><td>Gives the agent the <code>compress_context</code>, <code>connect_account</code> and <code>usage_summary</code> tools.</td></tr>
+        <tr><td><strong>MCP server entry (added by you)</strong></td><td><code>~/.cline/data/settings/cline_mcp_settings.json</code>, the file current Cline builds read, opened in Cline from MCP Servers &gt; Configure &gt; Configure MCP Servers. Roo Code and Kilo Code keep their own MCP settings files, opened the same way from their MCP panels.</td><td>Gives the agent the <code>compress_context</code>, <code>connect_account</code> and <code>usage_summary</code> tools.</td></tr>
       </tbody>
     </table>
 
@@ -236,9 +236,21 @@
 
     <h2 id="install">Install</h2>
     <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
-    <p>Setup links your SuperCompress account in the browser, detects the coding agents on the machine and wires each one. Restart the agent so it loads the new MCP server. Then check what is wired up:</p>
+    <p>Setup links your SuperCompress account in the browser and installs the <code>supercompress-mcp</code> server command. Current Cline builds read their MCP configuration from <code>~/.cline/data/settings/cline_mcp_settings.json</code>, so you add the entry there yourself in the next step.</p>
+
+    <h3 id="add-the-mcp-entry">Add the MCP entry</h3>
+    <p>In Cline, open MCP Servers &gt; Configure &gt; Configure MCP Servers to open <code>~/.cline/data/settings/cline_mcp_settings.json</code>, then merge this into the existing <code>mcpServers</code> object (keep the servers already there):</p>
+    <pre><code>{
+  "mcpServers": {
+    "supercompress": {
+      "command": "supercompress-mcp",
+      "args": []
+    }
+  }
+}</code></pre>
+    <p>No API key goes in this entry; <code>supercompress setup</code> already linked your account. Save the file, then restart Cline or refresh its MCP server list, and confirm the server answers:</p>
     <pre><code>supercompress doctor</code></pre>
-    <p><code>doctor</code> prints a per-agent health check. <code>supercompress uninstall</code> removes only the entries SuperCompress added. Setup backs up each config file before it edits it.</p>
+    <p><code>doctor</code> prints a per-agent health check, and <code>supercompress mcp-check</code> confirms the MCP server answers. <code>supercompress uninstall</code> removes only the entries SuperCompress added, and the <code>supercompress</code> entry you added by hand comes out by deleting it from the same MCP settings file. Setup backs up each config file before it edits it.</p>
 
     <h2 id="when-to-skip">When to skip it</h2>
     <ul>
@@ -253,7 +265,7 @@
     <h3>Does SuperCompress summarize what Cline reads?</h3>
     <p>No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.</p>
     <h3>How do I undo the Cline setup?</h3>
-    <p>Run <code>supercompress uninstall</code>. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.</p>
+    <p>Run <code>supercompress uninstall</code> for what setup added. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were. The <code>supercompress</code> entry you added by hand is removed by deleting it from <code>~/.cline/data/settings/cline_mcp_settings.json</code>.</p>
 
     <p class="seo-cta-row">
       <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
