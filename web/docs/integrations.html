@@ -236,11 +236,11 @@ app.post(<span class="str">"/api/chat"</span>, sc.handler, <span class="kw">asyn
         <p>Call the hosted API from any language or script. Three ways, same result:</p>
         <pre><code><span class="cm"># Quickest, form-encoded, no JSON needed</span>
 <span class="kw">curl</span> -d <span class="str">"context=Your long context...&query=Summarize."</span> \
-  <span class="kw">https://supercompress.dev/compress</span> \
+  <span class="kw">https://www.supercompress.dev/compress</span> \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span>
 
 <span class="cm"># Standard JSON</span>
-<span class="kw">curl</span> -X POST https://supercompress.dev/api/v1/compress \
+<span class="kw">curl</span> -X POST https://www.supercompress.dev/api/v1/compress \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
   -H <span class="str">"Content-Type: application/json"</span> \
   -d <span class="str">'{"context":"Your long context…","query":"Summarize."}'</span>

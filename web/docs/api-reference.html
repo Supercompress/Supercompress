@@ -136,14 +136,14 @@ result = sc.compress(context, query, mode=<span class="str">"precision"</span>)<
         <div class="doc-callout doc-callout--tip">
           <span class="doc-callout-label">Quick start (curl)</span>
           One-liner, no JSON, no headers:
-          <pre style="margin-top:8px"><code><span class="kw">curl</span> -d <span class="str">"context=Your long text&query=What matters?"</span> <span class="kw">https://supercompress.dev/compress</span> \
+          <pre style="margin-top:8px"><code><span class="kw">curl</span> -d <span class="str">"context=Your long text&query=What matters?"</span> <span class="kw">https://www.supercompress.dev/compress</span> \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span></code></pre>
         </div>
 
         <h3>POST request</h3>
         <p>Send as JSON (standard) or form-encoded (simpler for curl). All three work:</p>
         <pre><code><span class="cm"># Option 1: JSON (standard)</span>
-<span class="kw">POST</span> https://supercompress.dev/api/v1/compress
+<span class="kw">POST</span> https://www.supercompress.dev/api/v1/compress
 <span class="kw">Content-Type:</span> application/json
 <span class="kw">X-API-Key:</span> sc_live_YOUR_KEY
 {
@@ -152,7 +152,7 @@ result = sc.compress(context, query, mode=<span class="str">"precision"</span>)<
 }
 
 <span class="cm"># Option 2: Form-encoded (quick curl)</span>
-<span class="kw">curl</span> -d <span class="str">"context=...&amp;query=..."</span> <span class="kw">https://supercompress.dev/compress</span> \
+<span class="kw">curl</span> -d <span class="str">"context=...&amp;query=..."</span> <span class="kw">https://www.supercompress.dev/compress</span> \
   -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span>
 
 <span class="cm"># Prefer header auth, API keys in the URL (?api_key=) are rejected</span>

@@ -62,6 +62,5 @@ Allow: /
 Disallow: /outreach
 Disallow: /ph-launch
 Disallow: /playbook
-Crawl-delay: 10
 
 Sitemap: https://www.supercompress.dev/sitemap.xml
