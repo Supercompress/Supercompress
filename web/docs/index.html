@@ -6,7 +6,7 @@
   <title>SuperCompress Documentation | Prompt Compression for LLMs</title>
   <meta name="description" content="Comprehensive documentation for SuperCompress: quickstart, API reference, integration guides, deployment options, and architecture deep-dive." />
   <meta property="og:title" content="SuperCompress Documentation" />
-  <meta property="og:description" content="Learn how to use SuperCompress: hosted query-aware Neural Keep keeps the original context that answers the question and drops the rest." />
+  <meta property="og:description" content="Learn how to use SuperCompress: the hosted query-aware API keeps the original context that answers the question and drops the rest." />
   <meta property="og:url" content="https://docs.supercompress.dev/docs" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:type" content="website" />
@@ -98,7 +98,7 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">SuperCompress documentation</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">v2 is the hosted query-aware Neural Keep model: it keeps the context that answers the query and cuts the rest. Hosted API, and an agent plugin for coding agents.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">v2 is the hosted query-aware compression engine: it keeps the context that answers the query and cuts the rest. Hosted API, and an agent plugin for coding agents.</p>
 
         <div class="doc-card-grid">
           <a href="https://docs.supercompress.dev/quickstart" class="doc-card">
@@ -119,7 +119,7 @@
           <a href="https://docs.supercompress.dev/usage" class="doc-card">
             <div class="card-icon">🚀</div>
             <h3>Usage</h3>
-            <p>Call the hosted API, Neural Keep runs on the service, not your machines.</p>
+            <p>Call the hosted API, compression runs on the service, not your machines.</p>
           </a>
           <a href="https://docs.supercompress.dev/architecture" class="doc-card">
             <div class="card-icon">🧠</div>
@@ -156,7 +156,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>Engine</td><td><strong>Hosted Neural Keep</strong> (live) · query-aware</td></tr>
+            <tr><td>Engine</td><td><strong>Hosted compression engine</strong> (live) · query-aware</td></tr>
             <tr><td>Quality metric</td><td><strong>Evidence containment</strong>, required lines survive in original wording. See <a href="https://www.supercompress.dev/benchmarks">benchmarks</a>.</td></tr>
             <tr><td>Strongest on</td><td>Coding-agent dumps: logs, diffs, stack traces, tool output</td></tr>
             <tr><td>Access</td><td><strong>API</strong> and an agent plugin for <strong>coding agents</strong></td></tr>
@@ -190,7 +190,7 @@
           <li><strong>Preserves</strong> context dependencies (nearby headings, imports, trace context)</li>
           <li><strong>Reports</strong> tokens saved, important context kept %, and compression risk level</li>
         </ol>
-        <p>The hosted Neural Keep path runs on the API (CPU today). A separate legacy compiler path exists for millisecond local preview, do not mix the two.</p>
+        <p>The hosted API is the supported path for apps and coding agents.</p>
 
         <div class="doc-footer">
           <p>SuperCompress · <a href="https://github.com/Supercompress/Supercompress">GitHub</a> · <a href="https://www.supercompress.dev/">Home</a> · <a href="https://www.supercompress.dev/dashboard?signup=1">Dashboard</a></p>

@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quickstart | SuperCompress Documentation</title>
-  <meta name="description" content="Get started with SuperCompress in under 5 minutes. Install, get an API key, compress your first prompt." />
+  <meta name="description" content="Get started with SuperCompress: get an API key and compress your first prompt with the hosted API, or add it to your coding agent with one npm command." />
   <meta property="og:title" content="Quickstart, SuperCompress Documentation" />
-  <meta property="og:description" content="Get started with SuperCompress in under 5 minutes." />
+  <meta property="og:description" content="Get started with SuperCompress: get an API key and compress your first prompt with the hosted API, or add it to your coding agent with one npm command." />
   <meta property="og:url" content="https://docs.supercompress.dev/quickstart" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:type" content="website" />
@@ -66,118 +66,46 @@
 
       <div class="docs-content">
         <h1 class="df-reveal">Quickstart</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Install SuperCompress, get an API key, and compress your first prompt, in under 5 minutes.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Get an API key and compress your first prompt with the hosted API, in under 5 minutes.</p>
 
         <div class="doc-callout doc-callout--info">
-          <span class="doc-callout-label">Prefer the hosted API?</span>
-          Skip the install and go straight to <a href="https://www.supercompress.dev/dashboard?signup=1">getting an API key</a>. The hosted API returns compressed results from Neural Keep.
+          <span class="doc-callout-label">Nothing to install</span>
+          The hosted API does the compression for you. <a href="https://www.supercompress.dev/dashboard?signup=1">Get an API key</a> and call it from any language.
         </div>
 
         <div class="doc-toc">
           <h3>In this guide</h3>
           <ol>
-            <li><a href="#install">Install the package</a></li>
             <li><a href="#get-a-key">Get an API key</a></li>
             <li><a href="#first-compression">Compress your first prompt</a></li>
-            <li><a href="#understand">Understand what happened</a></li>
+            <li><a href="#understand">Understand the response</a></li>
+            <li><a href="#coding-agents">Use it in a coding agent</a></li>
+            <li><a href="#python">Use it from Python</a></li>
             <li><a href="#next-steps">Next steps</a></li>
           </ol>
         </div>
 
-        <h2 id="install">1. Install the package</h2>
-        <p>The simplest way to try SuperCompress is with the Python library. It works on any system with Python 3.10+.</p>
-        <pre><code><span class="kw">pip</span> install supercompress</code></pre>
-        <p>That's it. No model downloads, no ONNX Runtime, no GPU drivers. The trained policy weights are bundled with the package (~200KB total).</p>
-
-        <p>For development (tests, frontend export):</p>
-        <pre><code><span class="kw">pip</span> install -e <span class="str">".&#91;dev&#93;"</span></code></pre>
-
-        <h2 id="get-a-key">2. Get an API key</h2>
-        <p>To use the hosted API, head to the <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>, sign in with Google or email, and create a key. Keys look like <code>sc_live_xxxxxxxx</code>.</p>
-        <p>For local-only use, you don't need a key, the library compresses entirely on-device.</p>
+        <h2 id="get-a-key">1. Get an API key</h2>
+        <p>Head to the <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>, sign in and create a key. Keys look like <code>sc_live_xxxxxxxx</code>.</p>
         <p>Set your key as an environment variable:</p>
         <pre><code><span class="kw">export</span> <span class="str">SUPERCOMPRESS_API_KEY</span>=sc_live_YOUR_KEY</code></pre>
 
-        <h2 id="first-compression">3. Compress your first prompt</h2>
-        <p>Create a file called <code>compress.py</code>:</p>
-        <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> compress_context
-
-context = <span class="str">"""\
-## User account info
-User ID: 4521
-Plan: Pro
-Billing cycle: monthly
-Seats: 5
-
-## Feature requests (Q2)
-Multi-workspace view, in progress
-Dark mode, planned
-API rate limit increase, under review
-
-## Recent activity
-2026-06-28, upgraded from Starter to Pro
-2026-06-25, generated 3 API keys
-2026-06-20, hit rate limit, filed support ticket
-"""</span>
-
-question = <span class="str">"What plan is the user on and how many seats do they have?"</span>
-
-result = compress_context(context, question)
-
-<span class="kw">print</span>(result.compressed_text)</code></pre>
-        <p>Run it:</p>
-        <pre><code><span class="kw">python</span> compress.py</code></pre>
-        <p>Output:</p>
-        <pre><code><span class="cm">## User account info</span>
-User ID: 4521
-Plan: Pro
-Billing cycle: monthly
-Seats: 5
-
-<span class="cm">## Recent activity</span>
-2026-06-28, upgraded from Starter to Pro</code></pre>
-        <p>Notice that the <strong>Feature requests</strong> section was dropped, it's irrelevant to a question about the current plan. The <strong>Recent activity</strong> section was partially kept because the upgrade confirms the plan. The compiler preserved what matters and cut the rest.</p>
-
-        <h2 id="understand">4. Understand what happened</h2>
-        <p>The <code>compress_context</code> function returns a <code>CompressResult</code> with useful metadata:</p>
-        <pre><code><span class="kw">print</span>(<span class="str">f"Original: {result.original_tokens} tokens"</span>)
-<span class="kw">print</span>(<span class="str">f"Compressed: {result.kept_tokens} tokens"</span>)
-<span class="kw">print</span>(<span class="str">f"Saved: {result.tokens_saved_pct:.1f}%"</span>)
-<span class="kw">print</span>(<span class="str">f"Policy: {result.policy_name}"</span>)</code></pre>
-        <p>On this example you'll see something like:</p>
-        <pre><code>Original: &lt;original_tokens&gt; tokens
-Compressed: &lt;kept_tokens&gt; tokens
-Saved: &lt;tokens_saved_pct&gt;%
-Policy: SuperCompress</code></pre>
-        <p>The function also supports <strong>compiler mode</strong> (default in the hosted API) which doesn't require a budget, it maximizes removal while keeping important evidence and reporting a risk level.</p>
-
-        <h2 id="next-steps">5. Next steps</h2>
-        <ul>
-          <li><strong>Use the hosted API</strong>: <code class="str">POST /api/v1/compress</code> (or just <code>/compress</code>) from any language. See the <a href="https://docs.supercompress.dev/api-reference">API reference</a>.</li>
-          <li><strong>Wire it into your app</strong>, add compression before OpenAI, LangChain, Express.js, or any LLM call. See <a href="https://docs.supercompress.dev/integrations">integrations</a>.</li>
-          <li><strong>Try the playground</strong>, test compression on your own text in-browser at <a href="https://www.supercompress.dev/playground">supercompress.dev/playground</a>.</li>
-          <li><strong>Compare approaches</strong>, see how SuperCompress stacks up against truncation, summarization, and H2O at <a href="https://www.supercompress.dev/benchmarks">supercompress.dev/benchmarks</a>.</li>
-        </ul>
-
-        <h2>Using the hosted API (curl)</h2>
-        <p>If you don't want to install anything, call the hosted API directly. One-liner form-encoded POST works with any HTTP client:</p>
-        <pre><code><span class="cm"># Quick one-liner</span>
-<span class="kw">curl</span> -d <span class="str">"context=Your long context here...&query=What do you want to know?"</span> \
+        <h2 id="first-compression">2. Compress your first prompt</h2>
+        <p>Send your context and your question to the hosted API. Here the context is an account summary, and the query asks about the current plan:</p>
+        <pre><code><span class="kw">curl</span> -X POST https://www.supercompress.dev/api/v1/compress \
+  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{
+    "context": "## User account info\nUser ID: 4521\nPlan: Pro\nBilling cycle: monthly\nSeats: 5\n\n## Feature requests (Q2)\nMulti-workspace view, in progress\nDark mode, planned\nAPI rate limit increase, under review\n\n## Recent activity\n2026-06-28, upgraded from Starter to Pro\n2026-06-25, generated 3 API keys\n2026-06-20, hit rate limit, filed support ticket",
+    "query": "What plan is the user on and how many seats do they have?"
+  }'</span></code></pre>
+        <p>Prefer a one-liner? A form-encoded POST to <code>/compress</code> works with any HTTP client:</p>
+        <pre><code><span class="kw">curl</span> -d <span class="str">"context=Your long context here...&query=What do you want to know?"</span> \
   <span class="kw">https://www.supercompress.dev/compress</span> \
-  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span>
+  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span></code></pre>
 
-<span class="cm"># Or as JSON (standard)</span>
-<span class="kw">curl</span> -X POST https://www.supercompress.dev/api/v1/compress \
-  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
-  -H <span class="str">"Content-Type: application/json"</span> \
-  -d <span class="str">'{"context":"Your long context here…","query":"What do you want to know?"}'</span>
-
-<span class="cm"># Or GET with query params (small contexts)</span>
-<span class="kw">curl</span> -X POST https://api.supercompress.dev/compress \
-  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
-  -H <span class="str">"Content-Type: application/json"</span> \
-  -d <span class="str">'{"context":"Your long context","query":"What do you want"}'</span></code></pre>
-        <p>All three work. Response:</p>
+        <h2 id="understand">3. Understand the response</h2>
+        <p>Example response:</p>
         <pre><code class="cm">{
   "compressed_text": "…",
   "original_tokens": 104,
@@ -188,14 +116,39 @@ Policy: SuperCompress</code></pre>
   "kept_blocks": ["User account info", "Recent activity"],
   "dropped_blocks": ["Feature requests (Q2)"]
 }</code></pre>
+        <p>Notice that the <strong>Feature requests</strong> section appears in <code>dropped_blocks</code>: it was dropped because it is irrelevant to a question about the current plan. The sections that answer the question were kept.</p>
+        <ul>
+          <li><code>compressed_text</code>: the compressed context to send to your model.</li>
+          <li><code>original_tokens</code> and <code>kept_tokens</code>: token counts before and after compression.</li>
+          <li><code>tokens_saved_pct</code>: the share of tokens removed.</li>
+          <li><code>compression_risk</code>: a risk level for this compression, such as <code>low</code>.</li>
+          <li><code>kept_blocks</code> and <code>dropped_blocks</code>: which sections of the context were kept or dropped.</li>
+        </ul>
 
-        <h2>Using the Python client</h2>
-        <p>The <code>SuperCompress</code> client wraps the hosted API for Python users:</p>
+        <h2 id="coding-agents">4. Use it in a coding agent</h2>
+        <p>One npm command wires SuperCompress into your coding agent:</p>
+        <pre><code><span class="kw">npm</span> i -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
+        <p>Then check the setup:</p>
+        <pre><code><span class="kw">supercompress</span> doctor</code></pre>
+        <p>See the <a href="https://docs.supercompress.dev/coding-agents">coding agents guide</a> for per-agent instructions.</p>
+
+        <h2 id="python">5. Use it from Python</h2>
+        <p>The <code>supercompress</code> package ships a thin Python client for the hosted API:</p>
+        <pre><code><span class="kw">pip</span> install supercompress</code></pre>
+        <p>Then, with the same context and question as above:</p>
         <pre><code><span class="kw">from</span> supercompress.client <span class="kw">import</span> SuperCompress
 
 sc = SuperCompress()  <span class="cm"># reads SUPERCOMPRESS_API_KEY</span>
 out = sc.compress(context, question)
 <span class="kw">print</span>(out.compressed_text)</code></pre>
+
+        <h2 id="next-steps">6. Next steps</h2>
+        <ul>
+          <li><strong>Read the API reference</strong>: <code class="str">POST /api/v1/compress</code> (or just <code>/compress</code>), response types, and client configuration. See the <a href="https://docs.supercompress.dev/api-reference">API reference</a>.</li>
+          <li><strong>Wire it into your app</strong>, add compression before OpenAI, LangChain, Express.js, or any LLM call. See <a href="https://docs.supercompress.dev/integrations">integrations</a>.</li>
+          <li><strong>Try the playground</strong>, test compression on your own text in-browser at <a href="https://www.supercompress.dev/playground">supercompress.dev/playground</a>.</li>
+        </ul>
+        <p>The Python package also includes an offline function for local experiments; see the <a href="https://docs.supercompress.dev/api-reference">API reference</a>.</p>
 
         <div class="doc-footer">
           <p>Next: <a href="https://docs.supercompress.dev/api-reference">API Reference →</a></p>
