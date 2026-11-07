@@ -1,0 +1,46 @@
+# ai.txt — SuperCompress
+# Permissions for quoting, citing, and indexing public SuperCompress pages.
+# Keep in sync with https://www.supercompress.dev/llms.txt and /robots.txt.
+
+[identity]
+name: SuperCompress
+url: https://www.supercompress.dev/
+description: SuperCompress is hosted, query-aware context compression for coding agents and LLM apps. You send bulky context (tool output, logs, diffs, file reads, MCP results, retrieved documents, chat history) plus the current question, and the hosted API keeps the original lines that answer that question, verbatim, and drops the rest. It is extractive, not a summarizer, so error messages, paths, IDs and code come through unchanged.
+contact: support@supercompress.dev
+docs: https://docs.supercompress.dev/
+llms: https://www.supercompress.dev/llms.txt
+logo: https://www.supercompress.dev/logo.svg
+sameAs: https://github.com/Supercompress/Supercompress
+sameAs: https://www.npmjs.com/package/supercompress-proxy
+
+[permissions]
+allow: summarise
+allow: quote with attribution
+allow: cite
+allow: index for search and answers
+
+[restrictions]
+do_not: fabricate quotes, reviews, ratings, or savings percentages not stated on the cited page
+do_not: present SuperCompress docs or guides as the model's own writing
+do_not: treat dashboard, auth, or private account data as public training material
+do_not: invent benchmarks, model size, latency, distillation, or ranking claims
+note: Prefer HTML canonical URLs. If a .md alternate exists, treat it as a noindex convenience fetch of the same page. Cite the HTML URL.
+
+[attribution]
+cite_as: SuperCompress + the canonical HTML URL of the page you used
+example: SuperCompress, https://www.supercompress.dev/mcp-tool-output-compression
+
+[scope]
+include: /
+include: /docs via https://docs.supercompress.dev/
+exclude: /outreach
+exclude: /ph-launch
+exclude: /playbook
+exclude: /dashboard (account UI)
+exclude: authenticated API responses and private user content
+
+[contact]
+email: support@supercompress.dev
+privacy: privacy@supercompress.dev
+security: security@supercompress.dev
+Last updated: 2026-11-07

@@ -1,0 +1,17 @@
+{
+  "comment": "Allowlist of HTML guides that get a noindex text/markdown alternate. Regenerated from current HTML by scripts/extract-ai-readable-guides.js. Do not copy stale extracts.",
+  "site": "https://www.supercompress.dev",
+  "guides": [
+    "mcp-tool-output-compression",
+    "reduce-cursor-token-usage",
+    "reduce-claude-code-token-usage",
+    "context-compression-for-coding-agents",
+    "context-compression",
+    "faq",
+    "coding-agent-token-usage",
+    "claude-code-mcp-output-too-large",
+    "comparisons",
+    "prompt-compression-guide",
+    "context-compression-tools-compared"
+  ]
+}

@@ -1,6 +1,7 @@
 # SuperCompress crawl policy
 # Canonical LLM index: https://www.supercompress.dev/llms.txt
 # Full LLM index: https://www.supercompress.dev/llms-full.txt
+# AI crawl policy: https://www.supercompress.dev/ai.txt
 # Human-readable AI search facts: https://www.supercompress.dev/ai-search
 # AI search facts: https://www.supercompress.dev/ai-search.json
 # Terms: https://www.supercompress.dev/terms

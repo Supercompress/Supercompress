@@ -118,15 +118,16 @@ function pathnameFromHref(href) {
 
 function scanTargets() {
   const htmlFiles = walkFiles(WEB).filter((f) => f.endsWith(".html"));
-  const txtFiles = [path.join(WEB, "llms.txt"), path.join(WEB, "llms-full.txt")].filter((f) =>
+  const txtFiles = [path.join(WEB, "llms.txt"), path.join(WEB, "llms-full.txt"), path.join(WEB, "ai.txt")].filter((f) =>
     fs.existsSync(f)
   );
-  return { htmlFiles, txtFiles };
+  const mdFiles = walkFiles(WEB).filter((f) => f.endsWith(".md"));
+  return { htmlFiles, txtFiles, mdFiles };
 }
 
 function findRedirectHrefs(config) {
   const redirects = unconditionalRedirectMap(config);
-  const { htmlFiles, txtFiles } = scanTargets();
+  const { htmlFiles, txtFiles, mdFiles } = scanTargets();
   const hits = [];
 
   for (const file of htmlFiles) {
@@ -149,7 +150,7 @@ function findRedirectHrefs(config) {
     });
   }
 
-  for (const file of txtFiles) {
+  for (const file of [...txtFiles, ...(mdFiles || [])]) {
     const rel = path.relative(ROOT, file).replace(/\\/g, "/");
     const hrefs = extractTxtHrefs(fs.readFileSync(file, "utf8"));
     hrefs.forEach((href, i) => {

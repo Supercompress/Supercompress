@@ -2,6 +2,16 @@
   "name": "SuperCompress",
   "url": "https://www.supercompress.dev/",
   "canonical_entity_url": "https://www.supercompress.dev/",
+  "entity": {
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/",
+    "description": "SuperCompress is hosted, query-aware context compression for coding agents and LLM apps. You send bulky context (tool output, logs, diffs, file reads, MCP results, retrieved documents, chat history) plus the current question, and the hosted API keeps the original lines that answer that question, verbatim, and drops the rest. It is extractive, not a summarizer, so error messages, paths, IDs and code come through unchanged.",
+    "logo": "https://www.supercompress.dev/logo.svg",
+    "sameAs": [
+      "https://github.com/Supercompress/Supercompress",
+      "https://www.npmjs.com/package/supercompress-proxy"
+    ]
+  },
   "last_updated": "2026-10-31",
   "repository": "https://github.com/Supercompress/Supercompress",
   "package": "https://pypi.org/project/supercompress/",
