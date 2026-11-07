@@ -143,6 +143,10 @@ jobs:
         run: node scripts/check-benchmark-gates.js
       - name: Static stylesheet path guard
         run: npm run check:stylesheet-paths
+      - name: AI-readable guides, entity JSON-LD, and SEO headers
+        run: |
+          node scripts/extract-ai-readable-guides.test.js
+          node scripts/extract-ai-readable-guides.js --check
       - name: API host redirect guard (no catch-all /compress 308)
         run: |
           node scripts/check-api-host-routes.test.js

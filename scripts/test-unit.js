@@ -28,6 +28,7 @@ const REPO_GUARDS = [
   { name: "guard: check-stylesheet-paths", file: "scripts/check-stylesheet-paths.js" },
   { name: "guard: check-api-host-routes", file: "scripts/check-api-host-routes.js" },
   { name: "guard: sync-compress-assets", file: "scripts/sync-compress-assets.js", args: ["--check"] },
+  { name: "guard: extract-ai-readable-guides", file: "scripts/extract-ai-readable-guides.js", args: ["--check"] },
 ];
 
 /**

@@ -12,6 +12,15 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8799
 
 
 class Handler(SimpleHTTPRequestHandler):
+    extensions_map = {
+        **SimpleHTTPRequestHandler.extensions_map,
+        ".md": "text/markdown; charset=utf-8",
+        ".svg": "image/svg+xml",
+        ".txt": "text/plain; charset=utf-8",
+        ".json": "application/json; charset=utf-8",
+        ".xml": "application/xml; charset=utf-8",
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
