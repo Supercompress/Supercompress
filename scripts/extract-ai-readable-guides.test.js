@@ -35,6 +35,8 @@ assert.equal(
   `see [FAQ](${SITE}/faq) and \`compress_context\``
 );
 assert.equal(convertInline("<strong>In short:</strong> keep original lines"), "**In short:** keep original lines");
+assert.equal(convertInline("<code>a&#96;b</code>"), "`` a`b ``");
+assert.equal(convertInline("<code>a\\b</code>"), "`a\\b`");
 
 const tableMd = tableToMarkdown(
   "<thead><tr><th>Tool</th><th>What it does</th></tr></thead><tbody><tr><td><code>compress_context</code></td><td>Keeps lines</td></tr></tbody>"

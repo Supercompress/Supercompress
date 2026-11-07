@@ -233,6 +233,26 @@ function escapeTableCell(text) {
     .trim();
 }
 
+/**
+ * CommonMark code span: use a backtick string longer than any run in the
+ * content. Do not backslash-escape backticks (that is not how code spans
+ * work, and a lone `replace(/`/g)` is the incomplete-escaping pattern).
+ */
+function wrapInlineCode(text) {
+  const body = String(text).replace(/\n+/g, " ").trim();
+  if (!body) return "";
+  let longest = 0;
+  const runs = body.match(/`+/g);
+  if (runs) {
+    for (const run of runs) {
+      if (run.length > longest) longest = run.length;
+    }
+  }
+  const ticks = "`".repeat(longest + 1);
+  const pad = longest > 0 ? " " : "";
+  return ticks + pad + body + pad + ticks;
+}
+
 function stashFence(slots, body) {
   const id = slots.length;
   slots.push(body.replace(/\n$/, ""));
@@ -278,8 +298,7 @@ function renderInline(nodes, ctx) {
       continue;
     }
     if (name === "code") {
-      const text = decodeEntitiesOnce(rawText(node)).replace(/\n+/g, " ").trim();
-      out += text ? "`" + text.replace(/`/g, "\\`") + "`" : "";
+      out += wrapInlineCode(decodeEntitiesOnce(rawText(node)));
       continue;
     }
     out += renderInline(node.children, ctx);
