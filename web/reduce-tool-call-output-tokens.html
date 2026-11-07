@@ -175,7 +175,7 @@
   -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"context":"&lt;tool output&gt;","query":"why did the checkout test fail?"}'</code></pre>
-<p>The response includes the kept text plus <code>original_tokens</code> and <code>kept_tokens</code>. Lines are kept verbatim, never rewritten. Coding agents do not need to call this by hand: <code>supercompress setup</code> installs the MCP tool and hooks.</p>
+<p>The response includes the kept text plus <code>original_tokens</code> and <code>kept_tokens</code>. Lines are kept verbatim, never rewritten. Coding agents do not need to call this by hand: <code>supercompress setup</code> installs the MCP tool and hooks. The MCP-specific walkthrough is <a href="https://www.supercompress.dev/mcp-tool-output-compression">MCP tool output compression</a>.</p>
     <h2 id="combine">How do these techniques fit together?</h2>
     <ol><li>Filter at the source (query parameters, flags, <code>--quiet</code> modes).</li><li>Cap and paginate with an honest truncation marker.</li><li>Compress what is left against the question.</li><li>Trim stale results on later turns.</li></ol><p>Then compare your provider bill per finished task with and without each step. Fewer tokens in one place can be offset by extra retries elsewhere.</p>
     <h2 id="faq">Frequently asked questions</h2>

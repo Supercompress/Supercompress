@@ -174,7 +174,7 @@
 <tr><td>Auditability</td><td>Kept text is a subset of the input</td><td>Must compare summary to source</td></tr>
 <tr><td>Cost to run</td><td>A scoring model</td><td>An extra LLM generation</td></tr></tbody></table>
     <h2 id="which">Which should you use?</h2>
-    <p>Use extractive compression for tool output, stack traces, diffs, config, JSON and retrieved documents where exact wording matters. Use abstractive summaries for long conversational history when the gist is enough. Many agents use both: extract at the tool boundary, summarize old history.</p>
+    <p>Use extractive compression for tool output, stack traces, diffs, config, JSON and retrieved documents where exact wording matters. Use abstractive summaries for long conversational history when the gist is enough. Many agents use both: extract at the tool boundary, summarize old history. That split is the usual pattern in <a href="https://www.supercompress.dev/context-compression-for-coding-agents">context compression for coding agents</a>.</p>
     <h2 id="pruning">Where does token pruning fit?</h2>
     <p>Token-level pruning, as in Microsoft's <a href="https://github.com/microsoft/LLMLingua/">LLMLingua</a>, is extractive at the token level. It can leave text that is ungrammatical but readable to a model. Line-level extraction keeps whole lines, which tends to suit code and logs. See <a href="/supercompress-vs-llmlingua">SuperCompress vs LLMLingua</a>.</p><pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
     <h2 id="faq">Frequently asked questions</h2>
