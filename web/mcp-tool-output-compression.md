@@ -4,22 +4,20 @@ Canonical HTML: https://www.supercompress.dev/mcp-tool-output-compression
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# MCP tool output compression: keep the lines that answer the question
-
 MCP tools return whatever the server sends back: full JSON objects, long logs, whole files, pages of search hits. All of it lands in the model's context, and it is paid for again on every turn it stays there. SuperCompress compresses MCP tool results against the question your agent is working on, so the model reads the lines that answer it instead of the whole dump.
 
-    [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
-    [Claude Code](https://www.supercompress.dev/reduce-claude-code-token-usage)
-    [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
-    [FAQ](https://www.supercompress.dev/faq)
-    [Coding agents](https://docs.supercompress.dev/coding-agents)
-    [API reference](https://docs.supercompress.dev/api-reference)
-    [Playground](https://www.supercompress.dev/playground)
-    [vs RTK](https://www.supercompress.dev/supercompress-vs-rtk)
-    [vs Headroom](https://www.supercompress.dev/supercompress-vs-headroom)
-    [Changelog](https://www.supercompress.dev/changelog)
+- [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+- [Claude Code](https://www.supercompress.dev/reduce-claude-code-token-usage)
+- [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
+- [FAQ](https://www.supercompress.dev/faq)
+- [Coding agents](https://docs.supercompress.dev/coding-agents)
+- [API reference](https://docs.supercompress.dev/api-reference)
+- [Playground](https://www.supercompress.dev/playground)
+- [vs RTK](https://www.supercompress.dev/supercompress-vs-rtk)
+- [vs Headroom](https://www.supercompress.dev/supercompress-vs-headroom)
+- [Changelog](https://www.supercompress.dev/changelog)
 
-      **In short:** send SuperCompress the tool result plus the current question. It keeps the original lines that answer that question and drops the rest. It never rewrites or summarizes, and every response reports `original_tokens` and `kept_tokens`.
+**In short:** send SuperCompress the tool result plus the current question. It keeps the original lines that answer that question and drops the rest. It never rewrites or summarizes, and every response reports `original_tokens` and `kept_tokens`.
 
 Related: [compare context compression tools](https://www.supercompress.dev/alternatives) that sit on tool output, including [Headroom alternatives](https://www.supercompress.dev/alternatives/headroom), [Caveman alternatives](https://www.supercompress.dev/alternatives/caveman) and [ScaleDown alternatives](https://www.supercompress.dev/alternatives/scaledown). See also [MCP context bloat](https://www.supercompress.dev/mcp-context-bloat) and [how to reduce tool call output tokens](https://www.supercompress.dev/reduce-tool-call-output-tokens).
 
@@ -73,7 +71,7 @@ Or call the HTTP API directly with an API key from the [dashboard](https://www.s
 curl -X POST https://www.supercompress.dev/api/v1/compress \
   -H "X-API-Key: sc_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"context": "", "query": ""}'
+  -d '{"context": "<the MCP tool result>", "query": "<what the agent is trying to answer>"}'
 ```
 
 Request fields and response fields are in the [API reference](https://docs.supercompress.dev/api-reference).
@@ -113,5 +111,4 @@ The current question or task. SuperCompress uses it to decide which lines to kee
 
 Each response includes `original_tokens` and `kept_tokens`. For account totals, call the `usage_summary` MCP tool.
 
-[Get API key](https://www.supercompress.dev/dashboard?signup=1)
-      [Coding agents guide](https://docs.supercompress.dev/coding-agents)
+[Get API key](https://www.supercompress.dev/dashboard?signup=1) [Coding agents guide](https://docs.supercompress.dev/coding-agents)

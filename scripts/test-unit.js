@@ -27,8 +27,8 @@ const REPO_GUARDS = [
   { name: "guard: check-versions", file: "scripts/check-versions.js" },
   { name: "guard: check-stylesheet-paths", file: "scripts/check-stylesheet-paths.js" },
   { name: "guard: check-api-host-routes", file: "scripts/check-api-host-routes.js" },
-  { name: "guard: sync-compress-assets", file: "scripts/sync-compress-assets.js", args: ["--check"] },
-  { name: "guard: extract-ai-readable-guides", file: "scripts/extract-ai-readable-guides.js", args: ["--check"] },
+  { name: "guard: sync-compress-assets", file: "scripts/sync-compress-assets.js", scriptArgs: ["--check"] },
+  { name: "guard: extract-ai-readable-guides", file: "scripts/extract-ai-readable-guides.js", scriptArgs: ["--check"] },
 ];
 
 /**
@@ -36,7 +36,7 @@ const REPO_GUARDS = [
  *
  * @param {string[]} searchDirs - Array of directory paths relative to repoRoot.
  * @param {string} [repoRoot=ROOT] - Root directory of the repository.
- * @returns {Array<{ name: string, file: string, args?: string[] }>} List of discovered test suite definitions.
+ * @returns {Array<{ name: string, file: string, args?: string[], scriptArgs?: string[] }>} List of discovered test suite definitions.
  */
 function findTestFiles(searchDirs = TEST_SEARCH_DIRS, repoRoot = ROOT) {
   const discovered = [];
@@ -83,7 +83,7 @@ function findTestFiles(searchDirs = TEST_SEARCH_DIRS, repoRoot = ROOT) {
  * Builds the complete list of test suites, combining auto-discovered unit tests and repository guards.
  *
  * @param {string} [repoRoot=ROOT] - Root directory of the repository.
- * @returns {Array<{ name: string, file: string, args?: string[] }>} Combined list of test suites.
+ * @returns {Array<{ name: string, file: string, args?: string[], scriptArgs?: string[] }>} Combined list of test suites.
  */
 function buildTestSuiteList(repoRoot = ROOT) {
   const unitTests = findTestFiles(TEST_SEARCH_DIRS, repoRoot);
@@ -93,13 +93,15 @@ function buildTestSuiteList(repoRoot = ROOT) {
 /**
  * Executes a single test suite process synchronously.
  *
- * @param {{ name: string, file: string, args?: string[] }} suite - Suite configuration.
+ * @param {{ name: string, file: string, args?: string[], scriptArgs?: string[] }} suite - Suite configuration.
  * @param {string} [repoRoot=ROOT] - Root directory of the repository.
  * @returns {{ ok: boolean, status: number | null, stdout: string, stderr: string }} Execution result.
  */
 function runSuite(suite, repoRoot = ROOT) {
   const fullPath = path.join(repoRoot, suite.file);
-  const args = [...(suite.args || []), fullPath];
+  // Node flags (e.g. --test) must precede the script path; script CLI flags follow it.
+  // `node --check file.js` is a syntax check and would skip extractor/asset guards.
+  const args = [...(suite.args || []), fullPath, ...(suite.scriptArgs || [])];
 
   const res = spawnSync(process.execPath, args, {
     cwd: repoRoot,
@@ -118,7 +120,7 @@ function runSuite(suite, repoRoot = ROOT) {
 /**
  * Executes all test suites and repository guards, printing formatted results.
  *
- * @param {Array<{ name: string, file: string, args?: string[] }>} [suites] - Optional list of suites to run.
+ * @param {Array<{ name: string, file: string, args?: string[], scriptArgs?: string[] }>} [suites] - Optional list of suites to run.
  * @param {string} [repoRoot=ROOT] - Root directory of the repository.
  * @returns {boolean} True if all suites passed, false otherwise.
  */

@@ -4,20 +4,18 @@ Canonical HTML: https://www.supercompress.dev/context-compression-for-coding-age
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# Context compression for coding agents: approaches compared
-
 There are now many tools that promise to shrink what a coding agent reads. They work at very different points: before a command runs, between the agent and an MCP server, on the whole request on the wire, or on one result against the current question. Here is how the approaches compare and how to test any of them on your own work.
 
-    [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
-    [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
-    [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression)
-    [Claude Code context limit](https://www.supercompress.dev/claude-code-context-limit)
-    [Rate-limit runway](https://www.supercompress.dev/coding-agent-rate-limits)
-    [MCP output too large](https://www.supercompress.dev/claude-code-mcp-output-too-large)
-    [FAQ](https://www.supercompress.dev/faq)
-    [Verbatim lines vs token pruning](https://www.supercompress.dev/verbatim-lines-vs-token-pruning)
+- [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+- [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
+- [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression)
+- [Claude Code context limit](https://www.supercompress.dev/claude-code-context-limit)
+- [Rate-limit runway](https://www.supercompress.dev/coding-agent-rate-limits)
+- [MCP output too large](https://www.supercompress.dev/claude-code-mcp-output-too-large)
+- [FAQ](https://www.supercompress.dev/faq)
+- [Verbatim lines vs token pruning](https://www.supercompress.dev/verbatim-lines-vs-token-pruning)
 
-      **In short:** pick by where your tokens go. Noisy shell commands: an output filter. Huge MCP results: a proxy or result compression. Long sessions: built-in compaction. Bulky output where only a few lines answer the current question: query-aware extraction such as SuperCompress. Measure on your own sessions, not on a vendor headline.
+**In short:** pick by where your tokens go. Noisy shell commands: an output filter. Huge MCP results: a proxy or result compression. Long sessions: built-in compaction. Bulky output where only a few lines answer the current question: query-aware extraction such as SuperCompress. Measure on your own sessions, not on a vendor headline.
 
 Related: [compare context compression tools](https://www.supercompress.dev/alternatives), including [Headroom alternatives](https://www.supercompress.dev/alternatives/headroom), [Caveman alternatives](https://www.supercompress.dev/alternatives/caveman), and the [Caveman Cloud alternative](https://www.supercompress.dev/alternatives/caveman-cloud). See also [what is context compression for AI agents](https://www.supercompress.dev/what-is-context-compression-for-ai-agents), [verbatim lines vs token pruning](https://www.supercompress.dev/verbatim-lines-vs-token-pruning), [context rot](https://www.supercompress.dev/context-rot), and [LLM context window too long](https://www.supercompress.dev/llm-context-window-too-long).
 
@@ -80,6 +78,4 @@ No. It is extractive: it keeps original lines and drops the rest, so error messa
 
 Yes. They act at different points and can be combined.
 
-[Get API key](https://www.supercompress.dev/dashboard?signup=1)
-      [Coding agents guide](https://docs.supercompress.dev/coding-agents)
-      [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+[Get API key](https://www.supercompress.dev/dashboard?signup=1) [Coding agents guide](https://docs.supercompress.dev/coding-agents) [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)

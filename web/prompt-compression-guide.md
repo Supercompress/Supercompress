@@ -4,8 +4,6 @@ Canonical HTML: https://www.supercompress.dev/prompt-compression-guide
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# Prompt Compression Guide
-
 Last updated July 3, 2026 · 15 min read
 
 Everything you need to know about compressing LLM prompts in production, methods, benchmarks, framework integration, and deployment strategies, from the team behind SuperCompress.
@@ -14,13 +12,13 @@ Compare every tool: [context compression and token tools compared](https://www.s
 
 ## Table of Contents
 
-1. [1. What Is Prompt Compression?](#what-is-prompt-compression)
-2. [2. Compression Methods Compared](#methods)
-3. [3. Benchmarks & Quality Metrics](#benchmarks)
-4. [4. Framework Integration](#frameworks)
-5. [5. Production Deployment](#deployment)
-6. [6. Best Practices](#best-practices)
-7. [7. FAQ](#faq)
+1. [1. What Is Prompt Compression?](https://www.supercompress.dev/prompt-compression-guide#what-is-prompt-compression)
+2. [2. Compression Methods Compared](https://www.supercompress.dev/prompt-compression-guide#methods)
+3. [3. Benchmarks & Quality Metrics](https://www.supercompress.dev/prompt-compression-guide#benchmarks)
+4. [4. Framework Integration](https://www.supercompress.dev/prompt-compression-guide#frameworks)
+5. [5. Production Deployment](https://www.supercompress.dev/prompt-compression-guide#deployment)
+6. [6. Best Practices](https://www.supercompress.dev/prompt-compression-guide#best-practices)
+7. [7. FAQ](https://www.supercompress.dev/prompt-compression-guide#faq)
 
 ## 1. What Is Prompt Compression?
 
@@ -158,6 +156,4 @@ SuperCompress is query-aware: it scores context against the question, ships MCP 
 
 They solve different problems. Caching skips the LLM call entirely when identical prompts appear. Compression reduces the cost of every call, including unique ones. For most production systems, the best approach is both: cache identical prompts, compress everything else.
 
-      [Try it in the playground &rarr;](https://www.supercompress.dev/playground)
-      [GitHub](https://github.com/Supercompress/Supercompress)
-      [Get an API key](https://www.supercompress.dev/dashboard)
+[Try it in the playground &rarr;](https://www.supercompress.dev/playground) [GitHub](https://github.com/Supercompress/Supercompress) [Get an API key](https://www.supercompress.dev/dashboard)

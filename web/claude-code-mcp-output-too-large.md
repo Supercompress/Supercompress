@@ -4,18 +4,16 @@ Canonical HTML: https://www.supercompress.dev/claude-code-mcp-output-too-large
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# Claude Code MCP tool output too large: what to do
-
 Claude Code warns when an MCP tool returns a very large result and caps how much of it is passed to the model. Raising the cap makes the warning go away but puts the whole result in context. Here are the options, from the setting to fixes that shrink the result itself.
 
-    [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
-    [Approaches compared](https://www.supercompress.dev/context-compression-for-coding-agents)
-    [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
-    [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression)
-    [Claude Code context limit](https://www.supercompress.dev/claude-code-context-limit)
-    [FAQ](https://www.supercompress.dev/faq)
+- [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+- [Approaches compared](https://www.supercompress.dev/context-compression-for-coding-agents)
+- [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
+- [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression)
+- [Claude Code context limit](https://www.supercompress.dev/claude-code-context-limit)
+- [FAQ](https://www.supercompress.dev/faq)
 
-      **In short:** raise `MAX_MCP_OUTPUT_TOKENS` only when the whole result really matters. Otherwise ask the server for less (filters, fields, pages), or compress the result against the current question with SuperCompress so Claude keeps the lines that answer it.
+**In short:** raise `MAX_MCP_OUTPUT_TOKENS` only when the whole result really matters. Otherwise ask the server for less (filters, fields, pages), or compress the result against the current question with SuperCompress so Claude keeps the lines that answer it.
 
 ## Why it happens
 
@@ -66,6 +64,4 @@ Only when the agent really needs the whole result in context. Claude Code also h
 
 No. It works on the result text. Your MCP servers keep working as before.
 
-[Get API key](https://www.supercompress.dev/dashboard?signup=1)
-      [Coding agents guide](https://docs.supercompress.dev/coding-agents)
-      [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+[Get API key](https://www.supercompress.dev/dashboard?signup=1) [Coding agents guide](https://docs.supercompress.dev/coding-agents) [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)

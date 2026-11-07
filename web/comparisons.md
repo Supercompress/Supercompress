@@ -4,16 +4,14 @@ Canonical HTML: https://www.supercompress.dev/comparisons
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# Context compression and token tools compared
-
 **Short answer:** context and token tools attack different problems. Compression of input context (SuperCompress, Headroom, LLMLingua, Compresr, Bear), shell output filters (rtk), code retrieval (claude-context, jCodeMunch), local gateways (LeanCTX, Tokenade, context-mode) and output style (Caveman, claude-token-efficient). Pick by which tokens dominate your bill.
 
-    [All comparisons](https://www.supercompress.dev/comparisons)
-    [Headroom alternatives](https://www.supercompress.dev/headroom-alternatives)
-    [Context compression guide](https://www.supercompress.dev/context-compression)
-    [Tools compared](https://www.supercompress.dev/context-compression-tools-compared)
-    [Claude Code tokens](https://www.supercompress.dev/reduce-claude-code-token-usage)
-    [FAQ](https://www.supercompress.dev/faq)
+- [All comparisons](https://www.supercompress.dev/comparisons)
+- [Headroom alternatives](https://www.supercompress.dev/headroom-alternatives)
+- [Context compression guide](https://www.supercompress.dev/context-compression)
+- [Tools compared](https://www.supercompress.dev/context-compression-tools-compared)
+- [Claude Code tokens](https://www.supercompress.dev/reduce-claude-code-token-usage)
+- [FAQ](https://www.supercompress.dev/faq)
 
 ## Every tool at a glance
 
@@ -94,6 +92,4 @@ SuperCompress keeps whole original lines verbatim. Token-pruning tools such as L
 
 No. SuperCompress publishes them and lists itself. Claims about other tools come from their own docs; we recommend testing on your own tasks.
 
-[Get API key](https://www.supercompress.dev/dashboard?signup=1)
-      [Coding agents guide](https://docs.supercompress.dev/coding-agents)
-      [All comparisons](https://www.supercompress.dev/comparisons)
+[Get API key](https://www.supercompress.dev/dashboard?signup=1) [Coding agents guide](https://docs.supercompress.dev/coding-agents) [All comparisons](https://www.supercompress.dev/comparisons)

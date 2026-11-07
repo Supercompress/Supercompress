@@ -4,23 +4,21 @@ Canonical HTML: https://www.supercompress.dev/reduce-cursor-token-usage
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# Reduce Cursor token usage: keep the lines your agent needs
-
 A long Cursor agent thread sends the conversation back to the model on every turn, and most of that conversation is tool output: file reads, shell and test logs, search hits and MCP results. Here is where Cursor tokens go, the habits that cut them for free, and how SuperCompress keeps only the lines that answer the question your agent is working on.
 
-    [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
-    [Claude Code](https://www.supercompress.dev/reduce-claude-code-token-usage)
-    [Goose](https://www.supercompress.dev/reduce-goose-token-usage)
-    [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
-    [FAQ](https://www.supercompress.dev/faq)
-    [Coding agents](https://docs.supercompress.dev/coding-agents)
-    [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression)
-    [Playground](https://www.supercompress.dev/playground)
-    [vs RTK](https://www.supercompress.dev/supercompress-vs-rtk)
-    [vs Headroom](https://www.supercompress.dev/supercompress-vs-headroom)
-    [Changelog](https://www.supercompress.dev/changelog)
+- [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+- [Claude Code](https://www.supercompress.dev/reduce-claude-code-token-usage)
+- [Goose](https://www.supercompress.dev/reduce-goose-token-usage)
+- [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
+- [FAQ](https://www.supercompress.dev/faq)
+- [Coding agents](https://docs.supercompress.dev/coding-agents)
+- [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression)
+- [Playground](https://www.supercompress.dev/playground)
+- [vs RTK](https://www.supercompress.dev/supercompress-vs-rtk)
+- [vs Headroom](https://www.supercompress.dev/supercompress-vs-headroom)
+- [Changelog](https://www.supercompress.dev/changelog)
 
-      **In short:** keep each chat to one task, attach only the files you need, and trim rules and MCP servers you don't use. Then run `npm install -g supercompress-proxy && supercompress setup` so your agent can compress bulky tool output against your current question. SuperCompress keeps the original lines that answer it, drops the rest, and reports `original_tokens` and `kept_tokens` on every call.
+**In short:** keep each chat to one task, attach only the files you need, and trim rules and MCP servers you don't use. Then run `npm install -g supercompress-proxy && supercompress setup` so your agent can compress bulky tool output against your current question. SuperCompress keeps the original lines that answer it, drops the rest, and reports `original_tokens` and `kept_tokens` on every call.
 
 ## Where Cursor tokens go
 
@@ -114,5 +112,4 @@ Run `supercompress uninstall`. Setup only adds its own entries to Cursor's `mcp.
 
 Related: [Cursor MCP context compression](https://www.supercompress.dev/cursor-mcp-context-compression).
 
-[Get API key](https://www.supercompress.dev/dashboard?signup=1)
-      [Coding agents guide](https://docs.supercompress.dev/coding-agents)
+[Get API key](https://www.supercompress.dev/dashboard?signup=1) [Coding agents guide](https://docs.supercompress.dev/coding-agents)

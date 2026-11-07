@@ -4,18 +4,16 @@ Canonical HTML: https://www.supercompress.dev/faq
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# SuperCompress FAQ
-
 Short answers to the questions people ask most about SuperCompress, for coding agents and for apps.
 
-    [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
-    [Approaches compared](https://www.supercompress.dev/context-compression-for-coding-agents)
-    [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
-    [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression)
-    [Claude Code context limit](https://www.supercompress.dev/claude-code-context-limit)
-    [MCP output too large](https://www.supercompress.dev/claude-code-mcp-output-too-large)
+- [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+- [Approaches compared](https://www.supercompress.dev/context-compression-for-coding-agents)
+- [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
+- [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression)
+- [Claude Code context limit](https://www.supercompress.dev/claude-code-context-limit)
+- [MCP output too large](https://www.supercompress.dev/claude-code-mcp-output-too-large)
 
-      **In short:** SuperCompress keeps the original lines that answer your agent's current question and drops the rest. Install with `npm install -g supercompress-proxy && supercompress setup`.
+**In short:** SuperCompress keeps the original lines that answer your agent's current question and drops the rest. Install with `npm install -g supercompress-proxy && supercompress setup`.
 
 Related: [compare context compression tools](https://www.supercompress.dev/alternatives), including [Headroom alternatives](https://www.supercompress.dev/alternatives/headroom), [Caveman alternatives](https://www.supercompress.dev/alternatives/caveman), and the [Caveman Cloud alternative](https://www.supercompress.dev/alternatives/caveman-cloud).
 
@@ -75,6 +73,4 @@ Run `supercompress uninstall`. It removes only the entries SuperCompress added.
 
 Current plans and your free allowance are shown in the [dashboard](https://www.supercompress.dev/dashboard?signup=1).
 
-[Get API key](https://www.supercompress.dev/dashboard?signup=1)
-      [Coding agents guide](https://docs.supercompress.dev/coding-agents)
-      [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+[Get API key](https://www.supercompress.dev/dashboard?signup=1) [Coding agents guide](https://docs.supercompress.dev/coding-agents) [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)

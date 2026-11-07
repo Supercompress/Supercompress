@@ -4,21 +4,19 @@ Canonical HTML: https://www.supercompress.dev/reduce-claude-code-token-usage
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# Reduce Claude Code Token Usage: Keep Only the Lines That Matter
-
 Every Claude Code turn resends the session so far, and most of that session is tool output: file reads, Bash and test logs, Grep hits and MCP results. Here is where Claude Code tokens go, the built-in commands and habits that cut them, and how SuperCompress keeps only the lines that answer the question Claude is working on.
 
-    [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
-    [Cursor](https://www.supercompress.dev/reduce-cursor-token-usage)
-    [Codex](https://www.supercompress.dev/reduce-codex-token-usage)
-    [Hermes Agent](https://www.supercompress.dev/reduce-hermes-agent-token-usage)
-    [Goose](https://www.supercompress.dev/reduce-goose-token-usage)
-    [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
-    [Approaches compared](https://www.supercompress.dev/context-compression-for-coding-agents)
-    [Rate-limit runway](https://www.supercompress.dev/coding-agent-rate-limits)
-    [FAQ](https://www.supercompress.dev/faq)
+- [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+- [Cursor](https://www.supercompress.dev/reduce-cursor-token-usage)
+- [Codex](https://www.supercompress.dev/reduce-codex-token-usage)
+- [Hermes Agent](https://www.supercompress.dev/reduce-hermes-agent-token-usage)
+- [Goose](https://www.supercompress.dev/reduce-goose-token-usage)
+- [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
+- [Approaches compared](https://www.supercompress.dev/context-compression-for-coding-agents)
+- [Rate-limit runway](https://www.supercompress.dev/coding-agent-rate-limits)
+- [FAQ](https://www.supercompress.dev/faq)
 
-      **In short:** run `/context` to see what is filling the window, keep `CLAUDE.md` short, turn off MCP servers you are not using and start a fresh session per task. Then run `npm install -g supercompress-proxy && supercompress setup` so Claude Code can compress bulky tool output against your current question.
+**In short:** run `/context` to see what is filling the window, keep `CLAUDE.md` short, turn off MCP servers you are not using and start a fresh session per task. Then run `npm install -g supercompress-proxy && supercompress setup` so Claude Code can compress bulky tool output against your current question.
 
 Related: [compare context compression tools](https://www.supercompress.dev/alternatives) you can put in front of Claude Code, including [Headroom alternatives](https://www.supercompress.dev/alternatives/headroom) and [Caveman alternatives](https://www.supercompress.dev/alternatives/caveman). See also [compress Claude Code tool output](https://www.supercompress.dev/compress-claude-code-tool-output), [/compact vs /clear vs compression](https://www.supercompress.dev/claude-code-compact-vs-clear-vs-compression), and [check Claude Code rate limits from the terminal](https://www.supercompress.dev/coding-agent-rate-limits).
 
@@ -117,6 +115,4 @@ No. It is extractive. The lines it keeps are copied from the original output, so
 
 Run `supercompress uninstall`. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.
 
-[Get API key](https://www.supercompress.dev/dashboard?signup=1)
-      [Coding agents guide](https://docs.supercompress.dev/coding-agents)
-      [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+[Get API key](https://www.supercompress.dev/dashboard?signup=1) [Coding agents guide](https://docs.supercompress.dev/coding-agents) [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)

@@ -4,28 +4,24 @@ Canonical HTML: https://www.supercompress.dev/context-compression-tools-compared
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# Context compression tools for AI agents compared
-
 By [Arjun Shah](https://www.arjunshah.xyz/)
 
 The main context compression tools for AI agents work in different ways. Headroom and RTK filter content locally by type, Caveman shortens replies and shrinks tool output locally, LLMLingua prunes tokens with a small model, and SuperCompress uses a hosted model that keeps the original lines answering your current question.
 
-    [All alternatives](https://www.supercompress.dev/alternatives)
-    [Headroom vs Caveman](https://www.supercompress.dev/headroom-vs-caveman)
-    [Cut LLM API costs](https://www.supercompress.dev/cut-llm-api-costs)
-    [Approaches for coding agents](https://www.supercompress.dev/context-compression-for-coding-agents)
+- [All alternatives](https://www.supercompress.dev/alternatives)
+- [Headroom vs Caveman](https://www.supercompress.dev/headroom-vs-caveman)
+- [Cut LLM API costs](https://www.supercompress.dev/cut-llm-api-costs)
+- [Approaches for coding agents](https://www.supercompress.dev/context-compression-for-coding-agents)
 
-**On this page**
-
-- [How do the tools compare?](#table)
-- [What does query-aware mean, and why does it matter?](#question)
-- [When is Headroom the right choice?](#headroom)
-- [When is Caveman the right choice?](#caveman)
-- [When is ScaleDown the right choice?](#scaledown)
-- [When are RTK or LLMLingua the right choice?](#rtk)
-- [When is SuperCompress the right choice?](#supercompress)
-- [How do you compare them fairly?](#fair)
-- [FAQ](#faq)
+- [How do the tools compare?](https://www.supercompress.dev/context-compression-tools-compared#table)
+- [What does query-aware mean, and why does it matter?](https://www.supercompress.dev/context-compression-tools-compared#question)
+- [When is Headroom the right choice?](https://www.supercompress.dev/context-compression-tools-compared#headroom)
+- [When is Caveman the right choice?](https://www.supercompress.dev/context-compression-tools-compared#caveman)
+- [When is ScaleDown the right choice?](https://www.supercompress.dev/context-compression-tools-compared#scaledown)
+- [When are RTK or LLMLingua the right choice?](https://www.supercompress.dev/context-compression-tools-compared#rtk)
+- [When is SuperCompress the right choice?](https://www.supercompress.dev/context-compression-tools-compared#supercompress)
+- [How do you compare them fairly?](https://www.supercompress.dev/context-compression-tools-compared#fair)
+- [FAQ](https://www.supercompress.dev/context-compression-tools-compared#faq)
 
 Compare every tool: [context compression and token tools compared](https://www.supercompress.dev/comparisons), [Headroom alternatives](https://www.supercompress.dev/headroom-alternatives), and the [complete guide to context compression](https://www.supercompress.dev/context-compression).
 
@@ -94,6 +90,4 @@ If your cost is input rather than replies, SuperCompress, Headroom or RTK. If yo
 
 Combining a reply-style tool with an input compressor is reasonable. Stacking two input compressors on the same content needs careful testing.
 
-[Get API key](https://www.supercompress.dev/dashboard?signup=1)
-      [Coding agents guide](https://docs.supercompress.dev/coding-agents)
-      [All alternatives](https://www.supercompress.dev/alternatives)
+[Get API key](https://www.supercompress.dev/dashboard?signup=1) [Coding agents guide](https://docs.supercompress.dev/coding-agents) [All alternatives](https://www.supercompress.dev/alternatives)

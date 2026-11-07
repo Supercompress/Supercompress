@@ -4,18 +4,16 @@ Canonical HTML: https://www.supercompress.dev/coding-agent-token-usage
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# Reduce coding agent token usage
-
 Coding agents spend most of their tokens rereading tool output: file reads, shell logs, search hits and MCP results. Pick your agent below for where its tokens go, the habits that help, and what `supercompress setup` adds to it.
 
-    [Approaches compared](https://www.supercompress.dev/context-compression-for-coding-agents)
-    [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
-    [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression)
-    [Claude Code context limit](https://www.supercompress.dev/claude-code-context-limit)
-    [MCP output too large](https://www.supercompress.dev/claude-code-mcp-output-too-large)
-    [FAQ](https://www.supercompress.dev/faq)
+- [Approaches compared](https://www.supercompress.dev/context-compression-for-coding-agents)
+- [MCP token reduction](https://www.supercompress.dev/mcp-token-reduction)
+- [MCP tool output compression](https://www.supercompress.dev/mcp-tool-output-compression)
+- [Claude Code context limit](https://www.supercompress.dev/claude-code-context-limit)
+- [MCP output too large](https://www.supercompress.dev/claude-code-mcp-output-too-large)
+- [FAQ](https://www.supercompress.dev/faq)
 
-      **In short:** one install covers every detected agent: `npm install -g supercompress-proxy && supercompress setup`, then `supercompress doctor`. The full harness list is in the [coding agents guide](https://docs.supercompress.dev/coding-agents).
+**In short:** one install covers every detected agent: `npm install -g supercompress-proxy && supercompress setup`, then `supercompress doctor`. The full harness list is in the [coding agents guide](https://docs.supercompress.dev/coding-agents).
 
 Related: [compare context compression tools](https://www.supercompress.dev/alternatives) for agents, including [Headroom alternatives](https://www.supercompress.dev/alternatives/headroom), [Caveman alternatives](https://www.supercompress.dev/alternatives/caveman), and the [Caveman Cloud alternative](https://www.supercompress.dev/alternatives/caveman-cloud).
 
@@ -76,6 +74,4 @@ Claude Code, Cursor, Codex, Hermes Agent, Windsurf, Gemini CLI, Cline, Roo Code,
 
 No. One supercompress setup wires every detected agent. Run supercompress plugin after you install a new agent.
 
-[Get API key](https://www.supercompress.dev/dashboard?signup=1)
-      [Coding agents guide](https://docs.supercompress.dev/coding-agents)
-      [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)
+[Get API key](https://www.supercompress.dev/dashboard?signup=1) [Coding agents guide](https://docs.supercompress.dev/coding-agents) [All coding agents](https://www.supercompress.dev/coding-agent-token-usage)

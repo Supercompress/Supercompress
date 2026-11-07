@@ -4,16 +4,14 @@ Canonical HTML: https://www.supercompress.dev/context-compression
 
 This Markdown file is a noindex convenience extract of the HTML page. Cite the HTML URL.
 
-# Context compression: the complete guide for LLMs and AI agents
-
 **Context compression** is the practice of shrinking what you send to a large language model (tool output, logs, files, chat history, retrieved documents) so the model sees the information it needs in fewer tokens. Done well, it lowers cost and latency, keeps you under context window limits and reduces context rot, without losing the facts the answer depends on. This guide covers the methods, how query-aware compression differs, how to measure it and which tools do what.
 
-    [All comparisons](https://www.supercompress.dev/comparisons)
-    [Headroom alternatives](https://www.supercompress.dev/headroom-alternatives)
-    [Context compression guide](https://www.supercompress.dev/context-compression)
-    [Tools compared](https://www.supercompress.dev/context-compression-tools-compared)
-    [Claude Code tokens](https://www.supercompress.dev/reduce-claude-code-token-usage)
-    [FAQ](https://www.supercompress.dev/faq)
+- [All comparisons](https://www.supercompress.dev/comparisons)
+- [Headroom alternatives](https://www.supercompress.dev/headroom-alternatives)
+- [Context compression guide](https://www.supercompress.dev/context-compression)
+- [Tools compared](https://www.supercompress.dev/context-compression-tools-compared)
+- [Claude Code tokens](https://www.supercompress.dev/reduce-claude-code-token-usage)
+- [FAQ](https://www.supercompress.dev/faq)
 
 ## What is context compression?
 
@@ -136,6 +134,4 @@ Compress or filter the tool result before it reaches the model, or ask the tool 
 
 Yes, abstractive compression. It is useful for narrative history but can alter code, numbers and identifiers, so extractive methods are safer for technical content.
 
-[Get API key](https://www.supercompress.dev/dashboard?signup=1)
-      [Coding agents guide](https://docs.supercompress.dev/coding-agents)
-      [All comparisons](https://www.supercompress.dev/comparisons)
+[Get API key](https://www.supercompress.dev/dashboard?signup=1) [Coding agents guide](https://docs.supercompress.dev/coding-agents) [All comparisons](https://www.supercompress.dev/comparisons)
