@@ -169,7 +169,7 @@
     <h2 id="what">What gets installed?</h2>
     <ul><li>An MCP entry in <code>~/.cursor/mcp.json</code> with the <code>compress_context</code>, <code>connect_account</code> and <code>usage_summary</code> tools.</li><li>Cursor hooks for large context.</li><li>An always-on rule that tells the agent to compress bulky dumps before reasoning over them.</li></ul>
     <h2 id="use">How do I use it day to day?</h2>
-    <p>Mostly you do nothing: the rule and hooks prompt the agent to compress large output. You can also ask directly, for example "compress this test output for the failing auth test". The kept text is original lines, so file paths and error strings stay exact.</p>
+    <p>Mostly you do nothing: the rule and hooks prompt the agent to compress large output. You can also ask directly, for example "compress this test output for the failing auth test". The kept text is original lines, so file paths and error strings stay exact. Related MCP dumps are covered in <a href="https://www.supercompress.dev/mcp-tool-output-compression">MCP tool output compression</a>.</p>
     <h2 id="other">What else keeps Cursor context small?</h2>
     <ul><li>Turn off MCP servers you are not using; their tool definitions load every turn. See <a href="/mcp-context-bloat">MCP context bloat</a>.</li><li>Start new chats for new tasks.</li><li>Keep rules files short and specific.</li></ul><p>More: <a href="/reduce-cursor-token-usage">reduce Cursor token usage</a>.</p>
     <h2 id="faq">Frequently asked questions</h2>
