@@ -759,13 +759,15 @@
   function distinctiveEntitiesInCorpus(entities, corpusText) {
     const lines = String(corpusText || "").split("\n");
     const n = Math.max(lines.length, 1);
+    let lowerLines = null;
     return (entities || []).filter((e) => {
       if (/[0-9_./:-]/.test(e) || e.length >= 10) return true;
       const proper = /^[A-Z][a-zA-Z]{3,}/.test(e);
       let df = 0;
       const lower = e.toLowerCase();
-      for (const line of lines) {
-        if (line.includes(e) || line.toLowerCase().includes(lower)) df += 1;
+      if (!lowerLines) lowerLines = lines.map((line) => line.toLowerCase());
+      for (let li = 0; li < lines.length; li++) {
+        if (lines[li].includes(e) || lowerLines[li].includes(lower)) df += 1;
       }
       if (df === 0) return false;
       // Proper names stay relevant across multi-hop dumps unless ubiquitous.
@@ -1086,8 +1088,77 @@
     return out;
   }
 
+  // Prepared AMCP forward: flat Float64 weights, preallocated Float32 buffers. Same arithmetic
+  // order and Float32 storage points as the generic path, so scores are bit-identical.
+  const preparedModels = new WeakMap();
+  function prepareAMCP(model, encoderCount) {
+    const steps = [];
+    for (let li = 0; li < encoderCount; li++) {
+      const layer = model.layers[li];
+      if (layer.type === "linear") {
+        const outDim = layer.weight.length, inDim = layer.weight[0].length;
+        const w = new Float64Array(outDim * inDim);
+        for (let o = 0; o < outDim; o++) for (let i = 0; i < inDim; i++) w[o * inDim + i] = layer.weight[o][i];
+        steps.push({ kind: 0, w, b: Float64Array.from(layer.bias), inDim, outDim });
+      } else if (layer.type === "layernorm") {
+        steps.push({ kind: 1, w: Float64Array.from(layer.weight), b: Float64Array.from(layer.bias) });
+      } else if (layer.type === "gelu") steps.push({ kind: 2 });
+    }
+    const flat = (l) => ({ w: Float64Array.from(l.weight[0]), b: l.bias[0] });
+    return { steps, gate: Float64Array.from(model.gate), score: flat(model.layers[encoderCount]), conf: flat(model.layers[encoderCount + 1]) };
+  }
+  function forwardAMCP(prep, feats, n, dim) {
+    const scores = new Float32Array(n);
+    const K = Math.sqrt(2 / Math.PI);
+    let maxDim = dim;
+    for (const st of prep.steps) if (st.kind === 0) maxDim = Math.max(maxDim, st.outDim);
+    let a = new Float32Array(maxDim), b = new Float32Array(maxDim);
+    for (let t = 0; t < n; t++) {
+      const off = t * dim;
+      let len = dim;
+      for (let i = 0; i < dim; i++) a[i] = feats[off + i] * prep.gate[i];
+      for (const st of prep.steps) {
+        if (st.kind === 0) {
+          const w = st.w, bias = st.b, inDim = st.inDim;
+          for (let o = 0; o < st.outDim; o++) {
+            let s = bias[o];
+            const base = o * inDim;
+            for (let i = 0; i < inDim; i++) s += a[i] * w[base + i];
+            b[o] = s;
+          }
+          len = st.outDim;
+          const tmp = a; a = b; b = tmp;
+        } else if (st.kind === 1) {
+          let mean = 0;
+          for (let i = 0; i < len; i++) mean += a[i];
+          mean /= len;
+          let var_ = 0;
+          for (let i = 0; i < len; i++) var_ += (a[i] - mean) ** 2;
+          var_ /= len;
+          for (let i = 0; i < len; i++) b[i] = ((a[i] - mean) / Math.sqrt(var_ + 1e-5)) * st.w[i] + st.b[i];
+          const tmp = a; a = b; b = tmp;
+        } else {
+          for (let i = 0; i < len; i++) { const x = a[i]; a[i] = 0.5 * x * (1 + Math.tanh(K * (x + 0.044715 * x * x * x))); }
+        }
+      }
+      let so = prep.score.b, co = prep.conf.b;
+      for (let i = 0; i < len; i++) so += a[i] * prep.score.w[i];
+      for (let i = 0; i < len; i++) co += a[i] * prep.conf.w[i];
+      const sf = Math.fround(so), cf = Math.fround(co);
+      const s = 1 / (1 + Math.exp(-sf));
+      const c = 1 / (1 + Math.exp(-cf));
+      scores[t] = s * c + 0.5 * (1 - c);
+    }
+    return scores;
+  }
+
   function forwardModel(model, feats, n) {
     const dim = model.feature_dim;
+    if (model.gate && model.gate.length === dim && model.layers.length >= 11 && !(typeof process !== "undefined" && process.env && process.env.SC_SLOW_FORWARD)) {
+      let prep = preparedModels.get(model);
+      if (!prep) { prep = prepareAMCP(model, model.layers.length - 2); preparedModels.set(model, prep); }
+      return forwardAMCP(prep, feats, n, dim);
+    }
     const scores = new Float32Array(n);
     const isAMCP = model.gate && model.gate.length === dim && model.layers.length >= 11;
     const encoderCount = isAMCP ? model.layers.length - 2 : model.layers.length;
@@ -3482,7 +3553,7 @@
   // ── Enhanced compressAdaptive: runs preprocessors before compression ──
   // options.neuralBoost: Map|Object of blockId -> [0,1] cross-encoder scores
   // options.includeAnnotations: build per-line annotations (default true; API skips for latency)
-  function compressAdaptive(text, question, model = null, options = null) {
+  function compressAdaptiveCore(text, question, model = null, options = null) {
     const opts = options && typeof options === "object" ? options : {};
     const neuralBoost = opts.neuralBoost || null;
     const includeAnnotations = opts.includeAnnotations !== false;
@@ -4202,6 +4273,93 @@ Answer the question: ${query}`;
       wrapped,
       preambleTokens,
       totalTokens,
+    };
+  }
+
+  // ── Code skeleton guard (v3) ─────────────────────────────────────────────
+  // On source code a reader needs the module map to follow calls. The compiler selects lines by
+  // relevance and can drop definition lines, leaving bodies with no signature (real-agent study
+  // 2026-11-06: code-multihop 0.30 vs 1.00 uncompressed). For code we additionally keep every
+  // top-level definition signature (short) and the full body of any symbol the question names,
+  // emitted in original order with "..." marking elisions. Languages: Python, JS/TS, Go, Rust.
+  // Lines may carry a Read-tool line-number prefix ("  12→", "12\t", "12:").
+  const SKELETON_PREFIX = /^\s*\d+(?:→|\t|:(?=\s))\s?/;
+  const SKELETON_SIGS = [
+    /^(\s*)(?:async\s+def|def|class)\s+([A-Za-z_]\w*)/,
+    /^(\s*)(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)\s*[<(]/,
+    /^(\s*)(?:export\s+)?(?:default\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/,
+    /^(\s*)(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]{1,80})?=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*(?::[^=]{1,60})?=>|[A-Za-z_$][\w$]*\s*=>)/,
+    /^(\s*)func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)\s*[\[(]/,
+    /^(\s*)(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn\s+([A-Za-z_]\w*)/,
+  ];
+  function skeletonBody(line) { return line.replace(SKELETON_PREFIX, ""); }
+  function skeletonMatch(line) {
+    const b = skeletonBody(line);
+    for (const re of SKELETON_SIGS) { const m = b.match(re); if (m) return m; }
+    return null;
+  }
+  const SKELETON_SIG = { test: (l) => skeletonMatch(l) != null };
+  function looksLikeCode(lines) {
+    let sig = 0, imp = 0;
+    for (const l of lines) { if (SKELETON_SIG.test(l)) sig++; else if (/^\s*(?:import|from)\s+[\w{*"'@.]/.test(skeletonBody(l))) imp++; }
+    return sig >= 3 && (sig + imp) / Math.max(1, lines.length) > 0.015;
+  }
+  function skeletonKeptIndexes(orig, out) {
+    const kept = new Set(); let j = 0;
+    const o = orig.map((l) => l.trim());
+    for (const raw of out) {
+      const l = raw.trim(); if (!l) continue;
+      for (let k = j; k < o.length; k++) if (o[k] === l) { kept.add(k); j = k + 1; break; }
+    }
+    return kept;
+  }
+  const SKELETON_MAX_BLOCK = 400;
+  function skeletonBlockEnd(lines, i) {
+    const indent = (l) => skeletonBody(l).match(/^\s*/)[0].length;
+    const ind = indent(lines[i]); let k = i + 1, last = i;
+    while (k < lines.length && k - i < SKELETON_MAX_BLOCK) {
+      const l = lines[k], b = skeletonBody(l);
+      if (b.trim() && indent(l) <= ind && !/^\s*[)\]}]/.test(b)) break;
+      if (b.trim()) last = k; k++;
+    }
+    return last;
+  }
+  function applyCodeSkeleton(text, question, compressed) {
+    const lines = String(text).split("\n");
+    if (compressed === text || !looksLikeCode(lines)) return null;
+    const keep = skeletonKeptIndexes(lines, String(compressed).split("\n"));
+    const named = new Set([...String(question || "").matchAll(/`([A-Za-z_][\w.]*)`|\b([A-Za-z_]\w*_\w*|[a-z]+[A-Z]\w*)\b/g)].map((m) => (m[1] || m[2]).split(".").pop()));
+    const namedMethod = named.size
+      ? new RegExp(`^\\s*(?:(?:public|private|protected|static|async|override|readonly|get|set)\\s+)*(${[...named].map((n) => n.replace(/[$]/g, "\\$")).join("|")})\\s*(?:<[^>]*>)?\\(.*\\)\\s*(?::[^{]*)?\\{\\s*$`)
+      : null;
+    for (let i = 0; i < lines.length; i++) {
+      let m = skeletonMatch(lines[i]);
+      if (!m && namedMethod) { const mm = skeletonBody(lines[i]).match(namedMethod); if (mm) m = [mm[0], "", mm[1]]; }
+      if (!m) continue;
+      keep.add(i);
+      for (let k = i; k < lines.length && k < i + 8; k++) { keep.add(k); if (/(?:[:{]|=>)\s*(?:#.*|\/\/.*)?$/.test(skeletonBody(lines[k]))) break; }
+      if (named.has(m[2])) for (let k = i, e = skeletonBlockEnd(lines, i); k <= e; k++) keep.add(k);
+    }
+    const idx = [...keep].sort((a, b) => a - b), res = [];
+    let prev = -1;
+    for (const i of idx) { if (i > prev + 1 && res.length) res.push(lines[i].match(/^\s*/)[0] + "..."); res.push(lines[i]); prev = i; }
+    const out = res.join("\n");
+    return out.length >= text.length ? text : out;
+  }
+  function compressAdaptive(text, question, model = null, options = null) {
+    const r = compressAdaptiveCore(text, question, model, options);
+    if (!r || typeof r.compressed_text !== "string" || !text) return r;
+    const guarded = applyCodeSkeleton(text, question, r.compressed_text);
+    if (guarded == null || guarded === r.compressed_text) return r;
+    const kept_tokens = tokenizeContextLines(guarded.split("\n")).length;
+    const original_tokens = r.original_tokens || kept_tokens;
+    return {
+      ...r,
+      compressed_text: guarded,
+      kept_tokens,
+      tokens_removed: Math.max(0, original_tokens - kept_tokens),
+      tokens_saved_pct: (1 - kept_tokens / Math.max(original_tokens, 1)) * 100,
+      code_skeleton: true,
     };
   }
 
