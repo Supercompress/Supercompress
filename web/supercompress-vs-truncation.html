@@ -18,7 +18,7 @@
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/supercompress-vs-truncation" />
   <meta property="article:published_time" content="2026-07-02" />
-  <meta property="article:modified_time" content="2026-07-03" />
+  <meta property="article:modified_time" content="2026-11-09" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -35,7 +35,7 @@
     "headline": "SuperCompress vs Truncation: Why Head/Tail Context Drops Answers",
     "description": "Truncation is cheap but blind. SuperCompress uses query-aware context selection so important middle sections survive.",
     "datePublished": "2026-07-02",
-    "dateModified": "2026-07-03",
+    "dateModified": "2026-11-09",
     "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.arjunshah.xyz/", "url": "https://www.arjunshah.xyz/"},
     "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
     "mainEntityOfPage": "https://www.supercompress.dev/supercompress-vs-truncation"
@@ -108,12 +108,12 @@
     <p class="seo-kicker">Comparison guide</p>
     <h1>SuperCompress vs truncation</h1>
     <p class="seo-lead">Truncation keeps the beginning and end, drops the middle. If answer evidence sits in the middle, truncation removes it.</p>
-    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
+    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-11-09</p>
 <section class="seo-section">
         <h2>Why truncation is risky</h2>
-        <p>Truncation keeps the head and tail of the prompt and drops the middle, regardless of the question. SuperCompress picks lines against the question: it keeps original lines chosen for this ask and never rewrites or summarizes.</p>
+        <p>Truncation keeps the head and tail of the prompt and drops the middle, regardless of the question. SuperCompress uses <a href="https://www.supercompress.dev/how-prompt-compression-works">query-aware extraction</a>: it keeps original lines chosen for this ask and never rewrites or summarizes. That is a different method from <a href="https://www.supercompress.dev/supercompress-vs-summarization">summarization</a>, which rewrites the prompt. For agent workflows, see <a href="https://www.supercompress.dev/context-compression-for-coding-agents">context compression for coding agents</a>.</p>
       </section>    <section class="seo-section">
-        <h2>Benchmark comparison</h2>
+        <h2>Side-by-side</h2>
         <table class="seo-table"><thead><tr><th>Factor</th><th>Truncation</th><th>SuperCompress</th></tr></thead><tbody>
 <tr><td>Selection</td><td>Head and tail only</td><td>Lines scored against the question</td></tr>
 <tr><td>Query awareness</td><td>None</td><td>Yes</td></tr>

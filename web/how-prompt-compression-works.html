@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>How Prompt Compression Works: The Technical Deep-Dive - SuperCompress</title>
-  <meta name="description" content="A technical explanation of how prompt compression works under the hood. Understand the scoring policy, compression strategy, and runtime behavior." />
+  <meta name="description" content="A technical explanation of how prompt compression works under the hood. Understand extractive line selection, the hosted compress API, and what each response field means." />
   <meta property="og:title" content="How Prompt Compression Works: The Technical Deep-Dive" />
-  <meta property="og:description" content="A technical explanation of how prompt compression works under the hood. Understand the scoring policy, compression strategy, and runtime behavior." />
+  <meta property="og:description" content="A technical explanation of how prompt compression works under the hood. Understand extractive line selection, the hosted compress API, and what each response field means." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/how-prompt-compression-works" />
   <meta property="og:type" content="article" />
@@ -14,11 +14,11 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="How Prompt Compression Works: The Technical Deep-Dive" />
-  <meta name="twitter:description" content="A technical explanation of how prompt compression works under the hood. Understand the scoring policy, compression strategy, and runtime behavior." />
+  <meta name="twitter:description" content="A technical explanation of how prompt compression works under the hood. Understand extractive line selection, the hosted compress API, and what each response field means." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/how-prompt-compression-works" />
   <meta property="article:published_time" content="2026-07-03" />
-  <meta property="article:modified_time" content="2026-07-03" />
+  <meta property="article:modified_time" content="2026-11-09" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -33,9 +33,9 @@
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "How Prompt Compression Works: The Technical Deep-Dive",
-    "description": "A technical explanation of how prompt compression works under the hood. Understand the scoring policy, compression strategy, and runtime behavior.",
+    "description": "A technical explanation of how prompt compression works under the hood. Understand extractive line selection, the hosted compress API, and what each response field means.",
     "datePublished": "2026-07-03",
-    "dateModified": "2026-10-20",
+    "dateModified": "2026-11-09",
     "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.arjunshah.xyz/", "url": "https://www.arjunshah.xyz/"},
     "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
     "mainEntityOfPage": "https://www.supercompress.dev/how-prompt-compression-works"
@@ -46,15 +46,20 @@
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
-            {
+      {
         "@type": "Question",
-        "name": "How was the policy trained?",
-        "acceptedAnswer": {"@type": "Answer", "text": "The policy was trained on a diverse dataset of question-answering pairs, learning to predict which context lines are necessary for correct answers."}
+        "name": "Does prompt compression rewrite my prompt?",
+        "acceptedAnswer": {"@type": "Answer", "text": "No. It is extractive: it keeps original lines chosen against the question and never rewrites or summarizes."}
       },
       {
         "@type": "Question",
-        "name": "Can I retrain the policy on my data?",
-        "acceptedAnswer": {"@type": "Answer", "text": "The current release uses a pre-trained policy. Custom training is on the roadmap."}
+        "name": "What happens if nothing can be cut?",
+        "acceptedAnswer": {"@type": "Answer", "text": "If the result cannot beat the input by enough, the original is returned unchanged with passthrough set to true."}
+      },
+      {
+        "@type": "Question",
+        "name": "Do coding agents need an API key?",
+        "acceptedAnswer": {"@type": "Answer", "text": "No. Run npm install -g supercompress-proxy then supercompress setup. Sign in in the browser. API keys are for developers calling the API from their own apps."}
       }
     ]
   }
@@ -107,32 +112,44 @@
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">Technical guide</p>
     <h1>How prompt compression works</h1>
-    <p class="seo-lead">SuperCompress uses a hosted, query-aware model to decide which lines to keep. Here is how it works under the hood.</p>
-    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
+    <p class="seo-lead">The hosted compress API is extractive and query-aware: it keeps original lines chosen against the question and drops the rest. Here is what goes in, how lines are chosen, and what comes back.</p>
+    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-11-09</p>
 <section class="seo-section">
-        <h2>The scoring policy</h2>
-        <p>The compressor breaks your context into blocks and scores each block against the query. Blocks containing information likely to help answer the question get high scores. Blocks containing irrelevant information get low scores and are removed.</p>
-<p>The policy was trained on thousands of question-answering examples to learn what types of content matter for answering different kinds of questions.</p>
+        <h2>What goes in</h2>
+        <p>Call <code>POST https://www.supercompress.dev/api/v1/compress</code> with JSON <code>{"context": "...", "query": "..."}</code>. Put the key in <code>X-API-Key</code> or <code>Authorization: Bearer</code>. <code>context</code> is the bulky dump: a log, a diff, retrieved documents, or tool output. <code>query</code> is optional. A specific question puts the call in query mode. Omit it, or send a generic ask, and the API returns a dump-mode digest. The response field <code>query_mode</code> says which path ran. The question itself is not compressed.</p>
+        <p>API keys are for developers calling the API from their own apps. Coding agents use <code>npm install -g supercompress-proxy</code> then <code>supercompress setup</code> (browser sign-in, no API key needed). Request shape and field names are in the <a href="https://docs.supercompress.dev/api-reference">compress API reference</a>.</p>
       </section>
     <section class="seo-section">
-        <h2>Runtime behavior</h2>
-        <p>When you call <code>compressor.compress(context, query)</code>:</p>
-<ol>
-<li>Context is split into ~100-token blocks</li>
-<li>Each block is scored against the query</li>
-<li>Low-scoring blocks are removed</li>
-<li>The remaining blocks are reassembled in order</li>
-<li>Token counts and compression metrics are returned</li>
-</ol>
-<p>The entire process is a CPU preprocess with no GPU required. Measure wall time on your path, hosted Neural Keep and the local compiler are different engines.</p>
+        <h2>How lines are chosen</h2>
+        <p>The API is extractive and query-aware. It keeps original lines chosen against the question, verbatim, and drops the rest. It never rewrites or summarizes. That keep-or-drop choice is the extractive side of <a href="https://www.supercompress.dev/extractive-vs-abstractive-context-compression">extractive vs abstractive context compression</a>: selected lines stay in their original wording.</p>
+        <p>Kept text is whole original lines, not pruned tokens inside a line. The distinction is in <a href="https://www.supercompress.dev/verbatim-lines-vs-token-pruning">verbatim lines vs token pruning</a>.</p>
+        <p>When there is no specific question, dump mode still selects original lines; it just does not target a particular ask. Position-based cutting is a different method; see <a href="https://www.supercompress.dev/supercompress-vs-truncation">SuperCompress vs truncation</a>.</p>
+      </section>
+    <section class="seo-section">
+        <h2>What comes back</h2>
+        <p>The response includes the kept text plus <code>original_tokens</code>, <code>kept_tokens</code>, <code>tokens_saved</code>, <code>tokens_saved_pct</code>, and <code>query_mode</code>. Compare those fields on each call. If the result cannot beat the input by enough, the original is returned unchanged as a passthrough (<code>passthrough: true</code>).</p>
+      </section>
+    <section class="seo-section">
+        <h2>Which engine answered</h2>
+        <p>A hosted model service picks lines. When it is unavailable, or when a short tool output would not be reduced, the API uses its built-in compiler instead. The <code>mode</code> field shows which engine answered.</p>
+      </section>
+    <section class="seo-section">
+        <h2>How to check it on your own traffic</h2>
+        <p>Compare <code>original_tokens</code> and <code>kept_tokens</code> on each call. Those fields tell you what changed on your own traffic.</p>
+        <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"context":"&lt;large context&gt;","query":"&lt;the user question&gt;"}'</code></pre>
       </section>
 
     <section class="seo-section">
       <h2>Frequently asked questions</h2>
-            <h3>How was the policy trained?</h3>
-      <p>The policy was trained on a diverse dataset of question-answering pairs, learning to predict which context lines are necessary for correct answers.</p>
-      <h3>Can I retrain the policy on my data?</h3>
-      <p>The current release uses a pre-trained policy. Custom training is on the roadmap.</p>
+            <h3>Does prompt compression rewrite my prompt?</h3>
+      <p>No. It is extractive: it keeps original lines chosen against the question and never rewrites or summarizes.</p>
+      <h3>What happens if nothing can be cut?</h3>
+      <p>If the result cannot beat the input by enough, the original is returned unchanged with <code>passthrough: true</code>.</p>
+      <h3>Do coding agents need an API key?</h3>
+      <p>No. Run <code>npm install -g supercompress-proxy</code> then <code>supercompress setup</code>. Sign in in the browser. API keys are for developers calling the API from their own apps.</p>
     </section>
         </main>
 <footer class="df-footer">

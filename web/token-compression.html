@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Token Compression Guide: Cut LLM Costs Without Losing Answers | SuperCompress</title>
+  <title>Token Compression Guide: Cut LLM Input Tokens Before the Call | SuperCompress</title>
   <meta name="description" content="Token compression guide: reduce token costs and LLM bills by keeping query-relevant context. Benchmarks, methods, and implementation." />
   <meta property="og:title" content="Token Compression for LLMs: The Complete Guide (2026)" />
   <meta property="og:description" content="Everything you need to know about LLM token compression: techniques, benchmarks, implementation, and how to implement it." />
@@ -17,7 +17,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="Token Compression for LLMs: The Complete Guide (2026)" />
-  <meta name="twitter:description" content="Learn token compression techniques to cut LLM input tokens without losing answers. Complete guide with benchmarks, implementation, and interactive demo." />
+  <meta name="twitter:description" content="Learn token compression techniques to cut LLM input tokens before the call. Complete guide with benchmarks, implementation, and interactive demo." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="token compression, LLM token optimization, prompt compression guide, reduce LLM costs, context compression tutorial, LLM efficiency, prompt engineering cost savings" />
   <link rel="canonical" href="https://www.supercompress.dev/token-compression" />
@@ -209,7 +209,7 @@
         <div class="guide-methods">
           <div class="method-card">
             <h4>Learned Compression</h4>
-            <p><strong>Mechanism:</strong> query-aware line selection &middot; <strong>Path:</strong> CPU preprocess &middot; <strong>No extra LLM</strong></p>
+            <p><strong>Mechanism:</strong> query-aware line selection &middot; <strong>Path:</strong> hosted API &middot; <strong>No extra LLM</strong></p>
             <p>A trained policy scores lines against the question and keeps original lines that answer it. Query-aware, model-agnostic, no extra LLM calls. This is what SuperCompress uses. Extractive, it never rewrites or summarizes.</p>
           </div>
           <div class="method-card">

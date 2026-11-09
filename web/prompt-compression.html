@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prompt Compression That Keeps Evidence (Not Summaries) | SuperCompress</title>
   <meta name="description" content="Prompt compression (smart context compression) removes low-value context before an LLM call. Query-aware selection keeps original evidence without summarization rewrite risk. Measure tokens_saved on your traffic." />
-  <meta property="og:title" content="Prompt Compression for LLMs: Cut Tokens Without Losing Answers" />
+  <meta property="og:title" content="Prompt Compression for LLMs: Keep the Original Lines, Drop the Rest" />
   <meta property="og:description" content="Prompt compression removes low-value context before an LLM call. Learn how query-aware compression cuts token spend, latency, and noise without relying on summaries." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/prompt-compression" />
@@ -13,12 +13,12 @@
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="Prompt Compression for LLMs: Cut Tokens Without Losing Answers" />
+  <meta name="twitter:title" content="Prompt Compression for LLMs: Keep the Original Lines, Drop the Rest" />
   <meta name="twitter:description" content="Prompt compression removes low-value context before an LLM call. Learn how query-aware compression cuts token spend, latency, and noise without relying on summaries." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/prompt-compression" />
   <meta property="article:published_time" content="2026-07-02" />
-  <meta property="article:modified_time" content="2026-08-02" />
+  <meta property="article:modified_time" content="2026-11-09" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -32,10 +32,10 @@
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "Prompt Compression for LLMs: Cut Tokens Without Losing Answers",
+    "headline": "Prompt Compression for LLMs: Keep the Original Lines, Drop the Rest",
     "description": "Prompt compression removes low-value context before an LLM call. Learn how query-aware compression cuts token spend, latency, and noise without relying on summaries.",
     "datePublished": "2026-07-02",
-    "dateModified": "2026-08-02",
+    "dateModified": "2026-11-09",
     "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.arjunshah.xyz/", "url": "https://www.arjunshah.xyz/"},
     "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
     "mainEntityOfPage": "https://www.supercompress.dev/prompt-compression"
@@ -59,7 +59,7 @@
       {
         "@type": "Question",
         "name": "How much can prompt compression save?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Savings depend on how noisy the dump is. Measure original_tokens / kept_tokens (or tokens_saved) on your traffic. Published suites live on /benchmarks."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Savings depend on how noisy the dump is. Measure original_tokens / kept_tokens (or tokens_saved) on your traffic."}
       },
       {
         "@type": "Question",
@@ -118,7 +118,7 @@
     <p class="seo-kicker">Prompt compression guide</p>
     <h1>Prompt compression that keeps the answer</h1>
     <p class="seo-lead">Prompt compression is the practical way to reduce oversized LLM requests before they hit an expensive model. Also called <strong>smart context compression</strong> when the same query-aware policy runs on retrieved dumps, agent memory, or RAG chunks. SuperCompress scores context against the current question and keeps the lines most likely to matter.</p>
-    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
+    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-11-09</p>
 
 <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
   <a href="/cut-llm-api-costs">Reduce LLM costs</a>
@@ -139,7 +139,7 @@
   <ul>
     <li><strong>True query-awareness</strong>, scores blocks against the question; Headroom leans on content-type heuristics.</li>
     <li><strong>Coding-agent MCP first</strong>: <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
-    <li><strong>Agent + API ready</strong>, hosted compress API, open-source library, and MCP install for coding agents, not only a local CLI workflow.</li>
+    <li><strong>Agent + API ready</strong>, hosted compress API and MCP install for coding agents, not only a local CLI workflow.</li>
     <li><strong>Evidence containment</strong>, we measure whether required lines survive in original wording, not only “token % saved.”</li>
   </ul>
   <p><a href="/supercompress-vs-headroom">Read the full SuperCompress vs Headroom comparison →</a></p>
@@ -148,22 +148,19 @@
 <section class="seo-section">
         <h2>Why prompt compression matters</h2>
         <p>Every LLM call processes your full prompt including context that may be irrelevant to the question. In agent loops, RAG pipelines, and coding assistants, context accumulates rapidly.</p>
-<p>Without prompt compression, you pay for every token regardless of relevance. A typical RAG query sending 4,000 tokens may only need 400 of them to answer the question.</p>
+<p>Without prompt compression, you pay for every token regardless of relevance.</p>
       </section>    <section class="seo-section">
         <h2>How prompt compression works</h2>
-                        <p>SuperCompress uses a learned query-aware neural policy that scores every block of context against your question, then keeps only the blocks most likely to contain answer-relevant information.</p>
-                <pre><code>from supercompress import Compressor
-compressor = Compressor()
-result = compressor.compress(
-    context=long_context,
-    query="What caused the failed deployment?"
-)
-print(f"Removed {result.tokens_removed} tokens")</code></pre>
+                        <p>SuperCompress selects original lines against your question and drops the rest. It does not rewrite or summarize. The step-by-step mechanism is in <a href="https://www.supercompress.dev/how-prompt-compression-works">how prompt compression works</a>.</p>
+                <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"context":"&lt;large context&gt;","query":"What caused the failed deployment?"}'</code></pre>
       </section>    <section class="seo-section">
         <h2>Prompt compression vs summarization</h2>
         <table class="seo-table"><thead><tr><th>Factor</th><th>Prompt Compression</th><th>Summarization</th></tr></thead><tbody>
 <tr><td>Method</td><td>Selects original lines</td><td>Rewrites with LLM</td></tr>
-<tr><td>Extra cost</td><td>CPU preprocess (no extra LLM)</td><td>Full LLM call</td></tr>
+<tr><td>Extra cost</td><td>One compress call (no extra LLM)</td><td>Full LLM call</td></tr>
 <tr><td>Query-aware</td><td>Yes, scores lines against the question</td><td>Rewrite is not line selection</td></tr>
 </tbody></table>
       </section>    <section class="seo-section">
@@ -176,7 +173,7 @@ print(f"Removed {result.tokens_removed} tokens")</code></pre>
             <h3>Is prompt compression the same as summarization?</h3>
       <p>No. Summarization rewrites the prompt using another LLM call, changing wording and potentially losing facts. Query-aware compression selects original lines that matter for the current question.</p>
       <h3>How much can prompt compression save?</h3>
-      <p>Savings depend on how noisy the dump is. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
+      <p>Savings depend on how noisy the dump is. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic.</p>
       <h3>Does prompt compression rewrite the prompt?</h3>
       <p>No. SuperCompress is extractive and query-aware: it keeps original lines chosen against the question and never rewrites or summarizes. Compression is a preprocess before the LLM call.</p>
     </section>
