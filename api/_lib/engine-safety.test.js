@@ -69,6 +69,9 @@ test("returns Neural Keep passthrough when the compiler cannot help either", asy
   const result = await engine.compressAdaptive(tiny, "status?");
   assert.equal(result.compressed_text, tiny);
   assert.equal(result.mode, "passthrough");
+  // The original Neural Keep passthrough is returned, not the compiler's fallback copy.
+  assert.equal(result.neural_keep_fallback, undefined);
+  assert.equal(result.fallback_reason, "insufficient_compression_savings");
 });
 
 test("preserves useful compression and recounts untrusted remote metrics", async () => {
