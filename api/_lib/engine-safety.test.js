@@ -30,20 +30,46 @@ for (const [name, text] of [
   ["bloating", context + " extra words"],
   ["three-percent savings", Array(11035).fill("evidence").join(" ")],
 ]) {
-  test(`passes through ${name} with an explicit warning`, async () => {
+  test(`rejects Neural Keep ${name} and falls back to the compiler`, async () => {
     mockResult(text);
     const result = await engine.compressAdaptive(context, "Preserve the evidence.");
-    assert.equal(result.compressed_text, context);
-    assert.equal(result.mode, "passthrough");
+    assert.notEqual(result.compressed_text, text);
+    assert.notEqual(result.mode, "neural-keep");
     assert.equal(result.original_tokens, 11376);
-    assert.equal(result.kept_tokens, 11376);
-    assert.equal(result.compressed_tokens, 11376);
-    assert.equal(result.tokens_saved, 0);
-    assert.equal(result.tokens_saved_pct, 0);
-    assert.ok(result.warnings.length > 0);
+    if (result.mode === "passthrough") {
+      assert.equal(result.compressed_text, context);
+      assert.equal(result.tokens_saved, 0);
+      assert.ok(result.warnings.length > 0);
+    } else {
+      assert.equal(result.neural_keep_fallback, true);
+      assert.equal(result.fallback_reason, "neural_keep_insufficient_savings");
+      assert.equal(result.compression_safety.status, "accepted");
+      assert.ok(result.tokens_saved_pct >= 5);
+    }
     assert.equal(result.compression_safety.semantic_verification, "not_performed");
   });
 }
+
+test("small agent tool output: Neural Keep keeps every line, compiler result is returned", async () => {
+  const lines = [];
+  for (let i = 0; i < 40; i++) lines.push(`api/_lib/store.js:${100 + i}:  if (skipFirestore()) return memoryStore.get(key${i}); // fallback path ${i}`);
+  const small = lines.join("\n");
+  mockResult(small); // keep-all: 0% savings -> previously passthrough
+  const result = await engine.compressAdaptive(small, "Which line handles key7?");
+  assert.equal(result.compression_safety.status, "accepted");
+  assert.equal(result.mode, "compiler");
+  assert.equal(result.fallback_reason, "neural_keep_insufficient_savings");
+  assert.ok(result.tokens_saved_pct >= 5, `saved ${result.tokens_saved_pct}`);
+  assert.ok(result.compressed_text.includes("key7"), "query evidence kept");
+});
+
+test("returns Neural Keep passthrough when the compiler cannot help either", async () => {
+  const tiny = "ok";
+  mockResult(tiny);
+  const result = await engine.compressAdaptive(tiny, "status?");
+  assert.equal(result.compressed_text, tiny);
+  assert.equal(result.mode, "passthrough");
+});
 
 test("preserves useful compression and recounts untrusted remote metrics", async () => {
   const text = Array(2000).fill("evidence").join(" ");
