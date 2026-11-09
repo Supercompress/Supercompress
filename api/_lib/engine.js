@@ -72,12 +72,13 @@ function compress(context, query, budgetRatio = 0.35) {
 
 async function compressAdaptive(context, query) {
   // Hosted Neural Keep (cross-encoder) when SC_NEURAL_KEEP_URL is set.
+  let neuralPassthrough = null;
   if (neuralKeepEnabled()) {
     const remote = await compressViaNeuralKeep(context, query);
     if (remote && remote.compressed_text != null) {
       // Hosted API + billing read `kept_tokens`; MCP clients also accept
       // `compressed_tokens`. Emit both so usage never reports 0 kept / 100%.
-      return enforceCompressionSafety(context, {
+      const neural = enforceCompressionSafety(context, {
         compressed_text: remote.compressed_text,
         policy_name: remote.policy_name || "SuperCompress Neural Keep",
         mode: remote.mode || "neural-keep",
@@ -89,6 +90,10 @@ async function compressAdaptive(context, query) {
         params_m: remote.params_m,
         weights_match_expected: remote.weights_match_expected,
       });
+      if (neural.compression_safety?.status !== "passthrough") return neural;
+      // Neural Keep kept (nearly) every line, which is common on small agent tool outputs
+      // (~1k tokens). Try the compiler before returning the original context unchanged.
+      neuralPassthrough = neural;
     }
   }
 
@@ -105,9 +110,12 @@ async function compressAdaptive(context, query) {
   // cuts (often ~10–20%) were being mistaken for Neural Keep quality.
   if (local && neuralKeepEnabled()) {
     local.neural_keep_fallback = true;
-    local.fallback_reason = local.fallback_reason || "neural_keep_unavailable";
+    local.fallback_reason =
+      local.fallback_reason || (neuralPassthrough ? "neural_keep_insufficient_savings" : "neural_keep_unavailable");
   }
-  return enforceCompressionSafety(context, local);
+  const compiled = enforceCompressionSafety(context, local);
+  if (neuralPassthrough && compiled.compression_safety?.status === "passthrough") return neuralPassthrough;
+  return compiled;
 }
 
 async function compressCCR(context, query) {
