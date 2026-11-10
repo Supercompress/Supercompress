@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>When to Use Prompt Compression: Decision Guide for LLM Applications - SuperCompress</title>
-  <meta name="description" content="A practical decision framework for when prompt compression makes sense vs when to skip it." />
+  <meta name="description" content="When prompt compression is worth it and when to skip it: bulky tool output, logs and retrieved docs vs short, curated or must-keep-whole inputs." />
   <meta property="og:title" content="When to Use Prompt Compression: Decision Guide for LLM Applications" />
-  <meta property="og:description" content="A practical decision framework for when prompt compression makes sense vs when to skip it." />
+  <meta property="og:description" content="When prompt compression is worth it and when to skip it: bulky tool output, logs and retrieved docs vs short, curated or must-keep-whole inputs." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/when-to-use-compression" />
   <meta property="og:type" content="article" />
@@ -14,11 +14,11 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="When to Use Prompt Compression: Decision Guide for LLM Applications" />
-  <meta name="twitter:description" content="A practical decision framework for when prompt compression makes sense vs when to skip it." />
+  <meta name="twitter:description" content="When prompt compression is worth it and when to skip it: bulky tool output, logs and retrieved docs vs short, curated or must-keep-whole inputs." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/when-to-use-compression" />
   <meta property="article:published_time" content="2026-07-03" />
-  <meta property="article:modified_time" content="2026-07-03" />
+  <meta property="article:modified_time" content="2026-11-10" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -33,9 +33,9 @@
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "When to Use Prompt Compression: Decision Guide for LLM Applications",
-    "description": "A practical decision framework for when prompt compression makes sense vs when to skip it.",
+    "description": "When prompt compression is worth it and when to skip it: bulky tool output, logs and retrieved docs vs short, curated or must-keep-whole inputs.",
     "datePublished": "2026-07-03",
-    "dateModified": "2026-07-03",
+    "dateModified": "2026-11-10",
     "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.arjunshah.xyz/", "url": "https://www.arjunshah.xyz/"},
     "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
     "mainEntityOfPage": "https://www.supercompress.dev/when-to-use-compression"
@@ -46,15 +46,20 @@
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
-            {
+      {
         "@type": "Question",
-        "name": "Should I always compress RAG contexts?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes. RAG contexts are the highest-ROI target for compression due to their size and noise level."}
+        "name": "Should I compress every RAG context?",
+        "acceptedAnswer": {"@type": "Answer", "text": "No. Compress when retrieval returns more than the question needs. Measure original_tokens and kept_tokens on each call and keep compression where the gap is large on your own checks."}
       },
       {
         "@type": "Question",
         "name": "Should I compress few-shot examples?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Not usually. Few-shot examples are carefully chosen and typically small. Compression is more valuable on large context blocks."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Usually not. Few-shot examples are small and hand-picked, so there is little noise to drop."}
+      },
+      {
+        "@type": "Question",
+        "name": "What if there is nothing worth cutting?",
+        "acceptedAnswer": {"@type": "Answer", "text": "If the result cannot beat the input by enough, the original comes back unchanged with passthrough: true, so short or already-tight inputs are not mangled."}
       }
     ]
   }
@@ -107,32 +112,42 @@
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">Best practices</p>
     <h1>When to use prompt compression</h1>
-    <p class="seo-lead">Prompt compression is not always the right answer. Here is a decision framework to help you determine when to compress and when to skip.</p>
-    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
+    <p class="seo-lead">Prompt compression pays off when most of what you send is not needed for the current question.</p>
+    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-11-10</p>
 <section class="seo-section">
-        <h2>Compress when:</h2>
+        <h2>Compress when</h2>
         <ul>
-<li><strong>Context exceeds 1,000 tokens</strong>, Below this, the savings may not justify the overhead</li>
-<li><strong>Context contains irrelevant information</strong>, Standards table with update data for many questions, only some questions touch most standards</li>
-<li><strong>Cost is a primary concern</strong>, If you are tracking LLM spending, compression is your highest-ROI optimization</li>
-<li><strong>Long sessions hit the context limit</strong>, Trimming large tool outputs before they reach the model leaves more room in the context window for the actual task. See <a href="https://www.supercompress.dev/context-compression-for-coding-agents">context compression for coding agents</a> and <a href="https://www.supercompress.dev/mcp-tool-output-compression">MCP tool output compression</a>.</li>
+<li><strong>Bulky tool output, logs, test runs, file reads and MCP results</strong>, when only a few lines answer the question. See how to <a href="https://www.supercompress.dev/reduce-tool-call-output-tokens">reduce tool call output tokens</a>.</li>
+<li><strong>Retrieved documents (RAG)</strong>, when many chunks are off-topic for this query.</li>
+<li><strong>Long agent sessions</strong>, when tool output crowds the context window. Trimming large tool outputs before they reach the model leaves more room in the context window for the actual task. See <a href="https://www.supercompress.dev/context-compression-for-coding-agents">context compression for coding agents</a> and <a href="https://www.supercompress.dev/mcp-tool-output-compression">MCP tool output compression</a>.</li>
+<li><strong>You want per-call proof</strong>, since each response reports <code>original_tokens</code> and <code>kept_tokens</code>.</li>
 </ul>
       </section>
     <section class="seo-section">
-        <h2>Skip when:</h2>
+        <h2>Skip when</h2>
         <ul>
-<li><strong>Context is under 500 tokens</strong>, Minimal savings, and the compression overhead may not be worth it</li>
-<li><strong>You need the full original text</strong>, Some applications, such as legal review or exact audits, must pass the complete source to the model, so compression is the wrong tool</li>
-<li><strong>You are debugging prompt quality</strong>, Compression adds a variable that complicates debugging</li>
+<li><strong>You need the complete source text</strong>, such as legal review or exact audits.</li>
+<li><strong>The input is small and already curated</strong>, like few-shot examples or a short system prompt.</li>
+<li><strong>You are debugging prompt behaviour</strong>, and want one variable at a time.</li>
 </ul>
       </section>
+    <section class="seo-section">
+      <h2>What happens when there is little to cut</h2>
+      <p>If the result cannot beat the input by enough, the original comes back unchanged with <code>passthrough: true</code>. Short or already-tight inputs are not mangled.</p>
+    </section>
+    <section class="seo-section">
+      <h2>How to decide on your own traffic</h2>
+      <p>Run a handful of real calls, compare <code>original_tokens</code> and <code>kept_tokens</code>, and keep compression where the gap is large and the answers still hold up on your own checks. For the mechanics, see <a href="https://www.supercompress.dev/how-prompt-compression-works">how prompt compression works</a>. For methods and trade-offs, see the <a href="https://www.supercompress.dev/prompt-compression-guide">prompt compression guide</a>.</p>
+    </section>
 
     <section class="seo-section">
       <h2>Frequently asked questions</h2>
-            <h3>Should I always compress RAG contexts?</h3>
-      <p>Yes. RAG contexts are the highest-ROI target for compression due to their size and noise level.</p>
+      <h3>Should I compress every RAG context?</h3>
+      <p>No. Compress when retrieval returns more than the question needs. Measure <code>original_tokens</code> and <code>kept_tokens</code> on each call and keep compression where the gap is large on your own checks.</p>
       <h3>Should I compress few-shot examples?</h3>
-      <p>Not usually. Few-shot examples are carefully chosen and typically small. Compression is more valuable on large context blocks.</p>
+      <p>Usually not. Few-shot examples are small and hand-picked, so there is little noise to drop.</p>
+      <h3>What if there is nothing worth cutting?</h3>
+      <p>If the result cannot beat the input by enough, the original comes back unchanged with <code>passthrough: true</code>, so short or already-tight inputs are not mangled.</p>
     </section>
         </main>
 <footer class="df-footer">
