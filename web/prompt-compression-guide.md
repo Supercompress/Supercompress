@@ -76,7 +76,7 @@ Prompt compression methods differ by mechanism, extractive vs rewrite, query-awa
 | Truncation | Keeps head and tail; drops the middle regardless of the question | No | No | Original lines (position-based) |
 | Summarization | Rewrites the prompt with another model | Varies | Yes | Rewritten text |
 
-Measure `original_tokens` / `kept_tokens` on your traffic. Published suites live in the [SuperCompress benchmarks](https://www.supercompress.dev/benchmarks) repository.
+Measure `original_tokens` / `kept_tokens` on your traffic.
 
 ## 4. Framework Integration
 
@@ -118,6 +118,8 @@ For deployment options, see the [usage](https://docs.supercompress.dev/usage) an
 
 ## 6. Best Practices
 
+Not every prompt is worth compressing. Use the [when to use prompt compression](https://www.supercompress.dev/when-to-use-compression) checklist to pick the calls where most of the context is noise.
+
 ### Compress early, compress often
 
 Apply compression as early as possible in your pipeline. In a RAG setup, compress the retrieved documents before inserting them into the prompt template. In a chatbot, compress the conversation history before appending it to the next turn. This maximizes the savings at each stage.
@@ -142,7 +144,7 @@ Yes. Prompt compression is model-agnostic, it preprocesses the text before sendi
 
 ### Does compression affect response quality?
 
-SuperCompress keeps original answer-critical lines instead of rewriting them. Measure `original_tokens` / `kept_tokens` and answer quality on your eval set. Published suites live on [/benchmarks](https://www.supercompress.dev/benchmarks).
+SuperCompress keeps original answer-critical lines instead of rewriting them. Measure `original_tokens` / `kept_tokens` and answer quality on your eval set.
 
 ### Should I use the API or the local library?
 
@@ -150,7 +152,7 @@ Use the hosted API. There is no infrastructure to manage. For coding agents, run
 
 ### How does SuperCompress compare to Headroom?
 
-SuperCompress is query-aware: it scores context against the question, ships MCP for coding agents, and publishes held-out answer-keep gates. Headroom leans on content-type heuristics and its own workflows. Compare product fit and answer keep, see the [full comparison](https://www.supercompress.dev/supercompress-vs-headroom).
+SuperCompress is query-aware: it scores context against the question and ships MCP for coding agents. Headroom leans on content-type heuristics and its own workflows. Compare product fit, see the [full comparison](https://www.supercompress.dev/supercompress-vs-headroom).
 
 ### Is prompt compression better than caching?
 
