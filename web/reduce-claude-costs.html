@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>7 Ways to Reduce Claude API Costs Fast (2026) | SuperCompress</title>
-  <meta name="description" content="Reduce Claude API costs with query-aware prompt compression. Keep answer-critical evidence, drop junk tokens before Anthropic Claude / Claude Code calls. Free MIT + 1M hosted tokens/mo." />
+  <title>How to Reduce Claude API Costs Before the Model Call | SuperCompress</title>
+  <meta name="description" content="Reduce Claude API costs by sending fewer input tokens: compress logs, tool output and retrieved docs against the current question before the call, and check original_tokens vs kept_tokens on your own traffic." />
   <meta property="og:title" content="Cut Claude API Costs Without Downgrading Models" />
-  <meta property="og:description" content="Reduce Claude API costs with query-aware prompt compression. Keep answer-critical evidence, drop junk tokens before Anthropic Claude / Claude Code calls. Free MIT + 1M hosted tokens/mo." />
+  <meta property="og:description" content="Reduce Claude API costs by sending fewer input tokens: compress logs, tool output and retrieved docs against the current question before the call, and check original_tokens vs kept_tokens on your own traffic." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/reduce-claude-costs" />
   <meta property="og:type" content="article" />
@@ -14,11 +14,11 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="Cut Claude API Costs Without Downgrading Models" />
-  <meta name="twitter:description" content="Reduce Claude API costs with query-aware prompt compression. Keep answer-critical evidence, drop junk tokens before Anthropic Claude / Claude Code calls. Free MIT + 1M hosted tokens/mo." />
+  <meta name="twitter:description" content="Reduce Claude API costs by sending fewer input tokens: compress logs, tool output and retrieved docs against the current question before the call, and check original_tokens vs kept_tokens on your own traffic." />
   <meta name="twitter:site" content="@supercompress" />
   <link rel="canonical" href="https://www.supercompress.dev/reduce-claude-costs" />
   <meta property="article:published_time" content="2026-09-05" />
-  <meta property="article:modified_time" content="2026-09-05" />
+  <meta property="article:modified_time" content="2026-11-11" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -33,9 +33,9 @@
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "Cut Claude API Costs Without Downgrading Models",
-    "description": "Reduce Claude API costs with query-aware prompt compression. Keep answer-critical evidence, drop junk tokens before Anthropic Claude / Claude Code calls. Free MIT + 1M hosted tokens/mo.",
+    "description": "Reduce Claude API costs by sending fewer input tokens: compress logs, tool output and retrieved docs against the current question before the call, and check original_tokens vs kept_tokens on your own traffic.",
     "datePublished": "2026-09-05",
-    "dateModified": "2026-09-05",
+    "dateModified": "2026-11-11",
     "author": {"@type": "Person", "name": "Arjun Shah", "url": "https://www.arjunshah.xyz/", "sameAs": ["https://www.arjunshah.xyz/", "https://x.com/arjunkshah21"]},
     "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
     "mainEntityOfPage": "https://www.supercompress.dev/reduce-claude-costs"
@@ -49,12 +49,12 @@
             {
         "@type": "Question",
         "name": "Will compression work with Claude streaming?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Compress the prompt first, then stream the Claude response."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Compress first, then stream the response."}
       },
       {
         "@type": "Question",
         "name": "Does this work with Claude Code and Cursor?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Install MCP with npx supercompress setup, SuperCompress compresses agent context on every submit before Claude sees it."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Run npm install -g supercompress-proxy and then supercompress setup. Setup signs you in through the browser and registers SuperCompress with the coding agents it finds, so the agent can compress large tool output before it reaches the model."}
       }
     ]
   }
@@ -107,14 +107,23 @@
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">Claude / Anthropic cost reduction</p>
     <h1>Reduce Claude API costs before the model call</h1>
-    <p class="seo-lead">The fastest way to cut Anthropic Claude spend is to stop sending tokens the model does not need. SuperCompress compiles long context around the current question before the Claude API call.</p>
-    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-09-05</p>
+    <p class="seo-lead">Claude bills you for every input token, so the simplest saving is to stop sending the ones the model does not need for the question. SuperCompress is extractive and query-aware: it keeps original lines from your context that match the question, verbatim, and drops the rest before the Claude call.</p>
+    <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-11-11</p>
 <section class="seo-section">
         <h2>Where your Claude costs come from</h2>
-        <p>A typical agent making 1,000 calls/day with 4,000-token prompts burns real Anthropic Claude budget on filler context. SuperCompress is query-aware extractive selection: it keeps original lines that answer this question and drops the rest. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your traffic. Published suites live on <a href="/benchmarks">/benchmarks</a>.</p>
-      </section>    <section class="seo-section">
+        <p>Most Claude input spend in agents and apps comes from long logs and test output, tool and MCP results, file reads, retrieved chunks that do not match the question, and long chat history. SuperCompress is extractive and query-aware: it keeps original lines that match this question and drops the rest. Measure <code>original_tokens</code> / <code>kept_tokens</code> (or <code>tokens_saved</code>) on your own traffic.</p>
+      </section>
+    <section class="seo-section">
+      <h2>Other ways to cut the bill</h2>
+      <ul>
+        <li>Use <a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching">Anthropic prompt caching</a> for the stable prefix, and put compressed per-question context after it.</li>
+        <li>Skip compression for small, hand-picked inputs. See <a href="https://www.supercompress.dev/when-to-use-compression">when to use prompt compression</a>.</li>
+        <li>Fewer input tokens do not always mean a smaller bill, so measure the whole task. Read <a href="https://www.supercompress.dev/does-context-compression-lower-your-bill">does context compression lower your bill</a>.</li>
+      </ul>
+    </section>
+    <section class="seo-section">
         <h2>How to measure the cut</h2>
-        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own Claude traffic instead of a marketing savings table. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>.</p>
+        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own Claude traffic instead of a marketing savings table. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>. Using Claude Code? See <a href="https://www.supercompress.dev/reduce-claude-code-token-usage">how to reduce Claude Code token usage</a>.</p>
       </section>
 
     
@@ -122,7 +131,6 @@
       <h2>Related cost pages</h2>
       <ul>
         <li><a href="/reduce-openai-costs">Reduce OpenAI costs</a></li>
-        <li><a href="/reduce-claude-costs">Reduce Claude costs</a></li>
         <li><a href="/reduce-chatgpt-costs">Reduce ChatGPT costs</a></li>
         <li><a href="/reduce-gemini-costs">Reduce Gemini costs</a></li>
         <li><a href="/cut-llm-api-costs">Cut API costs playbook</a></li>
@@ -132,9 +140,9 @@
     <section class="seo-section">
       <h2>Frequently asked questions</h2>
             <h3>Will compression work with Claude streaming?</h3>
-      <p>Yes. Compress the prompt first, then stream the Claude response.</p>
+      <p>Yes. Compress first, then stream the response.</p>
       <h3>Does this work with Claude Code and Cursor?</h3>
-      <p>Yes. Install MCP with npx supercompress setup, SuperCompress compresses agent context on every submit before Claude sees it.</p>
+      <p>Yes. Run npm install -g supercompress-proxy and then supercompress setup. Setup signs you in through the browser and registers SuperCompress with the coding agents it finds, so the agent can compress large tool output before it reaches the model.</p>
     </section>
         </main>
 <footer class="df-footer">
