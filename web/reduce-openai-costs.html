@@ -128,7 +128,7 @@
     </section>
     <section class="seo-section">
         <h2>How to measure the cut</h2>
-        <p>The hosted API returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code> as estimates of the compressed context, not provider-billed token counts. MCP <code>compress_context</code> reports <code>compressed_tokens</code> instead of <code>kept_tokens</code>, and MCP passthrough responses do not include those counts. Check provider usage for billed totals. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>. Using Codex? See <a href="https://www.supercompress.dev/reduce-codex-token-usage">how to reduce Codex token usage</a>.</p>
+        <p>The hosted API returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code> as estimates of the compressed context, not provider-billed token counts. MCP <code>compress_context</code> reports <code>compressed_tokens</code> instead of <code>kept_tokens</code>. On MCP passthrough, hosted responses still return <code>original_tokens</code> but leave out <code>compressed_tokens</code> and <code>tokens_saved</code>; the local proxy leaves out all three. Check provider usage for billed totals. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>. Using Codex? See <a href="https://www.supercompress.dev/reduce-codex-token-usage">how to reduce Codex token usage</a>.</p>
       </section>
 
     <section class="seo-section">
