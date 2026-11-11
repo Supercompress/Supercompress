@@ -54,7 +54,7 @@
       {
         "@type": "Question",
         "name": "Does this work with Claude Code and Cursor?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Run npm install -g supercompress-proxy and then supercompress setup. Setup signs you in through the browser and registers SuperCompress with the coding agents it finds, so the agent can compress large tool output before it reaches the model."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Run npm install -g supercompress-proxy and then supercompress setup. Setup signs you in through the browser and registers SuperCompress with the coding agents it finds, so they can compress large tool output. On Cursor, the post-tool hook adds a compressed digest as additional context and does not replace the raw tool result."}
       }
     ]
   }
@@ -107,7 +107,7 @@
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">Claude / Anthropic cost reduction</p>
     <h1>Reduce Claude API costs before the model call</h1>
-    <p class="seo-lead">Claude bills you for every input token, so the simplest saving is to stop sending the ones the model does not need for the question. SuperCompress is extractive and query-aware: it keeps original lines from your context that match the question, verbatim, and drops the rest before the Claude call.</p>
+    <p class="seo-lead">Claude bills you for every input token, so the simplest saving is to stop sending the ones the model does not need for the question. SuperCompress is extractive and query-aware: it keeps original lines from your context that match the question and drops the rest before the Claude call.</p>
     <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-11-11</p>
 <section class="seo-section">
         <h2>Where your Claude costs come from</h2>
@@ -123,7 +123,7 @@
     </section>
     <section class="seo-section">
         <h2>How to measure the cut</h2>
-        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own Claude traffic instead of a marketing savings table. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>. Using Claude Code? See <a href="https://www.supercompress.dev/reduce-claude-code-token-usage">how to reduce Claude Code token usage</a>.</p>
+        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code> as estimates of the compressed context, not provider-billed token counts. Use those fields on your own traffic, and check provider usage for billed totals. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>. Using Claude Code? See <a href="https://www.supercompress.dev/reduce-claude-code-token-usage">how to reduce Claude Code token usage</a>.</p>
       </section>
 
     
@@ -142,7 +142,7 @@
             <h3>Will compression work with Claude streaming?</h3>
       <p>Yes. Compress first, then stream the response.</p>
       <h3>Does this work with Claude Code and Cursor?</h3>
-      <p>Yes. Run npm install -g supercompress-proxy and then supercompress setup. Setup signs you in through the browser and registers SuperCompress with the coding agents it finds, so the agent can compress large tool output before it reaches the model.</p>
+      <p>Yes. Run npm install -g supercompress-proxy and then supercompress setup. Setup signs you in through the browser and registers SuperCompress with the coding agents it finds, so they can compress large tool output. On Cursor, the post-tool hook adds a compressed digest as additional context and does not replace the raw tool result.</p>
     </section>
         </main>
 <footer class="df-footer">

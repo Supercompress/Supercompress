@@ -59,7 +59,7 @@
       {
         "@type": "Question",
         "name": "Does it rewrite my prompt?",
-        "acceptedAnswer": {"@type": "Answer", "text": "No. It keeps original lines from your context, verbatim, and drops the rest. Your question is not compressed."}
+        "acceptedAnswer": {"@type": "Answer", "text": "No. It keeps original lines from your context that match the question and drops the rest. Some structured blocks may be preprocessed before line selection. Your question is not compressed."}
       }
     ]
   }
@@ -112,7 +112,7 @@
 <main class="seo-page" data-article-content>
     <p class="seo-kicker">ChatGPT API cost reduction</p>
     <h1>Reduce ChatGPT API costs with query-aware compression</h1>
-    <p class="seo-lead">ChatGPT and OpenAI bill you for every input token, so the simplest saving is to stop sending the ones the model does not need for the question. SuperCompress is extractive and query-aware: it keeps original lines from your context that match the question, verbatim, and drops the rest before the call.</p>
+    <p class="seo-lead">OpenAI API usage bills you for every input token, so the simplest saving is to stop sending the ones the model does not need for the question. SuperCompress is extractive and query-aware: it keeps original lines from your context that match the question and drops the rest before the call.</p>
     <p class="seo-author">By <strong><a href="https://www.arjunshah.xyz/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-11-11</p>
 <section class="seo-section">
         <h2>Where your ChatGPT costs come from</h2>
@@ -128,7 +128,7 @@
     </section>
     <section class="seo-section">
         <h2>How to measure the cut</h2>
-        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code>. Use those fields on your own ChatGPT / OpenAI traffic instead of a marketing savings table. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>. Using Codex? See <a href="https://www.supercompress.dev/reduce-codex-token-usage">how to reduce Codex token usage</a>.</p>
+        <p>Every compress response returns <code>original_tokens</code>, <code>kept_tokens</code>, and <code>tokens_saved</code> as estimates of the compressed context, not provider-billed token counts. Use those fields on your own traffic, and check provider usage for billed totals. Hosted API + MCP, wired into Claude Code, Cursor, Codex and other agents via <code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code>. Using Codex? See <a href="https://www.supercompress.dev/reduce-codex-token-usage">how to reduce Codex token usage</a>.</p>
       </section>
 
     
@@ -149,7 +149,7 @@
       <h3>Does this help ChatGPT Plus / Team usage caps?</h3>
       <p>For API usage yes, fewer tokens per call. For ChatGPT consumer plans, use SuperCompress in your apps and agents that call the API.</p>
       <h3>Does it rewrite my prompt?</h3>
-      <p>No. It keeps original lines from your context, verbatim, and drops the rest. Your question is not compressed.</p>
+      <p>No. It keeps original lines from your context that match the question and drops the rest. Some structured blocks may be preprocessed before line selection. Your question is not compressed.</p>
     </section>
         </main>
 <footer class="df-footer">
