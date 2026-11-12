@@ -19,7 +19,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/cut-llm-api-costs" />
   <meta property="article:published_time" content="2026-10-17T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-18" />
+  <meta property="article:modified_time" content="2026-11-12" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
@@ -34,7 +34,7 @@
   "headline": "How to cut LLM API costs",
   "description": "Practical ways to cut LLM API costs: send fewer input tokens, use prompt caching, trim history, and compress bulky context with SuperCompress, which keeps only the lines that answer the current question.",
   "datePublished": "2026-10-17",
-  "dateModified": "2026-10-20",
+  "dateModified": "2026-11-12",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -127,10 +127,18 @@
     },
     {
       "@type": "Question",
+      "name": "Should I use prompt caching or compression?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Both, for different parts of the prompt. Caching makes an unchanged prefix cheaper to resend; compression sends fewer tokens of the part that changes each call. Keep stable instructions first so they cache, and put the compressed per-question context after them."
+      }
+    },
+    {
+      "@type": "Question",
       "name": "Will compression hurt answer quality?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "SuperCompress is extractive: it keeps original lines verbatim rather than rewriting them. Still, test on your own tasks and keep files the model must edit whole."
+        "text": "Selection is generally extractive: it keeps lines from your context rather than writing a summary, though preprocessing may rewrite JSON or collapse stack frames first. Test on your own tasks and keep files the model must edit whole."
       }
     },
     {
@@ -175,7 +183,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Guide · Updated 2026-10-18</p>
+  <p class="seo-kicker">Guide · Updated 2026-11-12</p>
   <h1>How to cut LLM API costs</h1>
   <p class="seo-lead">The most reliable way to cut LLM API costs is to send fewer input tokens per call, because input (history, retrieved documents, tool output) is usually most of what you pay for. Use prompt caching for stable prefixes, trim old history, and compress bulky context before the call. SuperCompress does the last part: a hosted model keeps the original lines that answer the current question and drops the rest, so your OpenAI, Claude or Gemini call gets smaller without paraphrasing anything.</p>
   <nav class="seo-cluster" aria-label="Related">
@@ -192,20 +200,21 @@
     <h2 id="steps">Steps that work, in order</h2>
     <ol>
       <li><strong>Measure first.</strong> Log input and output tokens per call and per feature so you know which calls are expensive.</li>
-      <li><strong>Use prompt caching</strong> for long system prompts and other prefixes that do not change. Check your provider's docs for how cached input is billed.</li>
+      <li><strong>Use prompt caching</strong> for long system prompts and other prefixes that do not change (<a href="https://developers.openai.com/api/docs/guides/prompt-caching" rel="noopener" target="_blank">OpenAI</a>, <a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching" rel="noopener" target="_blank">Anthropic</a>). Keep the stable part first and put the part that changes each call, including compressed context, after it, because rewriting the prefix resets cache reuse.</li>
       <li><strong>Trim history.</strong> Drop or compact old turns that no longer matter.</li>
       <li><strong>Retrieve less, then compress.</strong> Fetch fewer chunks, then compress what is left against the question so only relevant lines reach the model.</li>
       <li><strong>Compress tool output.</strong> In agents, large logs, diffs and MCP results are the usual culprit.</li>
+      <li><strong>Cap output and batch what can wait.</strong> Set a sensible output limit, and send work that does not need an immediate answer through your provider's batch API, which is billed at a discount.</li>
     </ol>
     <h2 id="supercompress">Where SuperCompress fits</h2>
-    <p>SuperCompress sits right before your model call. Send the bulky part as <code>context</code> and the user's ask as <code>query</code>; it returns the original lines that matter and reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see the effect on your own traffic. The query itself is never compressed.</p>
+    <p>SuperCompress sits right before your model call. Send the bulky part as <code>context</code> and the user's ask as <code>query</code>; it returns the lines that match the question and reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see the effect on your own traffic. The query itself is never compressed.</p>
     <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
   -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"context":"&lt;large context&gt;","query":"&lt;the user question&gt;"}'</code></pre>
     <h2 id="how-supercompress-works">How SuperCompress works</h2>
-    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API keeps the original lines that answer that question, word for word, and drops the rest. Nothing is paraphrased, so error messages, file paths, IDs and code come through exactly as they were.</p>
-    <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. See the <a href="/benchmarks">benchmarks page</a> for the published methodology.</p>
+    <p>SuperCompress is hosted, query-aware context compression. Your agent or app sends a bulky block of context (a log, a diff, a long file read, an MCP result, retrieved documents) together with the question being asked. The hosted API selects the lines that match that question and drops the rest. Selection is generally extractive, so what comes back are lines from your own context rather than a summary. Preprocessing may rewrite JSON or collapse stack frames before that selection.</p>
+    <p>Coding agents reach it through an MCP tool (<code>compress_context</code>) plus hooks that the setup command installs where the agent supports them. Apps reach it through <code>POST /api/v1/compress</code>, which returns the kept text along with <code>original_tokens</code> and <code>kept_tokens</code> so you can see what changed on your own traffic. Those counts are estimates of the compressed context, not provider-billed totals, so check your provider's usage page for the bill. When a context is already small, the API returns it unchanged with <code>passthrough: true</code>; see <a href="https://www.supercompress.dev/when-to-use-compression">when to use prompt compression</a>.</p>
 
     <h2 id="compare">Compression vs other cost tools</h2>
     <table>
@@ -218,12 +227,12 @@
       </tbody>
     </table>
     <h2 id="measure">How to pick fairly</h2>
-    <p>Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted. (see <a href="https://arxiv.org/abs/2607.12161" rel="noopener" target="_blank">PointFive's end-to-end study</a>, the <a href="https://github.com/daseinlabs/code-compression-bench" rel="noopener" target="_blank">code-compression-bench</a> SWE-bench runs, <a href="https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/" rel="noopener" target="_blank">JetBrains' rtk trial</a> and the <a href="https://pi-infected.github.io/token-harness-optimizer-leaderboard/" rel="noopener" target="_blank">THOL leaderboard</a>; none of them tested SuperCompress) Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one.</p>
+    <p>Every tool in this space publishes its own headline numbers, and independent studies have found that fewer tokens do not always mean a smaller bill once prompt caching, retries and extra agent turns are counted (see <a href="https://arxiv.org/abs/2607.12161" rel="noopener" target="_blank">PointFive's end-to-end study</a>, the <a href="https://github.com/daseinlabs/code-compression-bench" rel="noopener" target="_blank">code-compression-bench</a> SWE-bench runs, <a href="https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/" rel="noopener" target="_blank">JetBrains' rtk trial</a> and the <a href="https://pi-infected.github.io/token-harness-optimizer-leaderboard/" rel="noopener" target="_blank">THOL leaderboard</a>; none of them tested SuperCompress). Run the same tasks with and without a tool, check that the tasks still succeed, and compare your provider bill per finished task. That test matters more than any vendor page, including this one. We walk through that check in <a href="https://www.supercompress.dev/does-context-compression-lower-your-bill">does context compression lower your bill</a>.</p>
 
-    <p>Provider-specific guides: <a href="/reduce-openai-costs">reduce OpenAI costs</a>, <a href="/reduce-claude-costs">reduce Claude costs</a>, <a href="/reduce-gemini-costs">reduce Gemini costs</a>, <a href="/reduce-claude-code-token-usage">reduce Claude Code token usage</a>, <a href="/reduce-cursor-token-usage">reduce Cursor token usage</a>.</p>
+    <p>Provider-specific guides: <a href="/reduce-openai-costs">reduce OpenAI costs</a>, <a href="https://www.supercompress.dev/reduce-chatgpt-costs">reduce ChatGPT and OpenAI API costs</a>, <a href="/reduce-claude-costs">reduce Claude costs</a>, <a href="/reduce-gemini-costs">reduce Gemini costs</a>, <a href="/reduce-claude-code-token-usage">reduce Claude Code token usage</a>, <a href="https://www.supercompress.dev/reduce-codex-token-usage">reduce Codex token usage</a>, <a href="/reduce-cursor-token-usage">reduce Cursor token usage</a>.</p>
 
     <h2 id="install">Try it</h2>
-    <p>One command installs the CLI and wires the hosted compressor into every coding agent it finds on your machine (Claude Code, Cursor, Codex, Windsurf, Cline, Gemini CLI, OpenCode and more). Then <code>supercompress doctor</code> shows a health check per agent.</p>
+    <p>One command installs the CLI, signs you in through the browser and registers the hosted compressor with the supported coding agents it finds on your machine, such as Claude Code, Cursor, Codex, Gemini CLI and OpenCode. Then <code>supercompress doctor</code> shows a health check per agent.</p>
     <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
     <p>Building your own app instead? Call the <a href="https://docs.supercompress.dev/api-reference">hosted API</a> with a key from the <a href="/dashboard?signup=1">dashboard</a>.</p>
     <h2 id="faq">FAQ</h2>
@@ -231,8 +240,10 @@
     <p>Send fewer input tokens. Cache stable prefixes, trim old history, retrieve fewer chunks, and compress bulky context against the current question with a tool such as SuperCompress.</p>
     <h3>Does compressing prompts reduce OpenAI and Claude bills?</h3>
     <p>Fewer billed input tokens lower metered spend, but check total cost per successful task, since caching, retries and extra turns also matter.</p>
+    <h3>Should I use prompt caching or compression?</h3>
+    <p>Both, for different parts of the prompt. Caching makes an unchanged prefix cheaper to resend; compression sends fewer tokens of the part that changes each call. Keep stable instructions first so they cache, and put the compressed per-question context after them.</p>
     <h3>Will compression hurt answer quality?</h3>
-    <p>SuperCompress is extractive: it keeps original lines verbatim rather than rewriting them. Still, test on your own tasks and keep files the model must edit whole.</p>
+    <p>Selection is generally extractive: it keeps lines from your context rather than writing a summary, though preprocessing may rewrite JSON or collapse stack frames first. Test on your own tasks and keep files the model must edit whole.</p>
     <h3>Does SuperCompress work with any model provider?</h3>
     <p>Yes. Its output is plain text, so you can send it to OpenAI, Anthropic, Google or any other model.</p>
     <p class="seo-cta-row">
