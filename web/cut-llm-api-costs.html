@@ -185,7 +185,7 @@
 <main class="seo-page" data-article-content>
   <p class="seo-kicker">Guide · Updated 2026-11-12</p>
   <h1>How to cut LLM API costs</h1>
-  <p class="seo-lead">The most reliable way to cut LLM API costs is to send fewer input tokens per call, because input (history, retrieved documents, tool output) is usually most of what you pay for. Use prompt caching for stable prefixes, trim old history, and compress bulky context before the call. SuperCompress does the last part: a hosted model keeps the original lines that answer the current question and drops the rest, so your OpenAI, Claude or Gemini call gets smaller without paraphrasing anything.</p>
+  <p class="seo-lead">The most reliable way to cut LLM API costs is to send fewer input tokens per call, because input (history, retrieved documents, tool output) is usually most of what you pay for. Use prompt caching for stable prefixes, trim old history, and compress bulky context before the call. SuperCompress does the last part: a hosted model selects the lines that match the current question and drops the rest. Preprocessing may rewrite JSON or collapse stack frames before that selection.</p>
   <nav class="seo-cluster" aria-label="Related">
     <a href="/alternatives">All alternatives</a>
     <a href="/alternatives/headroom">Headroom alternative</a>
@@ -221,7 +221,7 @@
       <thead><tr><th>Approach</th><th>What it does</th><th>Combine with compression?</th></tr></thead>
       <tbody>
         <tr><td>Prompt caching</td><td>Cheaper reuse of identical prefixes</td><td>Yes, compress the changing part, cache the stable part</td></tr>
-        <tr><td>Summarization</td><td>Rewrites context in fewer words, can lose exact details</td><td>Use SuperCompress where details must stay verbatim</td></tr>
+        <tr><td>Summarization</td><td>Rewrites context in fewer words, can lose exact details</td><td>Use SuperCompress where you need lines from the source context rather than a rewrite</td></tr>
         <tr><td>Truncation</td><td>Keeps the first or last part, may drop the evidence</td><td>Compression picks lines by relevance instead of position</td></tr>
         <tr><td>Shorter replies (for example Caveman)</td><td>Cuts output tokens</td><td>Yes, it acts on the other side</td></tr>
       </tbody>
