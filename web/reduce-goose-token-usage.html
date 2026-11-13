@@ -19,7 +19,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/reduce-goose-token-usage" />
   <meta property="article:published_time" content="2026-10-25T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-25" />
+  <meta property="article:modified_time" content="2026-11-13" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -35,7 +35,7 @@
   "headline": "Reduce Goose Token Usage: Compress Tool Output",
   "description": "Where Goose tokens go (developer-extension shell output, file reads, test runs, MCP results) and how SuperCompress adds an MCP extension and instructions to Goose so the agent keeps the original lines that answer your question.",
   "datePublished": "2026-10-25",
-  "dateModified": "2026-10-25",
+  "dateModified": "2026-11-13",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -139,6 +139,14 @@
         "@type": "Answer",
         "text": "Setup writes the macOS and Linux path (~/.config/goose/config.yaml) today. It does not write Goose's Windows config path."
       }
+    },
+    {
+      "@type": "Question",
+      "name": "Doesn't Goose already compact long sessions?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Goose can compact or summarize the conversation once it nears a threshold (GOOSE_AUTO_COMPACT_THRESHOLD, or /compact). SuperCompress works earlier and on a single large result: it keeps the lines of a log, file read or MCP result that match the question, before that result fills the session. The two can run together."
+      }
     }
   ]
 }
@@ -174,14 +182,14 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Goose · Updated 2026-10-25</p>
+  <p class="seo-kicker">Goose · Updated 2026-11-13</p>
   <div class="seo-tags">
     <span class="seo-tag seo-tag--accent">Goose</span>
     <span class="seo-tag">Token usage</span>
     <span class="seo-tag">MCP</span>
   </div>
   <h1>Reduce Goose Token Usage: Compress Tool Output</h1>
-  <p class="seo-lead">Goose is Block's open-source coding agent. Sessions grow with shell output from the developer extension, file reads, test runs and large MCP tool results that stay in the session. Here is where Goose tokens go and how SuperCompress lets the agent keep the original lines that answer your question.</p>
+  <p class="seo-lead">Goose is an open source AI agent that is now part of the Agentic AI Foundation (AAIF) at the Linux Foundation. Sessions grow with shell output from the developer extension, file reads, test runs and large MCP tool results that stay in the session. Here is where Goose tokens go and how SuperCompress lets the agent keep the original lines that answer your question.</p>
   <p class="seo-author">October 25, 2026 · Guide</p>
 
   <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
@@ -205,21 +213,22 @@
     <ul>
       <li><strong>Developer-extension shell output.</strong> Commands return their full output, including test runs and builds.</li>
       <li><strong>File reads.</strong> Whole files come back even when a few lines matter.</li>
-      <li><strong>MCP tool results.</strong> Large results from other extensions stay in the session for later turns.</li>
+      <li><strong>MCP tool results.</strong> Large results from other extensions stay in the session for later turns. See <a href="https://www.supercompress.dev/mcp-tool-output-compression">how MCP tool output compression works</a>.</li>
     </ul>
 
     <h2 id="habits">Habits that cut Goose token usage for free</h2>
     <ol>
-      <li><strong>Limit which tools an extension loads.</strong> Set <code>available_tools</code> on an extension in <code>~/.config/goose/config.yaml</code> (Goose's config-files guide) so only the tools you need are loaded.</li>
+      <li><strong>Limit which tools an extension loads.</strong> Set <code>available_tools</code> on an extension in <code>~/.config/goose/config.yaml</code> (<a href="https://goose-docs.ai/docs/guides/config-files/">Goose's config files guide</a>) so only the tools you need are loaded.</li>
       <li><strong>Turn off extensions you do not use.</strong> Set <code>enabled: false</code> on the extension, or run <code>goose configure</code> and choose Toggle Extensions.</li>
       <li><strong>Start a fresh session per task.</strong> Old shell output and MCP results stop riding along.</li>
       <li><strong>Keep <code>.goosehints</code> and <code>AGENTS.md</code> short.</strong> Goose loads global copies from <code>~/.config/goose/</code>.</li>
+      <li><strong>Let Goose compact earlier.</strong> Set <code>GOOSE_AUTO_COMPACT_THRESHOLD</code> (default 0.8; a lower value compacts sooner) so Goose compacts the session sooner, or run <code>/compact</code> on demand. See <a href="https://goose-docs.ai/docs/guides/sessions/smart-context-management/">Goose's smart context management guide</a>. Compaction summarizes the conversation after it has grown, so it does not decide which lines of a single large tool result are worth keeping when that result first arrives. For that earlier step, see <a href="https://www.supercompress.dev/supercompress-vs-summarization">compression versus summarization</a>.</li>
     </ol>
     <p>These habits shrink what goes in. They don't help when the agent genuinely needs to run a test suite or read a large file and only a few lines of the output matter. That is the part SuperCompress handles.</p>
 
     <h2 id="how-supercompress-works">How SuperCompress works</h2>
-    <p>SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. It keeps the original lines that answer that question and drops the rest. It never rewrites or summarizes, so file paths, error messages, IDs and code come back exactly as they were. The question itself is never compressed.</p>
-    <p>Every compress call reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see what was dropped on your own work instead of trusting a headline number. The <code>usage_summary</code> MCP tool shows totals per agent for your account.</p>
+    <p>SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. It keeps the original lines that answer that question and drops the rest. It selects lines from the original rather than writing a summary, so file paths, error messages, IDs and code in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. See <a href="https://www.supercompress.dev/how-prompt-compression-works">how prompt compression works</a>. The question itself is never compressed.</p>
+    <p>In Goose the <code>compress_context</code> MCP tool reports <code>original_tokens</code> and <code>compressed_tokens</code> (the hosted API calls the second one <code>kept_tokens</code>); they are estimates, not provider-billed totals, and when the savings would be too small the content passes through unchanged and <code>compressed_tokens</code> is left out. The <code>usage_summary</code> MCP tool shows what your account saved this month.</p>
 
     <h2 id="what-setup-adds">What <code>supercompress setup</code> adds to Goose</h2>
     <p>Goose gets the MCP tool and instructions; there are no SuperCompress hooks for Goose. Setup writes the macOS and Linux config path.</p>
@@ -228,7 +237,7 @@
         <tr><th>What</th><th>Where</th><th>What it does</th></tr>
       </thead>
       <tbody>
-        <tr><td><strong>MCP server</strong></td><td><code>~/.config/goose/config.yaml</code> (<code>extensions.supercompress</code>, type <code>stdio</code>)</td><td>Gives the agent the <code>compress_context</code>, <code>connect_account</code> and <code>usage_summary</code> tools.</td></tr>
+        <tr><td><strong>MCP server</strong></td><td><code>~/.config/goose/config.yaml</code> (<code>extensions.supercompress</code>, type <code>stdio</code>)</td><td>Gives the agent the <code>compress_context</code>, <code>connect_account</code>, <code>usage_summary</code> and <code>runway_check</code> tools.</td></tr>
         <tr><td><strong>Instructions</strong></td><td><code>~/.config/goose/AGENTS.md</code></td><td>Tells Goose when to call <code>compress_context</code> on bulky dumps, and never to compress the request itself.</td></tr>
       </tbody>
     </table>
@@ -239,15 +248,16 @@
     type: stdio
     name: supercompress
     cmd: "&lt;path&gt;"
-    args:
-      - "&lt;path&gt;"
+    args: []
     timeout: 600
     envs:
       SUPERCOMPRESS_CONFIG_DIR: "&lt;path&gt;"</code></pre>
+    <p><code>args</code> can also hold a script path depending on how Node is installed.</p>
 
     <h2 id="install">Install</h2>
+    <p>Run <code>supercompress agents</code> first to see whether Goose is detected on this machine (it only reads, it changes no files).</p>
     <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
-    <p>Setup links your SuperCompress account in the browser, detects the coding agents on the machine and wires each one. Restart Goose so it loads the new MCP extension. Then check what is wired up:</p>
+    <p>Setup links your SuperCompress account in the browser, detects the coding agents on the machine and wires each one. Restart Goose so it loads the new MCP extension. Then run <code>goose info -v</code> to see supercompress listed with your other extensions, and <code>supercompress mcp-check</code> to confirm the MCP server starts and lists its tools. Then check what is wired up:</p>
     <pre><code>supercompress doctor</code></pre>
     <p><code>doctor</code> prints a per-agent health check. <code>supercompress uninstall</code> removes only the entries SuperCompress added. Setup backs up each config file before it edits it.</p>
 
@@ -257,6 +267,7 @@
       <li>Files the agent is about to edit line by line. It needs those in full.</li>
       <li>Work where every byte must be passed through unchanged for compliance reasons.</li>
     </ul>
+    <p>For a fuller decision guide, see <a href="https://www.supercompress.dev/when-to-use-compression">when to use prompt compression</a>.</p>
 
     <h2 id="faq">FAQ</h2>
     <h3>Does SuperCompress change my other Goose extensions?</h3>
@@ -265,6 +276,8 @@
     <p>Run <code>supercompress uninstall</code>. It removes only the <code>supercompress</code> block from Goose <code>config.yaml</code> and the SuperCompress block from <code>~/.config/goose/AGENTS.md</code>.</p>
     <h3>Does it work on Windows?</h3>
     <p>Setup writes the macOS and Linux path (<code>~/.config/goose/config.yaml</code>) today. It does not write Goose's Windows config path.</p>
+    <h3>Doesn't Goose already compact long sessions?</h3>
+    <p>Yes. Goose can compact or summarize the conversation once it nears a threshold (<code>GOOSE_AUTO_COMPACT_THRESHOLD</code>, or <code>/compact</code>). SuperCompress works earlier and on a single large result: it keeps the lines of a log, file read or MCP result that match the question, before that result fills the session. The two can run together.</p>
 
     <p class="seo-cta-row">
       <a class="df-nav-cta" href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a>
