@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/reduce-tool-call-output-tokens" />
   <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-19" />
+  <meta property="article:modified_time" content="2026-11-13" />
   <meta property="article:author" content="https://www.arjunshah.xyz/" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
@@ -36,7 +36,7 @@
   "headline": "How to reduce tokens in tool call output",
   "description": "Practical ways to cut tool call output tokens in AI agents: limits, truncation contracts, offloading, and question-aware compression of logs, diffs and JSON.",
   "datePublished": "2026-10-19",
-  "dateModified": "2026-10-20",
+  "dateModified": "2026-11-13",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah",
@@ -150,7 +150,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">How-to · Updated 2026-10-19</p>
+  <p class="seo-kicker">How-to · Updated 2026-11-13</p>
   <h1>How to reduce tokens in tool call output</h1>
   <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
   <p class="seo-lead">To reduce tokens in tool call output, stop large results from entering the conversation raw. Cap and paginate at the tool, tell the agent when output was cut, offload huge payloads to a handle, and compress what remains against the current question so only the lines that answer it stay in context.</p>
@@ -175,7 +175,7 @@
   -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"context":"&lt;tool output&gt;","query":"why did the checkout test fail?"}'</code></pre>
-<p>The response includes the kept text plus <code>original_tokens</code> and <code>kept_tokens</code>. Lines are kept verbatim, never rewritten. Coding agents do not need to call this by hand: <code>supercompress setup</code> installs the MCP tool and hooks. The MCP-specific walkthrough is <a href="https://www.supercompress.dev/mcp-tool-output-compression">MCP tool output compression</a>.</p>
+<p>The response includes the kept text plus <code>original_tokens</code> and <code>kept_tokens</code>. The kept lines come from the original rather than a rewrite; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. The token counts are estimates, not provider-billed totals. Coding agents do not need to call this by hand: <code>supercompress setup</code> installs the MCP tool, plus hooks on agents that support them. The MCP-specific walkthrough is <a href="https://www.supercompress.dev/mcp-tool-output-compression">MCP tool output compression</a>. Using Goose? See <a href="https://www.supercompress.dev/reduce-goose-token-usage">how to reduce Goose token usage</a>.</p>
     <h2 id="combine">How do these techniques fit together?</h2>
     <ol><li>Filter at the source (query parameters, flags, <code>--quiet</code> modes).</li><li>Cap and paginate with an honest truncation marker.</li><li>Compress what is left against the question.</li><li>Trim stale results on later turns.</li></ol><p>Then compare your provider bill per finished task with and without each step. Fewer tokens in one place can be offset by extra retries elsewhere.</p>
     <h2 id="faq">Frequently asked questions</h2>
