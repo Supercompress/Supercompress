@@ -47,15 +47,16 @@ One command finds the coding agents on your machine and adds the SuperCompress M
 npm install -g supercompress-proxy && supercompress setup
 ```
 
-Your agent then has three MCP tools:
+Your agent then has four MCP tools:
 
 | Tool | What it does |
 | --- | --- |
-| `compress_context` | Takes a bulky `context` (tool output, logs, diffs, files) and the user's `query`, and returns the kept lines with `original_tokens` and `kept_tokens`. |
+| `compress_context` | Takes a bulky context (tool output, logs, diffs, files) and the user's query, and returns the kept lines with `original_tokens` and `compressed_tokens` (estimates; the hosted HTTP API calls the second one `kept_tokens`). |
 | `connect_account` | Links the agent to your SuperCompress account. |
 | `usage_summary` | Shows token totals and quota for the connected account. |
+| `runway_check` | Checks your provider rate-limit runway (5-hour, weekly and monthly windows) before large or multi-step work, and suggests whether to go ahead, checkpoint or wait. |
 
-Run `supercompress doctor` at any time to check what is wired up. The full harness list is in the [coding agents guide](https://docs.supercompress.dev/coding-agents). Cursor-specific steps are on how to [reduce Cursor token usage](https://www.supercompress.dev/reduce-cursor-token-usage). Claude Code-specific steps are on how to [reduce Claude Code token usage](https://www.supercompress.dev/reduce-claude-code-token-usage).
+Run `supercompress doctor` at any time to check what is wired up. The full harness list is in the [coding agents guide](https://docs.supercompress.dev/coding-agents). Cursor-specific steps are on how to [reduce Cursor token usage](https://www.supercompress.dev/reduce-cursor-token-usage). Claude Code-specific steps are on how to [reduce Claude Code token usage](https://www.supercompress.dev/reduce-claude-code-token-usage). Goose-specific steps are on [how to reduce Goose token usage](https://www.supercompress.dev/reduce-goose-token-usage), and OpenClaw-specific steps, including its tool-result hooks, are on [how to reduce OpenClaw token usage](https://www.supercompress.dev/reduce-openclaw-token-usage).
 
 ## Building your own MCP host or agent
 
