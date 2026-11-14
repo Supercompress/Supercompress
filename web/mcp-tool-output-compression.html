@@ -4,17 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>MCP Tool Output Compression: Compress MCP Tool Results | SuperCompress</title>
-  <meta name="description" content="Reduce MCP token usage by compressing MCP tool results against the current question. SuperCompress keeps the original lines that answer it, drops the rest, and reports original_tokens and kept_tokens." />
+  <meta name="description" content="Reduce MCP token usage by compressing MCP tool results against the current question. SuperCompress keeps the original lines that answer it and drops the rest. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen." />
   <meta name="keywords" content="MCP tool output compression, compress MCP tool results, reduce MCP token usage, MCP token usage, MCP context bloat, compress_context, compressmcp alternative, Bifrost Code Mode alternative" />
   <meta property="og:title" content="MCP tool output compression with SuperCompress" />
-  <meta property="og:description" content="Send a bulky MCP tool result plus the current question. SuperCompress keeps the original lines that answer it and drops the rest, without rewriting anything." />
+  <meta property="og:description" content="Send a bulky MCP tool result plus the current question. SuperCompress keeps the original lines that answer it and drops the rest. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/mcp-tool-output-compression" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Compress MCP tool results before the model reads them" />
-  <meta name="twitter:description" content="Query-aware, extractive compression for MCP tool output. Every response reports original_tokens and kept_tokens." />
+  <meta name="twitter:description" content="Query-aware, extractive compression for MCP tool output. The compress_context tool reports original_tokens and compressed_tokens (estimates; the hosted HTTP API calls the second one kept_tokens)." />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/mcp-tool-output-compression" />
   <link rel="alternate" type="text/markdown" href="https://www.supercompress.dev/mcp-tool-output-compression.md" />
@@ -49,17 +49,22 @@
       {
         "@type": "Question",
         "name": "What is MCP tool output compression?",
-        "acceptedAnswer": {"@type": "Answer", "text": "It means shrinking what an MCP tool returns (JSON payloads, logs, file reads, search results) before the model reads it. SuperCompress does this against the question the agent is working on: it keeps the original lines that answer that question and drops the rest."}
+        "acceptedAnswer": {"@type": "Answer", "text": "It means shrinking what an MCP tool returns (JSON payloads, logs, file reads, search results) before the model reads it. SuperCompress does this against the question the agent is working on: it keeps the original lines that answer that question and drops the rest. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen."}
       },
       {
         "@type": "Question",
         "name": "Does SuperCompress rewrite or summarize MCP tool results?",
-        "acceptedAnswer": {"@type": "Answer", "text": "No. SuperCompress is extractive. The lines it returns are copied from the original tool output, never rewritten or summarized, so IDs, paths, error messages and code come through as they were."}
+        "acceptedAnswer": {"@type": "Answer", "text": "No. It is extractive and query-aware. It selects original lines against the question and drops the rest instead of writing a summary, so file paths, error messages and code in the kept lines stay as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen."}
+      },
+      {
+        "@type": "Question",
+        "name": "What do I send besides the tool output?",
+        "acceptedAnswer": {"@type": "Answer", "text": "The current question or task. SuperCompress uses it to decide which lines to keep, and it never compresses the question itself."}
       },
       {
         "@type": "Question",
         "name": "How do I see how many tokens SuperCompress removed from a tool result?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Every compress response reports original_tokens and kept_tokens, so you measure the result on your own traffic. The usage_summary MCP tool shows totals for your account."}
+        "acceptedAnswer": {"@type": "Answer", "text": "The compress_context MCP tool reports original_tokens and compressed_tokens. The hosted HTTP API calls the second one kept_tokens. These counts are estimates, not provider-billed totals, and when the savings would be too small the content passes through unchanged and compressed_tokens is left out. The usage_summary MCP tool shows totals for your account."}
       },
       {
         "@type": "Question",
@@ -169,7 +174,7 @@
 
   <div class="article-prose">
     <div class="seo-verdict">
-      <strong>In short:</strong> send SuperCompress the tool result plus the current question. It keeps the original lines that answer that question and drops the rest. It never rewrites or summarizes, and every response reports <code>original_tokens</code> and <code>kept_tokens</code>.
+      <strong>In short:</strong> send SuperCompress the tool result plus the current question. It selects original lines that answer that question and drops the rest, rather than writing a summary. File paths, error messages, IDs and code in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. The <code>compress_context</code> tool reports <code>original_tokens</code> and <code>compressed_tokens</code> (estimates; the hosted HTTP API calls the second one <code>kept_tokens</code>).
     </div>
     <p>Related: <a href="/alternatives">compare context compression tools</a> that sit on tool output, including <a href="/alternatives/headroom">Headroom alternatives</a>, <a href="/alternatives/caveman">Caveman alternatives</a> and <a href="/alternatives/scaledown">ScaleDown alternatives</a>. See also <a href="/mcp-context-bloat">MCP context bloat</a> and <a href="/reduce-tool-call-output-tokens">how to reduce tool call output tokens</a>.</p>
 
@@ -186,12 +191,12 @@
     <p>SuperCompress is hosted, extractive and query-aware.</p>
     <ol>
       <li><strong>You send two things:</strong> the tool output as <code>context</code>, and the current question or task as <code>query</code>. The query is never compressed.</li>
-      <li><strong>It picks lines, it does not write them.</strong> SuperCompress keeps the original lines from the tool output that answer that question and drops the rest. Nothing is paraphrased, so IDs, paths, error messages and code stay exactly as the tool returned them.</li>
-      <li><strong>You see the result.</strong> Every response reports <code>original_tokens</code> and <code>kept_tokens</code>, so the saving is measured on your own traffic, call by call.</li>
+      <li><strong>It picks lines, it does not write them.</strong> SuperCompress keeps the original lines from the tool output that answer that question and drops the rest. File paths, error messages, IDs and code in the kept lines stay as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen.</li>
+      <li><strong>You see the result.</strong> The <code>compress_context</code> MCP tool reports <code>original_tokens</code> and <code>compressed_tokens</code> (estimates, not provider-billed totals; the hosted HTTP API calls the second one <code>kept_tokens</code>). When the savings would be too small the content passes through unchanged and <code>compressed_tokens</code> is left out.</li>
     </ol>
 
     <h2 id="coding-agents">Set it up in your coding agent</h2>
-    <p>One command finds the coding agents on your machine and adds the SuperCompress MCP server and hooks to each of them:</p>
+    <p>Setup links your SuperCompress account in the browser, detects the coding agents on your machine and wires each one. It adds the SuperCompress MCP server, and it installs hooks where the agent supports them:</p>
     <pre><code>npm install -g supercompress-proxy &amp;&amp; supercompress setup</code></pre>
     <p>Your agent then has four MCP tools:</p>
     <table class="seo-table">
@@ -241,12 +246,18 @@
     <p>Current plans and your free allowance are shown in the <a href="/dashboard?signup=1">dashboard</a>.</p>
 
     <h2 id="faq">FAQ</h2>
-    <h3>Does SuperCompress rewrite or summarize tool results?</h3>
-    <p>No. It is extractive. Every line it returns is copied from the original tool output.</p>
+    <h3>What is MCP tool output compression?</h3>
+    <p>It means shrinking what an MCP tool returns (JSON payloads, logs, file reads, search results) before the model reads it. SuperCompress does this against the question the agent is working on: it keeps the original lines that answer that question and drops the rest. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen.</p>
+    <h3>Does SuperCompress rewrite or summarize MCP tool results?</h3>
+    <p>No. It is extractive and query-aware. It selects original lines against the question and drops the rest instead of writing a summary, so file paths, error messages and code in the kept lines stay as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen.</p>
     <h3>What do I send besides the tool output?</h3>
     <p>The current question or task. SuperCompress uses it to decide which lines to keep, and it never compresses the question itself.</p>
-    <h3>How do I check what was removed?</h3>
-    <p>Each response includes <code>original_tokens</code> and <code>kept_tokens</code>. For account totals, call the <code>usage_summary</code> MCP tool.</p>
+    <h3>How do I see how many tokens SuperCompress removed from a tool result?</h3>
+    <p>The <code>compress_context</code> MCP tool reports <code>original_tokens</code> and <code>compressed_tokens</code>. The hosted HTTP API calls the second one <code>kept_tokens</code>. These counts are estimates, not provider-billed totals, and when the savings would be too small the content passes through unchanged and <code>compressed_tokens</code> is left out. The <code>usage_summary</code> MCP tool shows totals for your account.</p>
+    <h3>How is this different from compressmcp or Bifrost Code Mode?</h3>
+    <p>compressmcp abbreviates JSON keys in large MCP responses and keeps every value. Bifrost Code Mode hides many MCP tool definitions behind four meta-tools and runs tool calls in a sandbox. SuperCompress works on the content of a tool result and chooses which original lines to keep based on the current question, so it can sit alongside either approach.</p>
+    <h3>How much does SuperCompress cost?</h3>
+    <p>Current plans and your free allowance are shown in the dashboard at https://www.supercompress.dev/dashboard.</p>
 
     <p class="seo-cta-row">
       <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
