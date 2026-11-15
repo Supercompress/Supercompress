@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>How to Compress RAG Context Before the LLM Call</title>
+  <meta name="description" content="Retrieved chunks are usually only partly relevant. How to compress RAG context against the user's question with the SuperCompress API, keep citations working, and know when to skip it." />
+  <meta name="keywords" content="RAG context compression, compress retrieved chunks, reduce RAG tokens, contextual compression RAG, RAG prompt too long" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="How to Compress RAG Context Before the LLM Call" />
+  <meta property="og:description" content="Retrieved chunks are usually only partly relevant. How to compress RAG context against the user's question with the SuperCompress API, keep citations working, and know when to skip it." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/compress-rag-context" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="How to Compress RAG Context Before the LLM Call" />
+  <meta name="twitter:description" content="Retrieved chunks are usually only partly relevant. How to compress RAG context against the user's question with the SuperCompress API, keep citations working, and know when to skip it." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/compress-rag-context" />
+  <meta property="article:published_time" content="2026-11-15T00:00:00-08:00" />
+  <meta property="article:modified_time" content="2026-11-15" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to compress RAG context before the LLM call",
+  "description": "Retrieved chunks are usually only partly relevant. How to compress RAG context against the user's question with the SuperCompress API, keep citations working, and know when to skip it.",
+  "datePublished": "2026-11-15",
+  "dateModified": "2026-11-15",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/compress-rag-context"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "RAG context compression, compress retrieved chunks, reduce RAG tokens, contextual compression RAG, RAG prompt too long"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is RAG compression the same as reranking?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Reranking chooses which chunks go into the prompt. Compression trims the lines inside the chunks you kept. They work well together: rerank first, then compress what is left."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Will compression change the text of my sources?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "SuperCompress selects original lines rather than writing a summary, so text in the kept lines stays as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen, so keep the original documents for display and citation."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to send the user's question?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, for a targeted result. Without a specific question the API returns a broader digest and labels the response query_mode \"dump\"."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I measure whether RAG compression is worth it?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Compare answers to the same questions with and without compression, and log original_tokens and kept_tokens per call. Those counts are estimates, so confirm savings on your provider bill."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">RAG · Updated 2026-11-15</p>
+  <h1>How to compress RAG context before the LLM call</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">Retrieval picks chunks because part of each one matches the question, and the rest of the chunk rides along into the prompt. To shrink RAG context, retrieve and rerank as usual, then send the retrieved text and the user's question to a query-aware compressor and pass only the kept lines to the model. Compress per document when you need citations, fail open when the call errors, and judge it by the answers, not just the token count.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="https://www.supercompress.dev/context-compression">Context compression guide</a>
+    <a href="https://www.supercompress.dev/llm-context-window-too-long">LLM context window too long</a>
+    <a href="https://www.supercompress.dev/when-to-use-compression">When to use compression</a>
+    <a href="https://www.supercompress.dev/extractive-vs-abstractive-context-compression">Extractive vs abstractive</a>
+  </nav>
+  <div class="article-prose">
+    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why do RAG prompts get so big?</a></li><li><a href="#where">Where does compression fit in a RAG pipeline?</a></li><li><a href="#options">Filter, extract or summarize?</a></li><li><a href="#api">How do I compress RAG context with the SuperCompress API?</a></li><li><a href="#citations">How do I keep citations working?</a></li><li><a href="#skip">When should I skip RAG compression?</a></li><li><a href="#measure">How do I know it helped?</a></li><li><a href="#faq">Frequently asked questions</a></li></ul></nav>
+
+    <h2 id="why">Why do RAG prompts get so big?</h2>
+    <p>Top-k retrieval returns whole chunks. A chunk can be selected for one sentence and still carry paragraphs that have nothing to do with the question. Overlapping chunks repeat the same text, and in a chat app the retrieved text often stays in the history and is sent again on the next turn. The model is billed for all of it as input.</p>
+
+    <h2 id="where">Where does compression fit in a RAG pipeline?</h2>
+    <p>Put it after retrieval and reranking and before generation: retrieve, rerank, compress, generate. Reranking decides which chunks to keep. Compression decides which lines inside those chunks to keep. Fix recall first: compression can only remove text, so it cannot rescue an answer that retrieval never found.</p>
+
+    <h2 id="options">Filter, extract or summarize?</h2>
+    <table>
+      <thead>
+        <tr><th>Approach</th><th>What it does</th><th>Good fit</th><th>Watch out for</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Filter chunks (reranker or score threshold)</td><td>Keeps or drops whole chunks</td><td>Clearly off-topic chunks</td><td>A long chunk with one useful line still goes in whole</td></tr>
+        <tr><td>Extractive compression</td><td>Keeps original lines or spans that match the question</td><td>Answers that must be quoted or cited</td><td>Can drop a line the answer needed, so test on your own questions</td></tr>
+        <tr><td>Abstractive compression (summarize)</td><td>Rewrites chunks into shorter text</td><td>Gist-style answers</td><td>Can drop caveats, numbers or conditions, and the text can no longer be quoted</td></tr>
+      </tbody>
+    </table>
+    <p>Many pipelines filter first and then extract from what is left. For the trade-off in more depth, see <a href="https://www.supercompress.dev/extractive-vs-abstractive-context-compression">extractive versus abstractive compression</a>.</p>
+
+    <h2 id="api">How do I compress RAG context with the SuperCompress API?</h2>
+    <p>SuperCompress is extractive and query-aware. You send the retrieved text as context and the user's question as query, and it selects original lines against that question rather than writing a summary, so text in the kept lines stays as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. For the mechanism, see <a href="https://www.supercompress.dev/how-prompt-compression-works">how prompt compression works</a>.</p>
+    <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"context": "&lt;retrieved text&gt;", "query": "&lt;the user question&gt;"}'</code></pre>
+    <p>Put <code>compressed_text</code> in the prompt in place of the raw chunks. Each response also reports <code>original_tokens</code> and <code>kept_tokens</code>. They are estimates, not provider-billed totals, but they show what each call removed. When compression would not save enough, the response sets <code>passthrough</code> to true and returns your original text unchanged.</p>
+    <p>Send the question the user actually asked. Without a specific question the API falls back to a broader digest (<code>query_mode</code> is <code>"dump"</code>) instead of a targeted cut. The full request and response reference is in the <a href="https://docs.supercompress.dev/api-reference">API reference</a>.</p>
+
+    <h2 id="citations">How do I keep citations working?</h2>
+    <p>Compress each retrieved document, or each group of chunks from one source, in its own call, and keep the source ID and URL in your application next to the result. That way every kept line maps back to its source without relying on an ID line surviving inside the text. Keep the original documents for display, so a citation can link to the full passage.</p>
+    <pre><code>import os
+import requests
+
+API_URL = "https://www.supercompress.dev/api/v1/compress"
+
+def compress_for_question(text, question):
+    r = requests.post(
+        API_URL,
+        headers={"X-API-Key": os.environ["SUPERCOMPRESS_API_KEY"]},
+        json={"context": text, "query": question},
+        timeout=30,
+    )
+    r.raise_for_status()
+    return r.json()
+
+parts = []
+for doc in reranked_docs:  # output of your retriever and reranker
+    try:
+        kept = compress_for_question(doc.text, question)["compressed_text"] or doc.text
+    except requests.RequestException:
+        kept = doc.text  # fail open: send the original chunk
+    parts.append(f"[source: {doc.id}]\n{kept}")
+
+context_for_model = "\n\n".join(parts)</code></pre>
+    <p>Fail open. If the compression call errors or times out, send the uncompressed chunks rather than an empty context, so the model never answers from nothing.</p>
+
+    <h2 id="skip">When should I skip RAG compression?</h2>
+    <ul>
+      <li>Your chunks are already short and tightly reranked, so there is little left to cut.</li>
+      <li>The answer needs a whole document, such as a contract clause read in full or code you are about to edit.</li>
+      <li>The retrieved items are structured records where every field matters.</li>
+      <li>There is no specific question to compress against.</li>
+    </ul>
+    <p>For a fuller decision guide, see <a href="https://www.supercompress.dev/when-to-use-compression">when to use prompt compression</a>.</p>
+
+    <h2 id="measure">How do I know it helped?</h2>
+    <ul>
+      <li>Run the same questions with and without compression and compare the answers on your own checks.</li>
+      <li>Log <code>original_tokens</code> and <code>kept_tokens</code> per call (estimates) to see where the cut is large and where calls pass through.</li>
+      <li>Check cost per answered question on your provider bill, since caching, retries and extra turns change the picture. See <a href="https://www.supercompress.dev/does-context-compression-lower-your-bill">whether context compression lowers your bill</a>.</li>
+    </ul>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>Is RAG compression the same as reranking?</h3>
+    <p>No. Reranking chooses which chunks go into the prompt. Compression trims the lines inside the chunks you kept. They work well together: rerank first, then compress what is left.</p>
+    <h3>Will compression change the text of my sources?</h3>
+    <p>SuperCompress selects original lines rather than writing a summary, so text in the kept lines stays as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen, so keep the original documents for display and citation.</p>
+    <h3>Do I need to send the user's question?</h3>
+    <p>Yes, for a targeted result. Without a specific question the API returns a broader digest and labels the response query_mode "dump".</p>
+    <h3>How do I measure whether RAG compression is worth it?</h3>
+    <p>Compare answers to the same questions with and without compression, and log original_tokens and kept_tokens per call. Those counts are estimates, so confirm savings on your provider bill.</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/api-reference">API reference</a>
+      <a href="https://www.supercompress.dev/context-compression">Context compression guide</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>

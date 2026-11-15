@@ -21,7 +21,7 @@
   <link rel="alternate" type="text/markdown" href="https://www.supercompress.dev/context-compression.md" />
   <link rel="alternate" type="text/plain" href="https://www.supercompress.dev/llms.txt" title="llms.txt" />
   <meta property="article:published_time" content="2026-10-31T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-31" />
+  <meta property="article:modified_time" content="2026-11-15" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
@@ -36,7 +36,7 @@
   "headline": "Context compression: the complete guide for LLMs and AI agents",
   "description": "Context compression explained: what it is, every method (truncation, summarization, token pruning, extractive, retrieval), query-aware compression, how to measure it, and tools compared.",
   "datePublished": "2026-10-31",
-  "dateModified": "2026-10-31",
+  "dateModified": "2026-11-15",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -206,7 +206,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Guide · Updated 2026-10-31</p>
+  <p class="seo-kicker">Guide · Updated 2026-11-15</p>
   <h1>Context compression: the complete guide for LLMs and AI agents</h1>
 <p class="seo-lead"><strong>Context compression</strong> is the practice of shrinking what you send to a large language model (tool output, logs, files, chat history, retrieved documents) so the model sees the information it needs in fewer tokens. Done well, it lowers cost and latency, keeps you under context window limits and reduces context rot, without losing the facts the answer depends on. This guide covers the methods, how query-aware compression differs, how to measure it and which tools do what.</p>
   <nav class="seo-cluster" aria-label="Related">
@@ -236,9 +236,9 @@
 <h2 id="agents">Context compression for coding agents</h2>
 <p>Coding agents (Claude Code, Cursor, Codex, Windsurf, Cline, Gemini CLI, OpenCode and others) spend most tokens on tool results: file reads, grep, test output, build logs and MCP responses. Agent context pruning works best at that boundary, before the result lands in history and is resent every turn. Guides: <a href="/reduce-claude-code-token-usage">reduce Claude Code token usage</a>, <a href="/reduce-cursor-token-usage">Cursor</a>, <a href="/reduce-codex-token-usage">Codex</a>, <a href="/mcp-tool-output-compression">MCP tool output compression</a>, <a href="/context-compression-for-coding-agents">approaches for coding agents</a>.</p>
 <h2 id="rag">Context compression for RAG</h2>
-<p>Retrieved chunks are usually only partly relevant. Compressing them against the user question before generation cuts tokens and can reduce distraction. Keep source lines verbatim when answers must be quotable or cited.</p>
+<p>Retrieved chunks are usually only partly relevant. Compressing them against the user question before generation cuts tokens and can reduce distraction. When answers must be quoted or cited, prefer extractive compression that keeps original lines, and keep the source documents for display. For a step-by-step setup, see <a href="https://www.supercompress.dev/compress-rag-context">how to compress RAG context before the LLM call</a>.</p>
 <h2 id="measure">How to measure context compression</h2>
-<ul><li><strong>Tokens in vs tokens kept</strong> on your real traffic (the SuperCompress API returns <code>original_tokens</code> and <code>kept_tokens</code> on every call).</li><li><strong>Task success</strong> with and without compression on the same tasks.</li><li><strong>Cost per finished task</strong> on your provider bill, since caching, retries and extra turns change the picture. See <a href="/does-context-compression-lower-your-bill">does context compression lower your bill?</a></li></ul>
+<ul><li><strong>Tokens in vs tokens kept</strong> on your real traffic (the SuperCompress API returns <code>original_tokens</code> and <code>kept_tokens</code> on each call; both are estimates).</li><li><strong>Task success</strong> with and without compression on the same tasks.</li><li><strong>Cost per finished task</strong> on your provider bill, since caching, retries and extra turns change the picture. See <a href="/does-context-compression-lower-your-bill">does context compression lower your bill?</a></li></ul>
 <p>Our published methodology and limitations are on the <a href="/benchmarks">benchmarks page</a>.</p>
 <h2 id="tools">Context compression tools compared</h2>
 <table>
