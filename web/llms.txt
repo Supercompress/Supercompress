@@ -45,6 +45,7 @@ The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Ho
 - [Verbatim lines vs token pruning](https://www.supercompress.dev/verbatim-lines-vs-token-pruning): Token pruning drops words by score; line-level selection keeps original lines verbatim.
 - [What is context rot](https://www.supercompress.dev/context-rot): Context rot is the decline in LLM output quality as the context fills with stale or irrelevant text.
 - [LLM context window too long](https://www.supercompress.dev/llm-context-window-too-long): Six ways to shorten an LLM prompt: trim history, limit retrieval, offload outputs, compress by question.
+- [How to compress RAG context before the LLM call](https://www.supercompress.dev/compress-rag-context): Retrieve and rerank, then keep only the lines of retrieved chunks that answer the user's question. Citations, failing open, when to skip.
 
 ## Integrations
 

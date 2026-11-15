@@ -68,11 +68,11 @@ Coding agents (Claude Code, Cursor, Codex, Windsurf, Cline, Gemini CLI, OpenCode
 
 ## Context compression for RAG
 
-Retrieved chunks are usually only partly relevant. Compressing them against the user question before generation cuts tokens and can reduce distraction. Keep source lines verbatim when answers must be quotable or cited.
+Retrieved chunks are usually only partly relevant. Compressing them against the user question before generation cuts tokens and can reduce distraction. When answers must be quoted or cited, prefer extractive compression that keeps original lines, and keep the source documents for display. For a step-by-step setup, see [how to compress RAG context before the LLM call](https://www.supercompress.dev/compress-rag-context).
 
 ## How to measure context compression
 
-- **Tokens in vs tokens kept** on your real traffic (the SuperCompress API returns `original_tokens` and `kept_tokens` on every call).
+- **Tokens in vs tokens kept** on your real traffic (the SuperCompress API returns `original_tokens` and `kept_tokens` on each call; both are estimates).
 - **Task success** with and without compression on the same tasks.
 - **Cost per finished task** on your provider bill, since caching, retries and extra turns change the picture. See [does context compression lower your bill?](https://www.supercompress.dev/does-context-compression-lower-your-bill)
 
