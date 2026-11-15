@@ -141,7 +141,7 @@
     <a href="https://www.supercompress.dev/extractive-vs-abstractive-context-compression">Extractive vs abstractive</a>
   </nav>
   <div class="article-prose">
-    <nav aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why do RAG prompts get so big?</a></li><li><a href="#where">Where does compression fit in a RAG pipeline?</a></li><li><a href="#options">Filter, extract or summarize?</a></li><li><a href="#api">How do I compress RAG context with the SuperCompress API?</a></li><li><a href="#citations">How do I keep citations working?</a></li><li><a href="#skip">When should I skip RAG compression?</a></li><li><a href="#measure">How do I know it helped?</a></li><li><a href="#faq">Frequently asked questions</a></li></ul></nav>
+    <nav class="toc" aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why do RAG prompts get so big?</a></li><li><a href="#where">Where does compression fit in a RAG pipeline?</a></li><li><a href="#options">Filter, extract or summarize?</a></li><li><a href="#api">How do I compress RAG context with the SuperCompress API?</a></li><li><a href="#citations">How do I keep citations working?</a></li><li><a href="#skip">When should I skip RAG compression?</a></li><li><a href="#measure">How do I know it helped?</a></li><li><a href="#faq">Frequently asked questions</a></li></ul></nav>
 
     <h2 id="why">Why do RAG prompts get so big?</h2>
     <p>Top-k retrieval returns whole chunks. A chunk can be selected for one sentence and still carry paragraphs that have nothing to do with the question. Overlapping chunks repeat the same text, and in a chat app the retrieved text often stays in the history and is sent again on the next turn. The model is billed for all of it as input.</p>
@@ -174,30 +174,35 @@
     <h2 id="citations">How do I keep citations working?</h2>
     <p>Compress each retrieved document, or each group of chunks from one source, in its own call, and keep the source ID and URL in your application next to the result. That way every kept line maps back to its source without relying on an ID line surviving inside the text. Keep the original documents for display, so a citation can link to the full passage.</p>
     <pre><code>import os
+import time
 import requests
 
 API_URL = "https://www.supercompress.dev/api/v1/compress"
 
-def compress_for_question(text, question):
+def compress_for_question(text, question, timeout):
     r = requests.post(
         API_URL,
         headers={"X-API-Key": os.environ["SUPERCOMPRESS_API_KEY"]},
         json={"context": text, "query": question},
-        timeout=30,
+        timeout=timeout,
     )
     r.raise_for_status()
     return r.json()
 
+deadline = time.monotonic() + 10  # one time budget for the whole compression step
 parts = []
 for doc in reranked_docs:  # output of your retriever and reranker
-    try:
-        kept = compress_for_question(doc.text, question)["compressed_text"] or doc.text
-    except requests.RequestException:
-        kept = doc.text  # fail open: send the original chunk
+    kept = doc.text  # fail open: default to the original chunk
+    remaining = deadline - time.monotonic()
+    if remaining &gt; 0:
+        try:
+            kept = compress_for_question(doc.text, question, remaining)["compressed_text"] or doc.text
+        except requests.RequestException:
+            pass
     parts.append(f"[source: {doc.id}]\n{kept}")
 
 context_for_model = "\n\n".join(parts)</code></pre>
-    <p>Fail open. If the compression call errors or times out, send the uncompressed chunks rather than an empty context, so the model never answers from nothing.</p>
+    <p>Fail open. Give the whole compression step one time budget, and if a call errors or the budget runs out, send the uncompressed chunks for the remaining documents rather than an empty context, so the model never answers from nothing.</p>
 
     <h2 id="skip">When should I skip RAG compression?</h2>
     <ul>
