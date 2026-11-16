@@ -19,7 +19,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/reduce-opencode-token-usage" />
   <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-10-25" />
+  <meta property="article:modified_time" content="2026-11-16" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -35,7 +35,7 @@
   "headline": "Reduce OpenCode Token Usage: Compress Tool Output",
   "description": "Where OpenCode tokens go (tool output, file reads, MCP results, AGENTS.md) and how SuperCompress adds an MCP server and instructions to OpenCode so the agent keeps only the lines that answer your question.",
   "datePublished": "2026-10-09",
-  "dateModified": "2026-10-25",
+  "dateModified": "2026-11-16",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -129,7 +129,7 @@
       "name": "Does SuperCompress summarize what OpenCode reads?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were."
+        "text": "No. It is extractive. It keeps lines copied from the original output rather than writing a summary, so file paths, error messages and code in the kept lines stay as written. Preprocessing may rewrite JSON or collapse repeated stack frames first."
       }
     },
     {
@@ -174,7 +174,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">OpenCode · Updated 2026-10-25</p>
+  <p class="seo-kicker">OpenCode · Updated 2026-11-16</p>
   <div class="seo-tags">
     <span class="seo-tag seo-tag--accent">OpenCode</span>
     <span class="seo-tag">Token usage</span>
@@ -218,8 +218,8 @@
     <p>These habits shrink what goes in. They don't help when the agent genuinely needs to run a test suite or read a large file and only a few lines of the output matter. That is the part SuperCompress handles.</p>
 
     <h2 id="how-supercompress-works">How SuperCompress works</h2>
-    <p>SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. Our Neural Keep model scores the lines against that question, keeps the original lines that answer it, and drops the rest. It never rewrites or summarizes, so file paths, error messages, IDs and code come back exactly as they were. The question itself is never compressed.</p>
-    <p>Every compress call reports <code>original_tokens</code> and <code>kept_tokens</code>, so you can see what was dropped on your own work instead of trusting a headline number. The <code>usage_summary</code> MCP tool shows totals per agent for your account.</p>
+    <p>SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. It keeps the original lines that answer that question and drops the rest. It selects lines from the original rather than writing a summary, so file paths, error messages, IDs and code in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. See <a href="https://www.supercompress.dev/how-prompt-compression-works">how prompt compression works</a>. The question itself is never compressed.</p>
+    <p>In OpenCode the <code>compress_context</code> MCP tool reports <code>original_tokens</code> and <code>compressed_tokens</code> (the hosted API calls the second one <code>kept_tokens</code>); they are estimates, not provider-billed totals, and when the savings would be too small the tool returns a passthrough notice instead of a digest (no <code>compressed_tokens</code>, and the content is not sent back), so the agent keeps using its original text. The <code>usage_summary</code> MCP tool shows what your account saved this month.</p>
 
     <h2 id="what-setup-adds">What <code>supercompress setup</code> adds to OpenCode</h2>
     <table class="seo-table">
@@ -237,6 +237,7 @@
     <p>Setup links your SuperCompress account in the browser, detects the coding agents on the machine and wires each one. Restart the agent so it loads the new MCP server. Then check what is wired up:</p>
     <pre><code>supercompress doctor</code></pre>
     <p><code>doctor</code> prints a per-agent health check. <code>supercompress uninstall</code> removes only the entries SuperCompress added. Setup backs up each config file before it edits it.</p>
+    <p>Comparing this with other ways to cut tokens? See <a href="https://www.supercompress.dev/context-compression-for-coding-agents">context compression for coding agents</a>.</p>
 
     <h2 id="when-to-skip">When to skip it</h2>
     <ul>
@@ -249,7 +250,7 @@
     <h3>Does SuperCompress change how I sign in to OpenCode?</h3>
     <p>No. You keep your normal OpenCode login and models. SuperCompress adds an MCP server and instructions to OpenCode; your model traffic does not pass through SuperCompress.</p>
     <h3>Does SuperCompress summarize what OpenCode reads?</h3>
-    <p>No. It is extractive. The lines it keeps are copied from the original output, so file paths, error messages and code stay exactly as they were.</p>
+    <p>No. It is extractive. It keeps lines copied from the original output rather than writing a summary, so file paths, error messages and code in the kept lines stay as written. Preprocessing may rewrite JSON or collapse repeated stack frames first.</p>
     <h3>How do I undo the OpenCode setup?</h3>
     <p>Run <code>supercompress uninstall</code>. It removes only the entries SuperCompress added, so your other MCP servers, hooks and instructions stay as they were.</p>
 
