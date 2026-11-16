@@ -42,7 +42,7 @@ Compare every tool: [context compression and token tools compared](https://www.s
 
 SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. It keeps the original lines that answer that question and drops the rest. It selects lines from the original rather than writing a summary, so file paths, error messages, IDs and code in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. See [how prompt compression works](https://www.supercompress.dev/how-prompt-compression-works). The question itself is never compressed.
 
-The MCP `compress_context` tool reports `original_tokens` and `compressed_tokens` and the hosted API reports `original_tokens` and `kept_tokens`; both are estimates, not provider-billed totals, and when the savings would be too small the content passes through unchanged. The `usage_summary` MCP tool shows what your account saved this month.
+The MCP `compress_context` tool reports `original_tokens` and `compressed_tokens` and the hosted API reports `original_tokens` and `kept_tokens`; both are estimates, not provider-billed totals. When the savings would be too small, the MCP tool returns a passthrough notice instead of a digest (no `compressed_tokens`, and the content is not sent back), so the agent keeps using its original text; the hosted API returns the original text unchanged. The `usage_summary` MCP tool shows what your account saved this month.
 
 ## Install
 
