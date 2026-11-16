@@ -36,13 +36,13 @@ Compare every tool: [context compression and token tools compared](https://www.s
 1. **Measure what you are billed, per finished task.** Fewer tokens in one request does not always mean a cheaper session. Independent work on coding-agent compression, such as the arXiv paper [An Empirical Cost Attribution of Context-Compression Gateways in Multi-Turn Coding Agents](https://arxiv.org/abs/2609.22114) and the open [tokbench](https://github.com/Entelligentsia/tokbench) harness, makes this point. For the cache-vs-token-count question in full, see [Does context compression lower your bill?](https://www.supercompress.dev/does-context-compression-lower-your-bill). If you are not sure compression fits your workload at all, start with [when to use prompt compression](https://www.supercompress.dev/when-to-use-compression).
 2. **Watch prompt caching.** Rewriting earlier turns can break cached prefixes. SuperCompress compresses new bulky results and leaves earlier turns alone, which is the cache-friendly pattern.
 3. **Gate on correctness.** Count a session only if the task was done right.
-4. **Run your own repo.** Every SuperCompress call reports `original_tokens` and `kept_tokens`, so you can see each call on your own work.
+4. **Run your own repo.** Every SuperCompress call reports `original_tokens` and `kept_tokens` (or `compressed_tokens` from the MCP tool). They are estimates, not provider-billed totals, so confirm the saving on your bill.
 
 ## How SuperCompress works
 
-SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. Our Neural Keep model scores the lines against that question, keeps the original lines that answer it, and drops the rest. It never rewrites or summarizes, so file paths, error messages, IDs and code come back exactly as they were. The question itself is never compressed.
+SuperCompress is hosted, extractive and query-aware. Your agent sends a large block of context (a log, a diff, a file read, an MCP result) together with the question it is working on. It keeps the original lines that answer that question and drops the rest. It selects lines from the original rather than writing a summary, so file paths, error messages, IDs and code in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. See [how prompt compression works](https://www.supercompress.dev/how-prompt-compression-works). The question itself is never compressed.
 
-Every compress call reports `original_tokens` and `kept_tokens`, so you can see what was dropped on your own work instead of trusting a headline number. The `usage_summary` MCP tool shows totals per agent for your account.
+The MCP `compress_context` tool reports `original_tokens` and `compressed_tokens` and the hosted API reports `original_tokens` and `kept_tokens`; both are estimates, not provider-billed totals, and when the savings would be too small the content passes through unchanged. The `usage_summary` MCP tool shows what your account saved this month.
 
 ## Install
 
@@ -58,6 +58,8 @@ supercompress doctor
 
 `doctor` prints a per-agent health check. `supercompress uninstall` removes only the entries SuperCompress added. Setup backs up each config file before it edits it.
 
+Setup guides for each agent: [Claude Code](https://www.supercompress.dev/reduce-claude-code-token-usage), [Cursor](https://www.supercompress.dev/reduce-cursor-token-usage), [Codex](https://www.supercompress.dev/reduce-codex-token-usage), [Cline](https://www.supercompress.dev/reduce-cline-token-usage), [Windsurf](https://www.supercompress.dev/reduce-windsurf-token-usage), [OpenCode](https://www.supercompress.dev/reduce-opencode-token-usage), [Gemini CLI](https://www.supercompress.dev/reduce-gemini-cli-token-usage), [Goose](https://www.supercompress.dev/reduce-goose-token-usage), [OpenClaw](https://www.supercompress.dev/reduce-openclaw-token-usage) and [Hermes Agent](https://www.supercompress.dev/reduce-hermes-agent-token-usage). The full list is on [reduce coding agent token usage](https://www.supercompress.dev/coding-agent-token-usage).
+
 Head-to-head pages: [SuperCompress vs RTK](https://www.supercompress.dev/supercompress-vs-rtk), [SuperCompress vs Headroom](https://www.supercompress.dev/supercompress-vs-headroom), [vs summarization](https://www.supercompress.dev/supercompress-vs-summarization), [vs truncation](https://www.supercompress.dev/supercompress-vs-truncation).
 
 ## FAQ
@@ -72,7 +74,7 @@ It depends on where your tokens go. Command filters help with noisy shell output
 
 ### Is SuperCompress a summarizer?
 
-No. It is extractive: it keeps original lines and drops the rest, so error messages, paths and code are unchanged.
+No. It is extractive: it keeps original lines and drops the rest rather than writing a summary, so error messages, paths and code in the kept lines stay as written. Preprocessing may rewrite JSON or collapse repeated stack frames first.
 
 ### Can I use SuperCompress with RTK or built-in compaction?
 
