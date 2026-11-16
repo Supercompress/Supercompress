@@ -1,0 +1,176 @@
+{
+  "meta": {
+    "generated_at": "2026-11-16T00:11:03.313Z",
+    "job": "fair-core bash/tool compaction — LIVE API vs Probe0",
+    "live_url": "https://www.supercompress.dev/api/v1/compress",
+    "probe0": "CLI 0.1.19 bash-focus/read compact port",
+    "supercompress_live": "POST www.supercompress.dev/api/v1/compress (customer product)",
+    "supercompress_fast_local": "packages/proxy/src/fast-compress.js (NOT live; reference only)",
+    "tokenizer": "o200k_base",
+    "victor_rule": "lexicographic: primary-gold>2pp → cut>2pp → cache USD>2%",
+    "key_source": "~/.supercompress/config.json",
+    "sha256_probe0_tool": "630e4300feca6f15"
+  },
+  "bash_only": {
+    "n": 51,
+    "arms": {
+      "supercompress_live": {
+        "n": 51,
+        "primary_gold_pct": 100,
+        "all_golds_pct": 100,
+        "cut_pct_token_weighted": 64.1,
+        "latency_ms_p50": 45506.1,
+        "miss_primary_count": 0,
+        "misses_primary": [],
+        "modes": [
+          "compiler"
+        ],
+        "policy_names": [
+          "SuperCompress Log",
+          "SuperCompress Compiler",
+          "SuperCompress Code"
+        ]
+      },
+      "supercompress_fast_local": {
+        "n": 51,
+        "primary_gold_pct": 100,
+        "all_golds_pct": 100,
+        "cut_pct_token_weighted": 70.3,
+        "latency_ms_p50": 1.6,
+        "miss_primary_count": 0,
+        "misses_primary": [],
+        "modes": [
+          "fast"
+        ],
+        "policy_names": []
+      },
+      "probe0_tool_compact": {
+        "n": 51,
+        "primary_gold_pct": 100,
+        "all_golds_pct": 54.9,
+        "cut_pct_token_weighted": 46.2,
+        "latency_ms_p50": 0.3,
+        "miss_primary_count": 0,
+        "misses_primary": [],
+        "modes": [
+          "probe0-bash-fold",
+          "probe0-bash-focus",
+          "probe0-untouched"
+        ],
+        "policy_names": []
+      },
+      "truncation_0_35": {
+        "n": 51,
+        "primary_gold_pct": 49,
+        "all_golds_pct": 49,
+        "cut_pct_token_weighted": 66.4,
+        "latency_ms_p50": 0,
+        "miss_primary_count": 26,
+        "misses_primary": [
+          {
+            "id": "candid-k8s-0",
+            "type": "k8s"
+          },
+          {
+            "id": "candid-pr-diff-0",
+            "type": "pr-diff"
+          },
+          {
+            "id": "candid-sentry-0",
+            "type": "sentry"
+          },
+          {
+            "id": "candid-stripe-webhook-0",
+            "type": "stripe-webhook"
+          },
+          {
+            "id": "candid-incident-thread-0",
+            "type": "incident-thread"
+          },
+          {
+            "id": "candid-tf-plan-0",
+            "type": "tf-plan"
+          },
+          {
+            "id": "neutral-find-0",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-1",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-2",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-3",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-4",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-5",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-6",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-7",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-8",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-9",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-10",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-11",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-12",
+            "type": "bash-find"
+          },
+          {
+            "id": "neutral-find-13",
+            "type": "bash-find"
+          }
+        ],
+        "modes": [
+          "truncation-0.35"
+        ],
+        "policy_names": []
+      }
+    },
+    "cache_usd": {
+      "live": 1.36,
+      "fast_local": 1.25,
+      "p0": 1.68,
+      "trunc": 1.32,
+      "raw": 2.49,
+      "live_vs_raw_pct": 45.5,
+      "p0_vs_raw_pct": 32.8
+    }
+  },
+  "decision": {
+    "victor": "supercompress-live",
+    "reason": "Primary-gold within 2pp (live 100% / Probe0 100%); cut gap 17.9pp: live 64.1% vs Probe0 46.2%",
+    "rule": "lexicographic: primary-gold>2pp → cut>2pp → cache USD>2%",
+    "notes": [
+      "all-golds diagnostic: live 100% / Probe0 54.9% / trunc 49%",
+      "local Fast is NOT the live product; reported separately for delta only"
+    ]
+  }
+}

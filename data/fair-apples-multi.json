@@ -1,0 +1,322 @@
+{
+  "meta": {
+    "generated_at": "2026-11-16T00:25:00.177Z",
+    "job": "fair-core bash/tool compaction — multi-competitor",
+    "corpus_n": 51,
+    "live_url": "https://www.supercompress.dev/api/v1/compress",
+    "cave_url": "https://gateway.caveman.so/sdk/v1/compress",
+    "headroom": "KompressCompressor ONNX target_ratio=0.35 + question",
+    "litellm": "local litellm.compression via python-worker",
+    "probe0": "CLI 0.1.19 tool compact port",
+    "ranking_rule": "eligible arms (not truncation; zero errors): primary-gold>2pp → cut>2pp → cache USD; local Fast reported but not ranked as live product",
+    "notes": [
+      "Caveman Cloud contract takes input only (no query).",
+      "SuperCompress live and Headroom/LiteLLM/Probe0 receive the query.",
+      "Local Fast is a reference delta, not the customer API."
+    ]
+  },
+  "arms": {
+    "supercompress-live": {
+      "n": 51,
+      "errors": 0,
+      "primary_gold_pct": 100,
+      "all_golds_pct": 100,
+      "cut_pct_token_weighted": 64.1,
+      "latency_ms_p50": 45506.1,
+      "miss_primary_count": 0,
+      "misses_primary": [],
+      "modes": [
+        "compiler"
+      ]
+    },
+    "caveman-cloud": {
+      "n": 51,
+      "errors": 0,
+      "primary_gold_pct": 100,
+      "all_golds_pct": 100,
+      "cut_pct_token_weighted": 0,
+      "latency_ms_p50": 320.7,
+      "miss_primary_count": 0,
+      "misses_primary": [],
+      "modes": [
+        "caveman-cloud"
+      ]
+    },
+    "headroom-kompress": {
+      "n": 51,
+      "errors": 0,
+      "primary_gold_pct": 98,
+      "all_golds_pct": 51,
+      "cut_pct_token_weighted": 14.2,
+      "latency_ms_p50": 1078.4,
+      "miss_primary_count": 1,
+      "misses_primary": [
+        {
+          "id": "candid-pr-diff-0",
+          "type": "pr-diff"
+        }
+      ],
+      "modes": [
+        "headroom-kompress-0.35"
+      ]
+    },
+    "litellm-local": {
+      "n": 51,
+      "errors": 0,
+      "primary_gold_pct": 9.8,
+      "all_golds_pct": 7.8,
+      "cut_pct_token_weighted": 41.6,
+      "latency_ms_p50": 1.3,
+      "miss_primary_count": 46,
+      "misses_primary": [
+        {
+          "id": "candid-k8s-0",
+          "type": "k8s"
+        },
+        {
+          "id": "candid-pr-diff-0",
+          "type": "pr-diff"
+        },
+        {
+          "id": "candid-docker-build-0",
+          "type": "docker-build"
+        },
+        {
+          "id": "candid-sentry-0",
+          "type": "sentry"
+        },
+        {
+          "id": "candid-stripe-webhook-0",
+          "type": "stripe-webhook"
+        },
+        {
+          "id": "candid-tf-plan-0",
+          "type": "tf-plan"
+        },
+        {
+          "id": "neutral-ci-0",
+          "type": "ci-log"
+        },
+        {
+          "id": "neutral-ci-1",
+          "type": "ci-log"
+        },
+        {
+          "id": "neutral-ci-2",
+          "type": "ci-log"
+        },
+        {
+          "id": "neutral-ci-3",
+          "type": "ci-log"
+        },
+        {
+          "id": "neutral-ci-4",
+          "type": "ci-log"
+        },
+        {
+          "id": "neutral-ci-5",
+          "type": "ci-log"
+        },
+        {
+          "id": "neutral-ci-6",
+          "type": "ci-log"
+        },
+        {
+          "id": "neutral-ci-7",
+          "type": "ci-log"
+        },
+        {
+          "id": "neutral-ci-8",
+          "type": "ci-log"
+        }
+      ],
+      "modes": [
+        "litellm-local"
+      ]
+    },
+    "probe0-tool-compact": {
+      "n": 51,
+      "errors": 0,
+      "primary_gold_pct": 100,
+      "all_golds_pct": 54.9,
+      "cut_pct_token_weighted": 46.2,
+      "latency_ms_p50": 0.4,
+      "miss_primary_count": 0,
+      "misses_primary": [],
+      "modes": [
+        "probe0-bash-fold",
+        "probe0-bash-focus",
+        "probe0-untouched"
+      ]
+    },
+    "supercompress-fast": {
+      "n": 51,
+      "errors": 0,
+      "primary_gold_pct": 100,
+      "all_golds_pct": 100,
+      "cut_pct_token_weighted": 70.3,
+      "latency_ms_p50": 1.9,
+      "miss_primary_count": 0,
+      "misses_primary": [],
+      "modes": [
+        "fast"
+      ]
+    },
+    "truncation-0.35": {
+      "n": 51,
+      "errors": 0,
+      "primary_gold_pct": 49,
+      "all_golds_pct": 49,
+      "cut_pct_token_weighted": 66.4,
+      "latency_ms_p50": 0,
+      "miss_primary_count": 26,
+      "misses_primary": [
+        {
+          "id": "candid-k8s-0",
+          "type": "k8s"
+        },
+        {
+          "id": "candid-pr-diff-0",
+          "type": "pr-diff"
+        },
+        {
+          "id": "candid-sentry-0",
+          "type": "sentry"
+        },
+        {
+          "id": "candid-stripe-webhook-0",
+          "type": "stripe-webhook"
+        },
+        {
+          "id": "candid-incident-thread-0",
+          "type": "incident-thread"
+        },
+        {
+          "id": "candid-tf-plan-0",
+          "type": "tf-plan"
+        },
+        {
+          "id": "neutral-find-0",
+          "type": "bash-find"
+        },
+        {
+          "id": "neutral-find-1",
+          "type": "bash-find"
+        },
+        {
+          "id": "neutral-find-2",
+          "type": "bash-find"
+        },
+        {
+          "id": "neutral-find-3",
+          "type": "bash-find"
+        },
+        {
+          "id": "neutral-find-4",
+          "type": "bash-find"
+        },
+        {
+          "id": "neutral-find-5",
+          "type": "bash-find"
+        },
+        {
+          "id": "neutral-find-6",
+          "type": "bash-find"
+        },
+        {
+          "id": "neutral-find-7",
+          "type": "bash-find"
+        },
+        {
+          "id": "neutral-find-8",
+          "type": "bash-find"
+        }
+      ],
+      "modes": [
+        "truncation-0.35"
+      ]
+    }
+  },
+  "cache_usd": {
+    "supercompress-live": {
+      "usd": 1.36,
+      "vs_raw_pct": 45.5
+    },
+    "caveman-cloud": {
+      "usd": 2.49,
+      "vs_raw_pct": 0
+    },
+    "headroom-kompress": {
+      "usd": 2.24,
+      "vs_raw_pct": 10.1
+    },
+    "litellm-local": {
+      "usd": 1.76,
+      "vs_raw_pct": 29.5
+    },
+    "probe0-tool-compact": {
+      "usd": 1.68,
+      "vs_raw_pct": 32.8
+    },
+    "supercompress-fast": {
+      "usd": 1.25,
+      "vs_raw_pct": 49.9
+    },
+    "truncation-0.35": {
+      "usd": 1.32,
+      "vs_raw_pct": 47.1
+    },
+    "raw": {
+      "usd": 2.49,
+      "vs_raw_pct": 0
+    }
+  },
+  "ranking": [
+    {
+      "rank": 1,
+      "name": "supercompress-live",
+      "primary_gold_pct": 100,
+      "all_golds_pct": 100,
+      "cut_pct_token_weighted": 64.1,
+      "cache_usd": 1.36,
+      "latency_ms_p50": 45506.1
+    },
+    {
+      "rank": 2,
+      "name": "probe0-tool-compact",
+      "primary_gold_pct": 100,
+      "all_golds_pct": 54.9,
+      "cut_pct_token_weighted": 46.2,
+      "cache_usd": 1.68,
+      "latency_ms_p50": 0.4
+    },
+    {
+      "rank": 3,
+      "name": "headroom-kompress",
+      "primary_gold_pct": 98,
+      "all_golds_pct": 51,
+      "cut_pct_token_weighted": 14.2,
+      "cache_usd": 2.24,
+      "latency_ms_p50": 1078.4
+    },
+    {
+      "rank": 4,
+      "name": "caveman-cloud",
+      "primary_gold_pct": 100,
+      "all_golds_pct": 100,
+      "cut_pct_token_weighted": 0,
+      "cache_usd": 2.49,
+      "latency_ms_p50": 320.7
+    },
+    {
+      "rank": 5,
+      "name": "litellm-local",
+      "primary_gold_pct": 9.8,
+      "all_golds_pct": 7.8,
+      "cut_pct_token_weighted": 41.6,
+      "cache_usd": 1.76,
+      "latency_ms_p50": 1.3
+    }
+  ],
+  "winner": "supercompress-live"
+}

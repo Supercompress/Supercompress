@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fair-core bakeoff — SuperCompress vs Probe0, Headroom, Caveman, LiteLLM</title>
+  <meta name="description" content="Apples-to-apples context compression bakeoff on a bash/tool dump corpus (n=51). Live SuperCompress API ranked #1 on primary-gold keep, then token cut." />
+  <meta property="og:title" content="Fair-core context compression bakeoff" />
+  <meta property="og:description" content="Live SuperCompress vs Probe0, Headroom, Caveman Cloud, LiteLLM on the same tool-dump job (n=51)." />
+  <meta property="og:image" content="assets/tierlist.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Instrument+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0b0e;
+      --ink: #f4f1ea;
+      --muted: #a7a29a;
+      --line: rgba(244,241,234,.12);
+      --card: #141418;
+      --accent: #e11d48;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad: #f87171;
+      --font: "Instrument Sans", system-ui, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); }
+    body {
+      background:
+        radial-gradient(900px 420px at 8% -8%, rgba(225,29,72,.18), transparent 55%),
+        radial-gradient(700px 380px at 100% 0%, rgba(52,211,153,.08), transparent 45%),
+        var(--bg);
+    }
+    a { color: #fda4af; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 48px 22px 96px; }
+    .eyebrow {
+      font-family: var(--mono); font-size: 12px; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.05;
+      letter-spacing: -.04em; margin: 0 0 18px; font-weight: 700;
+    }
+    h1 em { font-style: normal; color: #fb7185; }
+    .lede { font-size: 1.15rem; line-height: 1.55; color: #ddd8cf; max-width: 42rem; margin: 0 0 28px; }
+    .meta {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 36px;
+    }
+    .chip {
+      font-family: var(--mono); font-size: 12px; padding: 8px 12px;
+      border: 1px solid var(--line); border-radius: 999px; color: var(--muted);
+      background: rgba(255,255,255,.03);
+    }
+    .hero {
+      width: 100%; border-radius: 18px; border: 1px solid var(--line);
+      display: block; margin: 0 0 40px; background: #000;
+    }
+    h2 {
+      font-size: 1.45rem; letter-spacing: -.03em; margin: 48px 0 14px;
+      padding-top: 8px; border-top: 1px solid var(--line);
+    }
+    h3 { font-size: 1.05rem; margin: 28px 0 10px; letter-spacing: -.02em; }
+    p, li { line-height: 1.6; color: #d8d3ca; }
+    ul, ol { padding-left: 1.2rem; }
+    li { margin: 6px 0; }
+    .callout {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 16px; padding: 18px 20px; margin: 18px 0 28px;
+    }
+    .callout strong { color: var(--ink); }
+    table {
+      width: 100%; border-collapse: collapse; font-size: .92rem;
+      margin: 14px 0 8px; overflow: hidden; border-radius: 14px;
+      border: 1px solid var(--line);
+    }
+    th, td {
+      text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); background: rgba(255,255,255,.03);
+    }
+    tr:last-child td { border-bottom: 0; }
+    tr.win td { background: rgba(52,211,153,.08); }
+    .num { font-family: var(--mono); white-space: nowrap; }
+    .tier {
+      display: inline-grid; place-items: center; width: 28px; height: 28px;
+      border-radius: 8px; font-weight: 700; color: #0a0a0a; font-size: 14px;
+      margin-right: 8px;
+    }
+    .s { background: var(--good); }
+    .a { background: #60a5fa; }
+    .b { background: var(--warn); }
+    .c { background: #d4d4d8; }
+    .d { background: var(--bad); }
+    .links a {
+      display: inline-block; margin-right: 14px; margin-top: 8px;
+      font-family: var(--mono); font-size: 13px;
+    }
+    footer {
+      margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
+      color: var(--muted); font-size: .9rem;
+    }
+    code, .mono { font-family: var(--mono); font-size: .9em; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="eyebrow">SuperCompress · fair-core bakeoff · 2026-11-16</div>
+    <h1>Context compression tier list on real <em>tool dumps</em></h1>
+    <p class="lede">
+      Same corpus. Same scoring. Live products where it matters.
+      We ranked compressors on whether they keep the golds first, then how hard they cut.
+    </p>
+    <div class="meta">
+      <span class="chip">n = 51 fair-core bash/tool tasks</span>
+      <span class="chip">primary-gold → cut → cache USD</span>
+      <span class="chip">live API contest (Fast excluded from ranks)</span>
+    </div>
+
+    <img class="hero" src="assets/tierlist.png" alt="Fair-core tier list: SuperCompress S, Probe0 A, Headroom B, Caveman C, LiteLLM D" />
+
+    <div class="callout">
+      <strong>Winner: SuperCompress live</strong> —
+      100% primary-gold keep, <span class="num">64.1%</span> token cut, <span class="num">$1.36</span> cache USD.
+      Probe0 tied on keep but cut <span class="num">46.2%</span>. Headroom barely cut. Caveman was passthrough. LiteLLM cut tokens and trashed answers.
+    </div>
+
+    <h2>What we measured</h2>
+    <p>
+      Agents drown in bash and tool output. A compressor that deletes the needle is worse than no compressor.
+      So the ranking rule is intentionally harsh:
+    </p>
+    <ol>
+      <li><strong>Primary-gold keep</strong> — required answer spans must survive. Gap &gt; 2pp decides the race.</li>
+      <li>Else <strong>token cut</strong> — higher cut wins if keep is tied within 2pp.</li>
+      <li>Else <strong>cache USD</strong> — lower estimated prompt-cache spend on a fixed-prefix model.</li>
+    </ol>
+    <p>
+      Corpus: fair-core bash/tool only, <span class="num">n=51</span>.
+      Truncation and “delete half the file” baselines are reported for sanity, but excluded from ranking.
+      Local SuperCompress Fast is shown as a reference delta only — it is <em>not</em> the customer live product.
+    </p>
+
+    <h2>Live-product ranking</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Arm</th>
+          <th>Primary gold</th>
+          <th>Cut</th>
+          <th>Cache USD</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="win">
+          <td><span class="tier s">S</span></td>
+          <td>SuperCompress live</td>
+          <td class="num">100%</td>
+          <td class="num">64.1%</td>
+          <td class="num">$1.36</td>
+        </tr>
+        <tr>
+          <td><span class="tier a">A</span></td>
+          <td>Probe0 tool-compact</td>
+          <td class="num">100%</td>
+          <td class="num">46.2%</td>
+          <td class="num">$1.68</td>
+        </tr>
+        <tr>
+          <td><span class="tier b">B</span></td>
+          <td>Headroom Kompress</td>
+          <td class="num">98%</td>
+          <td class="num">14.2%</td>
+          <td class="num">$2.24</td>
+        </tr>
+        <tr>
+          <td><span class="tier c">C</span></td>
+          <td>Caveman Cloud</td>
+          <td class="num">100%</td>
+          <td class="num">0%</td>
+          <td class="num">$2.49</td>
+        </tr>
+        <tr>
+          <td><span class="tier d">D</span></td>
+          <td>LiteLLM local</td>
+          <td class="num">9.8%</td>
+          <td class="num">41.6%</td>
+          <td class="num">$1.76</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Full results table</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Arm</th>
+          <th>Primary</th>
+          <th>All golds</th>
+          <th>Cut</th>
+          <th>Cache USD</th>
+          <th>p50 ms</th>
+          <th>Errors</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="win">
+          <td>supercompress-live</td>
+          <td class="num">100%</td><td class="num">100%</td><td class="num">64.1%</td>
+          <td class="num">$1.36</td><td class="num">45506</td><td class="num">0</td>
+        </tr>
+        <tr>
+          <td>probe0-tool-compact</td>
+          <td class="num">100%</td><td class="num">54.9%</td><td class="num">46.2%</td>
+          <td class="num">$1.68</td><td class="num">0.4</td><td class="num">0</td>
+        </tr>
+        <tr>
+          <td>headroom-kompress</td>
+          <td class="num">98%</td><td class="num">51%</td><td class="num">14.2%</td>
+          <td class="num">$2.24</td><td class="num">1078</td><td class="num">0</td>
+        </tr>
+        <tr>
+          <td>caveman-cloud</td>
+          <td class="num">100%</td><td class="num">100%</td><td class="num">0%</td>
+          <td class="num">$2.49</td><td class="num">321</td><td class="num">0</td>
+        </tr>
+        <tr>
+          <td>litellm-local</td>
+          <td class="num">9.8%</td><td class="num">7.8%</td><td class="num">41.6%</td>
+          <td class="num">$1.76</td><td class="num">1.3</td><td class="num">0</td>
+        </tr>
+        <tr>
+          <td>supercompress-fast <span class="mono">(ref only)</span></td>
+          <td class="num">100%</td><td class="num">100%</td><td class="num">70.3%</td>
+          <td class="num">$1.25</td><td class="num">1.9</td><td class="num">0</td>
+        </tr>
+        <tr>
+          <td>truncation-0.35</td>
+          <td class="num">49%</td><td class="num">49%</td><td class="num">66.4%</td>
+          <td class="num">$1.32</td><td class="num">0</td><td class="num">0</td>
+        </tr>
+        <tr>
+          <td>raw (no compress)</td>
+          <td class="num">100%</td><td class="num">100%</td><td class="num">0%</td>
+          <td class="num">$2.49</td><td class="num">—</td><td class="num">0</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>How to read the tiers</h2>
+    <h3><span class="tier s">S</span> SuperCompress live</h3>
+    <p>
+      Customer endpoint <span class="mono">https://www.supercompress.dev/api/v1/compress</span>,
+      modes reported: compiler. Kept every primary gold and every all-gold diagnostic span,
+      while cutting ~64% of tokens. Slowest wall clock in this run (hosted path), cheapest cache spend among keep-perfect live arms.
+    </p>
+    <h3><span class="tier a">A</span> Probe0</h3>
+    <p>
+      Exact tool-compact behavior port. Perfect primary keep, weaker all-golds (54.9%) because mid-file reads are head+tail by design.
+      Strong cut, still behind live SuperCompress on tokens and cache USD. Probe0 still owns other jobs outside this frame (TTL, routing, spend caps).
+    </p>
+    <h3><span class="tier b">B</span> Headroom Kompress</h3>
+    <p>
+      Near-perfect primary keep (98%) but only 14.2% cut — expensive relative to raw and barely compresses the dump.
+    </p>
+    <h3><span class="tier c">C</span> Caveman Cloud</h3>
+    <p>
+      Contract takes input only (no query). On this key it measured as passthrough: 100% keep, 0% cut, same cache USD as raw.
+    </p>
+    <h3><span class="tier d">D</span> LiteLLM local</h3>
+    <p>
+      Cuts tokens (~42%) but keeps almost none of the primary golds (9.8%). Compression that breaks answers loses by rule #1.
+    </p>
+
+    <h2>Scope honesty</h2>
+    <ul>
+      <li>This is one job class: fair-core bash/tool dumps with gold spans. Not a claim about every agent workload.</li>
+      <li>SuperCompress live / Headroom / LiteLLM / Probe0 receive the query. Caveman Cloud does not.</li>
+      <li>Local Fast is a reference delta, not ranked as the live product.</li>
+      <li>Probe0 TTL / routing / spend-cap wins are outside this contest.</li>
+      <li>Latency is wall-clock on this machine/network; use keep + cut for ranking, not p50.</li>
+    </ul>
+
+    <h2>Reproduce / dig in</h2>
+    <div class="links">
+      <a href="data/FAIR_APPLES_MULTI.md">FAIR_APPLES_MULTI.md</a>
+      <a href="data/FAIR_APPLES_LIVE.md">FAIR_APPLES_LIVE.md</a>
+      <a href="data/fair-apples-multi.json">fair-apples-multi.json</a>
+      <a href="data/fair-apples-live.json">fair-apples-live.json</a>
+      <a href="assets/tierlist.png">tierlist.png</a>
+      <a href="https://github.com/Supercompress/Supercompress">github.com/Supercompress/Supercompress</a>
+      <a href="https://www.supercompress.dev">supercompress.dev</a>
+    </div>
+
+    <footer>
+      Generated 2026-11-16 from the fair-apples multi-competitor run.
+      Ranking rule locked before looking at live vs Fast deltas: keep first, then cut, then cache USD.
+    </footer>
+  </main>
+</body>
+</html>
