@@ -85,7 +85,7 @@
       "name": "Will compression change the scraped text?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "SuperCompress selects original lines rather than writing a summary, so text in the kept lines stays as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen."
+        "text": "SuperCompress selects original lines rather than writing a summary, so text in the kept lines stays as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen, so keep the original scrape for display and citation."
       }
     },
     {
@@ -192,10 +192,10 @@ except requests.RequestException:
     pass
 
 # Send kept to your model in place of the raw scrape.</code></pre>
-    <p>SuperCompress is extractive and query-aware: it selects lines from the original rather than writing a summary, so text, URLs, numbers and code in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. Each response also reports <code>original_tokens</code> and <code>kept_tokens</code>, which are estimates, not provider-billed totals. When the saving would be too small the call passes through: <code>compressed_text</code> is the original and <code>kept_tokens</code> equals <code>original_tokens</code>.</p>
+    <p>SuperCompress is extractive and query-aware: it selects lines from the original rather than writing a summary, so text, URLs, numbers and code in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. Keep the original scrape for checking quotes. Each response also reports <code>original_tokens</code> and <code>kept_tokens</code>, which are estimates, not provider-billed totals. When the saving would be too small the call passes through: <code>compressed_text</code> is the original and <code>kept_tokens</code> equals <code>original_tokens</code>.</p>
 
     <h2 id="citations">How do I keep source URLs for citations?</h2>
-    <p>Compress each page separately and prefix the kept text with its source URL (for example <code>[source: https://example.com/pricing]</code>) before joining pages, so the model can cite the page. Since kept lines are copied from the original, quoted text can be matched back to the page.</p>
+    <p>Compress each page separately and prefix the kept text with its source URL (for example <code>[source: https://example.com/pricing]</code>) before joining pages, so the model can cite the page. Keep the original scrape for display and for checking quotes against the page.</p>
 
     <h2 id="skip">When should I skip compression?</h2>
     <ul>
@@ -220,7 +220,7 @@ except requests.RequestException:
     <h3>Isn't onlyMainContent enough?</h3>
     <p>It removes headers, navs and footers. It does not know your question, so long main content that is unrelated to the question still goes to the model. Use both.</p>
     <h3>Will compression change the scraped text?</h3>
-    <p>SuperCompress selects original lines rather than writing a summary, so text in the kept lines stays as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen.</p>
+    <p>SuperCompress selects original lines rather than writing a summary, so text in the kept lines stays as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen, so keep the original scrape for display and citation.</p>
     <h3>Do I need to send the question?</h3>
     <p>Yes, for a targeted result. Without a specific question the API returns a broader digest and labels the response query_mode "dump".</p>
     <p class="seo-cta-row">
