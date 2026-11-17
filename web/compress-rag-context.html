@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/compress-rag-context" />
   <meta property="article:published_time" content="2026-11-15T00:00:00-08:00" />
-  <meta property="article:modified_time" content="2026-11-15" />
+  <meta property="article:modified_time" content="2026-11-17" />
   <meta property="article:author" content="https://www.arjunshah.xyz/" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
@@ -36,7 +36,7 @@
   "headline": "How to compress RAG context before the LLM call",
   "description": "Retrieved chunks are usually only partly relevant. How to compress RAG context against the user's question with the SuperCompress API, keep citations working, and know when to skip it.",
   "datePublished": "2026-11-15",
-  "dateModified": "2026-11-15",
+  "dateModified": "2026-11-17",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah",
@@ -130,7 +130,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">RAG · Updated 2026-11-15</p>
+  <p class="seo-kicker">RAG · Updated 2026-11-17</p>
   <h1>How to compress RAG context before the LLM call</h1>
   <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
   <p class="seo-lead">Retrieval picks chunks because part of each one matches the question, and the rest of the chunk rides along into the prompt. To shrink RAG context, retrieve and rerank as usual, then send the retrieved text and the user's question to a query-aware compressor and pass only the kept lines to the model. Compress per document when you need citations, fail open when the call errors, and judge it by the answers, not just the token count.</p>
@@ -144,7 +144,7 @@
     <nav class="toc" aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why do RAG prompts get so big?</a></li><li><a href="#where">Where does compression fit in a RAG pipeline?</a></li><li><a href="#options">Filter, extract or summarize?</a></li><li><a href="#api">How do I compress RAG context with the SuperCompress API?</a></li><li><a href="#citations">How do I keep citations working?</a></li><li><a href="#skip">When should I skip RAG compression?</a></li><li><a href="#measure">How do I know it helped?</a></li><li><a href="#faq">Frequently asked questions</a></li></ul></nav>
 
     <h2 id="why">Why do RAG prompts get so big?</h2>
-    <p>Top-k retrieval returns whole chunks. A chunk can be selected for one sentence and still carry paragraphs that have nothing to do with the question. Overlapping chunks repeat the same text, and in a chat app the retrieved text often stays in the history and is sent again on the next turn. The model is billed for all of it as input.</p>
+    <p>Top-k retrieval returns whole chunks. A chunk can be selected for one sentence and still carry paragraphs that have nothing to do with the question. Overlapping chunks repeat the same text, and in a chat app the retrieved text often stays in the history and is sent again on the next turn. The model is billed for all of it as input. The same thing happens with scraped web pages; see <a href="https://www.supercompress.dev/firecrawl-context-compression">how to compress Firecrawl output</a>.</p>
 
     <h2 id="where">Where does compression fit in a RAG pipeline?</h2>
     <p>Put it after retrieval and reranking and before generation: retrieve, rerank, compress, generate. Reranking decides which chunks to keep. Compression decides which lines inside those chunks to keep. Fix recall first: compression can only remove text, so it cannot rescue an answer that retrieval never found.</p>

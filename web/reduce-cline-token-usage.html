@@ -19,7 +19,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/reduce-cline-token-usage" />
   <meta property="article:published_time" content="2026-10-09T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-11-16" />
+  <meta property="article:modified_time" content="2026-11-17" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
@@ -35,7 +35,7 @@
   "headline": "Reduce Cline, Roo Code and Kilo Code Token Usage",
   "description": "Where Cline, Roo Code and Kilo Code tokens go (task history, file reads, terminal output, MCP results) and how SuperCompress adds an MCP tool that keeps only the lines that answer the current task.",
   "datePublished": "2026-10-09",
-  "dateModified": "2026-11-16",
+  "dateModified": "2026-11-17",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah"
@@ -174,7 +174,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">Cline · Updated 2026-11-16</p>
+  <p class="seo-kicker">Cline · Updated 2026-11-17</p>
   <div class="seo-tags">
     <span class="seo-tag seo-tag--accent">Cline</span>
     <span class="seo-tag">Token usage</span>
@@ -212,7 +212,7 @@
     <h2 id="habits">Habits that cut Cline token usage for free</h2>
     <ol>
       <li><strong>Small tasks.</strong> Start a new task when the work changes.</li>
-      <li><strong>Ignore generated code.</strong> Use the ignore file (for example <code>.clineignore</code>) for build output and vendored code.</li>
+      <li><strong>Keep generated code out of context.</strong> Point Cline at the files the task needs and keep build output and vendored code out of what it loads. Cline's docs say <code>.clineignore</code> will be deprecated soon and is not an access-control boundary, so check <a href="https://docs.cline.bot/customization/clineignore">Cline's current guidance</a> before relying on it.</li>
       <li><strong>Watch the context bar.</strong> When it fills up, start a new task with a short handoff note.</li>
       <li><strong>Switch off unused MCP servers.</strong></li>
     </ol>
