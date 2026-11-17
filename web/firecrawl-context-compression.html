@@ -2,49 +2,102 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Firecrawl Context Compression: Compress Scraped Pages Before LLM Calls - SuperCompress</title>
-  <meta name="description" content="Compress Firecrawl scrape and crawl results before sending them to OpenAI, Claude, Gemini, LangChain, or agent workflows. Reduce token waste while preserving query-relevant evidence." />
-  <meta property="og:title" content="Firecrawl Context Compression with SuperCompress" />
-  <meta property="og:description" content="Compress long Firecrawl scrape results before the model call. Keep evidence, drop token waste." />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>How to Compress Firecrawl Output Before the LLM Call</title>
+  <meta name="description" content="Firecrawl already strips navigation, but a scraped page is still mostly unrelated to one question. How to compress Firecrawl markdown against the question with the SuperCompress API, and when to skip it." />
+  <meta name="keywords" content="Firecrawl context compression, compress Firecrawl markdown, Firecrawl LLM tokens, scrape then compress, Firecrawl before LLM" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="How to Compress Firecrawl Output Before the LLM Call" />
+  <meta property="og:description" content="Firecrawl already strips navigation, but a scraped page is still mostly unrelated to one question. How to compress Firecrawl markdown against the question with the SuperCompress API, and when to skip it." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:url" content="https://www.supercompress.dev/firecrawl-context-compression" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="How to Compress Firecrawl Output Before the LLM Call" />
+  <meta name="twitter:description" content="Firecrawl already strips navigation, but a scraped page is still mostly unrelated to one question. How to compress Firecrawl markdown against the question with the SuperCompress API, and when to skip it." />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/firecrawl-context-compression" />
+  <meta property="article:published_time" content="2026-07-18T00:00:00-07:00" />
+  <meta property="article:modified_time" content="2026-11-17" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
-  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-
-<link rel="stylesheet" href="/assets/css/supercompress.css?v=106" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
-  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=2" />
-  <link rel="stylesheet" href="/assets/css/article-page.css?v=2" />
-<script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "TechArticle",
-    "headline": "Firecrawl Context Compression: Compress Scraped Pages Before LLM Calls",
-    "description": "Compress Firecrawl scrape and crawl results before sending them to LLMs.",
-    "datePublished": "2026-07-18",
-    "dateModified": "2026-07-18",
-    "author": {"@type": "Person", "name": "Arjun Shah"},
-    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
-    "mainEntityOfPage": "https://www.supercompress.dev/firecrawl-context-compression"
-  }
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to compress Firecrawl output before the LLM call",
+  "description": "Firecrawl already strips navigation, but a scraped page is still mostly unrelated to one question. How to compress Firecrawl markdown against the question with the SuperCompress API, and when to skip it.",
+  "datePublished": "2026-07-18",
+  "dateModified": "2026-11-17",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/firecrawl-context-compression"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "Firecrawl context compression, compress Firecrawl markdown, Firecrawl LLM tokens, scrape then compress, Firecrawl before LLM"
+}
   </script>
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {"@type":"Question","name":"Why compress Firecrawl output?","acceptedAnswer":{"@type":"Answer","text":"Scraped pages often include navigation, repeated boilerplate, unrelated sections, and long markdown blocks. Compressing around the user query reduces token waste before the LLM call."}},
-      {"@type":"Question","name":"Does this replace Firecrawl?","acceptedAnswer":{"@type":"Answer","text":"No. Firecrawl extracts page content. SuperCompress runs after extraction and before inference to reduce the context sent to the model."}}
-    ]
-  }
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does this replace Firecrawl?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Firecrawl fetches and cleans the page. SuperCompress runs after scraping and before the model call, and trims the markdown against the question."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Isn't onlyMainContent enough?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It removes headers, navs and footers. It does not know your question, so long main content that is unrelated to the question still goes to the model. Use both."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Will compression change the scraped text?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "SuperCompress selects original lines rather than writing a summary, so text in the kept lines stays as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to send the question?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, for a targeted result. Without a specific question the API returns a broader digest and labels the response query_mode \"dump\"."
+      }
+    }
+  ]
+}
   </script>
   <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
 </head>
@@ -92,66 +145,91 @@
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-    <p class="seo-kicker">Integration guide</p>
-    <h1>Compress Firecrawl results before they hit your LLM.</h1>
-    <p class="seo-lead">Firecrawl is useful because it turns pages into model-ready content. The problem is that model-ready content can still be huge. SuperCompress runs between Firecrawl and the model, keeping query-relevant evidence while removing scraped noise.</p>
-<section class="seo-section">
-      <h2>Where it fits</h2>
-      <table class="seo-table">
-        <thead><tr><th>Step</th><th>Without compression</th><th>With SuperCompress</th></tr></thead>
-        <tbody>
-          <tr><td>Scrape</td><td>Firecrawl returns markdown for full pages or crawls.</td><td>Same Firecrawl result.</td></tr>
-          <tr><td>Prompt assembly</td><td>Entire scrape dump enters the prompt.</td><td>Context is compressed around the current query.</td></tr>
-          <tr><td>Model call</td><td>LLM pays attention to boilerplate, nav, repeated sections, and irrelevant page chunks.</td><td>LLM sees less input, with the answer-critical evidence prioritized.</td></tr>
-        </tbody>
-      </table>
-    </section>
+  <p class="seo-kicker">Integration guide · Updated 2026-11-17</p>
+  <h1>How to compress Firecrawl output before the LLM call</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">Firecrawl turns a page into clean markdown and already removes headers, navs and footers by default. What is left is often still long, and most of it is unrelated to the question your app or agent is answering, so compress it against that question after scraping and before the model call.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="https://www.supercompress.dev/compress-rag-context">Compress RAG context</a>
+    <a href="https://www.supercompress.dev/llm-context-window-too-long">LLM context window too long</a>
+    <a href="https://www.supercompress.dev/when-to-use-compression">When to use compression</a>
+    <a href="https://www.supercompress.dev/extractive-vs-abstractive-context-compression">Extractive vs abstractive</a>
+  </nav>
+  <div class="article-prose">
+    <nav class="toc" aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why is Firecrawl output still too big for one question?</a></li><li><a href="#where">Where does compression fit?</a></li><li><a href="#api">How do I compress Firecrawl markdown with the SuperCompress API?</a></li><li><a href="#citations">How do I keep source URLs for citations?</a></li><li><a href="#skip">When should I skip compression?</a></li><li><a href="#measure">How do I know it helped?</a></li><li><a href="#faq">Frequently asked questions</a></li></ul></nav>
 
-    <section class="seo-section">
-      <h2>Hosted API example</h2>
-      <pre><code>curl -X POST https://www.supercompress.dev/compress \
+    <h2 id="why">Why is Firecrawl output still too big for one question?</h2>
+    <p>Firecrawl's <code>onlyMainContent</code> option (boolean, default true) already strips headers, navs and footers before markdown is generated, and <code>includeTags</code> / <code>excludeTags</code> can filter HTML tags further. Those are the first, free trims to set on the Firecrawl side. What remains is still often the long main content of a docs, pricing or changelog page, most of which is unrelated to the one question your app or agent is asking. A crawl or batch scrape multiplies that volume, and agents often paste the whole result into the prompt and keep it in history.</p>
+
+    <h2 id="where">Where does compression fit?</h2>
+    <p>Scrape with <code>onlyMainContent</code> and tag filters, compress against the question, then call the model. Use one question per compression call. If one scrape answers several questions, compress once per question. Compression only removes text, so it cannot add facts the page lacks.</p>
+
+    <h2 id="api">How do I compress Firecrawl markdown with the SuperCompress API?</h2>
+    <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
   -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "What pricing limits matter for a startup using this tool?",
-    "context": "PASTE_FIRECRAWL_MARKDOWN_HERE"
-  }'</code></pre>
-    </section>
+  -d '{"context": "&lt;Firecrawl markdown&gt;", "query": "Which plan includes SSO?"}'</code></pre>
+    <pre><code>import os
+import requests
+from firecrawl import Firecrawl
 
-    <section class="seo-section">
-      <h2>Python pipeline sketch</h2>
-      <pre><code>from firecrawl import FirecrawlApp
-from supercompress import Compressor
+firecrawl = Firecrawl(api_key="fc-YOUR-API-KEY")
+doc = firecrawl.scrape("https://example.com/pricing", formats=["markdown"])
+markdown = doc.markdown
 
-firecrawl = FirecrawlApp(api_key="fc-...")
-page = firecrawl.scrape_url("https://example.com/pricing", formats=["markdown"])
+question = "Which plan includes SSO?"
+kept = markdown  # fail open: default to the original scrape
+try:
+    r = requests.post(
+        "https://www.supercompress.dev/api/v1/compress",
+        headers={"X-API-Key": os.environ["SUPERCOMPRESS_API_KEY"]},
+        json={"context": markdown, "query": question},
+        timeout=30,
+    )
+    r.raise_for_status()
+    kept = r.json().get("compressed_text") or markdown
+except requests.RequestException:
+    pass
 
-query = "What pricing limits matter for a startup using this tool?"
-compressed = Compressor().compress(page["markdown"], query)
+# Send kept to your model in place of the raw scrape.</code></pre>
+    <p>SuperCompress is extractive and query-aware: it selects lines from the original rather than writing a summary, so text, URLs, numbers and code in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. Each response also reports <code>original_tokens</code> and <code>kept_tokens</code>, which are estimates, not provider-billed totals. When the saving would be too small the call passes through: <code>compressed_text</code> is the original and <code>kept_tokens</code> equals <code>original_tokens</code>.</p>
 
-# Send compressed.compressed_text to OpenAI, Claude, Gemini, or your agent.
-print(compressed.stats)</code></pre>
-    </section>
+    <h2 id="citations">How do I keep source URLs for citations?</h2>
+    <p>Compress each page separately and prefix the kept text with its source URL (for example <code>[source: https://example.com/pricing]</code>) before joining pages, so the model can cite the page. Since kept lines are copied from the original, quoted text can be matched back to the page.</p>
 
-    <section class="seo-section">
-      <h2>Best first use cases</h2>
-      <ul>
-        <li>AI search over scraped documentation</li>
-        <li>Competitive research agents that crawl multiple pricing pages</li>
-        <li>Sales/research workflows that scrape company websites</li>
-        <li>Coding agents that ingest docs before writing integration code</li>
-      </ul>
-    </section>
+    <h2 id="skip">When should I skip compression?</h2>
+    <ul>
+      <li>Short pages, where there is little left to cut.</li>
+      <li>When you need the whole page, such as summarizing or translating it.</li>
+      <li>Structured extraction you already do with Firecrawl's JSON format.</li>
+      <li>If Firecrawl's own summary, question or highlights formats, or the excerpts that <code>/search</code> returns, already give you what you need, use those instead; compression is for when you need the page's original lines in the prompt.</li>
+      <li>When there is no specific question: the API then returns a broader digest labelled <code>query_mode</code> <code>"dump"</code>.</li>
+    </ul>
+    <p>For a fuller decision guide, see <a href="https://www.supercompress.dev/when-to-use-compression">when to use prompt compression</a>.</p>
 
-    <section class="seo-section">
-      <h2>FAQ</h2>
-      <h3>Why compress Firecrawl output?</h3>
-      <p>Scraped pages often include navigation, repeated boilerplate, unrelated sections, and long markdown blocks. Compressing around the user query reduces token waste before the LLM call.</p>
-      <h3>Does this replace Firecrawl?</h3>
-      <p>No. Firecrawl extracts page content. SuperCompress runs after extraction and before inference to reduce the context sent to the model.</p>
-    </section>
+    <h2 id="measure">How do I know it helped?</h2>
+    <ul>
+      <li>Compare answers to the same questions with and without compression.</li>
+      <li>Log <code>original_tokens</code> and <code>kept_tokens</code> (estimates) per call.</li>
+      <li>Confirm on the provider bill. See <a href="https://www.supercompress.dev/does-context-compression-lower-your-bill">whether context compression lowers your bill</a>.</li>
+    </ul>
 
-        </main>
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>Does this replace Firecrawl?</h3>
+    <p>No. Firecrawl fetches and cleans the page. SuperCompress runs after scraping and before the model call, and trims the markdown against the question.</p>
+    <h3>Isn't onlyMainContent enough?</h3>
+    <p>It removes headers, navs and footers. It does not know your question, so long main content that is unrelated to the question still goes to the model. Use both.</p>
+    <h3>Will compression change the scraped text?</h3>
+    <p>SuperCompress selects original lines rather than writing a summary, so text in the kept lines stays as written. Preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen.</p>
+    <h3>Do I need to send the question?</h3>
+    <p>Yes, for a targeted result. Without a specific question the API returns a broader digest and labels the response query_mode "dump".</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/api-reference">API reference</a>
+      <a href="https://www.supercompress.dev/compress-rag-context">Compress RAG context</a>
+    </p>
+  </div>
+</main>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
