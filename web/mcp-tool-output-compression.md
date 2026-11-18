@@ -28,7 +28,7 @@ Compare every tool: [context compression and token tools compared](https://www.s
 Most MCP servers wrap an API and pass its response straight through. A single call can return dozens of records with every field filled in, a full build log, or an entire file when the agent needed one function. The model has to read all of it to find the part that matters, and the tool result keeps riding along in the conversation on later turns.
 
 - **API wrappers** return complete objects: nested metadata, URLs, timestamps and fields nobody asked about.
-- **Logs and CI output** bury one failing line under thousands of passing ones.
+- **Logs and CI output** bury one failing line under thousands of passing ones. Here is [how to compress a failed CI log](https://www.supercompress.dev/compress-ci-logs-for-llm) before the model reads it.
 - **File reads and search tools** return whole files or long hit lists when the question is about one symbol.
 
 ## How SuperCompress compresses MCP tool results
