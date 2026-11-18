@@ -207,7 +207,7 @@ for chunk in line_chunks(log_text, MAX_CHARS):
         pass
     parts.append(kept)
 
-compressed_log = "".join(parts)</code></pre>
+compressed_log = "\n".join(parts)</code></pre>
     <p>The <code>context</code> field is limited to 120,000 characters per call. Longer input returns HTTP 422 with "context too long (120k max)". Empty context returns 422 with "context required". SuperCompress is extractive and query-aware: it selects lines from the original rather than writing a summary, so error messages, file paths, test names and line numbers in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. Each response reports <code>original_tokens</code> and <code>kept_tokens</code>, which are estimates, not provider-billed totals. When the saving would be too small the call passes through: <code>passthrough</code> is true, <code>compressed_text</code> is the original and <code>kept_tokens</code> equals <code>original_tokens</code>.</p>
 
     <h2 id="question">What question should I send?</h2>
