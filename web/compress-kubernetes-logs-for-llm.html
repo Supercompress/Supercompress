@@ -147,7 +147,7 @@
     <p>A service log is mostly routine lines: health checks, request logs and heartbeats. The error that explains a restart can sit among them. After a crash the current container may have just started, so the useful lines are in the previous instance. Multi-container pods and several replicas multiply the volume. An LLM agent that ran <code>kubectl logs &lt;pod&gt; -n &lt;ns&gt; --previous</code> got a <code>context_length_exceeded</code> error back from the model API (<a href="https://github.com/GoogleCloudPlatform/kubectl-ai/issues/290">kubectl-ai issue #290</a>). Sending all of it costs input tokens and can bury the error under noise the model does not need.</p>
 
     <h2 id="slice">Which kubectl flags cut the log down first?</h2>
-    <p>Do the free trims first. Use <code>--previous</code> for the instance that crashed. Prefer <code>-c &lt;container&gt;</code> instead of <code>--all-containers</code>. Narrow the window with <code>--since=30m</code> or <code>--since-time</code> around the incident. Add <code>--timestamps</code> so the model can order events. Use <code>--prefix</code> when you pull several pods with <code>-l</code>. Cap size with <code>--limit-bytes</code> when you need a hard ceiling. Before reading logs, check <code>kubectl describe pod &lt;pod&gt;</code> for the container's last state and termination reason; some crashes leave no error line in the log. A plain <code>--tail</code> is fragile because the first error can be earlier than the last lines. A grep for "error" is fragile too: it drops the lines around the match and misses failures that do not contain that word.</p>
+    <p>Do the free trims first. Use <code>--previous</code> for the instance that crashed. Prefer <code>-c &lt;container&gt;</code> instead of <code>--all-containers</code>. Narrow the window with <code>--since=30m</code> or <code>--since-time</code> around the incident. Add <code>--timestamps</code> so the model can order events. Add <code>--prefix</code> and <code>--tail=-1</code> when you pull several pods with <code>-l</code>, because with a selector kubectl logs otherwise returns only the last 10 lines per pod. Cap size with <code>--limit-bytes</code> when you need a hard ceiling. Before reading logs, check <code>kubectl describe pod &lt;pod&gt;</code> for the container's last state and termination reason; some crashes leave no error line in the log. A plain <code>--tail</code> is fragile because the first error can be earlier than the last lines. A grep for "error" is fragile too: it drops the lines around the match and misses failures that do not contain that word.</p>
 
     <h2 id="api">How do I compress pod logs with the SuperCompress API?</h2>
     <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
@@ -155,6 +155,7 @@
   -H "Content-Type: application/json" \
   -d '{"context": "&lt;kubectl logs output&gt;", "query": "Why did this pod restart, and what is the first error before it?"}'</code></pre>
     <pre><code>import os
+import sys
 import subprocess
 import requests
 
@@ -169,33 +170,54 @@ cmd = [
     "--previous", "--timestamps", "--since=1h",
     "-n", NAMESPACE,
 ]
-try:
-    log_text = subprocess.check_output(cmd, text=True)
-except subprocess.CalledProcessError:
+result = subprocess.run(cmd, capture_output=True, text=True)
+if result.returncode == 0:
+    log_text = result.stdout
+elif "previous terminated container" in result.stderr:
+    print(
+        "no previous instance exists; using the current container's logs",
+        file=sys.stderr,
+    )
     cmd_without_previous = [
         "kubectl", "logs", POD,
         "--timestamps", "--since=1h",
         "-n", NAMESPACE,
     ]
     log_text = subprocess.check_output(cmd_without_previous, text=True)
+else:
+    raise subprocess.CalledProcessError(
+        result.returncode, cmd, output=result.stdout, stderr=result.stderr
+    )
+
+def js_len(s):
+    return len(s.encode("utf-16-le")) // 2
 
 def line_chunks(text, limit):
     lines = text.splitlines(keepends=True)
     buf = []
     size = 0
     for line in lines:
-        if size + len(line) &gt; limit and buf:
+        line_len = js_len(line)
+        if size + line_len &gt; limit and buf:
             yield "".join(buf)
             buf = []
             size = 0
-        if len(line) &gt; limit:
-            start = 0
-            while start &lt; len(line):
-                yield line[start:start + limit]
-                start += limit
+        if line_len &gt; limit:
+            piece = []
+            piece_size = 0
+            for ch in line:
+                ch_len = js_len(ch)
+                if piece_size + ch_len &gt; limit and piece:
+                    yield "".join(piece)
+                    piece = []
+                    piece_size = 0
+                piece.append(ch)
+                piece_size += ch_len
+            if piece:
+                yield "".join(piece)
             continue
         buf.append(line)
-        size += len(line)
+        size += line_len
     if buf:
         yield "".join(buf)
 
@@ -218,7 +240,7 @@ for chunk in line_chunks(log_text, MAX_CHARS):
 compressed_log = "".join(
     p if p.endswith("\n") else p + "\n" for p in parts
 )</code></pre>
-    <p>The <code>context</code> field is limited to 120,000 characters per call. Longer input returns HTTP 422 with "context too long (120k max)". Empty context returns 422 with "context required". SuperCompress is extractive and query-aware: it selects lines from the original rather than writing a summary, so error messages, pod and container names, timestamps and stack frames in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. Each response reports <code>original_tokens</code> and <code>kept_tokens</code>, which are estimates, not provider-billed totals. When the saving would be too small the call passes through: <code>passthrough</code> is true, <code>compressed_text</code> is the original and <code>kept_tokens</code> equals <code>original_tokens</code>. Coding agents running kubectl through a shell do not need to call this by hand: <code>supercompress setup</code> installs the MCP tool, plus hooks on agents that support them.</p>
+    <p>The limit is counted the way JavaScript counts string length, so the example measures chunks in UTF-16 units. The <code>context</code> field is limited to 120,000 characters per call. Longer input returns HTTP 422 with "context too long (120k max)". Empty context returns 422 with "context required". SuperCompress is extractive and query-aware: it selects lines from the original rather than writing a summary, so error messages, pod and container names, timestamps and stack frames in the kept lines stay as written; preprocessing may rewrite JSON or collapse repeated stack frames before lines are chosen. Each response reports <code>original_tokens</code> and <code>kept_tokens</code>, which are estimates, not provider-billed totals. When the saving would be too small the call passes through: <code>passthrough</code> is true, <code>compressed_text</code> is the original and <code>kept_tokens</code> equals <code>original_tokens</code>. Coding agents running kubectl through a shell do not need to call this by hand: <code>supercompress setup</code> installs the MCP tool, plus hooks on agents that support them.</p>
 
     <h2 id="question">What question should I send?</h2>
     <p>Send the question you actually want answered. A good default is why the pod restarted and what the first error before it was. Use a narrower question if you already know a request id, an endpoint or a time. A generic request such as "summarize the logs" gets the broader digest labelled <code>query_mode</code> <code>"dump"</code>. If you want two different answers from one log, compress once per question.</p>
