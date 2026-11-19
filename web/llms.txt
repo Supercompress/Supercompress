@@ -47,6 +47,7 @@ The response includes `compressed_text`, `original_tokens` and `kept_tokens`. Ho
 - [LLM context window too long](https://www.supercompress.dev/llm-context-window-too-long): Six ways to shorten an LLM prompt: trim history, limit retrieval, offload outputs, compress by question.
 - [How to compress RAG context before the LLM call](https://www.supercompress.dev/compress-rag-context): Retrieve and rerank, then keep only the lines of retrieved chunks that answer the user's question. Citations, failing open, when to skip.
 - [How to compress CI logs before sending them to an LLM](https://www.supercompress.dev/compress-ci-logs-for-llm): Fetch only failed steps, strip noise, then keep the log lines that answer why the job failed. The 120,000-character limit, picking the question, when a tail or grep is enough.
+- [How to compress Kubernetes logs before sending them to an LLM](https://www.supercompress.dev/compress-kubernetes-logs-for-llm): Pull the crashed instance and incident window with kubectl, then keep the log lines that answer why the pod restarted. The 120,000-character limit, picking the question, docker logs and journalctl, when grep or describe is enough.
 
 ## Integrations
 

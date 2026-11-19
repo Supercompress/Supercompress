@@ -458,7 +458,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/llm-context-window-too-long</loc>
-    <lastmod>2026-10-19</lastmod>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -470,7 +470,13 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/compress-ci-logs-for-llm</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/compress-kubernetes-logs-for-llm</loc>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -494,7 +500,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/reduce-tool-call-output-tokens</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
