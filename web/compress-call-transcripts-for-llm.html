@@ -147,14 +147,15 @@
     <p>Long calls make long transcripts. Caption files wrap every turn in timing lines, cue ids and markup. Much of a call is greetings, scheduling, filler and repetition. The usual fix is to chunk the transcript and summarize each part, then summarize the summaries, which rewrites the words. <a href="https://www.twilio.com/en-us/blog/insights/token-limits-ai-support-conversations">Twilio notes</a> that summarizers "tend to lose specifics like order numbers and dates unless you instruct them to keep identifiers intact." When you need what the customer actually said about price, a deadline or a commitment, that is the part you cannot afford to lose.</p>
 
     <h2 id="prepare">How should I prepare the transcript first?</h2>
-    <p>Put one speaker turn on one line, with its start time and speaker name on the same line, for example <code>[00:12:31] Dana: We can renew if the March invoice is fixed.</code> Drop the WEBVTT header, NOTE and STYLE blocks, cue identifiers and markup tags. SuperCompress keeps whole lines, so a turn split across several lines can be separated from its speaker or its time. In the <a href="https://www.w3.org/TR/webvtt1/">WebVTT format</a>, voice tags like <code>&lt;v Name&gt;</code> carry the speaker. SRT files work the same way, with a comma before the milliseconds.</p>
+    <p>Put one speaker turn on one line, with its start time and speaker name on the same line, for example <code>[00:12:31] Dana: We can renew if the March invoice is fixed.</code> Drop the WEBVTT header, NOTE and STYLE blocks, cue identifiers and markup tags. Decode character references such as &amp;amp; back to plain text. SuperCompress keeps whole lines, so a turn split across several lines can be separated from its speaker or its time. Keep each line short too: split a long monologue into several lines that each repeat the same timestamp and speaker, and give each speaker in a shared cue their own line. In the <a href="https://www.w3.org/TR/webvtt1/">WebVTT format</a>, voice tags like <code>&lt;v Name&gt;</code> carry the speaker. SRT files work the same way, with a comma before the milliseconds.</p>
 
     <h2 id="api">How do I compress a transcript with the SuperCompress API?</h2>
     <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
   -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"context": "&lt;one turn per line&gt;", "query": "What did the customer say about renewal, and who owns the next step?"}'</code></pre>
-    <pre><code>import os
+    <pre><code>import html
+import os
 import re
 import requests
 
@@ -163,14 +164,37 @@ TRANSCRIPT_PATH = "call.vtt"  # a WebVTT or SRT transcript
 QUESTION = "What did the customer say about renewal, and who owns the next step?"
 MAX_CHARS = 120000
 TURNS_PER_SEGMENT = 200
+MAX_LINE_CHARS = 400  # keep each labelled line short
 
 TIMING = re.compile(r"^(\S+)\s+--&gt;\s+\S+")
-VOICE = re.compile(r"^&lt;v(?:\.[^ &gt;]+)?\s+([^&gt;]+)&gt;")
+VOICE = re.compile(r"&lt;v(?:\.[^ &gt;]+)?\s+([^&gt;]+)&gt;")
 TAG = re.compile(r"&lt;[^&gt;]+&gt;")
 
 
+def clean(text):
+    # Remove markup first, then decode &amp;amp; &amp;lt; and friends.
+    return html.unescape(TAG.sub("", text)).strip()
+
+
+def short_lines(prefix, words, limit):
+    """Split a long turn into lines that each carry the same label."""
+    room = max(80, limit - len(prefix))
+    lines = []
+    while len(words) &gt; room:
+        cut = max(words.rfind(". ", 0, room), words.rfind("? ", 0, room))
+        if cut &lt; room // 2:
+            cut = words.rfind(" ", 0, room)
+        if cut &lt;= 0:
+            cut = room - 1
+        lines.append(prefix + words[:cut + 1].strip())
+        words = words[cut + 1:].strip()
+    if words:
+        lines.append(prefix + words)
+    return lines
+
+
 def vtt_to_turns(text):
-    """One line per cue: [start] Speaker: words."""
+    """One labelled line per speaker turn: [start] Speaker: words."""
     turns = []
     for block in re.split(r"\n\s*\n", text.replace("\r\n", "\n")):
         lines = [ln.strip() for ln in block.split("\n") if ln.strip()]
@@ -179,12 +203,22 @@ def vtt_to_turns(text):
             continue  # WEBVTT header, NOTE or STYLE block
         start = re.split(r"[.,]", TIMING.match(lines[timing]).group(1))[0]
         body = " ".join(lines[timing + 1:])
-        voice = VOICE.match(body)
-        speaker = voice.group(1).strip() if voice else ""
-        words = TAG.sub("", body).strip()
-        if words:
-            prefix = f"[{start}] {speaker}: " if speaker else f"[{start}] "
-            turns.append(prefix + words)
+        voices = list(VOICE.finditer(body))
+        if voices:
+            # A cue can hold several voice spans; keep each speaker with their words.
+            spans = []
+            if clean(body[:voices[0].start()]):
+                spans.append(("", body[:voices[0].start()]))
+            for i, v in enumerate(voices):
+                end = voices[i + 1].start() if i + 1 &lt; len(voices) else len(body)
+                spans.append((clean(v.group(1)), body[v.end():end]))
+        else:
+            spans = [("", body)]
+        for speaker, raw in spans:
+            words = clean(raw)
+            if words:
+                prefix = f"[{start}] {speaker}: " if speaker else f"[{start}] "
+                turns.extend(short_lines(prefix, words, MAX_LINE_CHARS))
     return turns
 
 
