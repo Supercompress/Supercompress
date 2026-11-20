@@ -3,6 +3,6 @@
 # Library: pip install -e ".[serve]"  (or: pip install supercompress)
 httpx>=0.28.1
 firebase-admin>=7.7.0
-fastapi>=0.142.2
+fastapi>=0.162.0
 uvicorn[standard]>=0.27
 pydantic>=2.13.5
