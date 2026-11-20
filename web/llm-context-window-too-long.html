@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <link rel="canonical" href="https://www.supercompress.dev/llm-context-window-too-long" />
   <meta property="article:published_time" content="2026-10-19T00:00:00-07:00" />
-  <meta property="article:modified_time" content="2026-11-19" />
+  <meta property="article:modified_time" content="2026-11-20" />
   <meta property="article:author" content="https://www.arjunshah.xyz/" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
@@ -36,7 +36,7 @@
   "headline": "LLM context window too long: six ways to shrink it",
   "description": "Hit a context length error or watching costs climb? Six ways to shorten an LLM prompt: trim history, limit retrieval, offload outputs, compress by question.",
   "datePublished": "2026-10-19",
-  "dateModified": "2026-11-19",
+  "dateModified": "2026-11-20",
   "author": {
     "@type": "Person",
     "name": "Arjun Shah",
@@ -150,7 +150,7 @@
 </header>
 <div class="df-header-spacer" aria-hidden="true"></div>
 <main class="seo-page" data-article-content>
-  <p class="seo-kicker">How-to · Updated 2026-11-19</p>
+  <p class="seo-kicker">How-to · Updated 2026-11-20</p>
   <h1>LLM context window too long: six ways to shrink it</h1>
   <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
   <p class="seo-lead">When an LLM context window is too long, you either hit a hard length error or pay for tokens the model barely uses. Shorten it by trimming history, retrieving fewer chunks, capping tool output, clearing stale turns, caching a stable prefix, and compressing bulky context against the question being asked.</p>
@@ -175,7 +175,7 @@
     <h2 id="compress">5. How does question-aware compression help?</h2>
     <p>SuperCompress takes a bulky block and the current question and keeps the original lines that answer it instead of writing a summary (preprocessing may rewrite JSON or collapse repeated stack frames first). Use it on logs, diffs, retrieved documents and MCP results before they enter the prompt. Each response reports <code>original_tokens</code> and <code>kept_tokens</code>, as estimates, so you can measure it on your own traffic. For a worked example with a crashing service, see <a href="https://www.supercompress.dev/compress-kubernetes-logs-for-llm">compressing Kubernetes logs before an LLM reads them</a>.</p>
     <h2 id="fit">6. What if the input is still too long?</h2>
-    <p>Split the task. Process documents in parts, with an explicit question per part, and combine the answers. Larger context windows help, but long inputs still cost per token and models can attend poorly to material buried in the middle, so a shorter relevant prompt is often better than a longer complete one.</p>
+    <p>Split the task. Process documents in parts, with an explicit question per part, and combine the answers. Larger context windows help, but long inputs still cost per token and models can attend poorly to material buried in the middle, so a shorter relevant prompt is often better than a longer complete one. For long call and meeting recordings, here is <a href="https://www.supercompress.dev/compress-call-transcripts-for-llm">how to split and compress a transcript before an LLM reads it</a>.</p>
     <h2 id="faq">Frequently asked questions</h2>
     <h3>How do I fix a context length exceeded error?</h3>
     <p>Reduce the largest section of the prompt: trim history, retrieve fewer chunks, cap tool output, or compress bulky context before sending it.</p>
