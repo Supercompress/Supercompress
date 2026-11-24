@@ -151,7 +151,7 @@ async function main() {
       timeout: 20000,
     });
     assert.equal(out.status, 0, out.stderr || out.stdout);
-    assert.match(out.stdout, /Detected \d+ coding agent|MCP plugin installed/i);
+    assert.match(out.stdout, /Detected \d+ coding agent|MCP plugin installed|SuperCompress plugin\s+v\d/i);
     const settings = path.join(HOME, "Library/Application Support/Cursor/User/settings.json");
     if (fs.existsSync(settings)) {
       assert.doesNotMatch(fs.readFileSync(settings, "utf8"), /"openAiBaseUrl"\s*:\s*"http:\/\/localhost:8080\/v1"/);

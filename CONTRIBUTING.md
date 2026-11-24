@@ -4,41 +4,56 @@ Thanks for helping improve SuperCompress. This repo is the open-source prompt co
 
 ## Development setup
 
+Prerequisites:
+
+- **Node.js 22 or newer** (npm 10+). The unit tests use the built-in `node:sqlite` module, which Node 20 does not have.
+- **Python 3.10 or newer**. On Debian/Ubuntu install `python3-venv` if `python3 -m venv` fails.
+
 ```bash
-# Python package
-python -m venv .venv
+# Python package + test/build tools
+python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]" 2>/dev/null || pip install -r requirements.txt
-pip install -e .
+pip install -e ".[dev]"
 
-# Optional: Node deps for MCP / proxy packages
-npm install
-```
+# Node deps (root: API, MCP, tests)
+npm ci
 
-### Local static site
-
-```bash
-cd web && python -m http.server 8080
-# open http://127.0.0.1:8080
-```
-
-### Local compress API (optional)
-
-```bash
-python scripts/local_web_server.py
+# Copy canonical compression assets (web -> packages/proxy & api/_lib).
+# The api/_lib copies are gitignored, so a fresh clone needs this before `npm test`.
+npm run sync:assets
 ```
 
 ### Running tests
 
 ```bash
-# Run all unit tests and repository guards (asset sync, PII, versions, stylesheet paths, API routes)
+# All unit tests and repository guards (asset sync, PII, versions, stylesheet paths, API routes)
 npm test
 
-# Run proxy package test matrix
-npm run test:proxy
+# Python tests
+pytest -q
 
-# Sync canonical compression assets (web -> packages/proxy & api/_lib)
-npm run sync:assets
+# Proxy package test matrix. Each suite runs with a throwaway $HOME, so your real
+# Cursor/Claude/Codex configs are not touched. Maintainers doing launch sign-off
+# on a machine with a live install can opt in with SC_TEST_LIVE_HOME=1.
+npm run test:proxy
+```
+
+Re-run `npm run sync:assets` whenever `web/assets/js/compress-engine.js` or `web/assets/data/model.json` changes.
+
+### Local static site
+
+```bash
+cd web && python3 -m http.server 8080
+# open http://127.0.0.1:8080
+```
+
+### Local compress API + site (optional)
+
+Needs the `serve` extra (FastAPI/uvicorn):
+
+```bash
+pip install -e ".[dev,serve]"
+python scripts/local_web_server.py   # http://127.0.0.1:8790 (override with PORT=...)
 ```
 
 ### Proxy package

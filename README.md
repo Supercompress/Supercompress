@@ -84,7 +84,7 @@ The **query is never compressed** — only the surrounding context.
 | | **Coding-agent plugin** | **API / Python** |
 |---|---|---|
 | **For** | Cursor, Claude Code, Codex, and 40+ agent harnesses | Apps, RAG, agents, backends |
-| **Install** | `npm i -g supercompress-proxy && npx supercompress setup` | `pip install supercompress` |
+| **Install** | `npm i -g supercompress-proxy && supercompress setup` | `pip install supercompress` |
 | **What you get** | MCP `compress_context` on big dumps | Compress before every model call |
 | **Login** | Keep your normal agent login | API key from the [dashboard](https://www.supercompress.dev/dashboard) |
 
@@ -136,7 +136,7 @@ CPU / millisecond-class local path. Older held-out compiler numbers (≈58–66%
 
 ```bash
 npm install -g supercompress-proxy
-npx supercompress setup
+supercompress setup
 ```
 
 Links your account, detects agents, installs MCP. Docs: [coding agents](https://docs.supercompress.dev/coding-agents)
@@ -168,6 +168,18 @@ curl -X POST https://www.supercompress.dev/api/v1/compress \
 ```
 
 Or paste a dump into the **[Arena](https://www.supercompress.dev/arena)** — no integration required.
+
+### Develop from source
+
+Needs Node.js 22+ and Python 3.10+. Full steps are in [CONTRIBUTING.md](./CONTRIBUTING.md#development-setup).
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+npm ci
+npm run sync:assets   # generates gitignored api/_lib copies; tests fail without it
+npm test && pytest -q
+```
 
 ---
 
