@@ -141,7 +141,9 @@ function normalizeReset(value) {
   if (typeof value === "string" && /^\d+(\.\d+)?$/.test(value.trim())) value = Number(value);
   if (typeof value === "number" && Number.isFinite(value)) {
     const milliseconds = value < 10_000_000_000 ? value * 1000 : value;
-    return new Date(milliseconds).toISOString();
+    const date = new Date(milliseconds);
+    // Out-of-range epochs make toISOString() throw; drop the timestamp, not the snapshot.
+    return Number.isFinite(date.getTime()) ? date.toISOString() : null;
   }
   const parsed = new Date(value);
   return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
