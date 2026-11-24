@@ -6,7 +6,7 @@ Thanks for helping improve SuperCompress. This repo is the open-source prompt co
 
 Prerequisites:
 
-- **Node.js 22 or newer** (npm 10+). The unit tests use the built-in `node:sqlite` module, which Node 20 does not have.
+- **Node.js 22.13 or newer** (npm 10+). The unit tests use the built-in `node:sqlite` module, which Node 20 does not have and earlier Node 22 releases hide behind `--experimental-sqlite`.
 - **Python 3.10 or newer**. On Debian/Ubuntu install `python3-venv` if `python3 -m venv` fails.
 
 ```bash

@@ -23,6 +23,13 @@ function suiteEnv() {
     USERPROFILE: home,
     XDG_CONFIG_HOME: path.join(home, ".config"),
     XDG_DATA_HOME: path.join(home, ".local/share"),
+    // Agent writers honour these overrides before falling back to $HOME.
+    APPDATA: path.join(home, "AppData/Roaming"),
+    LOCALAPPDATA: path.join(home, "AppData/Local"),
+    GROK_HOME: path.join(home, ".grok"),
+    FX_HOME: path.join(home, ".fx"),
+    CODEX_HOME: path.join(home, ".codex"),
+    CLAUDE_CONFIG_DIR: path.join(home, ".claude"),
   });
   delete env.SUPERCOMPRESS_CONFIG_DIR;
   return { env, cleanup: () => fs.rmSync(home, { recursive: true, force: true }) };

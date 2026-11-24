@@ -171,7 +171,7 @@ Or paste a dump into the **[Arena](https://www.supercompress.dev/arena)** — no
 
 ### Develop from source
 
-Needs Node.js 22+ and Python 3.10+. Full steps are in [CONTRIBUTING.md](./CONTRIBUTING.md#development-setup).
+Needs Node.js 22.13+ and Python 3.10+. Full steps are in [CONTRIBUTING.md](./CONTRIBUTING.md#development-setup).
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
