@@ -115,21 +115,6 @@ function mergeDays(...maps) {
   return out;
 }
 
-function addDays(a, b) {
-  const out = { ...(a || {}) };
-  for (const [day, rec] of Object.entries(b || {})) {
-    if (!isIsoDay(day)) continue;
-    const cur = out[day] || emptyDay();
-    out[day] = {
-      tokens_in: (cur.tokens_in || 0) + (Number(rec.tokens_in) || 0),
-      tokens_out: (cur.tokens_out || 0) + (Number(rec.tokens_out) || 0),
-      tokens_saved: (cur.tokens_saved || 0) + (Number(rec.tokens_saved) || 0),
-      requests: (cur.requests || 0) + (Number(rec.requests) || 0),
-    };
-  }
-  return out;
-}
-
 /**
  * When monthly totals exist but daily rows don't cover them, spread the gap
  * across the calendar month (weighted by known-day activity) instead of
@@ -237,7 +222,6 @@ module.exports = {
   expandPackedDays,
   daysFromRecentBilling,
   mergeDays,
-  addDays,
   fillMonthGap,
   accountDaysFromClaims,
 };
