@@ -2,6 +2,8 @@
  * Coding-agent compression quality — real Cursor-like dumps.
  * Run: node api/_lib/compress-quality.test.js
  */
+// These tests cover the legacy Neural Keep / compiler path; the Fast engine is the default.
+process.env.SC_COMPRESS_ENGINE = "legacy";
 const assert = require("assert");
 const { installNeuralKeepMock, lineKeepFilter } = require("./test-neural-mock");
 

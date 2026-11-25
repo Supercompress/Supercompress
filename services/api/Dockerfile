@@ -13,6 +13,7 @@ COPY api ./api
 COPY services/api ./services/api
 COPY services/gateway ./services/gateway
 COPY packages/control-plane ./packages/control-plane
+COPY packages/proxy/src/fast-compress.js ./packages/proxy/src/fast-compress.js
 COPY mcp ./mcp
 COPY web/assets/js/compress-engine.js ./web/assets/js/compress-engine.js
 COPY web/assets/data/model.json ./web/assets/data/model.json

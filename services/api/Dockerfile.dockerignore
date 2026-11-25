@@ -11,6 +11,9 @@
 !packages/
 !packages/control-plane/
 !packages/control-plane/**
+!packages/proxy/
+!packages/proxy/src/
+!packages/proxy/src/fast-compress.js
 !mcp/
 !mcp/**
 !web/

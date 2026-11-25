@@ -1,5 +1,7 @@
 "use strict";
 
+// These tests cover the legacy Neural Keep / compiler path; the Fast engine is the default.
+process.env.SC_COMPRESS_ENGINE = "legacy";
 const { describe, it, beforeEach, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
 
