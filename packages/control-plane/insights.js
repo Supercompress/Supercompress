@@ -8,6 +8,78 @@
 
 const { summarizeRequests, evaluateAlerts } = require("./obs");
 const { exportOtelBundle } = require("./otel");
+const { obsRow } = require("./request-obs");
+
+function percentile(sorted, p) {
+  if (!sorted.length) return null;
+  const idx = Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1);
+  return sorted[Math.max(0, idx)];
+}
+
+const r6 = (n) => Math.round((Number(n) || 0) * 1e6) / 1e6;
+
+/**
+ * Gateway aggregates from the per-request obs records: volume, error rate, latency and
+ * TTFT percentiles, spend, and savings split by routing vs compression; plus the most
+ * recent rows for the per-request table. Rows without meta.obs (older ledgers) still count
+ * toward volume, errors, latency and spend.
+ */
+function buildGatewayView(rows = [], opts = {}) {
+  let errors = 0;
+  let spend = 0;
+  let list = 0;
+  let savedRouting = 0;
+  let savedCompression = 0;
+  let withObs = 0;
+  let autoRouted = 0;
+  let retried = 0;
+  const lat = [];
+  const ttft = [];
+  const byCode = {};
+  for (const r of rows) {
+    const o = r.meta?.obs;
+    if (r.error_class || o?.error) {
+      errors += 1;
+      const code = o?.error?.code || "unknown";
+      byCode[code] = (byCode[code] || 0) + 1;
+    }
+    const l = Number(o?.latency_ms ?? r.latency_ms);
+    if (Number.isFinite(l)) lat.push(l);
+    spend += Number(o?.cost?.charged_usd ?? r.actual_usd) || 0;
+    if (!o) continue;
+    withObs += 1;
+    if (o.routing?.mode === "auto") autoRouted += 1;
+    if (o.provider?.retries > 0) retried += 1;
+    if (Number.isFinite(Number(o.provider?.ttft_ms)) && o.provider?.ttft_ms != null) ttft.push(Number(o.provider.ttft_ms));
+    list += Number(o.cost?.list_usd) || 0;
+    if (!o.error) {
+      savedRouting += Number(o.cost?.saved_routing_usd) || 0;
+      savedCompression += Number(o.cost?.saved_compression_usd) || 0;
+    }
+  }
+  lat.sort((a, b) => a - b);
+  ttft.sort((a, b) => a - b);
+  const recentN = Math.max(0, Number(opts.recent_limit ?? 50));
+  return {
+    requests: rows.length,
+    requests_with_obs: withObs,
+    errors,
+    error_rate: rows.length ? Math.round((errors / rows.length) * 1e4) / 1e4 : 0,
+    errors_by_code: byCode,
+    auto_routed: autoRouted,
+    retried,
+    latency_ms: { p50: percentile(lat, 50), p95: percentile(lat, 95) },
+    ttft_ms: { p50: percentile(ttft, 50), p95: percentile(ttft, 95) },
+    spend_usd: r6(spend),
+    list_usd: r6(list),
+    savings: {
+      routing_usd: r6(savedRouting),
+      compression_usd: r6(savedCompression),
+      total_usd: r6(savedRouting + savedCompression),
+    },
+    recent: rows.slice(0, recentN).map(obsRow),
+  };
+}
 
 function econFromRec(r) {
   return r?.compression?.meta?.economics || r?.meta?.economics || null;
@@ -21,6 +93,8 @@ function buildOpsInsights(records = [], opts = {}) {
   const rows = Array.isArray(records) ? records : [];
   const filtered = opts.org_id ? rows.filter((r) => r.org_id === opts.org_id) : rows;
   const summary = summarizeRequests(filtered);
+  summary.error_rate = summary.requests ? Math.round((summary.errors / summary.requests) * 1e4) / 1e4 : 0;
+  const gateway = buildGatewayView(filtered, opts);
   const alerts = evaluateAlerts(summary, opts);
 
   let model_changed = 0;
@@ -88,6 +162,7 @@ function buildOpsInsights(records = [], opts = {}) {
     confidential: true,
     headline,
     summary,
+    gateway,
     alerts,
     moat,
   };
@@ -102,5 +177,6 @@ function buildOpsOtelExport(records = [], opts = {}) {
 module.exports = {
   buildOpsInsights,
   buildOpsOtelExport,
+  buildGatewayView,
   econFromRec,
 };

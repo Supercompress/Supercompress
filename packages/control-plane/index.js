@@ -34,7 +34,8 @@ const { createPostgresLedgerStore, LEDGER_SCHEMA_SQL } = require("./pg-ledger");
 const { createStoreFromEnv } = require("./store-from-env");
 const { computeRouteEconomics, attachEconomicsToTrace } = require("./economics");
 const { recordToOtelSpan, exportOtelBundle } = require("./otel");
-const { buildOpsInsights, buildOpsOtelExport } = require("./insights");
+const { buildOpsInsights, buildOpsOtelExport, buildGatewayView } = require("./insights");
+const requestObs = require("./request-obs");
 const { createRateLimitStore, rateLimitKey } = require("./rate-limit");
 const { createHealthTracker } = require("./health-tracker");
 const { sumDaySpendUsd, startOfUtcDay } = require("./spend");
@@ -74,6 +75,10 @@ module.exports = {
   exportOtelBundle,
   buildOpsInsights,
   buildOpsOtelExport,
+  buildGatewayView,
+  buildRequestObs: requestObs.buildRequestObs,
+  errorCode: requestObs.errorCode,
+  httpStatusFor: requestObs.httpStatusFor,
   createRateLimitStore,
   rateLimitKey,
   createHealthTracker,

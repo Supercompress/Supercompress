@@ -46,6 +46,7 @@ async function writeOpenAiSse(res, ctx) {
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
+  if (ctx.request_id) res.setHeader("x-sc-request-id", String(ctx.request_id));
 
   if (ctx.aborted) {
     res.statusCode = ctx.error?.status && ctx.error.status < 600 ? ctx.error.status : 502;
@@ -71,9 +72,16 @@ async function writeOpenAiSse(res, ctx) {
 
   const stream = ctx.stream;
   let sawToolCalls = false;
+  // The client went away: stop reading so the upstream is released and the request is
+  // finalized as cancelled (with the usage seen so far), not left open.
+  const clientGone = () => Boolean(res.destroyed || res.writableEnded);
   try {
     if (stream && typeof stream[Symbol.asyncIterator] === "function") {
       for await (const raw of stream) {
+        if (clientGone()) {
+          ctx.client_closed = true;
+          break;
+        }
         if (!raw) continue;
         const piece = typeof raw === "string" ? { content: raw } : raw;
         const delta = {};
@@ -98,10 +106,13 @@ async function writeOpenAiSse(res, ctx) {
         type: "server_error",
       },
     });
-    res.write("data: [DONE]\n\n");
-    res.end();
+    if (!clientGone()) {
+      res.write("data: [DONE]\n\n");
+      res.end();
+    }
     return;
   }
+  if (ctx.client_closed) return;
   const finish = ctx.provider_result?.finish_reason || (sawToolCalls ? "tool_calls" : "stop");
   send(openaiStreamChunk({ id, model, created, finish }));
   res.write("data: [DONE]\n\n");

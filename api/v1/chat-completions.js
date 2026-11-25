@@ -8,6 +8,7 @@
  */
 "use strict";
 
+const crypto = require("crypto");
 const { json, readBody, clientIp, checkRateLimit } = require("../_lib/http");
 const { bearerToken } = require("../_lib/auth");
 const { KEY_PREFIX } = require("../_lib/keys");
@@ -17,6 +18,10 @@ const {
   writeOpenAiSse,
   getProcessGateway,
 } = require("../../services/gateway/http");
+const { httpStatusFor, errorCode } = require("../../packages/control-plane/request-obs");
+
+/** Header carrying the request id customers quote to support (also on every error). */
+const REQUEST_ID_HEADER = "x-sc-request-id";
 
 const RPM = 60;
 /** Agent contexts and base64 images are large; keep in sync with services/api/routes.js. */
@@ -37,16 +42,7 @@ const ERROR_TYPES = {
  * 429, an unavailable money/billing store is 503, idempotency conflicts are 409.
  */
 function statusFor(error = {}) {
-  const msg = String(error.message || "");
-  const code = String(error.code || "");
-  if (msg === "auth_required" || code === "auth_required") return 401;
-  if (error.status && error.status >= 400 && error.status < 600 && error.status !== 499) return error.status;
-  if (/rpm_exceeded|tpm_exceeded|rate_limited/.test(msg)) return 429;
-  if (/unavailable/.test(msg) || /unavailable/.test(code)) return 503;
-  if (/model_not_allowed|model_denied|model_not_found/.test(msg)) return 400;
-  if (/no_viable_model|post_compress_usd/.test(msg)) return 422;
-  if (error.class === "rejected") return 402;
-  return 502;
+  return httpStatusFor(error);
 }
 
 function openAiError(res, status, message, extra = {}) {
@@ -63,7 +59,8 @@ function openAiError(res, status, message, extra = {}) {
 }
 
 function logRequest(fields) {
-  // One structured line per request. Never prompts, completions or key material.
+  // One structured line per request. Never prompts, completions or key material:
+  // only ids, model names, codes, counts and timings.
   try {
     console.log(JSON.stringify({ evt: "cp_chat", ...fields }));
   } catch (_) {
@@ -82,6 +79,10 @@ module.exports = async function chatCompletions(req, res) {
     res.end();
     return;
   }
+  // Every response carries a request id, including rejects before the gateway runs.
+  let requestId = `req_${crypto.randomBytes(12).toString("hex")}`;
+  res.setHeader(REQUEST_ID_HEADER, requestId);
+  res.setHeader("Access-Control-Expose-Headers", REQUEST_ID_HEADER);
   if (req.method !== "POST") {
     return json(res, 405, { error: { message: "Method not allowed", type: "invalid_request_error" } });
   }
@@ -94,7 +95,7 @@ module.exports = async function chatCompletions(req, res) {
   const ip = clientIp(req);
   const ipRl = checkRateLimit(`cpgw:ip:${ip}`, 120);
   if (!ipRl.allowed) {
-    return json(res, 429, { error: { message: "Rate limit exceeded", type: "rate_limit_error" } });
+    return json(res, 429, { error: { message: "Rate limit exceeded", type: "rate_limit_error", code: "rate_limited" } });
   }
 
   const token = bearerToken(req.headers.authorization);
@@ -126,7 +127,7 @@ module.exports = async function chatCompletions(req, res) {
   }
   const keyRl = checkRateLimit(`cpgw:key:${keyId}`, RPM);
   if (!keyRl.allowed) {
-    return json(res, 429, { error: { message: "Rate limit exceeded", type: "rate_limit_error" } });
+    return json(res, 429, { error: { message: "Rate limit exceeded", type: "rate_limit_error", code: "rate_limited" } });
   }
 
   let body;
@@ -166,31 +167,51 @@ module.exports = async function chatCompletions(req, res) {
   const t0 = Date.now();
   let ctx;
   try {
-    ctx = await gw.handleChatCompletions(body, auth, { abort_signal: abort.signal });
+    ctx = await gw.handleChatCompletions(body, auth, {
+      abort_signal: abort.signal,
+      request_id: requestId,
+    });
   } catch (err) {
-    console.error("[cp] gateway_error", err?.code || err?.message);
-    logRequest({ status: 500, key_id: keyId, ms: Date.now() - t0, err: err?.code || "gateway_error" });
-    return openAiError(res, 500, "Internal gateway error", { code: "gateway_error" });
+    console.error("[cp] gateway_error", requestId, err?.code || "gateway_error");
+    logRequest({ request_id: requestId, status: 500, key_id: keyId, ms: Date.now() - t0, err: "gateway_error" });
+    return openAiError(res, 500, "Internal gateway error", { code: "gateway_error", request_id: requestId });
+  }
+  // An idempotent replay answers with the original request's id.
+  if (ctx.request_id && ctx.request_id !== requestId) {
+    requestId = ctx.request_id;
+    res.setHeader(REQUEST_ID_HEADER, requestId);
   }
 
   const logBase = {
-    request_id: ctx.request_id,
+    request_id: requestId,
     org: orgId,
     key_id: keyId,
     model_requested: body.model,
     model_routed: ctx.model_routed,
     provider: ctx.provider_name,
     stream: body.stream === true,
-    tokens_saved: ctx.compression?.tokens_saved,
+    tokens_saved: ctx.obs?.compression?.tokens_saved,
   };
+  const obsLog = () => ({
+    route_mode: ctx.obs?.routing?.mode,
+    tier: ctx.obs?.routing?.classifier?.tier,
+    ttft_ms: ctx.obs?.provider?.ttft_ms,
+    provider_ms: ctx.obs?.provider?.latency_ms,
+    in_tok: ctx.obs?.provider?.input_tokens,
+    out_tok: ctx.obs?.provider?.output_tokens,
+    retries: ctx.obs?.provider?.retries,
+    saved_routing_usd: ctx.obs?.cost?.saved_routing_usd,
+    saved_compression_usd: ctx.obs?.cost?.saved_compression_usd,
+  });
 
   if (ctx.aborted) {
     const status = statusFor(ctx.error);
-    logRequest({ ...logBase, status, err: ctx.error?.code || ctx.error?.message, ms: Date.now() - t0 });
-    if (status >= 500) console.error("[cp] request failed", ctx.request_id, ctx.error?.message);
+    const code = errorCode(ctx.error);
+    logRequest({ ...logBase, ...obsLog(), status, err: code, ms: Date.now() - t0 });
+    if (status >= 500) console.error("[cp] request failed", requestId, code);
     return openAiError(res, status, ctx.error?.message || "request_aborted", {
-      code: ctx.error?.code,
-      request_id: ctx.request_id,
+      code,
+      request_id: requestId,
     });
   }
 
@@ -205,19 +226,21 @@ module.exports = async function chatCompletions(req, res) {
       }
       logRequest({
         ...logBase,
-        status: ctx.aborted ? statusFor(ctx.error) : 200,
+        ...obsLog(),
+        status: ctx.aborted ? ctx.obs?.error?.http_status || statusFor(ctx.error) : 200,
         usd: ctx.actual_usd,
-        err: ctx.aborted ? ctx.error?.code || ctx.error?.message : undefined,
+        err: ctx.aborted ? errorCode(ctx.error) : undefined,
         ms: Date.now() - t0,
       });
     }
     return;
   }
 
-  logRequest({ ...logBase, status: 200, usd: ctx.actual_usd, ms: Date.now() - t0 });
+  logRequest({ ...logBase, ...obsLog(), status: 200, usd: ctx.actual_usd, ms: Date.now() - t0 });
   // Non-stream: finalize already ran inside the pipeline.
   return json(res, 200, ctx.openai || { error: { message: "empty_response" } });
 };
 
 module.exports.statusFor = statusFor;
+module.exports.REQUEST_ID_HEADER = REQUEST_ID_HEADER;
 module.exports.CHAT_MAX_BODY_BYTES = CHAT_MAX_BODY_BYTES;

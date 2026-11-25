@@ -159,7 +159,10 @@ function createOpenAIProvider(options = {}) {
               out.tool_calls = delta.tool_calls;
             }
             if (choice?.finish_reason) ctx.provider_result.finish_reason = choice.finish_reason;
-            if (json.usage) acc.usage = mapUsage(json.usage);
+            if (json.usage) {
+              acc.usage = mapUsage(json.usage);
+              ctx.provider_result.usage = acc.usage;
+            }
             if (out.content || out.tool_calls) yield out;
           }
         } catch (err) {

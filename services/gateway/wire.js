@@ -36,6 +36,7 @@ const { computeRouteEconomics, attachEconomicsToTrace } = require("../../package
 const { classifyRequest } = require("../../packages/control-plane/request-classifier");
 const { createRateLimitStore, rateLimitKey } = require("../../packages/control-plane/rate-limit");
 const { createHealthTracker } = require("../../packages/control-plane/health-tracker");
+const { buildRequestObs, errorCode } = require("../../packages/control-plane/request-obs");
 
 function loadEnterpriseAdmit() {
   try {
@@ -226,6 +227,19 @@ function createWiredGateway(options = {}) {
     ttlMs: 24 * 60 * 60 * 1000,
   });
 
+  /**
+   * The one terminal write per request: the ledger row plus its observability record
+   * (meta.obs). Metadata only — never prompt/response content or key material.
+   */
+  function finalizeRecord(ctx, patch = {}) {
+    ctx.obs = buildRequestObs(ctx, { catalog, autoName: AUTO_MODEL });
+    if (!enableLedger || !ctx.request_id) return null;
+    const row = { latency_ms: ctx.obs.latency_ms, ...patch, meta: { ...(patch.meta || {}), obs: ctx.obs } };
+    // Upstream error text can echo request content: provider failures keep only the code.
+    if (row.error_class === "error" && ctx.obs.error?.code) row.error_message = ctx.obs.error.code;
+    return ledger.finalize(ctx.request_id, row);
+  }
+
   async function releaseHold(ctx) {
     const r = ctx.reservation;
     if (!r?.id || r.state === "released" || r.state === "settled") return;
@@ -369,6 +383,7 @@ function createWiredGateway(options = {}) {
             class: "rejected",
             message: rlCheck.reasons.filter((r) => r !== "ok").join(",") || "rate_limited",
             status: 429,
+            code: "rate_limited",
           };
           return ctx;
         }
@@ -396,9 +411,10 @@ function createWiredGateway(options = {}) {
           class: "rejected",
           message: ctx.admission.reasons.join(","),
           status: rateHit ? 429 : undefined,
+          ...(rateHit ? { code: "rate_limited" } : {}),
         };
         if (ctx.request_id) {
-          ledgerWrite("finalize", ctx.request_id, {
+          finalizeRecord(ctx, {
             error_class: "rejected",
             error_message: ctx.error.message,
           });
@@ -417,6 +433,7 @@ function createWiredGateway(options = {}) {
             class: "rejected",
             message: rl.reasons.filter((r) => r !== "ok").join(",") || "rate_limited",
             status: 429,
+            code: "rate_limited",
           };
           return ctx;
         }
@@ -496,11 +513,12 @@ function createWiredGateway(options = {}) {
     async ledger(ctx) {
       if (ctx.idempotent_replay) return ctx;
       if (!enableLedger) {
-        if (!ctx.request_id) ctx.request_id = ephemeralRequestId();
+        if (!ctx.request_id) ctx.request_id = ctx.edge_request_id || ephemeralRequestId();
         return ctx;
       }
       if (ctx.aborted && !ctx.request_id) {
         const rec = ledger.create({
+          id: ctx.edge_request_id,
           org_id: ctx.auth?.org_id,
           key_id: ctx.auth?.key_id,
           agent_id: ctx.auth?.agent_id,
@@ -509,7 +527,7 @@ function createWiredGateway(options = {}) {
           model_requested: ctx.normalized?.model,
         });
         ctx.request_id = rec.id;
-        ledgerWrite("finalize", rec.id, {
+        finalizeRecord(ctx, {
           error_class: ctx.error?.class || "rejected",
           error_message: ctx.error?.message,
         });
@@ -518,6 +536,7 @@ function createWiredGateway(options = {}) {
       if (ctx.aborted) return ctx;
       const idem = scopedIdempotencyKey(ctx);
       const rec = ledger.create({
+        id: ctx.edge_request_id,
         org_id: ctx.auth?.org_id,
         key_id: ctx.auth?.key_id,
         agent_id: ctx.auth?.agent_id,
@@ -588,7 +607,9 @@ function createWiredGateway(options = {}) {
         min_chars: policy.compress_min_chars,
         max_blocks: policy.compress_max_blocks,
       };
+      const t0 = Date.now();
       ctx = (await compressFn(ctx)) || ctx;
+      ctx.timings = { ...(ctx.timings || {}), compress_ms: Date.now() - t0 };
       ledgerWrite("transition", ctx.request_id, "compressed", { compression: ctx.compression });
       return ctx;
     },
@@ -603,6 +624,7 @@ function createWiredGateway(options = {}) {
       );
       const retained = estimateInputTokens(ctx.normalized);
       const original = retained + saved;
+      ctx.input_tokens_sent_est = retained;
       const outTokEst =
         Number(ctx.normalized?.max_tokens) > 0 ? Number(ctx.normalized.max_tokens) : undefined;
       const liveHealth = { ...staticHealth, ...healthTracker.healthMap() };
@@ -713,7 +735,7 @@ function createWiredGateway(options = {}) {
         ctx.aborted = true;
         ctx.error = decision.error || { class: "rejected", message: "no_viable_model" };
         await releaseHold(ctx);
-        ledgerWrite("finalize", ctx.request_id, {
+        finalizeRecord(ctx, {
           error_class: "rejected",
           error_message: ctx.error.message,
           compression: ctx.compression,
@@ -739,9 +761,10 @@ function createWiredGateway(options = {}) {
         ctx.error = {
           class: "rejected",
           message: `post_compress_usd:${postUsd}>${cap}`,
+          code: "over_budget_after_compress",
         };
         await releaseHold(ctx);
-        ledgerWrite("finalize", ctx.request_id, {
+        finalizeRecord(ctx, {
           error_class: "rejected",
           error_message: ctx.error.message,
           compression: ctx.compression,
@@ -766,6 +789,8 @@ function createWiredGateway(options = {}) {
           : 1;
 
       let lastErr = null;
+      ctx.attempts = ctx.attempts || [];
+      ctx.timings = ctx.timings || {};
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const step =
           enableRouting && decision ? nextFallback(decision, attempt) : null;
@@ -792,14 +817,35 @@ function createWiredGateway(options = {}) {
           attempt,
         });
 
+        const attemptStart = Date.now();
+        ctx.timings.provider_start_ms = attemptStart;
         try {
           ctx = (await providerFn(ctx)) || ctx;
           ctx.provider_name = ctx.provider_result?.provider || providerName;
+          // Non-stream: the full provider call. Streams overwrite this when the body ends.
+          ctx.timings.provider_ms = Date.now() - attemptStart;
+          ctx.attempts.push({
+            attempt,
+            provider: ctx.provider_name,
+            model: ctx.model_routed,
+            status: "ok",
+            ms: ctx.timings.provider_ms,
+          });
           if (ctx.model_routed) healthTracker.recordSuccess(ctx.model_routed);
           lastErr = null;
           break;
         } catch (err) {
           lastErr = err;
+          ctx.timings.provider_ms = Date.now() - attemptStart;
+          ctx.attempts.push({
+            attempt,
+            provider: providerName,
+            model: ctx.model_routed,
+            status: "error",
+            http_status: Number(err?.status) || null,
+            code: errorCode({ class: "error", message: err?.message, code: err?.code, status: err?.status }),
+            ms: ctx.timings.provider_ms,
+          });
           // Only provider-side failures (429/5xx/timeouts) count against a model's health;
           // one tenant's bad requests must not take a model down for everyone.
           if (ctx.model_routed && isRetryableProviderError(err)) {
@@ -810,7 +856,7 @@ function createWiredGateway(options = {}) {
             ctx.aborted = true;
             ctx.error = { class: "error", message: err.message, status: err.status, code: err.code };
             await releaseHold(ctx);
-            ledgerWrite("finalize", ctx.request_id, {
+            finalizeRecord(ctx, {
               error_class: "error",
               error_message: err.message,
               compression: ctx.compression,
@@ -840,19 +886,34 @@ function createWiredGateway(options = {}) {
         // { content?, tool_calls? } deltas (strings from older providers are wrapped).
         // HTTP iterates ctx.stream as chunks arrive; finalize drains if unread.
         let acc = "";
+        ctx.stream_chars = 0;
         const gen = (async function* () {
+          let completed = false;
+          let failed = false;
           try {
             for await (const raw of upstream) {
               const piece = typeof raw === "string" ? { content: raw } : raw || {};
-              if (piece.content) acc += piece.content;
+              if (ctx.timings && ctx.timings.ttft_ms == null && (piece.content || piece.tool_calls)) {
+                ctx.timings.ttft_ms = Date.now() - (ctx.started_at_ms || Date.now());
+              }
+              if (piece.content) {
+                acc += piece.content;
+                ctx.stream_chars += piece.content.length;
+              }
+              if (piece.tool_calls) ctx.stream_chars += JSON.stringify(piece.tool_calls).length;
               yield piece;
             }
+            completed = true;
           } catch (err) {
             // A stream that dies mid-way is a failed request, not a success.
+            failed = true;
             ctx.stream_error = err;
             throw err;
           } finally {
             ctx._stream_drained = true;
+            // The consumer stopped reading (client went away) before the upstream finished.
+            if (!completed && !failed) ctx.stream_cancelled = true;
+            if (ctx.timings?.provider_start_ms) ctx.timings.provider_ms = Date.now() - ctx.timings.provider_start_ms;
           }
           const out = ctx.provider_result.output;
           if (!out || typeof out !== "object" || !out.content) {
@@ -912,6 +973,12 @@ function createWiredGateway(options = {}) {
           ctx.stream_error = ctx.stream_error || err;
         }
       }
+      if (ctx.stream_cancelled && !ctx.stream_error && !ctx.aborted) {
+        ctx.stream_error = Object.assign(new Error("client_closed_request"), {
+          status: 499,
+          code: "client_closed_request",
+        });
+      }
       if (ctx.stream_error && !ctx.aborted) {
         ctx.aborted = true;
         ctx.error = {
@@ -938,7 +1005,7 @@ function createWiredGateway(options = {}) {
       if (ctx.aborted) {
         await releaseHold(ctx);
         if (ctx.request_id) {
-          ledgerWrite("finalize", ctx.request_id, {
+          finalizeRecord(ctx, {
             error_class: ctx.error?.class || "error",
             error_message: ctx.error?.message,
             latency_ms: latency,
@@ -990,7 +1057,7 @@ function createWiredGateway(options = {}) {
       ctx.actual_usd = actual;
       const idem = scopedIdempotencyKey(ctx);
       if (idem) replayCache.set(idem, ctx.openai);
-      ledgerWrite("finalize", ctx.request_id, {
+      finalizeRecord(ctx, {
         actual_usd: actual,
         latency_ms: latency,
         model_routed: ctx.model_routed,
@@ -1024,6 +1091,7 @@ function createWiredGateway(options = {}) {
       // Tests may pin the hold; otherwise admission prices it from the catalog.
       estimated_max_usd: options.estimated_max_usd,
       abort_signal: extra.abort_signal,
+      edge_request_id: extra.request_id,
       started_at_ms: Date.now(),
       flags: flags(),
     });

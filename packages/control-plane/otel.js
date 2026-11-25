@@ -51,6 +51,62 @@ function fromAttributes(list = []) {
   return out;
 }
 
+/** Stable 32-hex trace id per request id, so re-exports of a row join the same trace. */
+function traceIdFor(requestId) {
+  if (!requestId) return traceId();
+  return require("crypto").createHash("sha256").update(String(requestId)).digest("hex").slice(0, 32);
+}
+
+/**
+ * Flatten the per-request obs record (meta.obs) into sc.* attributes.
+ * Ids, model names, codes, counts, timings and dollars only.
+ */
+function obsAttributes(o) {
+  if (!o) return {};
+  const r = o.routing || {};
+  const cl = r.classifier || {};
+  const c = o.compression || {};
+  const p = o.provider || {};
+  const cost = o.cost || {};
+  const e = o.error || {};
+  return {
+    "sc.stream": o.stream,
+    "sc.latency_ms": o.latency_ms,
+    "sc.route.mode": r.mode,
+    "sc.route.strategy": r.strategy,
+    "sc.route.reason": r.reason,
+    "sc.route.classifier.tier": cl.tier,
+    "sc.route.classifier.category": cl.category,
+    "sc.route.classifier.difficulty": cl.difficulty,
+    "sc.route.classifier.reasons": Array.isArray(cl.reasons) && cl.reasons.length ? cl.reasons.join(",") : null,
+    "sc.route.classifier.difficulty_score": cl.difficulty_score,
+    "sc.compress.engine": c.engine,
+    "sc.compress.mode": c.mode,
+    "sc.compress.passthrough_reason": c.passthrough_reason,
+    "sc.compress.latency_ms": c.latency_ms,
+    "sc.provider.status": p.status,
+    "sc.provider.ttft_ms": p.ttft_ms,
+    "sc.provider.latency_ms": p.latency_ms,
+    "sc.provider.attempts": p.attempts,
+    "sc.provider.retries": p.retries,
+    "sc.provider.finish_reason": p.finish_reason,
+    "sc.provider.usage_estimated": p.status ? Boolean(p.usage_estimated) : null,
+    "gen_ai.usage.input_tokens": p.input_tokens,
+    "gen_ai.usage.output_tokens": p.output_tokens,
+    "sc.usage.cached_input_tokens": p.cached_input_tokens,
+    "sc.cost.list_usd": cost.list_usd,
+    "sc.cost.charged_usd": cost.charged_usd,
+    "sc.cost.baseline_model": cost.baseline_model,
+    "sc.cost.baseline_basis": cost.baseline_basis,
+    "sc.cost.baseline_usd": cost.baseline_usd,
+    "sc.savings.routing_usd": cost.saved_routing_usd,
+    "sc.savings.compression_usd": cost.saved_compression_usd,
+    "sc.savings.total_usd": cost.saved_total_usd,
+    "sc.error.code": e.code,
+    "http.response.status_code": e.http_status ?? (o.error === null ? 200 : null),
+  };
+}
+
 function unixNano(ms) {
   return (BigInt(Math.max(0, Math.round(ms))) * 1_000_000n).toString();
 }
@@ -60,10 +116,24 @@ function unixNano(ms) {
  */
 function recordToOtelSpan(rec = {}, opts = {}) {
   const c = rec.compression || {};
+  const o = rec.meta?.obs || null;
   const start = Date.parse(rec.created_at || rec.updated_at || 0) || Date.now();
   const latency = Number(rec.latency_ms) || 0;
+  // One event per provider attempt that failed (the fallback chain), metadata only.
+  const events = (o?.provider?.fallbacks || []).map((f, i) => ({
+    name: "sc.provider.fallback",
+    timeUnixNano: unixNano(start),
+    attributes: toAttributes({
+      "sc.attempt": i,
+      "sc.provider": f.provider,
+      "sc.model": f.model,
+      "sc.error.code": f.code,
+      "http.response.status_code": f.http_status,
+      "sc.duration_ms": f.ms,
+    }),
+  }));
   const span = {
-    traceId: opts.traceId || traceId(),
+    traceId: opts.traceId || traceIdFor(rec.id),
     spanId: spanId(),
     name: "sc.control_plane.request",
     kind: SPAN_KIND_SERVER,
@@ -87,9 +157,16 @@ function recordToOtelSpan(rec = {}, opts = {}) {
       "sc.compress.dollars_avoided_est": Number(c.dollars_avoided_est) || 0,
       "sc.compress.route_model_changed": Boolean(c.meta?.economics?.model_changed),
       "sc.error_class": rec.error_class,
+      ...obsAttributes(o),
     }),
+    ...(events.length ? { events } : {}),
+    // The status message is the stable error code when there is one: upstream error text
+    // is not exported.
     status: rec.error_class
-      ? { code: STATUS_CODE_ERROR, ...(rec.error_message ? { message: String(rec.error_message) } : {}) }
+      ? (() => {
+          const message = o?.error?.code || rec.error_message;
+          return { code: STATUS_CODE_ERROR, ...(message ? { message: String(message) } : {}) };
+        })()
       : { code: STATUS_CODE_OK },
   };
   return span;
@@ -120,4 +197,6 @@ module.exports = {
   fromAttributes,
   spanId,
   traceId,
+  traceIdFor,
+  obsAttributes,
 };

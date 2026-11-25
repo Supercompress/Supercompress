@@ -311,6 +311,9 @@ function createAnthropicProvider(options = {}) {
           throw abortError(err, isTimedOut(), ctx.abort_signal);
         } finally {
           done();
+          // Keep the usage seen so far (message_start carries input tokens) even when the
+          // stream ends early — a client disconnect still needs a usage row.
+          ctx.provider_result.usage = mapUsage(rawUsage);
         }
         acc.usage = mapUsage(rawUsage);
         ctx.provider_result.output = {
