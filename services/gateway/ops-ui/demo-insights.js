@@ -92,7 +92,7 @@ function buildDemoRecords(opts = {}) {
     let trace = buildCompressionTrace({
       original_tokens: s.original,
       retained_tokens: s.retained,
-      strategy: "neural_keep",
+      strategy: "fast",
     });
     trace = attachEconomicsToTrace(trace, econ, { usdPerMTok: 0.15 });
     const auto = i % 2 === 0;
@@ -126,8 +126,8 @@ function buildDemoRecords(opts = {}) {
         classifier: auto ? { tier: 1 + (i % 3), category: "code", difficulty: "medium", reasons: ["simple_default"], difficulty_score: null } : null,
       },
       compression: {
-        engine: "neural_keep",
-        mode: "neural_keep",
+        engine: "fast",
+        mode: "fast",
         original_tokens: s.original,
         retained_tokens: s.retained,
         tokens_saved: s.original - s.retained,

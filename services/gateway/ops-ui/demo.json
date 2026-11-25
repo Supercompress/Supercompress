@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-25T23:42:12.530Z",
+  "generated_at": "2026-11-25T23:57:36.081Z",
   "confidential": true,
   "headline": "Compression unlocked 4 request(s) that would not fit / admit without keep",
   "summary": {
@@ -78,7 +78,7 @@
     "recent": [
       {
         "id": "req_demo_009",
-        "created_at": "2026-11-25T23:41:42.522Z",
+        "created_at": "2026-11-25T23:57:06.071Z",
         "agent_id": "support-bot",
         "status": "rejected",
         "error_code": "credits_required",
@@ -103,7 +103,7 @@
       },
       {
         "id": "req_demo_008",
-        "created_at": "2026-11-25T23:41:12.522Z",
+        "created_at": "2026-11-25T23:56:36.071Z",
         "agent_id": "research",
         "status": "ok",
         "error_code": null,
@@ -117,7 +117,7 @@
         "route_reason": "requested_model",
         "original_tokens": 77000,
         "retained_tokens": 8200,
-        "compress_mode": "neural_keep",
+        "compress_mode": "fast",
         "ttft_ms": null,
         "latency_ms": 1130,
         "retries": 0,
@@ -128,7 +128,7 @@
       },
       {
         "id": "req_demo_007",
-        "created_at": "2026-11-25T23:40:12.522Z",
+        "created_at": "2026-11-25T23:55:36.071Z",
         "agent_id": "rag-worker",
         "status": "ok",
         "error_code": null,
@@ -142,7 +142,7 @@
         "route_reason": "complexity_band",
         "original_tokens": 55000,
         "retained_tokens": 5000,
-        "compress_mode": "neural_keep",
+        "compress_mode": "fast",
         "ttft_ms": 420,
         "latency_ms": 1090,
         "retries": 0,
@@ -153,7 +153,7 @@
       },
       {
         "id": "req_demo_006",
-        "created_at": "2026-11-25T23:39:12.522Z",
+        "created_at": "2026-11-25T23:54:36.071Z",
         "agent_id": "code-agent",
         "status": "ok",
         "error_code": null,
@@ -167,7 +167,7 @@
         "route_reason": "requested_model",
         "original_tokens": 9500,
         "retained_tokens": 3100,
-        "compress_mode": "neural_keep",
+        "compress_mode": "fast",
         "ttft_ms": null,
         "latency_ms": 970,
         "retries": 0,
@@ -178,7 +178,7 @@
       },
       {
         "id": "req_demo_005",
-        "created_at": "2026-11-25T23:38:12.522Z",
+        "created_at": "2026-11-25T23:53:36.071Z",
         "agent_id": "research",
         "status": "ok",
         "error_code": null,
@@ -192,7 +192,7 @@
         "route_reason": "complexity_band",
         "original_tokens": 120000,
         "retained_tokens": 9900,
-        "compress_mode": "neural_keep",
+        "compress_mode": "fast",
         "ttft_ms": null,
         "latency_ms": 1180,
         "retries": 0,
@@ -203,7 +203,7 @@
       },
       {
         "id": "req_demo_004",
-        "created_at": "2026-11-25T23:37:12.522Z",
+        "created_at": "2026-11-25T23:52:36.071Z",
         "agent_id": "support-bot",
         "status": "ok",
         "error_code": null,
@@ -217,7 +217,7 @@
         "route_reason": "requested_model",
         "original_tokens": 61000,
         "retained_tokens": 4800,
-        "compress_mode": "neural_keep",
+        "compress_mode": "fast",
         "ttft_ms": 360,
         "latency_ms": 1060,
         "retries": 1,
@@ -228,7 +228,7 @@
       },
       {
         "id": "req_demo_003",
-        "created_at": "2026-11-25T23:36:12.522Z",
+        "created_at": "2026-11-25T23:51:36.071Z",
         "agent_id": "code-agent",
         "status": "ok",
         "error_code": null,
@@ -242,7 +242,7 @@
         "route_reason": "complexity_band",
         "original_tokens": 18000,
         "retained_tokens": 6400,
-        "compress_mode": "neural_keep",
+        "compress_mode": "fast",
         "ttft_ms": null,
         "latency_ms": 995,
         "retries": 0,
@@ -253,7 +253,7 @@
       },
       {
         "id": "req_demo_002",
-        "created_at": "2026-11-25T23:35:12.522Z",
+        "created_at": "2026-11-25T23:50:36.071Z",
         "agent_id": "rag-worker",
         "status": "ok",
         "error_code": null,
@@ -267,7 +267,7 @@
         "route_reason": "requested_model",
         "original_tokens": 92000,
         "retained_tokens": 7100,
-        "compress_mode": "neural_keep",
+        "compress_mode": "fast",
         "ttft_ms": null,
         "latency_ms": 1110,
         "retries": 0,
@@ -278,7 +278,7 @@
       },
       {
         "id": "req_demo_001",
-        "created_at": "2026-11-25T23:34:12.522Z",
+        "created_at": "2026-11-25T23:49:36.071Z",
         "agent_id": "support-bot",
         "status": "ok",
         "error_code": null,
@@ -292,7 +292,7 @@
         "route_reason": "complexity_band",
         "original_tokens": 48000,
         "retained_tokens": 5200,
-        "compress_mode": "neural_keep",
+        "compress_mode": "fast",
         "ttft_ms": 300,
         "latency_ms": 1040,
         "retries": 0,
@@ -370,7 +370,7 @@
       "dollars_avoided_est": 0.19265,
       "model_changed": true,
       "latency_ms": 230,
-      "created_at": "2026-11-25T23:41:12.522Z"
+      "created_at": "2026-11-25T23:56:36.071Z"
     },
     {
       "id": "req_demo_007",
@@ -381,7 +381,7 @@
       "dollars_avoided_est": 0,
       "model_changed": false,
       "latency_ms": 190,
-      "created_at": "2026-11-25T23:40:12.522Z"
+      "created_at": "2026-11-25T23:55:36.071Z"
     },
     {
       "id": "req_demo_006",
@@ -392,7 +392,7 @@
       "dollars_avoided_est": 0.004735,
       "model_changed": true,
       "latency_ms": 70,
-      "created_at": "2026-11-25T23:39:12.522Z"
+      "created_at": "2026-11-25T23:54:36.071Z"
     },
     {
       "id": "req_demo_005",
@@ -403,7 +403,7 @@
       "dollars_avoided_est": 0.2993,
       "model_changed": true,
       "latency_ms": 280,
-      "created_at": "2026-11-25T23:38:12.522Z"
+      "created_at": "2026-11-25T23:53:36.071Z"
     },
     {
       "id": "req_demo_004",
@@ -414,7 +414,7 @@
       "dollars_avoided_est": 0,
       "model_changed": false,
       "latency_ms": 160,
-      "created_at": "2026-11-25T23:37:12.522Z"
+      "created_at": "2026-11-25T23:52:36.071Z"
     },
     {
       "id": "req_demo_003",
@@ -425,7 +425,7 @@
       "dollars_avoided_est": 0.00849,
       "model_changed": true,
       "latency_ms": 95,
-      "created_at": "2026-11-25T23:36:12.522Z"
+      "created_at": "2026-11-25T23:51:36.071Z"
     },
     {
       "id": "req_demo_002",
@@ -436,7 +436,7 @@
       "dollars_avoided_est": 0,
       "model_changed": false,
       "latency_ms": 210,
-      "created_at": "2026-11-25T23:35:12.522Z"
+      "created_at": "2026-11-25T23:50:36.071Z"
     },
     {
       "id": "req_demo_001",
@@ -447,7 +447,7 @@
       "dollars_avoided_est": 0,
       "model_changed": false,
       "latency_ms": 140,
-      "created_at": "2026-11-25T23:34:12.522Z"
+      "created_at": "2026-11-25T23:49:36.071Z"
     }
   ]
 }
