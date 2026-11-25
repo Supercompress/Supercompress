@@ -1856,19 +1856,103 @@ function structuralAdditions(lines, kept, query) {
   return add;
 }
 
+// ---------------------------------------------------------------- Agent tool output
+// Rules for the output of an agent's own tools (file views, searches, test runs, shell), built
+// on real agent trajectories (compress-bench real-dev) and kept format-generic so they carry
+// over to other harnesses.
+
+/** Inputs under ~1k tokens pass through: the saving is small and a lost line costs a re-read. */
+const MIN_COMPRESS_CHARS = 4000;
+/** A listing where most lines are search hits: `Line 12:`, `path.py:12:`, `path.py: text`, `dir/f (3 matches)`. */
+const HIT_LINE = /^(Line \d+:|(?:[\w.-]+\/)*[\w.-]+\.[A-Za-z]{1,6}:(?!:)(?:\d+[:-]|\s)|\/?[\w./-]+ \(\d+ match(es)?\)$)/;
+const MAX_HIT_LIST_LINES = 400;
+const AGENT_OUTPUT_MIN_LINES = 40;
+const TOOL_STATUS_LINE = /^\s*(\[File:|\(\d+ more lines? (above|below)\)|End of matches|Found \d+ match|No (matches|changes|such file)|File updated|\[?(Command|Process) (finished|exited|completed)|\[?exit code\b|={3,}|!{3,}|_{3,}|-{3,}\s*\S|Interrupted\b|\d+ (passed|failed|errors?)\b|(FAILED|ERROR|Error|Warning|WARNING)\b[: ]|Successfully\b|Traceback \(most recent call last\))/i;
+const TEST_OUTPUT = /test session starts|^(PASS|FAIL) |Ran \d+ tests?|\b\d+ (passed|failed)\b/m;
+const TEST_SUMMARY_LINE = /\b(FAILED|FAIL|ERROR|Error|error:|Exception|Traceback|Interrupted|failed|passed|xfail|assert)\b|^={3,}|^_{3,}|^E\s{2,}/;
+
+/** A search-hit listing: every hit is a candidate the agent may act on next, so none is dropped. */
+function isHitListing(lines) {
+  let body = 0;
+  let hits = 0;
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    body++;
+    if (HIT_LINE.test(line)) hits++;
+  }
+  return body >= 5 && hits / body >= 0.6 && hits <= MAX_HIT_LIST_LINES;
+}
+
+/** Line numbers the agent is navigating to or editing: `goto 563`, `open f.py 35`, `edit 165:170`, "line 42". */
+function targetLineNumbers(query) {
+  const out = [];
+  for (const m of query.matchAll(/\bgoto\s+(\d+)/g)) out.push(Number(m[1]));
+  for (const m of query.matchAll(/\bopen\s+\S+\s+(\d+)/g)) out.push(Number(m[1]));
+  for (const m of query.matchAll(/\bedit\s+(\d+):(\d+)/g)) out.push(Number(m[1]), Number(m[2]));
+  for (const m of query.matchAll(/\bline\s+(\d{1,6})\b/gi)) out.push(Number(m[1]));
+  return out;
+}
+
+/** The source line number a numbered file view shows on this line (`12:`, `12\t`, `  12  `), else null. */
+function viewLineNumber(line) {
+  const m = /^\s*(\d{1,6})[:\t|]/.exec(line) || /^\s*(\d{1,6})\s{2,}/.exec(line);
+  return m ? Number(m[1]) : null;
+}
+
+/** Lines agent output needs beyond the query match: header, trailing status, test verdicts, navigation target. */
+function agentOutputAdditions(lines, query) {
+  const add = new Set();
+  // Header and trailing status lines a tool prints around its output ("[File: ...]",
+  // "Found 12 matches", "File updated.", "Interrupted: 2 errors", "exit code 1").
+  const firstBody = lines.findIndex((line) => line.trim());
+  if (firstBody >= 0 && TOOL_STATUS_LINE.test(lines[firstBody])) add.add(firstBody);
+  for (let i = lines.length - 1, n = 0; i >= 0 && n < 3; i--) {
+    if (!lines[i].trim()) continue;
+    n++;
+    if (TOOL_STATUS_LINE.test(lines[i])) add.add(i);
+  }
+  if (TEST_OUTPUT.test(lines.join("\n"))) {
+    lines.forEach((line, i) => {
+      if (TEST_SUMMARY_LINE.test(line)) add.add(i);
+    });
+  }
+  const targets = targetLineNumbers(query);
+  if (targets.length) {
+    lines.forEach((line, i) => {
+      const n = viewLineNumber(line);
+      if (n != null && targets.some((t) => n >= t - 10 && n <= t + 40)) add.add(i);
+    });
+  }
+  return add;
+}
+
 function compress(context, query = "", options = {}) {
-  const base = compressCore(context, query, options);
-  if (typeof context !== "string" || base.compressed_text === context) return base;
+  if (typeof context !== "string") return compressCore(context, query, options);
   const started = process.hrtime.bigint();
   const lines = context.split("\n");
+  const minChars = options.minChars ?? MIN_COMPRESS_CHARS;
+  if (context.length < minChars) return result(context, context, "below_min_size", started, lines.length, lines.length);
+  if (isHitListing(lines)) return result(context, context, "hit_list_kept", started, lines.length, lines.length);
+
+  const base = compressCore(context, query, options);
+  if (base.compressed_text === context) return base;
   const kept = keptLineIndices(lines, base.compressed_text);
-  const extra = structuralAdditions(lines, kept, query);
   const before = kept.size;
-  for (const i of extra) kept.add(i);
+  for (const i of structuralAdditions(lines, kept, query)) kept.add(i);
+  const structural = kept.size;
+  // Header, trailing status and test verdicts matter in long tool output, not in short snippets.
+  // Only when the selection is whole input lines; rebuilding by line index would drop
+  // anything the selector emitted that is not a verbatim line (markers, trimmed units).
+  const inputLines = new Set(lines);
+  const verbatim = base.compressed_text.split("\n").every((line) => !line.trim() || inputLines.has(line));
+  if (verbatim && lines.length >= AGENT_OUTPUT_MIN_LINES) for (const i of agentOutputAdditions(lines, query)) kept.add(i);
   if (kept.size === before) return base;
   const output = [...kept].sort((a, b) => a - b).map((i) => lines[i]).join("\n");
   if (output.length >= context.length) return result(context, context, "no_savings", started, lines.length, lines.length);
-  return result(context, output, `${base.selection_reason}+structure`, started, lines.length, kept.size);
+  const reason = structural > before ? `${base.selection_reason}+structure` : base.selection_reason;
+  const out = result(context, output, reason, started, lines.length, kept.size);
+  out.agent_lines_added = kept.size - structural;
+  return out;
 }
 
 // Shared with graph-compress (same unitization + safety gates; different selector).
@@ -1879,6 +1963,11 @@ module.exports = {
   unitsFor,
   documentFor,
   internals: {
+    MIN_COMPRESS_CHARS,
+    isHitListing,
+    targetLineNumbers,
+    viewLineNumber,
+    agentOutputAdditions,
     STOP,
     FILL_STOP,
     QUERY_SOFT,

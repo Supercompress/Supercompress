@@ -1,7 +1,9 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { compress, unitsFor, documentFor } = require("../src/fast-compress");
+const { compress: compressWithFloor, unitsFor, documentFor } = require("../src/fast-compress");
+// These cases test selection on small inputs; the size floor has its own tests (agent-output.test.js).
+const compress = (context, query, options = {}) => compressWithFloor(context, query, { minChars: 0, ...options });
 
 test("incidental lone words cannot justify dropping an unrecognized multiword answer", () => {
   const rows = Array.from({ length: 40 }, (_, index) => `Routine note ${index}: ordinary background material.`);
