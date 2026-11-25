@@ -117,8 +117,12 @@ function buildAnthropicBody(ctx, upstreamModel) {
     }
     push("user", toAnthropicBlocks(m.content));
   }
+  // Anthropic needs at least one non-empty user turn; OpenAI accepts a system-only request.
+  // Send the system text as the user turn rather than an empty block (which is a 400).
   if (!messages.length) {
-    messages.push({ role: "user", content: [{ type: "text", text: "" }] });
+    const text = systemParts.join("\n\n");
+    systemParts.length = 0;
+    messages.push({ role: "user", content: [{ type: "text", text: text || "." }] });
   }
 
   const body = {

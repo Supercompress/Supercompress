@@ -13,6 +13,7 @@ const { createPipeline, STAGE_ORDER } = require("./pipeline");
 const { fromChatCompletions, toChatCompletions } = require("./adapters/chat-completions");
 const { createDefaultCompressFn } = require("./compress");
 const { createProvider } = require("./providers");
+const { splitProviderPrefix } = require("./providers/registry");
 const { catalogFromEnv, policyFromEnv } = require("./catalog-env");
 const {
   createLedgerStore,
@@ -278,6 +279,14 @@ function createWiredGateway(options = {}) {
           };
           return ctx;
         }
+      }
+
+      // "google/gemini-3.8-flash" names the same model as "gemini-3.8-flash": accept the
+      // provider prefix when it matches the catalog entry's provider, and bill the catalog id.
+      if (ctx.normalized?.model && !catalog.get?.(ctx.normalized.model)) {
+        const pre = splitProviderPrefix(ctx.normalized.model);
+        const bare = pre ? catalog.get?.(pre.model) : null;
+        if (bare && bare.provider === pre.provider) ctx.normalized.model = bare.id;
       }
 
       // Unknown models cannot be priced, so they cannot be billed: reject up front.

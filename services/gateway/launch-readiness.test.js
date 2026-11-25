@@ -417,3 +417,51 @@ describe("launch blockers", () => {
     assert.equal(gw.ledger.get(ctx.request_id).project_id, "proj-7");
   });
 });
+
+describe("model names and Anthropic request shape", () => {
+  it("accepts a provider-prefixed id for a catalog model of that provider and bills the catalog id", async () => {
+    const { DEFAULT_CATALOG, PROVIDER_CATALOG, normalizeCatalog } = require("../../packages/control-plane/catalog");
+    const seen = [];
+    const gw = createWiredGateway({
+      catalog: normalizeCatalog([...DEFAULT_CATALOG, ...PROVIDER_CATALOG]),
+      enableRouting: true,
+      provider: async (ctx) => {
+        seen.push(ctx.model_routed);
+        ctx.provider_result = { output: { content: "ok" }, usage: { input_tokens: 1, output_tokens: 1 }, model: ctx.model_routed };
+        return ctx;
+      },
+    });
+    const ok = await gw.handleChatCompletions(body({ model: "google/gemini-3.8-flash" }), { org_id: "o", key_id: "k" });
+    assert.equal(ok.aborted, false);
+    assert.deepEqual(seen, ["gemini-3.8-flash"]);
+    // A prefix naming a different provider than the catalog entry is still unknown.
+    const bad = await gw.handleChatCompletions(body({ model: "mistral/gemini-3.8-flash" }), { org_id: "o", key_id: "k" });
+    assert.equal(bad.error?.code, "model_not_found");
+  });
+
+  it("a named model is served as named even with routing on", async () => {
+    const seen = [];
+    const gw = createWiredGateway({
+      enableRouting: true,
+      provider: async (ctx) => {
+        seen.push(ctx.model_routed);
+        ctx.provider_result = { output: { content: "ok" }, usage: { input_tokens: 1, output_tokens: 1 }, model: ctx.model_routed };
+        return ctx;
+      },
+    });
+    await gw.handleChatCompletions(body({ model: "claude-opus-5-5" }), { org_id: "o", key_id: "k" });
+    assert.deepEqual(seen, ["claude-opus-5-5"]);
+  });
+
+  it("a system-only request sends the system text as the user turn, never an empty block", () => {
+    const b = buildAnthropicBody({ normalized: { model: "claude-haiku-5-5", messages: [{ role: "system", content: "Say hi" }] } }, "claude-haiku-5-5");
+    assert.deepEqual(b.messages, [{ role: "user", content: [{ type: "text", text: "Say hi" }] }]);
+    assert.equal(b.system, undefined);
+  });
+
+  it("drops sampling params on Claude 4.7+ and keeps them on older models", () => {
+    const n = { messages: [{ role: "user", content: "hi" }], temperature: 0.7 };
+    assert.equal(buildAnthropicBody({ normalized: { ...n, model: "claude-opus-5-5" } }, "claude-opus-5-5").temperature, undefined);
+    assert.equal(buildAnthropicBody({ normalized: { ...n, model: "claude-haiku-4-5" } }, "claude-haiku-4-5").temperature, 0.7);
+  });
+});
