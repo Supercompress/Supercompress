@@ -338,7 +338,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/supercompress-vs-truncation</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -458,7 +458,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/llm-context-window-too-long</loc>
-    <lastmod>2026-11-20</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -487,8 +487,14 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.supercompress.dev/compress-git-diff-for-llm-code-review</loc>
+    <lastmod>2026-11-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.supercompress.dev/compress-claude-code-tool-output</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -506,7 +512,7 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/reduce-tool-call-output-tokens</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>How to Shrink a Large Git Diff Before an LLM Code Review</title>
+  <meta name="description" content="A big pull request overflows the context window or buries the lines that matter. Trim the diff with git, label each line with its file, and keep only the lines that answer your review question." />
+  <meta name="keywords" content="git diff too large for LLM, reduce tokens PR diff, LLM code review large diff, compress git diff, AI code review context window" />
+  <meta name="author" content="Arjun Shah" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta property="og:title" content="How to Shrink a Large Git Diff Before an LLM Code Review" />
+  <meta property="og:description" content="A big pull request overflows the context window or buries the lines that matter. Trim the diff with git, label each line with its file, and keep only the lines that answer your review question." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://www.supercompress.dev/compress-git-diff-for-llm-code-review" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="How to Shrink a Large Git Diff Before an LLM Code Review" />
+  <meta name="twitter:description" content="A big pull request overflows the context window or buries the lines that matter. Trim the diff with git, label each line with its file, and keep only the lines that answer your review question." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/compress-git-diff-for-llm-code-review" />
+  <meta property="article:published_time" content="2026-11-25T00:00:00-08:00" />
+  <meta property="article:modified_time" content="2026-11-25" />
+  <meta property="article:author" content="https://www.arjunshah.xyz/" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to shrink a large git diff before an LLM code review",
+  "description": "A big pull request overflows the context window or buries the lines that matter. Trim the diff with git, label each line with its file, and keep only the lines that answer your review question.",
+  "datePublished": "2026-11-25",
+  "dateModified": "2026-11-25",
+  "author": {
+    "@type": "Person",
+    "name": "Arjun Shah",
+    "url": "https://www.arjunshah.xyz/",
+    "sameAs": [
+      "https://www.arjunshah.xyz/",
+      "https://x.com/arjunkshah21"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://www.supercompress.dev/"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.supercompress.dev/compress-git-diff-for-llm-code-review"
+  },
+  "image": "https://www.supercompress.dev/assets/img/og-share-light.png",
+  "keywords": "git diff too large for LLM, reduce tokens PR diff, LLM code review large diff, compress git diff, AI code review context window"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Will the model see the whole diff?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It sees only the kept lines. Open the full diff for anything important; the compressed result is for finding what to look at, not a replacement for reading changed files."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it work on binary files or renames?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The API only sees text. git diff prints a one-line notice for binary files, which is kept or dropped like any other line. Renames show up as path changes in the labelled lines when you include those paths."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I still exclude lockfiles?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Pathspec exclusions with git remove lockfiles and generated trees for free and deterministically, so do that before any compression."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need a question?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, for a targeted result. Without a query, or with a generic one like \"summarize this text\", the API returns a broader digest and labels the response query_mode \"dump\"."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="stylesheet" href="/assets/css/blog-editorial.css?v=1" />
+</head>
+<body data-editorial="article">
+<header class="df-header">
+  <div class="df-header-blur" aria-hidden="true"></div>
+  <div class="df-header-inner">
+    <a href="/blog" class="df-logo-desktop">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+      <span class="df-logo-word">Super<em>Compress</em></span>
+    </a>
+    <div class="df-header-end">
+      <nav class="df-nav-pill" aria-label="Main">
+        <a href="https://docs.supercompress.dev/coding-agents">Agents</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/faq">FAQ</a>
+        <a href="https://docs.supercompress.dev">Docs</a>
+      </nav>
+      <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+    </div>
+    <div class="df-mobile-bar">
+      <a href="/blog" class="df-logo-mobile">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+      </a>
+      <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+    </div>
+  </div>
+</header>
+<div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page" data-article-content>
+  <p class="seo-kicker">Code review · Updated 2026-11-25</p>
+  <h1>How to shrink a large git diff before an LLM code review</h1>
+  <p class="seo-byline">By <a href="https://www.arjunshah.xyz/" rel="author">Arjun Shah</a></p>
+  <p class="seo-lead">A large pull request can be too big for one prompt, and even when it fits, most of the diff is lockfile churn, context lines and files unrelated to your question. Trim it with git first, then keep only the diff lines that answer what you are reviewing for.</p>
+  <nav class="seo-cluster" aria-label="Related">
+    <a href="https://www.supercompress.dev/compress-claude-code-tool-output">Claude Code tool output</a>
+    <a href="https://www.supercompress.dev/reduce-tool-call-output-tokens">Reduce tool call output tokens</a>
+    <a href="https://www.supercompress.dev/supercompress-vs-truncation">Compression vs truncation</a>
+    <a href="https://www.supercompress.dev/llm-context-window-too-long">LLM context window too long</a>
+  </nav>
+  <div class="article-prose">
+    <nav class="toc" aria-label="On this page"><p><strong>On this page</strong></p><ul><li><a href="#why">Why does a big diff overflow the context window?</a></li><li><a href="#git-first">What should I trim with git first?</a></li><li><a href="#label-lines">Why label every diff line with its file?</a></li><li><a href="#compress">How do I compress the diff with the SuperCompress API?</a></li><li><a href="#question">What question should I send?</a></li><li><a href="#when-not">When should I skip compression?</a></li><li><a href="#measure">How do I know it helped?</a></li><li><a href="#faq">Frequently asked questions</a></li></ul></nav>
+
+    <h2 id="why">Why does a big diff overflow the context window?</h2>
+    <p>A pull request often mixes lockfiles and generated files with the real code change. Each hunk also carries context lines around the edit, and whitespace-only churn can fill more of the prompt than the lines you care about. Unrelated files in the same branch add still more. Plain truncation cuts the end of the diff regardless of the question; see <a href="https://www.supercompress.dev/supercompress-vs-truncation">how compression compares with truncation</a>. A model asked to review a truncated diff will not know what it did not see.</p>
+
+    <h2 id="git-first">What should I trim with git first?</h2>
+    <p>Start with a cheap overview, then shrink the unified diff before you call any API. Pathspec exclusion leaves matching files out. <code>-U1</code> (or <code>--unified=1</code>) keeps 1 line of context instead of the default of 3. <code>--ignore-all-space</code> (<code>-w</code>) ignores whitespace when comparing lines; it also hides whitespace-only changes that matter in Python, YAML and Makefiles, so use it only when whitespace is not meaningful. <code>git diff --stat</code> and <code>--name-only</code> give an overview. The <code>A...B</code> range compares from the merge base.</p>
+    <pre><code>git diff --stat origin/main...HEAD
+git diff -U1 origin/main...HEAD -- . ':(exclude)*lock*' ':(exclude)dist/'</code></pre>
+    <p>These steps are free and deterministic, so do them before any compression.</p>
+
+    <h2 id="label-lines">Why label every diff line with its file?</h2>
+    <p>SuperCompress keeps whole lines. A <code>+</code> or <code>-</code> line on its own does not say which file it came from, and the <code>@@</code> hunk header may be dropped. Drop the <code>diff --git</code>, <code>index</code>, <code>---</code> and <code>+++</code> lines and prefix every remaining line with <code>path | </code>, so any kept line still names its file:</p>
+    <pre><code>src/calc.py | @@ -10,3 +10,4 @@
+src/calc.py |  def add(a, b):
+src/calc.py | -    return a + b
+src/calc.py | +    return a + b + carry
+src/calc.py | +</code></pre>
+    <p>A kept line can lose its surrounding hunk, so a reviewer (human or model) should open the full diff for anything important. The compressed diff is for finding what to look at, not a replacement for reading changed files.</p>
+
+    <h2 id="compress">How do I compress the diff with the SuperCompress API?</h2>
+    <pre><code>curl -X POST https://www.supercompress.dev/api/v1/compress \
+  -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"context": "&lt;labelled diff lines&gt;", "query": "Which changes could break existing callers?"}'</code></pre>
+    <pre><code>import os
+import subprocess
+
+import requests
+
+API_URL = "https://www.supercompress.dev/api/v1/compress"
+BASE = "origin/main"  # compare against this branch
+QUESTION = "Which changes could break existing callers, and which new code paths have no test?"
+MAX_CHARS = 120000
+EXCLUDE = [":(exclude)*lock*", ":(exclude)*.min.js", ":(exclude)dist/", ":(exclude)vendor/"]
+
+
+def git(*args):
+    return subprocess.run(["git", *args], check=True, capture_output=True, text=True, encoding="utf-8").stdout
+
+
+def labelled_lines(base):
+    """One line per diff line, each starting with the file path."""
+    rng = f"{base}...HEAD"
+    files = git("diff", "--name-only", rng, "--", ".", *EXCLUDE).split("\n")
+    for path in filter(None, files):
+        diff = git("diff", "-U1", "--ignore-all-space", rng, "--", path)
+        for line in diff.split("\n"):
+            if line.startswith(("diff --git", "index ", "--- ", "+++ ")):
+                continue  # the label carries the path, so drop the file header
+            if line:
+                yield f"{path} | {line}"
+
+
+def js_len(s):
+    return len(s.encode("utf-16-le")) // 2  # the API counts UTF-16 units
+
+
+def segments(lines, max_chars):
+    buf, size = [], 0
+    for line in lines:
+        text = line + "\n"
+        if buf and size + js_len(text) &gt; max_chars:
+            yield "".join(buf)
+            buf, size = [], 0
+        buf.append(text)
+        size += js_len(text)
+    if buf:
+        yield "".join(buf)
+
+
+kept_parts = []
+for segment in segments(labelled_lines(BASE), MAX_CHARS):
+    kept = segment  # fail open: default to the original segment
+    try:
+        r = requests.post(
+            API_URL,
+            headers={"X-API-Key": os.environ["SUPERCOMPRESS_API_KEY"]},
+            json={"context": segment, "query": QUESTION},
+            timeout=60,
+        )
+        r.raise_for_status()
+        kept = r.json().get("compressed_text") or segment
+    except requests.RequestException:
+        pass
+    kept_parts.append(kept if kept.endswith("\n") else kept + "\n")
+
+print("".join(kept_parts))
+</code></pre>
+    <p>The <code>context</code> field is limited to 120,000 characters per call, counted as JavaScript string length (UTF-16 units). Longer input returns HTTP 422 with "context too long (120k max)". Empty context returns 422 with "context required". Send one segment per call. The example fails open: if the request errors, it keeps the original segment. SuperCompress is extractive and query-aware: it selects whole lines from the original rather than writing a summary, so the lines it keeps stay as written; preprocessing may rewrite JSON before lines are chosen. It works per line, which is why every diff line must carry its own file path. Lines that do not match the question are dropped. Each response reports <code>original_tokens</code> and <code>kept_tokens</code>, which are estimates, not provider-billed totals. When the saving would be too small the call passes through: <code>passthrough</code> is true and <code>compressed_text</code> is the original.</p>
+
+    <h2 id="question">What question should I send?</h2>
+    <p>Specific review questions work: "Which changes could break existing callers?", "Where is user input handled without validation?", "Which new code paths have no test?". A generic query like "summarize this text" returns a broader digest and <code>query_mode: "dump"</code>. Run one compression per question rather than one for "everything".</p>
+
+    <h2 id="when-not">When should I skip compression?</h2>
+    <p>Skip it for small diffs that already fit the window. When you need a line by line review of every change, review file by file instead. For security-sensitive changes where a missed line matters, compressed output tells you where to look, so read the full diff for those.</p>
+
+    <h2 id="measure">How do I know it helped?</h2>
+    <p>Log <code>original_tokens</code> and <code>kept_tokens</code> (estimates) per segment, compare the review comments with and without compression on a few real pull requests, and check each comment against the full diff.</p>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <h3>Will the model see the whole diff?</h3>
+    <p>No. It sees only the kept lines. Open the full diff for anything important; the compressed result is for finding what to look at, not a replacement for reading changed files.</p>
+    <h3>Does it work on binary files or renames?</h3>
+    <p>The API only sees text. <code>git diff</code> prints a one-line notice for binary files, which is kept or dropped like any other line. Renames show up as path changes in the labelled lines when you include those paths.</p>
+    <h3>Should I still exclude lockfiles?</h3>
+    <p>Yes. Pathspec exclusions with git remove lockfiles and generated trees for free and deterministically, so do that before any compression.</p>
+    <h3>Do I need a question?</h3>
+    <p>Yes, for a targeted result. Without a query, or with a generic one like "summarize this text", the API returns a broader digest and labels the response query_mode "dump".</p>
+    <p class="seo-cta-row">
+      <a class="df-nav-cta" href="/dashboard?signup=1">Get API key</a>
+      <a href="https://docs.supercompress.dev/api-reference">API reference</a>
+      <a href="https://www.supercompress.dev/compress-claude-code-tool-output">Claude Code tool output</a>
+    </p>
+  </div>
+</main>
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/blog" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Hosted context compression for coding agents and LLM apps.</p>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Coding agents</p>
+          <ul>
+            <li><a href="/reduce-claude-code-token-usage">Claude Code</a></li>
+            <li><a href="/reduce-cursor-token-usage">Cursor</a></li>
+            <li><a href="/reduce-codex-token-usage">Codex</a></li>
+            <li><a href="/coding-agent-token-usage">All coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Guides</p>
+          <ul>
+            <li><a href="/context-compression-for-coding-agents">Context compression for coding agents</a></li>
+            <li><a href="/mcp-token-reduction">MCP token reduction</a></li>
+            <li><a href="/claude-code-context-limit">Claude Code context limit</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+            <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents guide</a></li>
+            <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  </div>
+</footer>
+<script src="/assets/js/blog-editorial.js?v=1" defer></script>
+</body>
+</html>
