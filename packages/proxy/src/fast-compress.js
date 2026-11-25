@@ -51,8 +51,8 @@ function textDependencyReason(text) {
   }
   // A YAML alias (`*name`) only depends on text elsewhere when that `&name` anchor is defined in
   // a YAML position. ABNF repetition (`*DIGIT`) and emphasis in prose (RFCs, docs) are not aliases.
-  const anchors = new Set([...text.matchAll(/^\s*(?:-\s+)?(?:[\w-]+:\s+)?&([\w-]+)/gm)].map((match) => match[1]));
-  if (anchors.size && [...text.matchAll(/(?:^\s*(?:-\s+)?|:\s+|[[{,]\s*)\*([\w-]+)/gm)].some((match) => anchors.has(match[1]))) {
+  const anchors = new Set([...text.matchAll(/^[^\S\n]*(?:-[^\S\n]+)?(?:[\w-]+:[^\S\n]+)?&([\w-]+)/gm)].map((match) => match[1]));
+  if (anchors.size && [...text.matchAll(/(?:^[^\S\n]*(?:-[^\S\n]+)?|:[^\S\n]+|[[{,][^\S\n]*)\*([\w-]+)/gm)].some((match) => anchors.has(match[1]))) {
     return "yaml_reference_dependency";
   }
   return null;
@@ -100,18 +100,18 @@ function looksLikeJsonText(text) {
 function looksLikeHtml(structuralText) {
   // Markup documents have a root or are mostly tag-led lines. Prose with a stray `<CRLF>` or
   // `<absolute-URI>` line (RFCs, mail transcripts) is not HTML.
-  if (/^\s*<(?:\?xml\b|!doctype\b|html\b)/im.test(structuralText)) return true;
+  if (/^[^\S\n]*<(?:\?xml\b|!doctype\b|html\b)/im.test(structuralText)) return true;
   const nonEmpty = structuralText.split("\n").filter((line) => line.trim()).length;
   const tagLines = structuralText.match(HTML_TAG_LINE) || [];
   return tagLines.length >= 1 && tagLines.length >= nonEmpty * 0.1;
 }
 
-const HTML_TAG_LINE = /^\s*<(?:\?xml\b|!--|\/[a-z_][\w:.-]*\s*>|[a-z_][\w:.-]*(?:\s+[a-z_:][\w:.-]*(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*\s*\/?>)/gim;
+const HTML_TAG_LINE = /^[^\S\n]*<(?:\?xml\b|!--|\/[a-z_][\w:.-]*\s*>|[a-z_][\w:.-]*(?:\s+[a-z_:][\w:.-]*(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*\s*\/?>)/gim;
 
 function looksLikeCode(structuralText) {
   // Do not treat documents that merely contain `{` / `}` lines (JSON, diffs) as code.
-  return /^\s*(?:(?:export|async|public|private|static)\s+)*(?:function|class|interface|def|func|fn)\s/m.test(structuralText)
-    || /^\s*(?:(?:export\s+)?(?:const|let|var)\s+[\w$]+\s*[:=]|#include\s*[<"]|from\s+[\w.]+\s+import\b|import\s+(?:["'{*]|[\w$.]+\s*(?:$|from\b|,)))/m.test(structuralText);
+  return /^[^\S\n]*(?:(?:export|async|public|private|static)\s+)*(?:function|class|interface|def|func|fn)\s/m.test(structuralText)
+    || /^[^\S\n]*(?:(?:export\s+)?(?:const|let|var)\s+[\w$]+\s*[:=]|#include\s*[<"]|from\s+[\w.]+\s+import\b|import\s+(?:["'{*]|[\w$.]+\s*(?:$|from\b|,)))/m.test(structuralText);
 }
 
 const CODE_START = /^(?:(?:export|async|public|private|static|default)\s+)*(?:async\s+)?(?:function|class|interface|def|func|fn)\b|^(?:export\s+)?(?:const|let|var)\s+[\w$]+\s*=\s*(?:async\s+)?(?:function|\(|[\w$.]+\s*=>)/;
@@ -132,8 +132,22 @@ function codeUnits(text) {
   return units.filter((unit) => unit.length);
 }
 
-const SQL_STATEMENT_UPPER = /^\s*(?:SELECT\s+(?:DISTINCT\s+)?(?:\*|[\w."`\[\]]+(?:\([^)\n]*\))?(?:\s+(?:AS|as)\s+[\w"`]+)?)(?:\s*,\s*(?:\*|[\w."`\[\]]+(?:\([^)\n]*\))?(?:\s+(?:AS|as)\s+[\w"`]+)?))*\s+FROM\s+[\w."`\[\]]|(?:INSERT|MERGE)\s+INTO\b|UPDATE\s+[\w."`\[\]-]+\s+SET\b|DELETE\s+FROM\b|CREATE\s+(?:TABLE|VIEW|INDEX|FUNCTION)\b|WITH\s+[\w"`]+\s+AS\s*\()/m;
-const SQL_STATEMENT_LOWER = /^\s*(?:select\s+(?:distinct\s+)?(?:\*|[\w."`\[\]]+(?:\([^)\n]*\))?(?:\s+(?:AS|as)\s+[\w"`]+)?)(?:\s*,\s*(?:\*|[\w."`\[\]]+(?:\([^)\n]*\))?(?:\s+(?:AS|as)\s+[\w"`]+)?))*\s+from\s+[\w."`\[\]]|(?:insert|merge)\s+into\b|update\s+[\w."`\[\]-]+\s+set\b|delete\s+from\b|create\s+(?:table|view|index|function)\b|with\s+[\w"`]+\s+as\s*\()/m;
+const SQL_STATEMENT_UPPER = /^[^\S\n]*(?:SELECT\s+(?:DISTINCT\s+)?(?:\*|[\w."`\[\]]+(?:\([^)\n]*\))?(?:\s+(?:AS|as)\s+[\w"`]+)?)(?:\s*,\s*(?:\*|[\w."`\[\]]+(?:\([^)\n]*\))?(?:\s+(?:AS|as)\s+[\w"`]+)?))*\s+FROM\s+[\w."`\[\]]|(?:INSERT|MERGE)\s+INTO\b|UPDATE\s+[\w."`\[\]-]+\s+SET\b|DELETE\s+FROM\b|CREATE\s+(?:TABLE|VIEW|INDEX|FUNCTION)\b|WITH\s+[\w"`]+\s+AS\s*\()/m;
+const SQL_STATEMENT_LOWER = /^[^\S\n]*(?:select\s+(?:distinct\s+)?(?:\*|[\w."`\[\]]+(?:\([^)\n]*\))?(?:\s+(?:AS|as)\s+[\w"`]+)?)(?:\s*,\s*(?:\*|[\w."`\[\]]+(?:\([^)\n]*\))?(?:\s+(?:AS|as)\s+[\w"`]+)?))*\s+from\s+[\w."`\[\]]|(?:insert|merge)\s+into\b|update\s+[\w."`\[\]-]+\s+set\b|delete\s+from\b|create\s+(?:table|view|index|function)\b|with\s+[\w"`]+\s+as\s*\()/m;
+
+const INDENTED_LINE = /^\s+\S/;
+// Key/list/numbered line, or an indented line with code punctuation or a call. Same test as
+// /^\s*(?:[\w.-]+:\s|[\w.-]+:\s*$|[-*+]\s|\d+[.)]\s)|^\s+.*(?:[=;{}]|\w\([^)]*\))/, written to
+// stay linear: the regex form backtracks quadratically on one long indented line.
+const STRUCTURED_HEAD = /^\s*(?:[\w.-]+:\s|[\w.-]+:\s*$|[-*+]\s|\d+[.)]\s)/;
+function isStructuredLine(line) {
+  if (STRUCTURED_HEAD.test(line)) return true;
+  if (!/^\s/.test(line)) return false;
+  const rest = line.slice(1);
+  if (/[=;{}]/.test(rest)) return true;
+  const call = rest.search(/\w\(/);
+  return call >= 0 && rest.indexOf(")", call + 2) >= 0;
+}
 
 function unitsFor(text) {
   if (textDependencyReason(text)) return [text];
@@ -210,7 +224,7 @@ function unitsFor(text) {
   // JSON-shaped text stays opaque here; documentFor may still split large arrays/objects.
   // Bracketed prose like "[0] result ..." is NOT JSON and must line-split.
   if (looksLikeJsonText(text)) return [text];
-  if (/^\s*(?:BEGIN(?:\s+(?:TRANSACTION|WORK))?|START\s+TRANSACTION)\s*;/im.test(structuralText)) return [text];
+  if (/^[^\S\n]*(?:BEGIN(?:\s+(?:TRANSACTION|WORK))?|START\s+TRANSACTION)\s*;/im.test(structuralText)) return [text];
   // Real SQL statements stay atomic; comment-heavy migration/result dumps line-split.
   // SQL keywords are written all upper or all lower case; "Select a counter … from" is prose.
   if (SQL_STATEMENT_UPPER.test(structuralText) || SQL_STATEMENT_LOWER.test(structuralText)) {
@@ -305,35 +319,45 @@ function unitsFor(text) {
   }
   const units = [];
   let current = [];
+  // Whether the block so far has an indented line / a structured line. Tracked as lines are
+  // added: rescanning the block on every blank line is quadratic on blank-heavy input.
+  let indented = false;
+  let structured = false;
+  const add = (line) => {
+    current.push(line);
+    if (!indented && INDENTED_LINE.test(line)) indented = true;
+    if (!structured && isStructuredLine(line)) structured = true;
+  };
+  const flush = () => {
+    units.push(current.join("\n"));
+    current = []; indented = false; structured = false;
+  };
   let fence = null;
   let diff = false;
   for (const line of lines) {
-    if (diff) { current.push(line); continue; }
+    if (diff) { add(line); continue; }
     const marker = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
     if (fence) {
-      current.push(line);
+      add(line);
       if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length && !marker[2].trim()) {
-        units.push(current.join("\n")); current = []; fence = null;
+        flush(); fence = null;
       }
       continue;
     }
     if (marker) {
-      if (current.length) units.push(current.join("\n"));
-      current = [line]; fence = marker[1]; continue;
+      if (current.length) flush();
+      add(line); fence = marker[1]; continue;
     }
     if (/^(diff --git |--- )/.test(line)) {
-      if (!diff && current.length) { units.push(current.join("\n")); current = []; }
+      if (!diff && current.length) flush();
       diff = true;
     }
-    if (!diff && !line.trim() && current.some((entry) => /^\s+\S/.test(entry)) &&
-      !current.some((entry) => /^\s*(?:[\w.-]+:\s|[\w.-]+:\s*$|[-*+]\s|\d+[.)]\s)|^\s+.*(?:[=;{}]|\w\([^)]*\))/.test(entry))) {
-      current.push(line);
-      units.push(current.join("\n")); current = []; continue;
+    if (!diff && !line.trim() && indented && !structured) {
+      add(line);
+      flush(); continue;
     }
-    if (!diff && !/^\s+\S|^\s*$/.test(line) && current.length) {
-      units.push(current.join("\n")); current = [];
-    }
-    current.push(line);
+    if (!diff && !/^\s+\S|^\s*$/.test(line) && current.length) flush();
+    add(line);
   }
   if (current.length) units.push(current.join("\n"));
   return explodeFencedDelimitedTables(units);
@@ -894,9 +918,9 @@ function isBaitUnit(unit) {
   // "(WRONG)", "(WRONG — ignore)", "(IGNORE)"
   if (/\(\s*(?:WRONG\d*|IGNORE)\b/i.test(unit)) return true;
   // "# Ignore:", "; Ignore:", "% Ignore:"
-  if (/(?:^|\n)\s*[#;%]*\s*Ignore\s*:/i.test(unit)) return true;
+  if (/(?:^|\n)[^\S\n]*(?:[#;%]+[^\S\n]*)?Ignore\s*:/i.test(unit)) return true;
   // Explicit decoy tables / fake peer records.
-  if (/(?:^|\n)\s*\[[^\]]*_decoy\]/i.test(unit) || /(?:^|\n)\s*\w+_decoy\s*=/i.test(unit)) return true;
+  if (/(?:^|\n)[^\S\n]*\[[^\]]*_decoy\]/i.test(unit) || /(?:^|\n)[^\S\n]*\w+_decoy\s*=/i.test(unit)) return true;
   if (/\bSTR-FAKE-\d+\b|\bPART-FAKE-\d+\b/i.test(unit)) return true;
   if (/\bbait only\b/i.test(unit)) return true;
   if (/\bfabricated\b/i.test(unit)) return true;
@@ -941,6 +965,9 @@ function queryMatches(unit, queryTerms) {
   for (const term of queryTerms) {
     for (const suf of decomposeReferents(term)) referentParts.add(suf);
   }
+  let maxJoinLength = 0;
+  for (const term of queryTerms) maxJoinLength = Math.max(maxJoinLength, term.length);
+  for (const part of referentParts) maxJoinLength = Math.max(maxJoinLength, part.length);
   const pattern = /[\p{L}\p{N}_]+(?:[./:-][\p{L}\p{N}_]+)*/gu;
   for (const match of unit.toLowerCase().matchAll(pattern)) {
     const lexeme = match[0];
@@ -974,9 +1001,13 @@ function queryMatches(unit, queryTerms) {
       }
     }
     // Rejoin path segments: pod/payments-api-7f9c2 ↔ payments-api
+    // A run longer than the longest term cannot match, so stop there: without the bound a
+    // single long token (a.a.a…) costs parts³ and one 4k-character line stalls the request.
     for (let start = 0; start < parts.length; start += 1) {
-      for (let end = start + 1; end <= parts.length; end += 1) {
-        const joined = parts.slice(start, end).join("-");
+      let joined = "";
+      for (let end = start; end < parts.length; end += 1) {
+        joined = end === start ? parts[start] : `${joined}-${parts[end]}`;
+        if (joined.length > maxJoinLength) break;
         if (joined.length > 2 && queryTerms.has(joined)) matches.add(joined);
         if (joined.length > 2 && referentParts.has(joined)) matches.add(joined);
       }
@@ -1123,7 +1154,7 @@ function idFamily(id) {
 function coreferenceIndices(units, selected, options = {}) {
   if (selected.size === 0 || units.length < 4) return [];
   // Include lowerCamel ids with digits (castPressure0) — not only PascalCase / kebab / snake.
-  const idPattern = /\b[A-Z]{1,5}[_-][A-Z0-9][\w.-]*\b|\b[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+\b|\b[a-z]+(?:_[a-z0-9]+)+\b|\b[A-Z][a-z]+(?:[A-Z][a-zA-Z0-9]*)+\b|\b[a-z]+(?:[A-Z][a-zA-Z0-9]*)+\d*\b|\$\d+(?:\.\d+)?[MKB]?\b|\b(?:ghcr|gcr|docker)\.io\/[\w./-]+:[\w.-]+\b/g;
+  const idPattern = /\b[A-Z]{1,5}[_-][A-Z0-9][\w.-]*\b|\b[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+\b|\b[a-z]+(?:_[a-z0-9]+)+\b|\b[A-Z][a-z]+[A-Z][a-zA-Z0-9]*\b|\b[a-z]+[A-Z][a-zA-Z0-9]*\b|\$\d+(?:\.\d+)?[MKB]?\b|\b(?:ghcr|gcr|docker)\.io\/[\w./-]+:[\w.-]+\b/g;
   const frequencies = new Map();
   const unitIds = units.map((unit) => {
     const ids = new Set();
@@ -1275,11 +1306,11 @@ function languageBiasIndices(units, query) {
   }
   if (/\b(?:python|def)\b/i.test(query)) {
     for (let index = 0; index < units.length; index += 1) {
-      if (/^\s*def\s+\w+/m.test(units[index])) selected.push(index);
+      if (/^[^\S\n]*def\s+\w+/m.test(units[index])) selected.push(index);
     }
   } else if (/\b(?:golang|go func|\bfunc\s)/i.test(query)) {
     for (let index = 0; index < units.length; index += 1) {
-      if (/^\s*func\s+\w+/m.test(units[index])) selected.push(index);
+      if (/^[^\S\n]*func\s+\w+/m.test(units[index])) selected.push(index);
     }
   }
   return selected;
@@ -1650,7 +1681,7 @@ function compressCore(context, query = "", options = {}) {
     const biasSet = new Set(langBias);
     for (const index of [...selected]) {
       if (biasSet.has(index) || (document.requiredIndices || []).includes(index)) continue;
-      const looksCode = /^\s*(?:def|func|public\s+class|class)\s/m.test(units[index]);
+      const looksCode = /^[^\S\n]*(?:def|func|public\s+class|class)\s/m.test(units[index]);
       if (looksCode && !biasSet.has(index)) selected.delete(index);
     }
     for (const index of langBias) selected.add(index);
@@ -1738,7 +1769,7 @@ const TEST_SUMMARY = [
 ];
 const EXCEPTION_LINE = /^(?:[A-Za-z_][\w.]*(?:Error|Exception|Exit|Interrupt|Warning)|AssertionError|E\s{3}\S.*)(?::|$)/;
 // A hit names a file: a path with a slash or a file extension. Log timestamps ("09:00:01") are not hits.
-const SEARCH_HIT = /^(?:\/?[\w.@+-]+(?:\/[\w.@+-]+)+ \(\d+ match(?:es)?\)|Line \d+:.*|(?:\.?\/?[\w.@+-]+\/)*[\w@+-][\w.@+-]*\.[A-Za-z][\w]{0,7}:\d+[:-].*)$/;
+const SEARCH_HIT = /^(?:\/?[\w.@+-]+(?:\/[\w.@+-]+)+ \(\d+ match(?:es)?\)|Line \d+:.*|(?:\/?[\w.@+-]+\/)*[\w@+-][\w.@+-]*\.[A-Za-z][\w]{0,7}:\d+[:-].*)$/;
 const SEARCH_FRAME = /^(?:Found \d+ (?:matches|files?)|End of matches|No matches found|Found \d+ files? matching)/i;
 const NUMBERED = /^\s*(\d+)(?::|\t| \|)/;
 const BLOCK_HEAD = /^\s*(?:async\s+def|def|class|function|func|fn|pub\s+fn|impl|interface|type|(?:public|private|protected|static|export|const|let|var)\b.*[({=]\s*$)/;
