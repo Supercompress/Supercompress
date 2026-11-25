@@ -10,6 +10,27 @@ const vm = require("vm");
 const { compressViaNeuralKeep, neuralKeepEnabled } = require("./neural-keep");
 const { enforceCompressionSafety } = require("./compression-safety");
 
+let fastEngine = null;
+
+// The Fast extractive engine (packages/proxy/src/fast-compress.js) is the hosted default.
+// SC_COMPRESS_ENGINE=legacy (or neural) restores the previous path for rollback: Neural Keep
+// when SC_NEURAL_KEEP_URL is set, else the compiler.
+function fastEngineEnabled() {
+  const choice = String(process.env.SC_COMPRESS_ENGINE || "fast").trim().toLowerCase();
+  return !["legacy", "neural", "neural-keep", "compiler"].includes(choice);
+}
+
+function getFastEngine() {
+  if (fastEngine) return fastEngine;
+  fastEngine = require("../../packages/proxy/src/fast-compress.js");
+  return fastEngine;
+}
+
+function compressFast(context, query) {
+  // The safety layer recounts tokens and turns low-savings output into passthrough.
+  return enforceCompressionSafety(context, getFastEngine().compress(context, query || ""));
+}
+
 let engine = null;
 let model = null;
 
@@ -71,6 +92,7 @@ function compress(context, query, budgetRatio = 0.35) {
 }
 
 async function compressAdaptive(context, query) {
+  if (fastEngineEnabled()) return compressFast(context, query);
   // Hosted Neural Keep (cross-encoder) when SC_NEURAL_KEEP_URL is set.
   let neuralPassthrough = null;
   if (neuralKeepEnabled()) {
@@ -232,6 +254,8 @@ module.exports = {
   compress,
   compressAdaptive,
   compressCCR,
+  compressFast,
+  fastEngineEnabled,
   getEngine,
   getModel,
   simpleHash,

@@ -1,3 +1,5 @@
+// These tests cover the legacy Neural Keep / compiler path; the Fast engine is the default.
+process.env.SC_COMPRESS_ENGINE = "legacy";
 const assert = require("node:assert/strict");
 const { test, after } = require("node:test");
 const { installNeuralKeepMock } = require("./test-neural-mock");

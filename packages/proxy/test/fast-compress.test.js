@@ -329,7 +329,7 @@ test("soft budgets never truncate matching structures", () => {
 });
 
 test("JSON extraction keeps complete objects, wrappers and unrelated metadata", () => {
-  const entries = Array.from({ length: 50 }, (_, index) => ({ id: `account_${index}`, config: { contact: index === 27 ? "answer@example.test" : "other@example.test", enabled: false }, roles: ["reader", "writer"] }));
+  const entries = Array.from({ length: 50 }, (_, index) => ({ id: `account_${index}`, config: { contact: index === 27 ? "answer@example.com" : "other@example.com", enabled: false }, roles: ["reader", "writer"] }));
   const input = JSON.stringify({ data: entries, has_more: false, total: 50 }, null, 2);
   const output = JSON.parse(compress(input, "account_27").compressed_text);
   assert.deepEqual(output.data.find((entry) => entry.id === "account_27"), entries[27]);
@@ -529,7 +529,7 @@ test("git commit headers stay glued to their message bodies", () => {
   ].join("\n"));
   commits[7] = [
     "commit 9e4c1a2b7d6f0e9a8b7c6d5e4f3a2b1c0d9e8f7a",
-    "Author: priya <priya@corp.dev>",
+    "Author: priya <priya@corp.example.com>",
     "Date:   Tue Oct 7 09:14:00 2026 +0000",
     "",
     "    payments: switch default currency from USD to EUR for EU tenants",
@@ -597,7 +597,7 @@ test("accounting retains the existing lexical counter including blank lines", ()
 });
 
 test("inline angle-bracket references do not collapse prose or Markdown sections", () => {
-  for (const reference of ["<https://example.test/guide>", "<help@example.test>", "`vector<entry>`", "`left < right && right > zero`", "an inline <em>example</em>"]) {
+  for (const reference of ["<https://example.test/guide>", "<help@example.com>", "`vector<entry>`", "`left < right && right > zero`", "an inline <em>example</em>"]) {
     for (const heading of ["", "## "]) {
       const sections = Array.from({ length: 18 }, (_, index) => `${heading}Topic ${index}\n  Independent explanation for topic ${index}.\n`);
       sections[2] += `  Reference: ${reference}\n`;
@@ -818,7 +818,7 @@ test("parser units map monotonically to contiguous exact source substrings", () 
   const inputs = [
     "same\nother\nsame\nlast",
     "\n   First paragraph.\n   Its continuation.\n\n   Second paragraph.\n\n   First paragraph.\n   Its continuation.\n",
-    "# Guide\nScope.\n## Links\nSee <https://example.test> or <help@example.test>.\n## Code\n```js\nconst value = false;\n```\n## End\nDone.\n",
+    "# Guide\nScope.\n## Links\nSee <https://example.test> or <help@example.com>.\n## Code\n```js\nconst value = false;\n```\n## End\nDone.\n",
     'name,notes\nfirst,"multiline\nrecord"\nsecond,plain\n',
     "services:\n  first:\n    enabled: false\n\n  second:\n    enabled: true\n",
     "Intro\n\n```xml\n<root>\n<child/>\n</root>\n```\nTail\n",

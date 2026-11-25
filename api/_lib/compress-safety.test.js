@@ -59,10 +59,24 @@ test("quota status warns near and at zero, never for comped accounts", () => {
 
 test("dump mode keeps about half of a research page the queryless path reduced to a header", async () => {
   const page = fs.readFileSync(path.join(__dirname, "..", "..", "tests", "fixtures", "rfc9562-excerpt.txt"), "utf8");
-  const anchored = await compressAdaptive(page, "Summarize this context.");
-  const dump = compress(page, "Summarize this context.", DUMP_KEEP_RATIO);
-  assert.ok(dump.kept_tokens >= dump.original_tokens * 0.4, `dump kept ${dump.kept_tokens}/${dump.original_tokens}`);
-  assert.ok(dump.kept_tokens > anchored.kept_tokens * 10);
+  const previous = process.env.SC_COMPRESS_ENGINE;
+  process.env.SC_COMPRESS_ENGINE = "legacy";
+  try {
+    const anchored = await compressAdaptive(page, "Summarize this context.");
+    const dump = compress(page, "Summarize this context.", DUMP_KEEP_RATIO);
+    assert.ok(dump.kept_tokens >= dump.original_tokens * 0.4, `dump kept ${dump.kept_tokens}/${dump.original_tokens}`);
+    assert.ok(dump.kept_tokens > anchored.kept_tokens * 10);
+  } finally {
+    if (previous === undefined) delete process.env.SC_COMPRESS_ENGINE;
+    else process.env.SC_COMPRESS_ENGINE = previous;
+  }
+});
+
+test("the Fast engine leaves a queryless research page whole instead of cutting it to a header", async () => {
+  const page = fs.readFileSync(path.join(__dirname, "..", "..", "tests", "fixtures", "rfc9562-excerpt.txt"), "utf8");
+  const result = await compressAdaptive(page, "Summarize this context.");
+  assert.equal(result.compressed_text, page);
+  assert.equal(result.compression_safety.status, "passthrough");
 });
 
 test("hosted MCP returns one copy of the digest and does not echo passthroughs", () => {

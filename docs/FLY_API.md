@@ -55,6 +55,20 @@ The API smoke verifies JSON health, Fly provenance (`X-SC-Host: fly`), authentic
 Do **not** re-add `api.supercompress.dev` as a Vercel project domain.
 `npm run deploy:prod` deploys only the website; it must not reclaim the API hostname.
 
+## Compression engine
+
+`/v1/compress`, the hosted MCP, the demo and the arena use the Fast extractive engine
+(`packages/proxy/src/fast-compress.js`) by default. It runs in-process in milliseconds and
+does not call Neural Keep. To roll back to the previous path (Neural Keep when
+`SC_NEURAL_KEEP_URL` is set, otherwise the compiler) without a redeploy of code:
+
+```bash
+flyctl secrets set SC_COMPRESS_ENGINE=legacy -a supercompress-api
+```
+
+Unset it to return to the Fast engine. Generic queries ("Summarize this context.") still
+take the budgeted digest path, and CCR still uses the compiler.
+
 ## Local
 
 ```bash
