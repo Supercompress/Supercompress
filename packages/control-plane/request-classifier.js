@@ -23,6 +23,13 @@
  *   3 reasoning hard work (plan, debug, review, migrations, edge cases)
  */
 
+const { difficultyScore: scoreDifficulty } = require("./difficulty-model");
+
+// Learned difficulty thresholds: the 50th and 80th percentile of route-bench dev scores.
+const LEARNED_CATEGORIES = new Set(["chat", "unclassified_task"]);
+const LEARNED_MEDIUM = 0.16;
+const LEARNED_HARD = 0.38;
+const LEARNED_MIN_HARD_CHARS = 200;
 const MAX_MESSAGES = 256;
 const MAX_PARTS = 128;
 const MAX_TASK_CHARS = 16_000;
@@ -393,6 +400,20 @@ function classifyRequest(request = {}) {
 
   const graded = gradeTask(taskText || "");
   for (const reason of graded.reasons) if (!reasons.includes(reason)) reasons.push(reason);
+  // Asks the task rules do not recognise (general questions, unclassified work) are graded by the
+  // learned difficulty model instead: on route-bench the rules alone route these no better than
+  // chance. Recognised coding tasks and greetings keep the rule tier.
+  let difficultyScore = null;
+  if (LEARNED_CATEGORIES.has(graded.category) && !graded.reasons.includes("greeting") && taskSource !== "context" &&
+      taskText && taskText.trim().split(/\s+/).length >= 3) {
+    difficultyScore = scoreDifficulty(taskText);
+    let learned = difficultyScore >= LEARNED_HARD ? 3 : difficultyScore >= LEARNED_MEDIUM ? 2 : graded.tier === 0 ? 0 : 1;
+    // Under 200 characters the model is extrapolating (route-bench dev p10 is 272), so it may
+    // pick medium or complex but not the reasoning tier.
+    if (learned === 3 && taskText.trim().length < LEARNED_MIN_HARD_CHARS) learned = 2;
+    graded.tier = learned;
+    reasons.push(`learned_difficulty_${COMPLEXITY_NAMES[learned]}`);
+  }
   let tier = Math.max(floor, graded.tier);
 
   // Agent loop since the task turn: repeated failing tool results mean the
@@ -431,6 +452,7 @@ function classifyRequest(request = {}) {
     complexity: COMPLEXITY_NAMES[tier],
     difficulty: DIFFICULTY_NAMES[tier],
     category: graded.category,
+    difficulty_score: difficultyScore == null ? null : Number(difficultyScore.toFixed(3)),
     task_source: taskSource,
     reasons: reasons.slice(0, 12),
     required_capabilities: [...capabilities].sort(),
