@@ -10,8 +10,10 @@ image as `supercompress-api`, with `SC_API_SURFACE=gateway`, so it serves only g
 Model spend comes out of the account's prepaid SuperCompress credit balance, the same balance
 `/v1/compress` burns (`api/_lib/cp-billing.js`):
 
-1. Admission prices the worst case (requested model, every message, `max_tokens` or 4096
-   output tokens) and places a hold on the balance. No credit means 402 `credits_required`;
+1. Admission prices the worst case (requested model, or the dearest model for `auto`; every
+   message; `max_tokens`, else the model's default cap: 16,384 for GPT-6 reasoning models,
+   4,096 otherwise, which is also sent upstream; a fallback model gets its own default but
+   never more than the hold covers) and places a hold on the balance. No credit means 402 `credits_required`;
    free accounts cannot spend on models.
 2. Each account has a daily gateway spend cap: `SC_CP_DAILY_CAP_USD` (default $25), or the
    per-account `sc_cp_daily_cap_usd` claim. Today's spend is the `sc_cp_day` claim.
@@ -21,6 +23,33 @@ Model spend comes out of the account's prepaid SuperCompress credit balance, the
 
 Holds and the idempotency replay cache are in-process: run **one machine**. Scaling out needs
 a shared hold store first.
+
+## How `model: "auto"` routes
+
+A request naming a catalog model gets that model. `model: "auto"` asks the gateway to pick:
+
+1. `packages/control-plane/request-classifier.js` grades the task the person asked for, not the
+   request size. It skips harness text (system prompts, `<system-reminder>`, tool output),
+   inherits the task through "keep going" turns, and escalates after repeated tool failures or
+   `reasoning_effort: "high"`. Tiers: 1 quick (rename, docs, commit), 2 ordinary (features,
+   tests, wiring, unclear asks), 3 hard (debug, plan, migrate, review, concurrency, edge cases).
+2. The router serves it from the cheapest viable model in the lowest catalog `tier` at or above
+   that grade (`catalog.js` documents the bands). This holds under every policy strategy:
+   `prefer_order`, `fixed` and `weighted` choose in their own way, but only among models that
+   clear the grade. Fallbacks stay in that tier, then go up (operator `fallbacks` first within
+   each tier); never down. If nothing at the grade is viable the strongest viable tier serves it and the
+   decision carries `below_request_tier: true`.
+3. The trace records `route_request_tier`, `route_category` and `route_band_tier`.
+
+Operators can turn grading off with `"routing": {"complexity_routing": false}` in
+`SC_CP_POLICY` (`"false"` as a string also works); `auto` then uses the policy strategy
+(default `cheapest_fit`) over every allowed model. Before enabling a provider, check its
+models' `tier`: a model in tier 3 receives the hardest tasks. Only OpenAI and Anthropic
+flagships (Astra, Opus, Fable 5.1 and 5.2) are tier 3 today; Gemini 4 Argon, Mistral Large, Grok 4.7 and
+DeepSeek V4 Pro are capped at tier 2 until they pass an eval on hard coding work.
+
+Offline check: `node scripts/bench_router_autorouter/run.js` (routing decisions and list-price
+cost only; no model calls, so it says nothing about answer quality or latency).
 
 ## Environment
 
@@ -32,11 +61,12 @@ Config (`fly.gateway.toml`, checked by `node scripts/check-control-plane-release
 | `NODE_ENV` | `production` | required |
 | `SUPERCOMPRESS_USE_FIRESTORE` | `0` | required; billing runs on Auth claims. Must not be a secret |
 | `SC_CP_GATEWAY` | `1` | required |
-| `SC_CP_LEDGER`, `SC_CP_TRACE`, `SC_CP_ROUTE` | `1` | approved; each needs `SC_CP_GATEWAY` |
+| `SC_CP_LEDGER`, `SC_CP_TRACE`, `SC_CP_ROUTE` | `1` | approved; each needs `SC_CP_GATEWAY`. With routing on, a request naming a catalog model is served by that model (operator `fallbacks` only on provider failure); only `model: "auto"` lets the policy strategy pick. Unknown models are a 400 |
 | `SC_CP_RESERVE`, `SC_CP_ENTERPRISE`, `SC_CP_OPS` | `0` | not approved for launch |
 | `SC_CP_DAILY_CAP_USD` | `25` | default per-account daily cap |
 | `SC_CP_NK_BUDGET_MS` | `1500` | Neural Keep budget inside a request; then the local compiler |
-| `SC_CP_UPSTREAM_TIMEOUT_MS` | `300000` | whole-response timeout per provider call |
+| `SC_CP_UPSTREAM_TIMEOUT_MS` | `290000` | whole-response timeout per provider call |
+| `SC_SHUTDOWN_GRACE_MS` | `295000` | drain window after SIGTERM: above the upstream timeout, below Fly `kill_timeout` (300s), so streams running at deploy time finish and settle |
 | `SC_CP_POLICY` / `SC_CP_POLICY_FILE` | optional | gateway-wide policy (allowlist, strategy, fallbacks, ceilings) |
 | `SC_CP_CATALOG` / `SC_CP_CATALOG_FILE` | optional | extra or overriding catalog models |
 

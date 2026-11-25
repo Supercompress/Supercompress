@@ -3,6 +3,14 @@
 const { callStubProvider } = require("./stub");
 const { createOpenAIProvider } = require("./openai");
 const { createAnthropicProvider } = require("./anthropic");
+
+/** ANTHROPIC_BASE_URL is the API root (like the SDKs: https://host or https://host/v1). */
+function anthropicMessagesUrl(base) {
+  const b = String(base || "").trim().replace(/\/+$/, "");
+  if (!b) return undefined;
+  if (/\/v1\/messages$/.test(b)) return b;
+  return /\/v1$/.test(b) ? `${b}/messages` : `${b}/v1/messages`;
+}
 const registry = require("./registry");
 
 /**
@@ -65,7 +73,7 @@ function createProvider(options = {}) {
     if (spec.kind === "anthropic") {
       fn = createAnthropicProvider({
         apiKey: keys.anthropic || registry.apiKeyFor("anthropic", env) || undefined,
-        baseUrl: options.anthropicBaseUrl,
+        baseUrl: options.anthropicBaseUrl || anthropicMessagesUrl(env.ANTHROPIC_BASE_URL),
         fetchImpl: options.fetchImpl,
       });
     } else {
@@ -111,6 +119,7 @@ function createProvider(options = {}) {
 }
 
 module.exports = {
+  anthropicMessagesUrl,
   createProvider,
   resolveProviderName,
   upstreamModelFor,

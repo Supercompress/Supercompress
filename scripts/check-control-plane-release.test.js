@@ -41,6 +41,14 @@ test("Fly secrets cannot override the release gate", () => {
     checkGatewayRelease({}, gatewayToml);
     assert.throws(() => checkGatewayRelease({ SC_CP_ENTERPRISE: "1" }, gatewayToml), /not approved/);
     assert.throws(
+      () => checkGatewayRelease({}, gatewayToml.replace("kill_timeout = 300", "kill_timeout = 120")),
+      /below kill_timeout/
+    );
+    assert.throws(
+      () => checkGatewayRelease({}, gatewayToml.replace('SC_CP_UPSTREAM_TIMEOUT_MS = "290000"', 'SC_CP_UPSTREAM_TIMEOUT_MS = "300000"')),
+      /below SC_SHUTDOWN_GRACE_MS/
+    );
+    assert.throws(
       () => checkGatewayRelease({}, gatewayToml.replace('SC_CP_GATEWAY = "1"', 'SC_CP_GATEWAY = "0"')),
       /requires SC_CP_GATEWAY|must be on/
     );

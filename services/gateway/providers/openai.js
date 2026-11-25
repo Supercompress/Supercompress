@@ -7,7 +7,7 @@ const DEFAULT_URL = "https://api.openai.com/v1/chat/completions";
 
 /** OpenAI reasoning models take max_completion_tokens and reject max_tokens. */
 function wantsMaxCompletionTokens(model) {
-  return /^(o[0-9]|gpt-5)/i.test(String(model || ""));
+  return /^(o[0-9]|gpt-[56])/i.test(String(model || ""));
 }
 
 function buildOpenAIBody(ctx, upstreamModel, providerName = "openai") {

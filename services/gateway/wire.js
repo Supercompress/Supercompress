@@ -32,6 +32,7 @@ const {
   priceUsd,
 } = require("../../packages/control-plane");
 const { computeRouteEconomics, attachEconomicsToTrace } = require("../../packages/control-plane/economics");
+const { classifyRequest } = require("../../packages/control-plane/request-classifier");
 const { createRateLimitStore, rateLimitKey } = require("../../packages/control-plane/rate-limit");
 const { createHealthTracker } = require("../../packages/control-plane/health-tracker");
 
@@ -60,6 +61,13 @@ function estimateInputTokens(normalized) {
   if (normalized?.tools) chars += JSON.stringify(normalized.tools).length;
   return Math.ceil(chars / 4);
 }
+
+/**
+ * The model name that opts a request into routing. Any catalog model the client names is
+ * served by that model (operator fallbacks only on provider failure), never swapped for a
+ * cheaper one.
+ */
+const AUTO_MODEL = "auto";
 
 /** Output tokens a hold is sized for when the client sets no max_tokens. */
 const DEFAULT_OUTPUT_TOKENS = 4096;
@@ -273,8 +281,10 @@ function createWiredGateway(options = {}) {
       }
 
       // Unknown models cannot be priced, so they cannot be billed: reject up front.
+      // "auto" is the one name that is not a model: it asks the router to pick.
       const requestedEntry = catalog.get?.(ctx.normalized?.model);
-      if (!requestedEntry && !enableRouting) {
+      const wantsAuto = enableRouting && String(ctx.normalized?.model || "") === AUTO_MODEL;
+      if (!requestedEntry && !wantsAuto) {
         ctx.aborted = true;
         ctx.error = {
           class: "invalid_request",
@@ -285,7 +295,32 @@ function createWiredGateway(options = {}) {
         return ctx;
       }
       ctx.input_tokens_est = estimateInputTokens(ctx.normalized);
-      const outTok = Number(ctx.normalized?.max_tokens) > 0 ? Number(ctx.normalized.max_tokens) : DEFAULT_OUTPUT_TOKENS;
+      // "auto": grade the task the person asked for (not the request size) before compression
+      // touches anything, so the router can serve it from the cheapest tier that clears it.
+      if (wantsAuto) {
+        ctx.request_class = classifyRequest({
+          messages: ctx.normalized.messages,
+          tools: ctx.normalized.tools,
+          tool_choice: ctx.normalized.params?.tool_choice,
+          reasoning_effort: ctx.normalized.params?.reasoning_effort,
+          reasoning: ctx.normalized.raw?.reasoning,
+          thinking: ctx.normalized.raw?.thinking,
+        });
+      }
+      // A request with no max_tokens is capped at the size the hold covers, so every provider
+      // stops where billing does (OpenAI-compatible APIs otherwise generate without a limit).
+      // Reasoning models carry a larger default in the catalog.
+      // "auto" does not know its model yet: hold for the largest default any model could get,
+      // then cap each attempt at its own model's default (see the provider stage).
+      const defaultOut = requestedEntry
+        ? requestedEntry.default_output_tokens || DEFAULT_OUTPUT_TOKENS
+        : Math.max(DEFAULT_OUTPUT_TOKENS, ...catalog.models.map((m) => Number(m.default_output_tokens) || 0));
+      if (ctx.normalized && !(Number(ctx.normalized.max_tokens) > 0)) {
+        ctx.normalized.max_tokens = defaultOut;
+        ctx.max_tokens_defaulted = true;
+        ctx.max_tokens_held = defaultOut;
+      }
+      const outTok = Number(ctx.normalized?.max_tokens) > 0 ? Number(ctx.normalized.max_tokens) : defaultOut;
       let estimated;
       if (ctx.estimated_max_usd != null) {
         estimated = Number(ctx.estimated_max_usd);
@@ -335,7 +370,8 @@ function createWiredGateway(options = {}) {
       }
 
       ctx.admission = evaluateAdmission(policy, {
-        model: ctx.normalized?.model,
+        // "auto" is checked per candidate by the router (allow/deny lists apply there).
+        model: wantsAuto ? null : ctx.normalized?.model,
         estimated_usd: estimated,
         rpm_used: ctx.rpm_used,
         tpm_used: ctx.tpm_used,
@@ -562,15 +598,31 @@ function createWiredGateway(options = {}) {
         Number(ctx.normalized?.max_tokens) > 0 ? Number(ctx.normalized.max_tokens) : undefined;
       const liveHealth = { ...staticHealth, ...healthTracker.healthMap() };
 
+      // A named model is honoured; only "auto" lets the policy strategy choose.
+      // "auto" uses complexity routing unless the operator policy turns it off.
+      const isAuto = String(ctx.normalized?.model || "") === AUTO_MODEL;
+      const routingOverride = !isAuto
+        ? { strategy: "fixed" }
+        : { complexity_routing: policy.routing?.complexity_routing !== false };
+      const requestClass = isAuto ? ctx.request_class || null : null;
+      const requireCaps = [
+        ...new Set([
+          ...(ctx.require_capabilities || policy.routing?.require_capabilities || []),
+          ...(requestClass?.required_capabilities || []),
+        ]),
+      ];
+
       // Always compute compress→route economics (moat proof), even if routing is passthrough.
       const economics = computeRouteEconomics({
+        routing: routingOverride,
         original_tokens: original,
         retained_tokens: retained,
         requested_model: ctx.normalized?.model,
         policy,
         catalog: catalog.models,
         health: liveHealth,
-        require_capabilities: ctx.require_capabilities || policy.routing?.require_capabilities,
+        require_capabilities: requireCaps,
+        request_tier: requestClass?.tier,
         max_usd_per_request: ctx.estimated_max_usd ?? policy.max_usd_per_request,
         output_tokens_est: outTokEst,
       });
@@ -610,14 +662,24 @@ function createWiredGateway(options = {}) {
       // Post-compress retained size — never pre-compress estimate.
       const decision = selectRoute({
         requested_model: ctx.normalized?.model,
+        routing: routingOverride,
         retained_tokens: retained,
         policy,
         catalog: catalog.models,
         health: liveHealth,
-        require_capabilities: ctx.require_capabilities || policy.routing?.require_capabilities,
+        require_capabilities: requireCaps,
+        request_tier: requestClass?.tier,
         max_usd_per_request: ctx.estimated_max_usd ?? policy.max_usd_per_request,
         output_tokens_est: outTokEst,
       });
+      if (requestClass) {
+        decision.request_class = {
+          tier: requestClass.tier,
+          difficulty: requestClass.difficulty,
+          category: requestClass.category,
+          reasons: requestClass.reasons,
+        };
+      }
       ctx.route_decision = decision;
 
       if (ctx.compression) {
@@ -629,6 +691,9 @@ function createWiredGateway(options = {}) {
               ...(ctx.compression.meta || {}),
               route_reason: decision.reason,
               route_strategy: decision.strategy,
+              ...(requestClass
+                ? { route_request_tier: requestClass.tier, route_category: requestClass.category, route_band_tier: decision.band_tier }
+                : {}),
             },
           },
           economics
@@ -699,6 +764,12 @@ function createWiredGateway(options = {}) {
         if (step) {
           ctx.model_routed = step.model;
           ctx.route_decision = step;
+        }
+        if (ctx.max_tokens_defaulted && ctx.normalized) {
+          // No client cap: each model gets its own default (16k for reasoning models), never
+          // more than the hold was sized for.
+          const own = catalog.get?.(ctx.model_routed)?.default_output_tokens || DEFAULT_OUTPUT_TOKENS;
+          ctx.normalized.max_tokens = Math.min(own, ctx.max_tokens_held || own);
         }
 
         const providerName =
@@ -975,7 +1046,9 @@ function extractAsk(normalized) {
   const msgs = normalized?.messages || [];
   const lastUser = [...msgs].reverse().find((m) => m.role === "user");
   const c = lastUser?.content;
-  return typeof c === "string" ? c : "";
+  if (typeof c === "string") return c;
+  if (Array.isArray(c)) return c.filter((p) => p?.type === "text").map((p) => String(p.text || "")).join("\n");
+  return "";
 }
 
 function extractContext(normalized) {
@@ -985,6 +1058,7 @@ function extractContext(normalized) {
 }
 
 module.exports = {
+  AUTO_MODEL,
   createWiredGateway,
   STAGE_ORDER,
   fromChatCompletions,

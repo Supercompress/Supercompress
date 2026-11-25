@@ -36,7 +36,10 @@ kill_timeout = 300
   SC_CP_DAILY_CAP_USD = "25"
   # Neural Keep budget inside the request path; past it the local compiler runs instead.
   SC_CP_NK_BUDGET_MS = "1500"
-  SC_CP_UPSTREAM_TIMEOUT_MS = "300000"
+  SC_CP_UPSTREAM_TIMEOUT_MS = "290000"
+  # Drain window after SIGTERM; must stay under kill_timeout (300s) and above the upstream
+  # timeout, so a stream already running when a deploy starts can finish and settle.
+  SC_SHUTDOWN_GRACE_MS = "295000"
 
 [http_service]
   internal_port = 8080

@@ -30,6 +30,7 @@ function computeRouteEconomics(input = {}) {
     require_capabilities: input.require_capabilities,
     max_usd_per_request: input.max_usd_per_request,
     routing: input.routing,
+    request_tier: input.request_tier,
     output_tokens_est: input.output_tokens_est,
   };
 

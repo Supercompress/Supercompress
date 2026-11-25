@@ -100,7 +100,7 @@ describe("first-class stream passthrough", () => {
 
     await writeOpenAiSse(res, {
       aborted: false,
-      model_routed: "gpt-4o-mini",
+      model_routed: "gpt-6-luna",
       request_id: "req_test",
       stream: (async function* () {
         yield "A";

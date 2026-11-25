@@ -542,12 +542,49 @@ function claimsConflictToken(claims) {
  * verifies, then gets overwritten, can still lose. Do not add more monetary
  * state to claims — use a transactional store for a real ledger.
  */
-async function patchUserClaims(uid, mutator, opts = {}) {
+/**
+ * Per-uid in-process write queue. Fly runs one machine per app, so this removes the
+ * same-user read-modify-write race (parallel agent calls, concurrent gateway settles)
+ * that exhausted retries and surfaced as 503 billing_unavailable. Cross-process races
+ * still fall through to the conflict-detect/retry loop below.
+ */
+const claimsQueues = new Map();
+function withClaimsLock(uid, fn) {
+  const key = String(uid);
+  const prev = claimsQueues.get(key) || Promise.resolve();
+  const run = prev.then(fn, fn);
+  const tail = run.then(() => {}, () => {});
+  claimsQueues.set(key, tail);
+  tail.then(() => {
+    if (claimsQueues.get(key) === tail) claimsQueues.delete(key);
+  });
+  return run;
+}
+
+function claimsRetryDelay(attempt) {
+  return 60 * 2 ** attempt + Math.floor(Math.random() * 80);
+}
+
+const CLAIMS_THROTTLED = /too fast|quota|rate/i;
+
+function patchUserClaims(uid, mutator, opts = {}) {
+  return withClaimsLock(uid, () => patchUserClaimsUnlocked(uid, mutator, opts));
+}
+
+async function patchUserClaimsUnlocked(uid, mutator, opts = {}) {
   const verify = opts.verify;
   const attempts = Math.max(1, Number(opts.attempts) || 5);
   let lastErr = null;
   for (let i = 0; i < attempts; i++) {
-    const first = await admin().auth().getUser(uid);
+    if (i > 0) await new Promise((r) => setTimeout(r, claimsRetryDelay(i - 1)));
+    let first;
+    try {
+      first = await admin().auth().getUser(uid);
+    } catch (err) {
+      // Firebase Auth per-user write throttle ("Operation too fast"): back off and retry.
+      if (CLAIMS_THROTTLED.test(String(err?.message || ""))) { lastErr = err; continue; }
+      throw err;
+    }
     const before = { ...(first.customClaims || {}) };
     const token = claimsConflictToken(before);
     const draft = mutator({ ...before });
@@ -563,7 +600,13 @@ async function patchUserClaims(uid, mutator, opts = {}) {
       continue;
     }
 
-    await setBillingClaims(uid, intended);
+    try {
+      await setBillingClaims(uid, intended);
+    } catch (err) {
+      // A throttled write did not land, so retrying cannot double-apply.
+      if (CLAIMS_THROTTLED.test(String(err?.message || ""))) { lastErr = err; continue; }
+      throw err;
+    }
     const after = (await admin().auth().getUser(uid)).customClaims || {};
     const held = claimsWriteHeld(after, writeId);
     const extraOk = verify ? verify(after, { before, intended }) : true;
@@ -921,6 +964,8 @@ async function releaseIdempotencyLease(uid, requestId) {
   // Claims-fallback leases live in memory; clear them too or a same-key retry 409s for 90s.
   if (uid && rid) clearClaimsPendingLease(uid, rid);
   if (!uid || !rid || !initFirebaseAdmin()) return;
+  const { skipFirestore } = require("./firebase-off");
+  if (skipFirestore()) return;
   try {
     const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
     await db().runTransaction(async (tx) => {

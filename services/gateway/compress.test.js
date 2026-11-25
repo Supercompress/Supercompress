@@ -91,6 +91,24 @@ describe("gateway compress in-path", () => {
     assert.ok(eligibleBlocks(msgs, { includeSystem: true }).some((b) => b.index === 0));
   });
 
+  it("compresses large text parts of array contents and leaves images and the caller's request alone", async () => {
+    const compress = createCompressFn({
+      neuralKeep: async () => ({ compressed_text: "kept bits", original_tokens: 100, kept_tokens: 10 }),
+    });
+    const image = { type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } };
+    const original = [
+      { role: "user", content: [{ type: "text", text: "short note" }, { type: "text", text: BULK }, image] },
+      { role: "user", content: [{ type: "text", text: BULK }] },
+    ];
+    const ctx = { user_ask: "q", normalized: { messages: original } };
+    await compress(ctx);
+    const [first, ask] = ctx.normalized.messages;
+    assert.equal(ctx.compression.strategy, "neural_keep");
+    assert.deepEqual(first.content, [{ type: "text", text: "short note" }, { type: "text", text: "kept bits" }, image]);
+    assert.equal(ask.content[0].text, BULK, "the latest user message is the ask");
+    assert.equal(original[0].content[1].text, BULK, "input messages are not mutated");
+  });
+
   it("applyCompressedToMessages preserves ask", () => {
     const n = applyCompressedToMessages(
       {

@@ -20,7 +20,7 @@ const ctxFor = (model) => ({ model_routed: model, normalized: { model, messages:
 
 describe("provider registry", () => {
   it("resolves providers from model ids", () => {
-    const cases = { "gpt-4o-mini": "openai", "o3-mini": "openai", "claude-sonnet-4": "anthropic", "gemini-2.5-pro": "google", "mistral-large-latest": "mistral",
+    const cases = { "gpt-6-luna": "openai", "o3-mini": "openai", "claude-sonnet-4": "anthropic", "gemini-2.5-pro": "google", "mistral-large-latest": "mistral",
       "codestral-latest": "mistral", "grok-4": "xai", "deepseek-chat": "deepseek", "command-a-03-2025": "cohere", "sonar-pro": "perplexity",
       "groq/llama-3.3-70b-versatile": "groq", "openrouter/meta-llama/llama-3.3-70b-instruct": "openrouter", "ollama/llama3.2": "ollama" };
     for (const [id, want] of Object.entries(cases)) assert.equal(registry.providerFromModelId(id), want, id);
@@ -72,8 +72,8 @@ describe("createProvider across providers", () => {
   it("uses Azure deployment URLs and the api-key header", async () => {
     const calls = [];
     const fn = createProvider({ env: { AZURE_OPENAI_API_KEY: "az", AZURE_OPENAI_ENDPOINT: "https://acme.openai.azure.com" }, fetchImpl: okFetch(calls), allowStubFallback: false });
-    await fn(ctxFor("azure/prod-gpt-4o"));
-    assert.match(calls[0].url, /^https:\/\/acme\.openai\.azure\.com\/openai\/deployments\/prod-gpt-4o\/chat\/completions\?api-version=/);
+    await fn(ctxFor("azure/prod-gpt-6.1-sol"));
+    assert.match(calls[0].url, /^https:\/\/acme\.openai\.azure\.com\/openai\/deployments\/prod-gpt-6.1-sol\/chat\/completions\?api-version=/);
     assert.equal(calls[0].init.headers["api-key"], "az");
     assert.equal(calls[0].init.headers.Authorization, undefined);
   });
@@ -111,44 +111,44 @@ describe("createProvider across providers", () => {
 describe("catalog from env", () => {
   it("keeps the default catalog when no extra provider is configured", () => {
     const ids = catalogFromEnv({}).map((m) => m.id);
-    assert.deepEqual(ids.sort(), ["claude-haiku-5-5", "claude-opus-5-5", "claude-sonnet-5-5", "gpt-4o", "gpt-4o-mini"]);
+    assert.deepEqual(ids.sort(), ["claude-fable-5-1", "claude-fable-5-2", "claude-haiku-5-5", "claude-opus-5-5", "claude-sonnet-5-5", "gpt-6-astra", "gpt-6-luna", "gpt-6.1-sol", "gpt-6.1-terra"]);
   });
 
   it("drops default models whose provider has no key once any provider is configured", () => {
     const ids = catalogFromEnv({ OPENAI_API_KEY: "sk" }).map((m) => m.id);
-    assert.ok(ids.includes("gpt-4o-mini"));
+    assert.ok(ids.includes("gpt-6-luna"));
     assert.ok(!ids.some((id) => id.startsWith("claude-")));
   });
 
   it("adds a provider's models only when its key is set", () => {
     const ids = catalogFromEnv({ GEMINI_API_KEY: "g" }).map((m) => m.id);
-    assert.ok(ids.includes("gemini-2.5-flash") && ids.includes("gemini-2.5-pro"));
-    assert.ok(!ids.includes("grok-4"));
+    assert.ok(ids.includes("gemini-3.8-flash") && ids.includes("gemini-4-argon"));
+    assert.ok(!ids.includes("grok-4.7"));
   });
 
   it("merges operator entries from SC_CP_CATALOG, replacing by id", () => {
-    const env = { SC_CP_CATALOG: JSON.stringify([{ id: "gpt-4o-mini", provider: "openai", max_context_tokens: 128000, input_usd_per_mtok: 0.1 }, { id: "my-model", provider: "together", max_context_tokens: 32000 }]) };
+    const env = { SC_CP_CATALOG: JSON.stringify([{ id: "gpt-6-luna", provider: "openai", max_context_tokens: 128000, input_usd_per_mtok: 0.1 }, { id: "my-model", provider: "together", max_context_tokens: 32000 }]) };
     const list = catalogFromEnv(env);
-    assert.equal(list.find((m) => m.id === "gpt-4o-mini").input_usd_per_mtok, 0.1);
+    assert.equal(list.find((m) => m.id === "gpt-6-luna").input_usd_per_mtok, 0.1);
     assert.ok(list.find((m) => m.id === "my-model"));
     assert.throws(() => catalogFromEnv({ SC_CP_CATALOG: "{not json" }), (e) => e.code === "catalog_invalid_json");
   });
 
   it("routes a context too big for every default model to a long-context provider once configured", () => {
-    const retained = 400_000;
-    const without = selectRoute({ requested_model: "gpt-4o-mini", retained_tokens: retained, catalog: catalogFromEnv({ OPENAI_API_KEY: "sk" }), policy: { version: 1, routing: { strategy: "cheapest_fit" } } });
+    const retained = 1_020_000;
+    const without = selectRoute({ requested_model: "gpt-6-luna", retained_tokens: retained, catalog: catalogFromEnv({ OPENAI_API_KEY: "sk" }), policy: { version: 1, routing: { strategy: "cheapest_fit" } } });
     assert.equal(without.allow, false);
-    const withGemini = selectRoute({ requested_model: "gpt-4o-mini", retained_tokens: retained, catalog: catalogFromEnv({ OPENAI_API_KEY: "sk", GEMINI_API_KEY: "g" }), policy: { version: 1, routing: { strategy: "cheapest_fit" } } });
+    const withGemini = selectRoute({ requested_model: "gpt-6-luna", retained_tokens: retained, catalog: catalogFromEnv({ OPENAI_API_KEY: "sk", GEMINI_API_KEY: "g" }), policy: { version: 1, routing: { strategy: "cheapest_fit" } } });
     assert.equal(withGemini.allow, true);
-    assert.equal(withGemini.model, "gemini-2.5-flash");
+    assert.equal(withGemini.model, "gemini-3.8-flash");
   });
 });
 
 describe("policy from env", () => {
   it("is null when unset, parses SC_CP_POLICY, and rejects bad JSON", () => {
     assert.equal(policyFromEnv({}), null);
-    const p = policyFromEnv({ SC_CP_POLICY: JSON.stringify({ allow_models: ["gpt-4o-mini"], rpm: 30, routing: { strategy: "latency_prefer" } }) });
-    assert.deepEqual(p.allow_models, ["gpt-4o-mini"]);
+    const p = policyFromEnv({ SC_CP_POLICY: JSON.stringify({ allow_models: ["gpt-6-luna"], rpm: 30, routing: { strategy: "latency_prefer" } }) });
+    assert.deepEqual(p.allow_models, ["gpt-6-luna"]);
     assert.equal(p.routing.strategy, "latency_prefer");
     assert.throws(() => policyFromEnv({ SC_CP_POLICY: "[1,2]" }), (e) => e.code === "policy_invalid_json");
     assert.throws(() => policyFromEnv({ SC_CP_POLICY: "{oops" }), (e) => e.code === "policy_invalid_json");

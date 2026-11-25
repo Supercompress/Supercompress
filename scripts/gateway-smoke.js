@@ -57,7 +57,19 @@ async function smoke(base = process.env.SC_GATEWAY_HOST || "https://gateway.supe
   assert.ok(!models.json.data.some((m) => m.id === "stub-model"), "stub-model must never be listed");
   console.log(`PASS GET /v1/models (${models.json.data.length} models)`);
 
-  const model = process.env.SC_GATEWAY_SMOKE_MODEL || models.json.data[0].id;
+  const ids = models.json.data.map((m) => m.id);
+  const model = process.env.SC_GATEWAY_SMOKE_MODEL || ids.find((id) => id !== "auto");
+  assert.ok(model, "no named model listed");
+
+  // Unknown models are refused before any provider call, so this costs nothing.
+  const unknown = await call(base, "/v1/chat/completions", {
+    method: "POST",
+    key,
+    body: { model: "no-such-model-smoke", max_tokens: 8, messages: [{ role: "user", content: "hi" }] },
+  });
+  assert.equal(unknown.status, 400, `unknown model: ${unknown.status}`);
+  console.log("PASS unknown model -> 400");
+
   const chat = await call(base, "/v1/chat/completions", {
     method: "POST",
     key,
@@ -67,6 +79,8 @@ async function smoke(base = process.env.SC_GATEWAY_HOST || "https://gateway.supe
   assert.equal(chat.json.object, "chat.completion");
   assert.ok(chat.json.choices?.[0]?.message, "chat: no message");
   assert.ok(chat.json.choices[0].message.content !== "ok" || chat.json.usage.completion_tokens !== 3, "chat looks like the stub");
+  // A named model is honoured; the router only swaps it on a provider failure.
+  if (chat.json.model !== model) console.warn(`WARN asked for ${model}, served by ${chat.json.model} (provider fallback?)`);
   console.log(`PASS POST /v1/chat/completions (${chat.json.model}, ${chat.json.usage.total_tokens} tokens)`);
 }
 

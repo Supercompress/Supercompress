@@ -10,11 +10,11 @@ describe("route economics (compress-then-route moat)", () => {
     const econ = computeRouteEconomics({
       original_tokens: 100_000,
       retained_tokens: 10_000,
-      requested_model: "gpt-4o-mini",
+      requested_model: "gpt-6-luna",
       policy: { routing: { strategy: "fixed" } },
     });
-    assert.equal(econ.with_compress.model, "gpt-4o-mini");
-    assert.equal(econ.without_compress.model, "gpt-4o-mini");
+    assert.equal(econ.with_compress.model, "gpt-6-luna");
+    assert.equal(econ.without_compress.model, "gpt-6-luna");
     assert.ok(econ.dollars_saved_est > 0);
     assert.equal(econ.tokens_saved, 90_000);
     assert.equal(econ.model_changed, false);

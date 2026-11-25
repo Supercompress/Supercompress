@@ -173,7 +173,10 @@ if (require.main === module) {
   function shutdown(sig) {
     console.log(`sc-api shutting down (${sig})`);
     server.close(() => process.exit(0));
-    setTimeout(() => process.exit(1), 170_000).unref();
+    // Stay under the Fly kill_timeout so in-flight streams finish and settle billing:
+    // 180s on supercompress-api, 300s on the gateway (fly.gateway.toml sets the grace).
+    const grace = Number(process.env.SC_SHUTDOWN_GRACE_MS) > 0 ? Number(process.env.SC_SHUTDOWN_GRACE_MS) : 170_000;
+    setTimeout(() => process.exit(1), grace).unref();
   }
   process.on("SIGTERM", () => shutdown("SIGTERM"));
   process.on("SIGINT", () => shutdown("SIGINT"));

@@ -14,9 +14,13 @@ const { authenticateKey } = require("../_lib/firebase-key-store");
 const { isGatewayEnabled } = require("../../services/gateway/http");
 const { catalogFromEnv } = require("../../services/gateway/catalog-env");
 const { normalizeCatalog } = require("../../packages/control-plane");
+const { flags } = require("../../packages/control-plane/flags");
 
 // Fixed timestamp: the catalog has no per-model creation date.
 const CREATED = 1767225600; // 2026-01-01T00:00:00Z
+
+/** `model: "auto"` lets the gateway pick; listed only when routing is on. */
+const AUTO_OBJECT = { id: "auto", object: "model", created: CREATED, owned_by: "supercompress", capabilities: ["chat", "tools", "vision"] };
 
 function modelObject(m) {
   return {
@@ -66,11 +70,14 @@ module.exports = async function models(req, res) {
   const url = new URL(req.url || "/", "http://localhost");
   const m = /\/models\/(.+)$/.exec(url.pathname);
   const id = m ? decodeURIComponent(m[1]) : url.searchParams.get("id");
+  const routing = flags().route;
   if (id) {
+    if (id === "auto" && routing) return json(res, 200, AUTO_OBJECT);
     const entry = catalog.get(id);
     return entry ? json(res, 200, modelObject(entry)) : notFound(res, `The model '${id}' does not exist`);
   }
-  return json(res, 200, { object: "list", data: catalog.models.map(modelObject) });
+  const data = catalog.models.map(modelObject);
+  return json(res, 200, { object: "list", data: routing ? [AUTO_OBJECT, ...data] : data });
 };
 
 module.exports.modelObject = modelObject;

@@ -33,6 +33,12 @@ function normalizeRouting(raw = {}) {
     max_tier: raw.max_tier != null ? Number(raw.max_tier) : undefined,
     /** Soft penalty USD added when health is degraded (cheapest_fit / weighted). */
     degraded_penalty_usd: Math.max(0, Number(raw.degraded_penalty_usd) || 0.01),
+    /**
+     * Complexity routing: with a request tier from the classifier, pick within the lowest
+     * catalog tier that clears it. Never routes a task below its tier while a model at or
+     * above it is viable.
+     */
+    complexity_routing: raw.complexity_routing === true,
   };
 }
 
@@ -230,9 +236,33 @@ function selectRoute(input = {}) {
     if (elig.fit) viable.push({ id, elig, model });
   }
 
+  // Complexity routing: keep only the lowest catalog tier at or above the request tier.
+  // Higher tiers would over-provision the task; they stay in the fallback chain, so a
+  // provider failure escalates instead of downgrading. If no viable model reaches the
+  // request tier, the strongest viable tier serves it and the decision says so.
+  const tierOf = (entry) => (Number.isFinite(Number(entry.model.tier)) ? Number(entry.model.tier) : 0);
+  const requestTier = Number.isFinite(Number(input.request_tier)) ? Math.max(0, Number(input.request_tier)) : null;
+  // Every strategy is banded: prefer_order / fixed then pick in their own order, but only
+  // among models that clear the grade.
+  const banding = Boolean(routing.complexity_routing && requestTier != null && viable.length);
+  let pool = viable;
+  let bandTier = null;
+  let belowRequestTier = false;
+  if (banding) {
+    const clearing = viable.filter((v) => tierOf(v) >= requestTier);
+    if (clearing.length) {
+      bandTier = Math.min(...clearing.map(tierOf));
+    } else {
+      bandTier = Math.max(...viable.map(tierOf));
+      belowRequestTier = true;
+    }
+    pool = viable.filter((v) => tierOf(v) === bandTier);
+  }
+
   let chosen = null;
   let reason = "no_viable_model";
-  if (viable.length) {
+  if (pool.length) {
+    const viable = pool;
     if (routing.strategy === "cheapest_fit") {
       viable.sort((a, b) => {
         const d = scoreCheapest(a, routing) - scoreCheapest(b, routing);
@@ -269,20 +299,28 @@ function selectRoute(input = {}) {
     }
   }
 
-  // Fallback chain: the chosen model, then the operator's configured fallbacks in their
-  // configured order, then any other viable model that is not a lower tier than the chosen
-  // one (cheapest first). Never step down to a weaker model the operator did not list.
+  // Fallback chain: the chosen model; then operator fallbacks at or below its tier, in
+  // configured order (an operator may list a weaker model, except below the complexity
+  // band); then every other viable model at or above its tier, lowest tier first. Within a
+  // tier, operator fallbacks come first, then cheapest. So a failure stays in the chosen
+  // tier before going up, and never steps down to a weaker model the operator did not list.
   const viableById = new Map(viable.map((v) => [v.id, v]));
+  const fallbackRank = new Map(routing.fallbacks.map((id, i) => [id, i]));
+  const rankOf = (v) => (fallbackRank.has(v.id) ? fallbackRank.get(v.id) : routing.fallbacks.length);
   const fallback_chain = [];
   if (chosen) {
     fallback_chain.push(chosen.id);
+    const chosenTier = tierOf(chosen);
     for (const id of routing.fallbacks) {
-      if (viableById.has(id) && !fallback_chain.includes(id)) fallback_chain.push(id);
+      const v = viableById.get(id);
+      if (!v || fallback_chain.includes(id) || tierOf(v) > chosenTier) continue;
+      if (bandTier != null && tierOf(v) < bandTier) continue;
+      fallback_chain.push(id);
     }
-    const chosenTier = Number(chosen.model.tier) || 0;
     const rest = viable
-      .filter((v) => !fallback_chain.includes(v.id) && (Number(v.model.tier) || 0) >= chosenTier)
-      .sort((a, b) => scoreCheapest(a, routing) - scoreCheapest(b, routing));
+      .filter((v) => !fallback_chain.includes(v.id) && tierOf(v) >= chosenTier)
+      .sort((a, b) => tierOf(a) - tierOf(b) || rankOf(a) - rankOf(b) ||
+        scoreCheapest(a, routing) - scoreCheapest(b, routing));
     for (const v of rest) fallback_chain.push(v.id);
   }
 
@@ -299,6 +337,9 @@ function selectRoute(input = {}) {
     max_retries: routing.max_retries,
     eligibility,
     allow: Boolean(chosen),
+    request_tier: requestTier,
+    band_tier: bandTier,
+    below_request_tier: belowRequestTier,
   };
 
   if (!chosen) {

@@ -72,6 +72,24 @@ function checkRelease(env, config) {
   checkForbidden(env, config);
 }
 
+/**
+ * A deploy sends SIGTERM, the server drains for SC_SHUTDOWN_GRACE_MS, and Fly kills the
+ * machine at kill_timeout. A provider call that outlives the drain is cut before billing
+ * settles, so: upstream timeout < drain grace < kill_timeout.
+ */
+function checkDrainTiming(cfg, config) {
+  const kill = /^\s*kill_timeout\s*=\s*(\d+)\s*$/m.exec(config);
+  const killMs = kill ? Number(kill[1]) * 1000 : 5000;
+  const grace = Number(cfg.SC_SHUTDOWN_GRACE_MS);
+  const upstream = Number(cfg.SC_CP_UPSTREAM_TIMEOUT_MS);
+  if (!(grace > 0)) throw new Error("fly.gateway.toml must set SC_SHUTDOWN_GRACE_MS.");
+  if (!(upstream > 0)) throw new Error("fly.gateway.toml must set SC_CP_UPSTREAM_TIMEOUT_MS.");
+  if (!(grace < killMs)) throw new Error(`SC_SHUTDOWN_GRACE_MS (${grace}) must be below kill_timeout (${killMs}ms).`);
+  if (!(upstream < grace)) {
+    throw new Error(`SC_CP_UPSTREAM_TIMEOUT_MS (${upstream}) must be below SC_SHUTDOWN_GRACE_MS (${grace}).`);
+  }
+}
+
 function checkGatewayRelease(env, config) {
   const cfg = tomlEnv(config);
   if (cfg.SC_API_SURFACE !== "gateway") {
@@ -91,6 +109,7 @@ function checkGatewayRelease(env, config) {
     }
   }
   if (!effective.SC_CP_GATEWAY) throw new Error("SC_CP_GATEWAY must be on in fly.gateway.toml.");
+  checkDrainTiming(cfg, config);
   for (const [flag, needs] of Object.entries(DEPENDENCIES)) {
     if (!effective[flag]) continue;
     for (const dep of needs) {

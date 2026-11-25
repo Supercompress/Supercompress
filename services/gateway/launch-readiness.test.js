@@ -66,7 +66,7 @@ function fakeBilling(balance) {
 }
 
 const body = (extra = {}) => ({
-  model: "gpt-4o-mini",
+  model: "gpt-6-luna",
   messages: [{ role: "user", content: "hi" }],
   ...extra,
 });
@@ -117,10 +117,79 @@ describe("launch blockers", () => {
     const gw = createWiredGateway({ provider: okProvider(), billing: paid.billing });
     const ctx = await gw.handleChatCompletions(body(), { org_id: "paid", key_id: "k" });
     assert.equal(ctx.aborted, false);
-    // gpt-4o-mini: 1000 in × $0.15/M + 100 out × $0.60/M
-    assert.equal(ctx.actual_usd, 0.00021);
-    assert.equal(paid.state.claims.sc_credit_balance_usd, 9.99979);
+    // gpt-6-luna: 1000 in × $0.10/M + 100 out × $0.50/M
+    assert.equal(ctx.actual_usd, 0.00015);
+    assert.equal(paid.state.claims.sc_credit_balance_usd, 9.99985);
     assert.equal(paid.billing.outstanding("paid"), 0);
+  });
+
+  it("N1: a request without max_tokens is capped at the output the hold covers", async () => {
+    const paid = fakeBilling(10);
+    let sent;
+    const gw = createWiredGateway({
+      billing: paid.billing,
+      provider: async (ctx) => {
+        sent = ctx.normalized.max_tokens;
+        return okProvider()(ctx);
+      },
+    });
+    const req = body();
+    delete req.max_tokens;
+    const ctx = await gw.handleChatCompletions(req, { org_id: "paid", key_id: "k" });
+    assert.equal(ctx.aborted, false);
+    // gpt-6-luna is a reasoning model: the catalog gives it a 16K default.
+    assert.equal(sent, 16_384);
+
+    const claude = body();
+    delete claude.max_tokens;
+    claude.model = "claude-haiku-5-5";
+    await gw.handleChatCompletions(claude, { org_id: "paid", key_id: "k" });
+    assert.equal(sent, 4096);
+  });
+
+  it("N1: \"auto\" without max_tokens gets the routed model's own default, on every attempt", async () => {
+    const paid = fakeBilling(10);
+    const sent = [];
+    let failFirst = false;
+    const gw = createWiredGateway({
+      billing: paid.billing,
+      enableRouting: true,
+      policy: { version: 1, routing: { strategy: "cheapest_fit" } },
+      provider: async (ctx) => {
+        sent.push([ctx.model_routed, ctx.normalized.max_tokens]);
+        if (failFirst) {
+          failFirst = false;
+          const err = new Error("overloaded");
+          err.status = 503;
+          throw err;
+        }
+        return okProvider()(ctx);
+      },
+    });
+    const ask = (content) => {
+      const req = body();
+      delete req.max_tokens;
+      req.model = "auto";
+      req.messages = [{ role: "user", content }];
+      return gw.handleChatCompletions(req, { org_id: "paid", key_id: "k" });
+    };
+    // Quick task -> gpt-6-luna, a reasoning model: 16K, not the 4K generic default.
+    const easy = await ask("Write the commit message");
+    assert.equal(easy.aborted, false);
+    assert.deepEqual(sent.at(-1), ["gpt-6-luna", 16_384]);
+    // Hard task -> Claude Opus: its own (4K) default.
+    await ask("Find why auth only fails on CI");
+    assert.deepEqual(sent.at(-1), ["claude-opus-5-5", 4096]);
+    // A failed first attempt: the fallback is capped at its own default, not the first model's.
+    sent.length = 0;
+    failFirst = true;
+    const retried = await ask("Write the commit message");
+    assert.equal(retried.aborted, false);
+    assert.equal(sent.length, 2);
+    for (const [model, cap] of sent) {
+      const { DEFAULT_CATALOG } = require("../../packages/control-plane/catalog");
+      assert.equal(cap, DEFAULT_CATALOG.find((m) => m.id === model).default_output_tokens || 4096, model);
+    }
   });
 
   it("MONEY-1: provider failure releases the hold and charges nothing", async () => {
@@ -149,7 +218,7 @@ describe("launch blockers", () => {
       },
     });
     for (let i = 0; i < 4; i++) await gw.handleChatCompletions(body(), { org_id: "o", key_id: "k" });
-    assert.notEqual(gw.healthTracker.healthMap()["gpt-4o-mini"], "down");
+    assert.notEqual(gw.healthTracker.healthMap()["gpt-6-luna"], "down");
   });
 
   it("GW-3: a stream that dies mid-way is finalized as an error, not a success", async () => {
@@ -265,7 +334,9 @@ describe("launch blockers", () => {
       },
     });
     assert.equal(b.system, "be brief");
-    assert.equal(b.temperature, 1);
+    // Haiku 5.5 rejects non-default sampling, so temperature is dropped; older models get it clamped to 1.
+    assert.equal(b.temperature, undefined);
+    assert.equal(buildAnthropicBody({ model_routed: "claude-sonnet-4-6", normalized: { temperature: 1.6, messages: [{ role: "user", content: "x" }] } }).temperature, 1);
     assert.equal(b.messages[1].content[0].type, "tool_use");
     assert.deepEqual(b.messages[1].content[0].input, { c: 1 });
     assert.equal(b.messages[2].content[0].type, "tool_result");
@@ -298,7 +369,7 @@ describe("launch blockers", () => {
           "[DONE]",
         ]),
     });
-    const ctx = { model_routed: "gpt-4o-mini", normalized: { stream: true, messages: [{ role: "user", content: "x" }] } };
+    const ctx = { model_routed: "gpt-6-luna", normalized: { stream: true, messages: [{ role: "user", content: "x" }] } };
     await call(ctx);
     const pieces = [];
     for await (const p of ctx.provider_result.stream) pieces.push(p);
@@ -313,7 +384,7 @@ describe("launch blockers", () => {
       fetchImpl: async () => jsonRes(429, { error: { code: "insufficient_quota", message: "You exceeded your current quota, org-123" } }),
     });
     await assert.rejects(
-      call({ model_routed: "gpt-4o-mini", normalized: { messages: [] } }),
+      call({ model_routed: "gpt-6-luna", normalized: { messages: [] } }),
       (e) => e.status === 502 && e.code === "upstream_provider_unavailable" && !/org-123/.test(e.message)
     );
   });
@@ -327,10 +398,17 @@ describe("launch blockers", () => {
           init.signal.addEventListener("abort", () => reject(new Error("aborted")));
         }),
     });
-    await assert.rejects(
-      call({ model_routed: "gpt-4o-mini", normalized: { messages: [] } }),
-      (e) => e.status === 504 && e.code === "upstream_timeout"
-    );
+    // The upstream timer is unref'd (it must not keep a server alive on its own); a live
+    // server keeps the loop running, so hold it open here or Node 20 ends the test early.
+    const keepAlive = setTimeout(() => {}, 5000);
+    try {
+      await assert.rejects(
+        call({ model_routed: "gpt-6-luna", normalized: { messages: [] } }),
+        (e) => e.status === 504 && e.code === "upstream_timeout"
+      );
+    } finally {
+      clearTimeout(keepAlive);
+    }
   });
 
   it("DOC-9: project_id is written to the ledger", async () => {

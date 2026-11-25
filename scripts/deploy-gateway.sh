@@ -14,6 +14,8 @@ fi
 node scripts/check-control-plane-release.js --gateway
 node scripts/check-control-plane-release.js
 npm run test:cp
+node scripts/sync-compress-assets.js
+npm run test:gateway-e2e
 if [[ "${1:-}" == "--check" || "${1:-}" == "--dry-run" ]]; then
   echo "Gateway preflight passed (no authentication or deployment)."
   exit 0

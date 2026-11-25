@@ -57,7 +57,7 @@ describe("day spend", () => {
     });
     const auth = { key_id: "k-day", org_id: "o-day" };
     const body = {
-      model: "gpt-4o-mini",
+      model: "gpt-6-luna",
       messages: [{ role: "user", content: "hi" }],
     };
     const first = await gw.handleChatCompletions(

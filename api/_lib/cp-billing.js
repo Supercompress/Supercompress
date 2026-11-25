@@ -74,15 +74,26 @@ function createCreditBilling(deps = {}) {
     deps.claimsLedger || (() => require("./firebase-off").skipFirestore());
 
   const holds = new Map();
+  const now = deps.now || Date.now;
+  // A hold a crashed or abandoned request never settled stops reserving balance after this
+  // long, and is dropped after four times as long (a late settle inside that window still charges).
+  const holdTtlMs = Number(env.SC_CP_HOLD_TTL_MS) > 0 ? Number(env.SC_CP_HOLD_TTL_MS) : 30 * 60_000;
+
+  function sweep() {
+    const cutoff = now() - holdTtlMs * 4;
+    for (const [id, h] of holds) if (h.at < cutoff) holds.delete(id);
+  }
 
   function outstanding(uid) {
+    const live = now() - holdTtlMs;
     let sum = 0;
-    for (const h of holds.values()) if (h.uid === uid) sum += h.amount_usd;
+    for (const h of holds.values()) if (h.uid === uid && h.at >= live) sum += h.amount_usd;
     return sum;
   }
 
   async function hold(uid, amountUsd) {
     if (!uid) throw billingErr("auth_required", "auth_required", 401);
+    sweep();
     if (!claimsLedger()) {
       throw billingErr("billing_unavailable", "Gateway billing needs the claims ledger", 503);
     }
@@ -107,7 +118,7 @@ function createCreditBilling(deps = {}) {
     }
     const amount = roundUsd(Math.min(Math.max(Number(amountUsd) || 0, MIN_HOLD_USD), available, capLeft));
     const id = `hold_${crypto.randomBytes(8).toString("hex")}`;
-    holds.set(id, { uid, amount_usd: amount, at: Date.now() });
+    holds.set(id, { uid, amount_usd: amount, at: now() });
     return { id, amount_usd: amount };
   }
 

@@ -29,19 +29,19 @@ describe("gateway pipeline order", () => {
 
   it("adapters round-trip chat completions shape", () => {
     const n = fromChatCompletions({
-      model: "gpt-4o-mini",
+      model: "gpt-6-luna",
       messages: [
         { role: "system", content: "big context ".repeat(20) },
         { role: "user", content: "what is 2+2?" },
       ],
       sc_compress: true,
     }, { key_id: "k1" });
-    assert.equal(n.model, "gpt-4o-mini");
+    assert.equal(n.model, "gpt-6-luna");
     assert.equal(n.metadata.key_id, "k1");
     assert.equal(n.metadata.sc_compress, true);
     const out = toChatCompletions({
       id: "1",
-      model: "gpt-4o-mini",
+      model: "gpt-6-luna",
       output: { content: "4" },
       usage: { input_tokens: 10, output_tokens: 1 },
       request_id: "req_x",
@@ -61,7 +61,7 @@ describe("wired gateway phase 2", () => {
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o-mini",
+        model: "gpt-6-luna",
         messages: [
           { role: "system", content: "You are terse." },
           { role: "user", content: "run the job" },
@@ -93,7 +93,7 @@ describe("wired gateway phase 2", () => {
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o-mini",
+        model: "gpt-6-luna",
         messages: [{ role: "user", content: "hi" }],
         idempotency_key: "wire-fail",
       },
@@ -122,7 +122,7 @@ describe("wired gateway phase 3 routing", () => {
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o",
+        model: "gpt-6.1-sol",
         messages: [
           { role: "system", content: "ctx ".repeat(50) },
           { role: "user", content: "hi" },
@@ -132,7 +132,7 @@ describe("wired gateway phase 3 routing", () => {
       { key_id: "k1", org_id: "o1" }
     );
     assert.equal(ctx.aborted, false);
-    assert.equal(ctx.model_routed, "gpt-4o");
+    assert.equal(ctx.model_routed, "gpt-6.1-sol");
     assert.equal(ctx.route_decision.strategy, "passthrough");
   });
 
@@ -146,13 +146,13 @@ describe("wired gateway phase 3 routing", () => {
         version: 1,
         compress_default: true,
         max_usd_per_request: 2,
-        allow_models: ["gpt-4o", "gpt-4o-mini"],
-        routing: { strategy: "cheapest_fit", fallbacks: ["gpt-4o-mini"], max_retries: 1 },
+        allow_models: ["gpt-6.1-sol", "gpt-6-luna"],
+        routing: { strategy: "cheapest_fit", fallbacks: ["gpt-6-luna"], max_retries: 1 },
       },
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o",
+        model: "auto",
         messages: [
           { role: "system", content: "x".repeat(800) },
           { role: "user", content: "what matters?" },
@@ -162,10 +162,10 @@ describe("wired gateway phase 3 routing", () => {
       { key_id: "k1", org_id: "o1" }
     );
     assert.equal(ctx.aborted, false);
-    assert.equal(ctx.model_routed, "gpt-4o-mini");
+    assert.equal(ctx.model_routed, "gpt-6-luna");
     assert.equal(ctx.route_decision.reason, "cheapest_fit");
-    assert.ok(ctx.compression.model_eligibility.includes("gpt-4o-mini"));
-    assert.equal(gw.ledger.get(ctx.request_id).model_routed, "gpt-4o-mini");
+    assert.ok(ctx.compression.model_eligibility.includes("gpt-6-luna"));
+    assert.equal(gw.ledger.get(ctx.request_id).model_routed, "gpt-6-luna");
     // user ask must never be stored on compression trace
     assert.equal(ctx.compression.query, undefined);
     assert.ok(!JSON.stringify(ctx.compression).includes("what matters?"));
@@ -231,17 +231,17 @@ describe("wired gateway phase 3 routing", () => {
       enableRouting: true,
       policy: {
         version: 1,
-        allow_models: ["gpt-4o", "gpt-4o-mini"],
+        allow_models: ["gpt-6.1-sol", "gpt-6-luna"],
         routing: {
           strategy: "prefer_order",
-          prefer: ["gpt-4o", "gpt-4o-mini"],
-          fallbacks: ["gpt-4o-mini"],
+          prefer: ["gpt-6.1-sol", "gpt-6-luna"],
+          fallbacks: ["gpt-6-luna"],
           max_retries: 1,
         },
       },
       provider: async (ctx) => {
         calls += 1;
-        if (ctx.model_routed === "gpt-4o") {
+        if (ctx.model_routed === "gpt-6.1-sol") {
           const err = new Error("rate limited");
           err.status = 429;
           throw err;
@@ -256,7 +256,7 @@ describe("wired gateway phase 3 routing", () => {
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o",
+        model: "gpt-6.1-sol",
         messages: [
           { role: "system", content: "y".repeat(200) },
           { role: "user", content: "go" },
@@ -267,7 +267,7 @@ describe("wired gateway phase 3 routing", () => {
     );
     assert.equal(ctx.aborted, false);
     assert.equal(calls, 2);
-    assert.equal(ctx.model_routed, "gpt-4o-mini");
+    assert.equal(ctx.model_routed, "gpt-6-luna");
     assert.match(ctx.openai.choices[0].message.content, /fallback-ok/);
   });
 
@@ -282,20 +282,20 @@ describe("wired gateway phase 3 routing", () => {
       ...base,
       policy: {
         version: 1,
-        allow_models: ["gpt-4o", "gpt-4o-mini"],
-        routing: { strategy: "prefer_order", prefer: ["gpt-4o-mini", "gpt-4o"] },
+        allow_models: ["gpt-6.1-sol", "gpt-6-luna"],
+        routing: { strategy: "prefer_order", prefer: ["gpt-6-luna", "gpt-6.1-sol"], complexity_routing: false },
       },
     });
     const gwB = createWiredGateway({
       ...base,
       policy: {
         version: 1,
-        allow_models: ["gpt-4o", "gpt-4o-mini"],
-        routing: { strategy: "prefer_order", prefer: ["gpt-4o", "gpt-4o-mini"] },
+        allow_models: ["gpt-6.1-sol", "gpt-6-luna"],
+        routing: { strategy: "prefer_order", prefer: ["gpt-6.1-sol", "gpt-6-luna"], complexity_routing: false },
       },
     });
     const body = {
-      model: "gpt-4o-mini",
+      model: "auto",
       messages: [
         { role: "system", content: "z".repeat(100) },
         { role: "user", content: "q" },
@@ -303,8 +303,8 @@ describe("wired gateway phase 3 routing", () => {
     };
     const a = await gwA.handleChatCompletions({ ...body, idempotency_key: "pol-a" }, { key_id: "k" });
     const b = await gwB.handleChatCompletions({ ...body, idempotency_key: "pol-b" }, { key_id: "k" });
-    assert.equal(a.model_routed, "gpt-4o-mini");
-    assert.equal(b.model_routed, "gpt-4o");
+    assert.equal(a.model_routed, "gpt-6-luna");
+    assert.equal(b.model_routed, "gpt-6.1-sol");
   });
 });
 
@@ -349,15 +349,15 @@ describe("wired gateway phase 6 live path (mocked providers)", () => {
         version: 1,
         compress_default: true,
         max_usd_per_request: 2,
-        allow_models: ["gpt-4o", "gpt-4o-mini"],
-        routing: { strategy: "cheapest_fit", fallbacks: ["gpt-4o-mini"], max_retries: 1 },
+        allow_models: ["gpt-6.1-sol", "gpt-6-luna"],
+        routing: { strategy: "cheapest_fit", fallbacks: ["gpt-6-luna"], max_retries: 1 },
       },
     });
 
     const ask = "summarize keep rules carefully";
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o",
+        model: "auto",
         stream: true,
         messages: [
           { role: "system", content: "Keep answers short." },
@@ -373,7 +373,7 @@ describe("wired gateway phase 6 live path (mocked providers)", () => {
     assert.equal(ctx.aborted, false);
     assert.equal(ctx.compression.strategy, "compiler");
     assert.ok(ctx.compression.retained_tokens > 0);
-    assert.equal(ctx.model_routed, "gpt-4o-mini");
+    assert.equal(ctx.model_routed, "gpt-6-luna");
     assert.equal(ctx.provider_result.provider, "openai");
     assert.equal(ctx.provider_result.output.content, "hi");
     // Default path drains stream in finalize; content is on provider_result.
@@ -415,7 +415,7 @@ describe("wired gateway flag gating", () => {
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o-mini",
+        model: "gpt-6-luna",
         messages: [
           { role: "system", content: "ctx ".repeat(30) },
           { role: "user", content: "hi" },
@@ -480,7 +480,7 @@ describe("wired gateway flag gating", () => {
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "huge",
+        model: "auto",
         messages: [
           { role: "system", content: "x".repeat(100) },
           { role: "user", content: "CONTEXT:\nkeep\n\nREQUEST: hi" },
@@ -508,7 +508,7 @@ describe("wired gateway flag gating", () => {
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o-mini",
+        model: "gpt-6-luna",
         messages: [
           { role: "system", content: "ctx ".repeat(30) },
           { role: "user", content: "hi" },
@@ -533,7 +533,7 @@ describe("wired gateway flag gating", () => {
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o-mini",
+        model: "gpt-6-luna",
         messages: [{ role: "user", content: "hi" }],
         idempotency_key: "ledger-off",
       },
@@ -556,7 +556,7 @@ describe("wired gateway flag gating", () => {
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o-mini",
+        model: "gpt-6-luna",
         messages: [{ role: "user", content: "hi" }],
         idempotency_key: "money-down",
       },
@@ -579,7 +579,7 @@ describe("wired gateway phase 8 hardening", () => {
       policy: { version: 1, rpm: 1, compress_default: true },
     });
     const body = {
-      model: "gpt-4o-mini",
+      model: "gpt-6-luna",
       messages: [{ role: "user", content: "hi" }],
     };
     const auth = { key_id: "k-rpm-unique", org_id: "o-rpm" };
@@ -607,7 +607,7 @@ describe("wired gateway phase 8 hardening", () => {
       neuralKeep: async () => null,
     });
     const body = {
-      model: "gpt-4o-mini",
+      model: "gpt-6-luna",
       messages: [
         { role: "system", content: "ctx ".repeat(20) },
         { role: "user", content: "hello" },
@@ -626,12 +626,109 @@ describe("wired gateway phase 8 hardening", () => {
     );
   });
 
+  it("a named model is honoured under cheapest_fit; only \"auto\" is routed", async () => {
+    const gw = createWiredGateway({
+      ...CP_ON,
+      seedBalance: 50,
+      estimated_max_usd: 2,
+      enableRouting: true,
+      neuralKeep: async () => null,
+      policy: { version: 1, routing: { strategy: "cheapest_fit" } },
+    });
+    const ask = (model, key) =>
+      gw.handleChatCompletions({ model, messages: [{ role: "user", content: "hi" }], idempotency_key: key }, { key_id: "k1" });
+    const named = await ask("claude-sonnet-5-5", "named-1");
+    assert.equal(named.aborted, false);
+    assert.equal(named.model_routed, "claude-sonnet-5-5");
+    assert.equal(named.route_decision.reason, "requested_fit");
+    const auto = await ask("auto", "auto-1");
+    assert.equal(auto.aborted, false);
+    assert.equal(auto.model_routed, "gpt-6-luna");
+    const unknown = await ask("gpt-4o-mini", "unknown-1");
+    assert.equal(unknown.aborted, true);
+    assert.equal(unknown.error.code, "model_not_found");
+  });
+
+  it("\"auto\" grades the task: quick work goes small, hard work goes to a top-tier model", async () => {
+    const { DEFAULT_CATALOG } = require("../../packages/control-plane/catalog");
+    const tierOf = (id) => DEFAULT_CATALOG.find((m) => m.id === id)?.tier;
+    const gw = createWiredGateway({
+      ...CP_ON,
+      seedBalance: 50,
+      estimated_max_usd: 2,
+      enableRouting: true,
+      neuralKeep: async () => null,
+      policy: { version: 1, routing: { strategy: "cheapest_fit" } },
+    });
+    const ask = (content, key, extra = {}) =>
+      gw.handleChatCompletions(
+        { model: "auto", messages: [{ role: "user", content }], idempotency_key: key, ...extra },
+        { key_id: "k1" }
+      );
+    const easy = await ask("Fix the typos in the README", "cx-easy");
+    assert.equal(easy.aborted, false);
+    assert.equal(tierOf(easy.model_routed), 1);
+    assert.equal(easy.route_decision.request_class.tier, 1);
+
+    const medium = await ask("Add pagination to the /users endpoint", "cx-medium");
+    assert.equal(tierOf(medium.model_routed), 2);
+
+    const hard = await ask("Find out why auth only fails on CI and fix the root cause", "cx-hard");
+    assert.equal(tierOf(hard.model_routed), 3);
+    assert.equal(hard.route_decision.request_class.difficulty, "hard");
+
+    // "keep going" inherits the earlier task's tier instead of dropping to the cheapest model.
+    const cont = await gw.handleChatCompletions(
+      {
+        model: "auto",
+        idempotency_key: "cx-cont",
+        messages: [
+          { role: "user", content: "Debug the race condition in the settlement worker" },
+          { role: "assistant", content: "Looking." },
+          { role: "user", content: "keep going" },
+        ],
+      },
+      { key_id: "k1" }
+    );
+    assert.equal(tierOf(cont.model_routed), 3);
+
+    // Explicit high reasoning effort is a hard request.
+    const effort = await ask("hello", "cx-effort", { reasoning_effort: "high" });
+    assert.equal(tierOf(effort.model_routed), 3);
+  });
+
+  it("an operator can turn complexity routing off for \"auto\"", async () => {
+    const gw = createWiredGateway({
+      ...CP_ON,
+      seedBalance: 50,
+      estimated_max_usd: 2,
+      enableRouting: true,
+      neuralKeep: async () => null,
+      policy: { version: 1, routing: { strategy: "cheapest_fit", complexity_routing: false } },
+    });
+    const ctx = await gw.handleChatCompletions(
+      { model: "auto", messages: [{ role: "user", content: "Plan the migration to the new ledger" }], idempotency_key: "cx-off" },
+      { key_id: "k1" }
+    );
+    assert.equal(ctx.model_routed, "gpt-6-luna");
+  });
+
+  it("\"auto\" is an unknown model when routing is off", async () => {
+    const gw = createWiredGateway({ ...CP_ON, seedBalance: 50, estimated_max_usd: 2, enableRouting: false });
+    const ctx = await gw.handleChatCompletions(
+      { model: "auto", messages: [{ role: "user", content: "hi" }], idempotency_key: "auto-off" },
+      { key_id: "k1" }
+    );
+    assert.equal(ctx.aborted, true);
+    assert.equal(ctx.error.code, "model_not_found");
+  });
+
   it("circuit breaker marks model down and routes around it", async () => {
     const { createHealthTracker } = require("../../packages/control-plane");
     const ht = createHealthTracker({ failureThreshold: 2, cooldownMs: 60_000 });
-    ht.recordFailure("gpt-4o-mini");
-    ht.recordFailure("gpt-4o-mini");
-    assert.equal(ht.healthMap()["gpt-4o-mini"], "down");
+    ht.recordFailure("gpt-6-luna");
+    ht.recordFailure("gpt-6-luna");
+    assert.equal(ht.healthMap()["gpt-6-luna"], "down");
 
     const gw = createWiredGateway({
       ...CP_ON,
@@ -642,13 +739,13 @@ describe("wired gateway phase 8 hardening", () => {
       neuralKeep: async () => null,
       policy: {
         version: 1,
-        allow_models: ["gpt-4o-mini", "claude-haiku-5-5"],
+        allow_models: ["gpt-6-luna", "claude-haiku-5-5"],
         routing: { strategy: "cheapest_fit", output_tokens_reserve: 100 },
       },
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o-mini",
+        model: "auto",
         messages: [
           { role: "system", content: "x".repeat(40) },
           { role: "user", content: "hi" },

@@ -6,6 +6,12 @@ const { fetchUpstream, abortError, upstreamHttpError } = require("./upstream");
 const DEFAULT_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
 
+/** Models that still accept sampling parameters: Claude 3.x and the 4.0-4.6 families. */
+function acceptsSampling(model) {
+  return /^claude-(?:3|(?:opus|sonnet|haiku)-(?:3|4(?:-[0-6])?(?:$|@|-\d{8})))/i.test(String(model || ""));
+}
+const NO_FORCED_TOOL = /^claude-(?:fable-5-[12]|mythos-5-[12]|opus-5-5|sonnet-5-5)/i;
+
 const STOP_REASON = {
   end_turn: "stop",
   stop_sequence: "stop",
@@ -122,10 +128,13 @@ function buildAnthropicBody(ctx, upstreamModel) {
     stream: n.stream === true,
   };
   if (systemParts.length) body.system = systemParts.join("\n\n");
-  // OpenAI allows temperature 0-2; Anthropic accepts 0-1.
-  if (n.temperature != null) body.temperature = Math.min(1, Math.max(0, Number(n.temperature) || 0));
   const p = n.params || {};
-  if (p.top_p != null && n.temperature == null) body.top_p = p.top_p;
+  // Claude 4.7 and later reject temperature/top_p/top_k (400), so they are dropped there.
+  // Older models take temperature 0-1 (OpenAI allows 0-2).
+  if (acceptsSampling(body.model)) {
+    if (n.temperature != null) body.temperature = Math.min(1, Math.max(0, Number(n.temperature) || 0));
+    if (p.top_p != null && n.temperature == null) body.top_p = p.top_p;
+  }
   if (p.stop != null) body.stop_sequences = Array.isArray(p.stop) ? p.stop : [p.stop];
   if (p.user) body.metadata = { user_id: String(p.user).slice(0, 256) };
   if (Array.isArray(n.tools) && n.tools.length) {
@@ -135,10 +144,13 @@ function buildAnthropicBody(ctx, upstreamModel) {
       input_schema: t.function?.parameters || t.input_schema || { type: "object", properties: {} },
     }));
     const tc = p.tool_choice;
-    if (tc === "required") body.tool_choice = { type: "any" };
+    // Fable 5.1, Mythos 5.1, Opus 5.5 and Sonnet 5.5 reject forced tool use (400); they get
+    // "auto" and pick the tool from the request instead.
+    const forcedOk = !NO_FORCED_TOOL.test(String(body.model || ""));
+    if (tc === "required") body.tool_choice = { type: forcedOk ? "any" : "auto" };
     else if (tc === "none") body.tool_choice = { type: "none" };
     else if (tc && typeof tc === "object" && tc.function?.name) {
-      body.tool_choice = { type: "tool", name: tc.function.name };
+      body.tool_choice = forcedOk ? { type: "tool", name: tc.function.name } : { type: "auto" };
     }
     if (p.parallel_tool_calls === false && body.tool_choice) {
       body.tool_choice.disable_parallel_tool_use = true;

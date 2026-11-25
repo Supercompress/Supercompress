@@ -19,9 +19,9 @@ test("gateway errors map to the right HTTP status", () => {
 });
 
 test("model objects are OpenAI-shaped", () => {
-  const m = modelObject({ id: "gpt-4o-mini", provider: "openai", max_context_tokens: 128000, capabilities: ["chat"] });
+  const m = modelObject({ id: "gpt-6-luna", provider: "openai", max_context_tokens: 128000, capabilities: ["chat"] });
   assert.equal(m.object, "model");
-  assert.equal(m.id, "gpt-4o-mini");
+  assert.equal(m.id, "gpt-6-luna");
   assert.equal(m.owned_by, "openai");
   assert.equal(typeof m.created, "number");
 });
@@ -34,7 +34,7 @@ test("the gateway surface serves only gateway routes", () => {
     const { resolveRoute } = require("../../services/api/routes");
     assert.ok(resolveRoute("/v1/chat/completions"));
     assert.ok(resolveRoute("/v1/models"));
-    assert.ok(resolveRoute("/v1/models/gpt-4o"));
+    assert.ok(resolveRoute("/v1/models/gpt-6.1-sol"));
     assert.ok(resolveRoute("/health"));
     assert.equal(resolveRoute("/v1/compress"), null);
     assert.equal(resolveRoute("/mcp"), null);

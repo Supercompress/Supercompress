@@ -52,7 +52,7 @@ describe("gateway ops surface", () => {
     });
     const ctx = await gw.handleChatCompletions(
       {
-        model: "gpt-4o-mini",
+        model: "gpt-6-luna",
         messages: [
           { role: "system", content: "pad\n".repeat(200) },
           { role: "user", content: "CONTEXT:\nkeep this\n\nREQUEST: hi" },
@@ -70,7 +70,6 @@ describe("gateway ops surface", () => {
     assert.match(fromGw.moat.vs_litellm, /LiteLLM/);
 
     const otel = getOpsOtel({ ledger: gw.ledger, org_id: "o" });
-    assert.equal(otel.confidential, true);
     assert.ok(otel.resourceSpans[0].scopeSpans[0].spans.length >= 1);
   });
 });

@@ -142,11 +142,18 @@ function messageText(m) {
   return typeof m?.content === "string" ? m.content : null;
 }
 
+/** Text of a block: the whole string content, or one `{type:"text"}` part of an array content. */
+function blockText(messages, b) {
+  const m = messages[b.index];
+  return b.part == null ? m.content : m.content[b.part].text;
+}
+
 /**
  * Which messages the gateway may compress. Never the latest user message (the ask) and never
  * system/developer instructions unless the policy opts in (compress_system: true), because
  * rewriting instructions changes model behaviour. Tool results and earlier turns are the
- * bulky context compression is for.
+ * bulky context compression is for. Array contents (OpenAI content parts) contribute each
+ * large text part as its own block; images and other parts are left alone.
  */
 function eligibleBlocks(messages, opts = {}) {
   const minChars = opts.minChars ?? DEFAULT_MIN_CHARS;
@@ -157,8 +164,6 @@ function eligibleBlocks(messages, opts = {}) {
   });
   const out = [];
   messages.forEach((m, i) => {
-    const text = messageText(m);
-    if (text == null || text.length < minChars) return;
     if (i === lastUser) return;
     const role = m.role;
     const ok =
@@ -166,7 +171,18 @@ function eligibleBlocks(messages, opts = {}) {
       role === "user" ||
       (role === "assistant" && !m.tool_calls) ||
       (opts.includeSystem && (role === "system" || role === "developer"));
-    if (ok) out.push({ index: i, length: text.length });
+    if (!ok) return;
+    const text = messageText(m);
+    if (text != null) {
+      if (text.length >= minChars) out.push({ index: i, length: text.length });
+      return;
+    }
+    if (!Array.isArray(m.content)) return;
+    m.content.forEach((part, p) => {
+      if (part?.type === "text" && typeof part.text === "string" && part.text.length >= minChars) {
+        out.push({ index: i, part: p, length: part.text.length });
+      }
+    });
   });
   return out.sort((a, b) => b.length - a.length).slice(0, maxBlocks);
 }
@@ -244,16 +260,20 @@ function createCompressFn(options = {}) {
       return ctx;
     }
 
-    const next = messages.map((m) => ({ ...m }));
+    const next = messages.map((m) => ({
+      ...m,
+      ...(Array.isArray(m.content) ? { content: m.content.map((part) => ({ ...part })) } : {}),
+    }));
     let original = 0;
     let kept = 0;
     const strategies = new Set();
     for (const b of blocks) {
-      const text = next[b.index].content;
+      const text = blockText(next, b);
       const r = await compressText(text, ask);
       const before = estimateTokens(text);
       if (r && r.compressed_text && Number(r.kept_tokens) < Number(r.original_tokens)) {
-        next[b.index].content = r.compressed_text;
+        if (b.part == null) next[b.index].content = r.compressed_text;
+        else next[b.index].content[b.part].text = r.compressed_text;
         original += r.original_tokens;
         kept += Math.min(r.kept_tokens, r.original_tokens);
         strategies.add(r.strategy);

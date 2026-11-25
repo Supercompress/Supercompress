@@ -77,4 +77,19 @@ describe("gateway credit billing", () => {
     const b = createCreditBilling({ ...acct.deps, claimsLedger: () => false });
     await assert.rejects(b.hold("u1", 0.1), (e) => e.code === "billing_unavailable" && e.status === 503);
   });
+
+  it("an unsettled hold stops reserving balance after its TTL, but a late settle still charges", async () => {
+    const acct = fakeAccount({ sc_credit_balance_usd: 1 });
+    let t = 1_000_000;
+    const b = createCreditBilling({ ...acct.deps, env: { SC_CP_HOLD_TTL_MS: "1000" }, now: () => t });
+    const stuck = await b.hold("u1", 1);
+    await assert.rejects(b.hold("u1", 0.1), (e) => e.code === "credits_required");
+    t += 1001;
+    assert.equal(b.outstanding("u1"), 0);
+    assert.equal((await b.hold("u1", 0.1)).amount_usd, 0.1);
+    assert.equal((await b.settle(stuck.id, 0.3)).charged_usd, 0.3);
+    t += 5000;
+    await b.hold("u1", 0.1); // sweeps holds older than 4x TTL
+    assert.equal(b._holds.size, 1);
+  });
 });

@@ -13,7 +13,8 @@
  */
 
 const { initFirebaseAdmin } = require("./auth");
-const { gistConfigured, loadGistStore, saveGistStore } = require("./gist-store");
+const { loadGistStore, saveGistStore } = require("./gist-store");
+const { getPersistenceConfig, getPersistenceReadiness } = require("./persistence-config");
 const { agentUsageForMonth } = require("./coding-agent-usage");
 const { skipFirestore } = require("./firebase-off");
 
@@ -23,23 +24,18 @@ let /** @type {import("firebase-admin").firestore.Firestore | null} */ _db = nul
 let writeCache = null;
 let firestoreUnavailable = skipFirestore();
 let useGistStore = false;
+let lastSuccessfulBackend = null;
 
 /** Gist is emergency-only and never on for production by default.
  * Secret Gists are unlisted, not secret storage — do not park customer ops data there.
  * Set SUPERCOMPRESS_ALLOW_GIST=1 to opt in (non-prod / break-glass).
- * SUPERCOMPRESS_DISABLE_GIST=1 always forces Firestore-only (fail closed). */
+ * SUPERCOMPRESS_DISABLE_GIST=1 always disables Gist. */
 function gistAllowed() {
-  if (String(process.env.SUPERCOMPRESS_DISABLE_GIST || "").trim() === "1") {
-    return false;
-  }
-  const prod =
-    process.env.VERCEL_ENV === "production" ||
-    process.env.NODE_ENV === "production" ||
-    String(process.env.SC_FORCE_PROD || "").trim() === "1";
-  if (prod && String(process.env.SUPERCOMPRESS_ALLOW_GIST || "").trim() !== "1") {
-    return false;
-  }
-  return gistConfigured();
+  return getPersistenceConfig().gistAllowed;
+}
+
+function persistenceStatus() {
+  return getPersistenceReadiness({ firestoreUnavailable, lastSuccessfulBackend });
 }
 
 // ---------------------------------------------------------------------------
@@ -230,6 +226,7 @@ async function loadStoreRemote() {
       const snap = await db().doc("config/store").get();
       if (snap.exists) {
         useGistStore = false;
+        lastSuccessfulBackend = "firestore";
         return normalizeStore(snap.data());
       }
 
@@ -245,6 +242,7 @@ async function loadStoreRemote() {
             await db().doc("config/store").set(fromGist);
             console.warn("store: seeded Firestore from gist backup");
             useGistStore = false;
+            lastSuccessfulBackend = "firestore";
             return fromGist;
           }
         } catch (gistErr) {
@@ -253,6 +251,7 @@ async function loadStoreRemote() {
       }
 
       useGistStore = false;
+      lastSuccessfulBackend = "firestore";
       return emptyStore();
     } catch (err) {
       console.warn("store: Firestore read failed:", err.message);
@@ -266,10 +265,17 @@ async function loadStoreRemote() {
 
   if (gistAllowed()) {
     useGistStore = true;
-    return normalizeStore(await loadGistStore());
+    const store = normalizeStore(await loadGistStore());
+    lastSuccessfulBackend = "gist";
+    return store;
   }
 
-  return loadStoreFromAuth();
+  // Claims / Auth-key mode (Firestore opted out, gist off): never listUsers-scan
+  // every Auth account on the hot path — that was a timeout → 503 source under load.
+  // Affiliate imports still use loadStoreFromAuth() explicitly.
+  lastSuccessfulBackend = "memory";
+  if (writeCache) return cloneStore(writeCache);
+  return emptyStore();
 }
 
 /**
@@ -305,6 +311,7 @@ async function saveStore(data) {
   if (!firestoreUnavailable && !useGistStore) {
     try {
       await db().doc("config/store").set(normalized);
+      lastSuccessfulBackend = "firestore";
       return normalized;
     } catch (err) {
       console.warn("store: Firestore write failed:", err.message);
@@ -319,6 +326,14 @@ async function saveStore(data) {
   if (gistAllowed()) {
     useGistStore = true;
     await saveGistStore(normalized);
+    lastSuccessfulBackend = "gist";
+    return normalized;
+  }
+
+  // Intentional no-Firestore mode: warm-lambda write-through only. Do not 503 —
+  // callers (coding-agent meters, migrate) already have Auth/claims fallbacks.
+  if (skipFirestore()) {
+    lastSuccessfulBackend = "memory";
     return normalized;
   }
 
@@ -336,6 +351,21 @@ async function mutateStore(mutator) {
   // Reset sticky gist flag when gist is disabled — warm lambdas may still have it set.
   if (!gistAllowed()) {
     useGistStore = false;
+  }
+  if (skipFirestore()) {
+    firestoreUnavailable = true;
+  }
+
+  // Memory-only when Firestore is opted out / known-down and gist is not allowed.
+  // Never probe Firestore here — PERMISSION_DENIED was causing client 503 storms.
+  if (firestoreUnavailable && !gistAllowed()) {
+    const store = writeCache ? cloneStore(writeCache) : emptyStore();
+    const result = await mutator(store);
+    store._version = (store._version || 0) + 1;
+    store._updated_at = new Date().toISOString();
+    writeCache = cloneStore(store);
+    lastSuccessfulBackend = "memory";
+    return result;
   }
 
   // Gist path only when explicitly allowed AND Firestore is known-down.
@@ -386,6 +416,7 @@ async function mutateStore(mutator) {
         return { result, snapshot: cloneStore(store) };
       });
       writeCache = committed.snapshot;
+      lastSuccessfulBackend = "firestore";
       return committed.result;
     } catch (err) {
       // Always drop cache on failure — never keep a speculative store.
@@ -399,11 +430,8 @@ async function mutateStore(mutator) {
       if (isFirestoreUnavailable(err)) {
         console.warn("store: Firestore transaction unavailable:", err.message);
         firestoreUnavailable = true;
-        if (gistAllowed()) {
-          useGistStore = true;
-          return mutateStore(mutator);
-        }
-        throw storageError();
+        // Retry via gist (if allowed) or memory-only — never 503-storm clients.
+        return mutateStore(mutator);
       }
       throw err;
     }
@@ -1049,6 +1077,7 @@ async function markAgentPluginLinked(ownerUid, meta = {}) {
 }
 
 module.exports = {
+  persistenceStatus,
   loadStore,
   saveStore,
   mutateStore,
