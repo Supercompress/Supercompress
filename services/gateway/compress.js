@@ -197,6 +197,12 @@ function eligibleBlocks(messages, opts = {}) {
  *   maxBlocks?: number,
  * }} [options]
  */
+// Engine passthrough reasons are fixed identifiers; keep only that shape in traces.
+function safeReason(reason) {
+  const text = String(reason || "compressor_unavailable");
+  return /^[a-z0-9_+.-]{1,64}$/i.test(text) ? text : "no_savings";
+}
+
 function createCompressFn(options = {}) {
   const preferNeural = options.preferNeural !== false;
 
@@ -228,8 +234,11 @@ function createCompressFn(options = {}) {
             original_tokens: local.original_tokens || estimateTokens(context),
             kept_tokens:
               local.kept_tokens ?? local.compressed_tokens ?? estimateTokens(local.compressed_text),
-            engine: "compiler",
-            strategy: local.mode === "neural-keep" ? "neural_keep" : "compiler",
+            engine: local.mode === "fast" ? "fast" : "compiler",
+            strategy: local.mode === "neural-keep" ? "neural_keep" : local.mode === "fast" ? "fast" : "compiler",
+            passthrough_reason: local.compression_safety?.status === "passthrough"
+              ? local.compression_safety.reason || local.selection_reason || "no_savings"
+              : null,
           };
         }
       } catch (_) {
@@ -267,6 +276,7 @@ function createCompressFn(options = {}) {
     let original = 0;
     let kept = 0;
     const strategies = new Set();
+    const passReasons = [];
     for (const b of blocks) {
       const text = blockText(next, b);
       const r = await compressText(text, ask);
@@ -280,26 +290,29 @@ function createCompressFn(options = {}) {
       } else {
         original += before;
         kept += before;
+        passReasons.push(r ? r.passthrough_reason || "no_savings" : "compressor_unavailable");
       }
     }
     const strategy = strategies.has("neural_keep")
       ? "neural_keep"
-      : strategies.size
-        ? "compiler"
-        : "skip";
+      : strategies.has("fast")
+        ? "fast"
+        : strategies.size
+          ? "compiler"
+          : "skip";
 
     // Never put the ask into compress_result fields that leak into traces.
     ctx.compress_result = {
       original_tokens: original,
       kept_tokens: kept,
       tokens_saved: Math.max(0, original - kept),
-      engine: strategy === "neural_keep" ? "neural_keep" : "compiler",
+      engine: strategy === "skip" ? "compiler" : strategy,
       strategy,
       blocks: blocks.length,
     };
     ctx.compression = traceFromCompressResult(ctx.compress_result, {
       strategy,
-      ...(strategy === "skip" ? { skip_reason: "compressor_unavailable" } : {}),
+      ...(strategy === "skip" ? { skip_reason: safeReason(passReasons[0]) } : {}),
       dollars_avoided_est: estimateDollarsAvoided(original, kept),
     });
     if (ctx.normalized) ctx.normalized = { ...ctx.normalized, messages: next };
@@ -312,6 +325,23 @@ function createCompressFn(options = {}) {
  * attempt) so a busy worker never stalls the model call, then the local compiler.
  */
 function createDefaultCompressFn(options = {}) {
+  // The Fast extractive engine is the default, as on /v1/compress. SC_COMPRESS_ENGINE=legacy
+  // restores Neural Keep first, then the compiler.
+  if (options.neuralKeep === undefined && options.localCompress === undefined) {
+    let engine = null;
+    try {
+      engine = require("../../api/_lib/engine");
+    } catch {
+      engine = null;
+    }
+    if (engine && typeof engine.fastEngineEnabled === "function" && engine.fastEngineEnabled()) {
+      return createCompressFn({
+        ...options,
+        preferNeural: false,
+        localCompress: (context, query) => engine.compressFast(context, query),
+      });
+    }
+  }
   let neuralKeep = options.neuralKeep;
   if (neuralKeep === undefined) {
     try {

@@ -1,6 +1,6 @@
 "use strict";
 
-const STRATEGIES = new Set(["neural_keep", "compiler", "skip", "unknown"]);
+const STRATEGIES = new Set(["fast", "neural_keep", "compiler", "skip", "unknown"]);
 const UNITS = new Set(["tokens", "bytes", "chars"]);
 
 /**
@@ -57,6 +57,7 @@ function estimateDollarsAvoided(originalTokens, retainedTokens, usdPerMTok = 0.1
 
 function inferStrategyFromResult(result = {}) {
   if (result.skipped || result.strategy === "skip") return "skip";
+  if (result.engine === "fast" || result.strategy === "fast" || result.mode === "fast") return "fast";
   if (result.engine === "compiler" || result.strategy === "compiler") return "compiler";
   if (result.engine === "neural_keep" || result.neural_keep || result.strategy === "neural_keep") {
     return "neural_keep";

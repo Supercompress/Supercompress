@@ -123,3 +123,59 @@ describe("gateway compress in-path", () => {
     assert.equal(n.messages[1].content, "ask");
   });
 });
+
+describe("gateway default compressor", () => {
+  it("uses the Fast engine and labels it fast", async () => {
+    const { createDefaultCompressFn } = require("./compress");
+    const previous = process.env.SC_COMPRESS_ENGINE;
+    delete process.env.SC_COMPRESS_ENGINE;
+    try {
+      const log = [
+        ...Array.from({ length: 300 }, (_, i) => `PASS src/module${i}.test.js (${(i * 37) % 900} ms)`),
+        "FAIL src/auth/session.test.js",
+        "  ● createSession › times out after AUTH_TIMEOUT_MS",
+        "    Expected: 45000",
+        "    Received: 30000",
+        "      at Object.<anonymous> (src/auth/session.test.js:42:18)",
+        "Tests: 1 failed, 300 passed, 301 total",
+      ].join("\n");
+      const ctx = {
+        user_ask: "Why does the session test fail?",
+        normalized: {
+          messages: [
+            { role: "tool", tool_call_id: "t1", content: log },
+            { role: "user", content: "Why does the session test fail?" },
+          ],
+        },
+      };
+      await createDefaultCompressFn()(ctx);
+      assert.equal(ctx.compression.strategy, "fast");
+      assert.ok(ctx.compression.retained_tokens < ctx.compression.original_tokens);
+      assert.ok(ctx.normalized.messages[0].content.includes("Received: 30000"));
+    } finally {
+      if (previous === undefined) delete process.env.SC_COMPRESS_ENGINE;
+      else process.env.SC_COMPRESS_ENGINE = previous;
+    }
+  });
+
+  it("records the engine's passthrough reason instead of calling the compressor unavailable", async () => {
+    const { createDefaultCompressFn } = require("./compress");
+    const previous = process.env.SC_COMPRESS_ENGINE;
+    delete process.env.SC_COMPRESS_ENGINE;
+    try {
+      const log = Array.from({ length: 400 }, (_, i) => `row ${i}: status=ok latency_ms=${(i * 37) % 900} region=us-${i % 5}`).join("\n") +
+        "\nrow 9999: status=FAILED region=eu-1";
+      const ctx = {
+        user_ask: "Which row has status FAILED?",
+        normalized: { messages: [{ role: "tool", tool_call_id: "t1", content: log }, { role: "user", content: "Which row has status FAILED?" }] },
+      };
+      await createDefaultCompressFn()(ctx);
+      assert.equal(ctx.compression.strategy, "skip");
+      assert.equal(ctx.compression.skip_reason, "suspicious_compression_collapse");
+      assert.equal(ctx.normalized.messages[0].content, log);
+    } finally {
+      if (previous === undefined) delete process.env.SC_COMPRESS_ENGINE;
+      else process.env.SC_COMPRESS_ENGINE = previous;
+    }
+  });
+});

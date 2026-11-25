@@ -5,6 +5,8 @@
  * ops insights and OTel, with no prompt/response content and no key material.
  */
 
+// Wiring tests run on the deterministic legacy compiler; gateway compress tests cover the Fast engine.
+process.env.SC_COMPRESS_ENGINE = "legacy";
 const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
 const { createWiredGateway } = require("./wire");
@@ -558,5 +560,37 @@ describe("no content or secrets in records, exports or logs", () => {
     assert.equal(ledgerBlob.includes("PROMPT_CANARY"), false);
     assert.equal(ledgerBlob.includes("RESPONSE_CANARY"), false);
     assert.equal(ledgerBlob.includes("PROVIDERKEY"), false);
+  });
+});
+
+describe("observability on the Fast engine", () => {
+  it("records engine fast, savings and no passthrough reason", async () => {
+    const previous = process.env.SC_COMPRESS_ENGINE;
+    delete process.env.SC_COMPRESS_ENGINE;
+    try {
+      const gw = createWiredGateway({ enableLedger: true, provider: okProvider() });
+      const log = Array.from({ length: 400 }, (_, i) =>
+        i % 9 === 0 ? `ERROR worker ${i} failed: timeout while reading shard ${i}` : `info step ${i} ok, 120ms, cache hit`
+      ).join("\n");
+      const ctx = await gw.handleChatCompletions(
+        {
+          model: "gpt-6.1-sol",
+          messages: [
+            { role: "user", content: "run the job" },
+            { role: "tool", tool_call_id: "c1", content: log },
+            { role: "user", content: "Which workers failed and on which shard?" },
+          ],
+        },
+        AUTH
+      );
+      const o = obsOf(gw, ctx);
+      assert.equal(o.compression.engine, "fast");
+      assert.ok(o.compression.retained_tokens < o.compression.original_tokens);
+      assert.equal(o.compression.passthrough_reason, null);
+      assert.ok(!JSON.stringify(o).includes("Which workers failed"), "the ask is never recorded");
+    } finally {
+      if (previous === undefined) delete process.env.SC_COMPRESS_ENGINE;
+      else process.env.SC_COMPRESS_ENGINE = previous;
+    }
   });
 });

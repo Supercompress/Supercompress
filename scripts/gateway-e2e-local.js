@@ -108,10 +108,17 @@ const listen = (s) => new Promise((r) => s.listen(0, "127.0.0.1", () => r(s.addr
   await check("bulky tool output in array content is compressed before the provider", async () => {
     seen.length = 0;
     const mods = ["auth", "billing", "router", "ledger", "compress", "catalog", "policy", "wire"];
-    const bulk = Array.from({ length: 300 }, (_, i) => {
-      if (i === 211) return "ERROR src/billing/settle.ts:88 TypeError: Cannot read properties of undefined (reading 'usd')";
-      return `[${String(i).padStart(4, "0")}] compiling packages/${mods[i % 8]}/src/file${i}.ts (${(i * 37) % 900}ms) cache=${i % 3 ? "hit" : "miss"} warnings=0`;
-    }).join("\n");
+    // A real failure prints a stack and a verdict, not one line. (A lone line in a 300-line log is
+    // below the API's collapse guard, which returns the input unchanged rather than one line.)
+    const lines = Array.from({ length: 300 }, (_, i) =>
+      `[${String(i).padStart(4, "0")}] compiling packages/${mods[i % 8]}/src/file${i}.ts (${(i * 37) % 900}ms) cache=${i % 3 ? "hit" : "miss"} warnings=0`);
+    lines.splice(211, 0,
+      "ERROR src/billing/settle.ts:88 TypeError: Cannot read properties of undefined (reading 'usd')",
+      "    at settleInvoice (src/billing/settle.ts:88:21)",
+      "    at processBatch (src/billing/batch.ts:41:9)",
+      "    at runJob (src/jobs/runner.ts:117:5)",
+      "build failed: 1 error in packages/billing");
+    const bulk = lines.join("\n");
     const r = await post({ model: "gpt-6-luna", messages: [
       { role: "user", content: [{ type: "text", text: bulk }] },
       { role: "assistant", content: "noted" },

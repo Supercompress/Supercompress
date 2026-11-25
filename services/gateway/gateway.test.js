@@ -1,5 +1,7 @@
 "use strict";
 
+// Wiring tests run on the deterministic legacy compiler; gateway compress tests cover the Fast engine.
+process.env.SC_COMPRESS_ENGINE = "legacy";
 const { describe, it, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
 const {
