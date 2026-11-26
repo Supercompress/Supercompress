@@ -13,8 +13,8 @@ describe("policy admission", () => {
 
   it("denies model not on allowlist", () => {
     const r = evaluateAdmission(
-      { allow_models: ["gpt-4o-mini"], compress_default: true },
-      { model: "gpt-4o" }
+      { allow_models: ["gpt-6-luna"], compress_default: true },
+      { model: "gpt-6.1-sol" }
     );
     assert.equal(r.allow, false);
     assert.ok(r.reasons.some((x) => x.startsWith("model_not_allowed")));

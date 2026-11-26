@@ -51,12 +51,13 @@ describe("day spend", () => {
       seedBalance: 50,
       estimated_max_usd: 1,
       walletId: "wallet_day",
+      allowStubFallback: true,
       neuralKeep: async () => null,
       policy: { version: 1, max_usd_per_day: 1, compress_default: true },
     });
     const auth = { key_id: "k-day", org_id: "o-day" };
     const body = {
-      model: "gpt-4o-mini",
+      model: "gpt-6-luna",
       messages: [{ role: "user", content: "hi" }],
     };
     const first = await gw.handleChatCompletions(

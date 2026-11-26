@@ -83,11 +83,11 @@ describe("postgres ledger", () => {
       org_id: "o1",
       key_id: "k1",
       idempotency_key: "idem-1",
-      model_requested: "gpt-4o-mini",
+      model_requested: "gpt-6-luna",
       compression: { original_tokens: 100, retained_tokens: 40 },
     });
     assert.equal(rec.status, "created");
-    ledger.transition(rec.id, "routed", { model_routed: "gpt-4o-mini" });
+    ledger.transition(rec.id, "routed", { model_routed: "gpt-6-luna" });
     ledger.finalize(rec.id, {
       actual_usd: 0.01,
       compression: {

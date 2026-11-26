@@ -1,5 +1,14 @@
 "use strict";
 
+/** true / false, also as "true" / "false" / "1" / "0" / "on" / "off" (env-var JSON); else undefined. */
+function parseFlag(value) {
+  if (typeof value === "boolean") return value;
+  const v = typeof value === "string" ? value.trim().toLowerCase() : value;
+  if (v === "true" || v === "1" || v === "on" || v === 1) return true;
+  if (v === "false" || v === "0" || v === "off" || v === 0) return false;
+  return undefined;
+}
+
 /**
  * Config-first admission / policy evaluator (v0).
  */
@@ -33,6 +42,7 @@ function normalizePolicy(raw = {}) {
                 ? Number(raw.routing.output_tokens_reserve)
                 : undefined,
             max_tier: raw.routing.max_tier != null ? Number(raw.routing.max_tier) : undefined,
+            complexity_routing: parseFlag(raw.routing.complexity_routing),
             degraded_penalty_usd:
               raw.routing.degraded_penalty_usd != null
                 ? Number(raw.routing.degraded_penalty_usd)

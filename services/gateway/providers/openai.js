@@ -1,20 +1,40 @@
 "use strict";
 
 const { iterateSseData, providerError } = require("./sse");
+const { fetchUpstream, abortError, upstreamHttpError } = require("./upstream");
 
 const DEFAULT_URL = "https://api.openai.com/v1/chat/completions";
 
-function buildOpenAIBody(ctx) {
+/** OpenAI reasoning models take max_completion_tokens and reject max_tokens. */
+function wantsMaxCompletionTokens(model) {
+  return /^(o[0-9]|gpt-[56])/i.test(String(model || ""));
+}
+
+function buildOpenAIBody(ctx, upstreamModel, providerName = "openai") {
   const n = ctx.normalized || {};
+  const model = upstreamModel || ctx.model_routed || n.model;
   const body = {
-    model: ctx.model_routed || n.model,
-    messages: (n.messages || []).map((m) => ({
-      role: m.role,
-      content: m.content,
-    })),
+    model,
+    // Full message shape: tool_calls, tool_call_id, name and content parts pass through.
+    messages: (n.messages || []).map((m) => {
+      const out = { role: m.role, content: m.content };
+      if (m.name != null) out.name = m.name;
+      if (m.tool_calls) out.tool_calls = m.tool_calls;
+      if (m.tool_call_id != null) out.tool_call_id = m.tool_call_id;
+      return out;
+    }),
     stream: n.stream === true,
   };
-  if (n.max_tokens != null) body.max_tokens = n.max_tokens;
+  for (const [k, v] of Object.entries(n.params || {})) body[k] = v;
+  if (n.max_tokens != null) {
+    const field =
+      providerName === "openai" || providerName === "azure"
+        ? n.max_tokens_field === "max_completion_tokens" || wantsMaxCompletionTokens(model)
+          ? "max_completion_tokens"
+          : "max_tokens"
+        : "max_tokens";
+    body[field] = n.max_tokens;
+  }
   if (n.temperature != null) body.temperature = n.temperature;
   if (n.tools) body.tools = n.tools;
   if (body.stream) {
@@ -32,22 +52,43 @@ function extractContent(json) {
   return "";
 }
 
+function mapUsage(u) {
+  if (!u) return null;
+  const cached = u.prompt_tokens_details?.cached_tokens;
+  return {
+    input_tokens: u.prompt_tokens ?? u.input_tokens ?? 0,
+    output_tokens: u.completion_tokens ?? u.output_tokens ?? 0,
+    ...(cached ? { cached_input_tokens: cached } : {}),
+  };
+}
+
 /**
+ * One adapter for every provider that speaks OpenAI Chat Completions
+ * (OpenAI, Google, Mistral, xAI, DeepSeek, Groq, Together, Fireworks, Perplexity,
+ * OpenRouter, Cerebras, Cohere, Ollama, Azure OpenAI). See registry.js.
+ *
  * @param {object} options
  * @param {string} [options.apiKey]
- * @param {string} [options.baseUrl]
+ * @param {string} [options.baseUrl] — full chat-completions URL (default OpenAI)
+ * @param {(model: string) => string} [options.urlFor] — per-model URL (Azure deployments)
+ * @param {string} [options.providerName="openai"] — label on results and error codes
+ * @param {string} [options.apiKeyEnv="OPENAI_API_KEY"] — env fallback for the key
+ * @param {"bearer"|"api-key"} [options.auth="bearer"]
+ * @param {boolean} [options.keyOptional=false] — local providers (Ollama) need no key
  * @param {typeof fetch} [options.fetchImpl]
  */
 function createOpenAIProvider(options = {}) {
   const fetchImpl = options.fetchImpl || globalThis.fetch;
   const baseUrl = options.baseUrl || DEFAULT_URL;
+  const name = options.providerName || "openai";
+  const keyEnv = options.apiKeyEnv === undefined ? "OPENAI_API_KEY" : options.apiKeyEnv;
 
-  async function callOpenAI(ctx) {
-    const apiKey = options.apiKey || process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      const err = new Error("openai_api_key_missing");
+  async function callOpenAI(ctx, call = {}) {
+    const apiKey = options.apiKey || (keyEnv ? process.env[keyEnv] : "");
+    if (!apiKey && !options.keyOptional) {
+      const err = new Error(`${name}_api_key_missing`);
       err.status = 401;
-      err.code = "openai_api_key_missing";
+      err.code = `${name}_api_key_missing`;
       throw err;
     }
     if (typeof fetchImpl !== "function") {
@@ -56,80 +97,116 @@ function createOpenAIProvider(options = {}) {
       throw err;
     }
 
-    const body = buildOpenAIBody(ctx);
-    const res = await fetchImpl(baseUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: body.stream ? "text/event-stream" : "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    const body = buildOpenAIBody(ctx, call.model, name);
+    const url = typeof options.urlFor === "function" ? options.urlFor(body.model) : baseUrl;
+    const headers = {
+      "Content-Type": "application/json",
+      Accept: body.stream ? "text/event-stream" : "application/json",
+    };
+    if (apiKey) {
+      if (options.auth === "api-key") headers["api-key"] = apiKey;
+      else headers.Authorization = `Bearer ${apiKey}`;
+    }
+    const { res, done, isTimedOut } = await fetchUpstream(
+      fetchImpl,
+      url,
+      { method: "POST", headers, body: JSON.stringify(body) },
+      ctx,
+      { timeoutMs: options.timeoutMs }
+    );
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
+      done();
       let parsed = text;
       try {
         parsed = JSON.parse(text);
       } catch {
         /* keep text */
       }
-      throw providerError(
-        parsed?.error?.message || `openai_http_${res.status}`,
-        res.status,
-        parsed
-      );
+      throw upstreamHttpError(name, res.status, parsed);
     }
 
     if (body.stream) {
       const acc = { content: "", usage: { input_tokens: 0, output_tokens: 0 } };
+      const toolCalls = [];
 
-      async function* streamText() {
-        for await (const data of iterateSseData(res)) {
-          if (!data || data === "[DONE]") continue;
-          let json;
-          try {
-            json = JSON.parse(data);
-          } catch {
-            continue;
+      // Yields { content?, tool_calls? } deltas; sets finish_reason and usage on the result.
+      async function* streamDeltas() {
+        try {
+          for await (const data of iterateSseData(res)) {
+            if (!data || data === "[DONE]") continue;
+            let json;
+            try {
+              json = JSON.parse(data);
+            } catch {
+              continue;
+            }
+            if (json.error) {
+              const err = providerError(json.error.message || `${name}_stream_error`, 502, json);
+              err.code = "upstream_stream_error";
+              throw err;
+            }
+            const choice = json.choices?.[0];
+            const delta = choice?.delta || {};
+            const out = {};
+            if (typeof delta.content === "string" && delta.content) {
+              acc.content += delta.content;
+              out.content = delta.content;
+            }
+            if (Array.isArray(delta.tool_calls) && delta.tool_calls.length) {
+              mergeToolCallDeltas(toolCalls, delta.tool_calls);
+              out.tool_calls = delta.tool_calls;
+            }
+            if (choice?.finish_reason) ctx.provider_result.finish_reason = choice.finish_reason;
+            if (json.usage) {
+              acc.usage = mapUsage(json.usage);
+              ctx.provider_result.usage = acc.usage;
+            }
+            if (out.content || out.tool_calls) yield out;
           }
-          const piece = extractContent(json);
-          if (piece) {
-            acc.content += piece;
-            yield piece;
-          }
-          if (json.usage) {
-            acc.usage = {
-              input_tokens: json.usage.prompt_tokens ?? json.usage.input_tokens ?? 0,
-              output_tokens:
-                json.usage.completion_tokens ?? json.usage.output_tokens ?? 0,
-            };
-          }
+        } catch (err) {
+          throw abortError(err, isTimedOut(), ctx.abort_signal);
+        } finally {
+          done();
         }
-        ctx.provider_result.output = { content: acc.content };
+        ctx.provider_result.output = {
+          content: acc.content,
+          ...(toolCalls.length ? { tool_calls: toolCalls } : {}),
+        };
         ctx.provider_result.usage = acc.usage;
       }
 
       ctx.provider_result = {
         model: body.model,
-        provider: "openai",
+        provider: name,
         output: { content: "" },
         usage: acc.usage,
-        stream: streamText(),
+        finish_reason: null,
+        stream: streamDeltas(),
       };
       return ctx;
     }
 
-    const json = await res.json();
+    let json;
+    try {
+      json = await res.json();
+    } catch (err) {
+      throw abortError(err, isTimedOut(), ctx.abort_signal);
+    } finally {
+      done();
+    }
+    const choice = json.choices?.[0] || {};
+    const toolCalls = Array.isArray(choice.message?.tool_calls) ? choice.message.tool_calls : null;
     ctx.provider_result = {
       model: json.model || body.model,
-      provider: "openai",
-      output: { content: extractContent(json) },
-      usage: {
-        input_tokens: json.usage?.prompt_tokens ?? 0,
-        output_tokens: json.usage?.completion_tokens ?? 0,
+      provider: name,
+      output: {
+        content: extractContent(json),
+        ...(toolCalls && toolCalls.length ? { tool_calls: toolCalls } : {}),
       },
+      finish_reason: choice.finish_reason || null,
+      usage: mapUsage(json.usage) || { input_tokens: 0, output_tokens: 0 },
       raw: json,
     };
     return ctx;
@@ -138,8 +215,23 @@ function createOpenAIProvider(options = {}) {
   return callOpenAI;
 }
 
+/** Accumulate streamed tool_call fragments (by index) into complete tool calls. */
+function mergeToolCallDeltas(acc, deltas) {
+  for (const d of deltas) {
+    const i = Number.isInteger(d.index) ? d.index : acc.length;
+    const cur =
+      acc[i] || (acc[i] = { id: d.id || "", type: "function", function: { name: "", arguments: "" } });
+    if (d.id) cur.id = d.id;
+    if (d.function?.name) cur.function.name += d.function.name;
+    if (d.function?.arguments) cur.function.arguments += d.function.arguments;
+  }
+  return acc;
+}
+
 module.exports = {
   createOpenAIProvider,
+  mergeToolCallDeltas,
+  mapUsage,
   buildOpenAIBody,
   extractContent,
 };

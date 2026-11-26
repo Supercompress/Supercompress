@@ -31,6 +31,21 @@ function newId() {
 function createLedgerStore(options = {}) {
   const records = new Map();
   const byIdempotency = new Map();
+  // In-process ledger is bounded: past maxRecords the oldest finalized records are dropped
+  // (durable backends keep history; this store only has to cover in-flight work and recent ops).
+  const maxRecords = Math.max(100, Number(options.maxRecords) || Number(process.env.SC_CP_LEDGER_MAX) || 10_000);
+
+  function evictIfFull() {
+    if (records.size <= maxRecords) return;
+    for (const [id, rec] of records) {
+      if (records.size <= maxRecords) break;
+      if (rec.status !== "finalized") continue;
+      records.delete(id);
+      if (rec.idempotency_key && byIdempotency.get(rec.idempotency_key) === id) {
+        byIdempotency.delete(rec.idempotency_key);
+      }
+    }
+  }
 
   function get(id) {
     const rec = records.get(id);
@@ -73,6 +88,7 @@ function createLedgerStore(options = {}) {
     };
     records.set(rec.id, rec);
     if (idem) byIdempotency.set(idem, rec.id);
+    evictIfFull();
     return get(rec.id);
   }
 

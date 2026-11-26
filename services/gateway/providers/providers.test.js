@@ -4,7 +4,7 @@ const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
 const { createOpenAIProvider, buildOpenAIBody } = require("./openai");
 const { createAnthropicProvider, buildAnthropicBody } = require("./anthropic");
-const { createProvider } = require("./index");
+const { createProvider, anthropicMessagesUrl } = require("./index");
 const { consumeSse } = require("./sse");
 const { normalizeCatalog, defaultCatalog } = require("../../../packages/control-plane");
 
@@ -67,14 +67,14 @@ describe("sse helper", () => {
 describe("openai adapter", () => {
   it("builds chat body from normalized request", () => {
     const body = buildOpenAIBody({
-      model_routed: "gpt-4o-mini",
+      model_routed: "gpt-6-luna",
       normalized: {
         messages: [{ role: "user", content: "hi" }],
         stream: true,
         temperature: 0.2,
       },
     });
-    assert.equal(body.model, "gpt-4o-mini");
+    assert.equal(body.model, "gpt-6-luna");
     assert.equal(body.stream, true);
     assert.deepEqual(body.stream_options, { include_usage: true });
   });
@@ -85,14 +85,14 @@ describe("openai adapter", () => {
       fetchImpl: mockFetchSequence([
         () =>
           jsonResponse({
-            model: "gpt-4o-mini",
+            model: "gpt-6-luna",
             choices: [{ message: { content: "hello" } }],
             usage: { prompt_tokens: 5, completion_tokens: 2 },
           }),
       ]),
     });
     const ctx = {
-      model_routed: "gpt-4o-mini",
+      model_routed: "gpt-6-luna",
       normalized: { messages: [{ role: "user", content: "hi" }], stream: false },
     };
     await call(ctx);
@@ -114,12 +114,12 @@ describe("openai adapter", () => {
       ]),
     });
     const ctx = {
-      model_routed: "gpt-4o-mini",
+      model_routed: "gpt-6-luna",
       normalized: { messages: [{ role: "user", content: "hi" }], stream: true },
     };
     await call(ctx);
     const pieces = [];
-    for await (const p of ctx.provider_result.stream) pieces.push(p);
+    for await (const p of ctx.provider_result.stream) pieces.push(p.content || "");
     assert.equal(pieces.join(""), "hello");
     assert.equal(ctx.provider_result.output.content, "hello");
   });
@@ -134,7 +134,7 @@ describe("openai adapter", () => {
     await assert.rejects(
       () =>
         call({
-          model_routed: "gpt-4o",
+          model_routed: "gpt-6.1-sol",
           normalized: { messages: [{ role: "user", content: "x" }] },
         }),
       (err) => err.status === 429
@@ -145,7 +145,7 @@ describe("openai adapter", () => {
 describe("anthropic adapter", () => {
   it("maps system + messages", () => {
     const body = buildAnthropicBody({
-      model_routed: "claude-haiku-3.5",
+      model_routed: "claude-haiku-5-5",
       normalized: {
         messages: [
           { role: "system", content: "ctx" },
@@ -156,7 +156,7 @@ describe("anthropic adapter", () => {
     });
     assert.equal(body.system, "ctx");
     assert.equal(body.messages[0].role, "user");
-    assert.equal(body.messages[0].content, "ask");
+    assert.deepEqual(body.messages[0].content, [{ type: "text", text: "ask" }]);
     assert.equal(body.max_tokens, 64);
   });
 
@@ -166,14 +166,14 @@ describe("anthropic adapter", () => {
       fetchImpl: mockFetchSequence([
         () =>
           jsonResponse({
-            model: "claude-haiku-3.5",
+            model: "claude-haiku-5-5",
             content: [{ type: "text", text: "yo" }],
             usage: { input_tokens: 4, output_tokens: 1 },
           }),
       ]),
     });
     const ctx = {
-      model_routed: "claude-haiku-3.5",
+      model_routed: "claude-haiku-5-5",
       normalized: {
         messages: [
           { role: "system", content: "s" },
@@ -212,12 +212,12 @@ describe("anthropic adapter", () => {
       ]),
     });
     const ctx = {
-      model_routed: "claude-sonnet-4",
+      model_routed: "claude-sonnet-5-5",
       normalized: { messages: [{ role: "user", content: "hi" }], stream: true },
     };
     await call(ctx);
     const pieces = [];
-    for await (const p of ctx.provider_result.stream) pieces.push(p);
+    for await (const p of ctx.provider_result.stream) pieces.push(p.content || "");
     assert.equal(pieces.join(""), "abc");
     assert.equal(ctx.provider_result.usage.output_tokens, 3);
   });
@@ -241,7 +241,7 @@ describe("createProvider dispatch", () => {
       },
     });
     const ctx = await provider({
-      model_routed: "gpt-4o-mini",
+      model_routed: "gpt-6-luna",
       normalized: { messages: [{ role: "user", content: "x" }] },
       compression: { retained_tokens: 1 },
     });
@@ -252,14 +252,51 @@ describe("createProvider dispatch", () => {
   it("falls back to stub when keys missing", async () => {
     delete process.env.OPENAI_API_KEY;
     const catalog = normalizeCatalog([
-      { id: "gpt-4o-mini", provider: "openai", max_context_tokens: 8_000, input_usd_per_mtok: 0.1, output_usd_per_mtok: 0.1 },
+      { id: "gpt-6-luna", provider: "openai", max_context_tokens: 8_000, input_usd_per_mtok: 0.1, output_usd_per_mtok: 0.1 },
     ]);
     const provider = createProvider({ catalog, allowStubFallback: true });
     const ctx = await provider({
-      model_routed: "gpt-4o-mini",
+      model_routed: "gpt-6-luna",
       normalized: { messages: [{ role: "user", content: "x" }] },
       compression: { retained_tokens: 2 },
     });
     assert.equal(ctx.provider_result.provider, "stub");
+  });
+});
+
+describe("Anthropic request shape for current Claude models", () => {
+  const request = (model) => buildAnthropicBody({
+    model_routed: model,
+    normalized: {
+      messages: [{ role: "user", content: "hi" }],
+      temperature: 0.7,
+      params: { top_p: 0.9, tool_choice: "required" },
+      tools: [{ type: "function", function: { name: "lookup", parameters: { type: "object" } } }],
+    },
+  }, model);
+
+  it("drops sampling params on Claude 4.7 and later, which reject them", () => {
+    for (const model of ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-fable-5-2", "claude-fable-5-1", "claude-opus-4-7"]) {
+      const body = request(model);
+      assert.equal(body.temperature, undefined, model);
+      assert.equal(body.top_p, undefined, model);
+    }
+    assert.equal(request("claude-sonnet-4-6").temperature, 0.7);
+  });
+
+  it("sends tool_choice auto where forced tool use is rejected", () => {
+    for (const model of ["claude-opus-5-5", "claude-sonnet-5-5", "claude-fable-5-2", "claude-fable-5-1"]) {
+      assert.equal(request(model).tool_choice.type, "auto", model);
+    }
+    assert.equal(request("claude-haiku-5-5").tool_choice.type, "any");
+  });
+});
+
+describe("ANTHROPIC_BASE_URL", () => {
+  it("accepts the API root, /v1, or the full messages URL", () => {
+    assert.equal(anthropicMessagesUrl(""), undefined);
+    assert.equal(anthropicMessagesUrl("https://proxy.example"), "https://proxy.example/v1/messages");
+    assert.equal(anthropicMessagesUrl("https://proxy.example/v1/"), "https://proxy.example/v1/messages");
+    assert.equal(anthropicMessagesUrl("https://proxy.example/v1/messages"), "https://proxy.example/v1/messages");
   });
 });

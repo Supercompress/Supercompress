@@ -29,7 +29,7 @@ describe("durable stores", () => {
     const p = path.join(dir, "ledger.json");
     const a = createDurableLedgerStore({ path: p });
     assertLedgerStore(a);
-    const rec = a.create({ org_id: "o1", key_id: "k1", model_requested: "gpt-4o-mini" });
+    const rec = a.create({ org_id: "o1", key_id: "k1", model_requested: "gpt-6-luna" });
     a.transition(rec.id, "compressed", {
       compression: { original_tokens: 100, retained_tokens: 40, strategy: "unknown" },
     });
