@@ -10,6 +10,7 @@
  *   { action: "portal" } | { action: "cancel" | "reactivate" }
  */
 const { json } = require("./_lib/http");
+const { newCustomerOffer, newCustomerBonusUsd } = require("./_lib/new-customer-offer");
 const { verifyUser, initFirebaseAdmin } = require("./_lib/auth");
 const admin = require("firebase-admin");
 const {
@@ -294,6 +295,7 @@ async function handleGet(req, res, user) {
     min_credit_limit_usd: MIN_CREDIT_LIMIT_USD,
     max_credit_limit_usd: MAX_CREDIT_LIMIT_USD,
     limit_reached: !isComped(claims) && !legacyMetered && freeRemaining === 0 && !(creditBalance > 0),
+    new_customer_offer: newCustomerOffer(owner),
     upgrade_url: "https://www.supercompress.dev/dashboard#billing",
     paywall:
       !isComped(claims) && !legacyMetered && freeRemaining === 0 && !(creditBalance > 0)
@@ -368,6 +370,16 @@ async function startCreditCheckout(req, res, user, body, existingSub, stripeBill
     console.warn("checkout customer claim patch skipped:", err.message || err);
   }
 
+  // Show the new-customer bonus on the Checkout line item. Display only: the bonus itself is
+  // granted (or not) by the ledger when the payment is credited.
+  let bonusUsd = 0;
+  try {
+    const owner = await admin.auth().getUser(user.uid);
+    bonusUsd = newCustomerBonusUsd(creditUsd, newCustomerOffer(owner));
+  } catch (_) {
+    bonusUsd = 0;
+  }
+
   const { session, amount } = await createCreditTopUpCheckout({
     customerId,
     userId: user.uid,
@@ -375,12 +387,14 @@ async function startCreditCheckout(req, res, user, body, existingSub, stripeBill
     autoRecharge,
     baseUrl: BASE_URL,
     kind,
+    bonusUsd,
   });
 
   return json(res, 200, {
     url: session.url,
     session_id: session.id,
     credit_limit_usd: amount,
+    new_customer_bonus_usd: bonusUsd,
     auto_recharge: autoRecharge,
   });
 }
