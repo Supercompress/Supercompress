@@ -14,6 +14,7 @@ const {
   isCreditablePaidUsd,
 } = require("./credit-amount");
 const { mutateStore } = require("./store");
+const { newCustomerOffer, newCustomerBonusUsd } = require("./new-customer-offer");
 const { initFirebaseAdmin } = require("./auth");
 const admin = require("firebase-admin");
 
@@ -232,7 +233,11 @@ async function applyCreditTopUp(session) {
     console.warn("Could not attach default PM:", err.message || err);
   }
 
-  const grantFirstPayBonusUsd = FIRST_PAY_BONUS_USD;
+  // New-customer offer: a one-time bonus matching the first payment (capped), judged at the
+  // moment the checkout started. The ledger grants a first-pay bonus at most once per uid.
+  const checkoutStartedMs = Number(session.created) > 0 ? Number(session.created) * 1000 : Date.now();
+  const offer = newCustomerOffer(user, { at: checkoutStartedMs });
+  const grantFirstPayBonusUsd = FIRST_PAY_BONUS_USD + newCustomerBonusUsd(creditUsd, offer);
   // Recharge threshold stays a pack size (min $10), independent of this payment's amount.
   const limitUsd = normalizeCreditLimitUsd(
     prev.sc_credit_limit_usd || session.metadata?.credit_usd,

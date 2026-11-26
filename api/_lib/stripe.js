@@ -265,9 +265,11 @@ async function createCreditTopUpCheckout({
   autoRecharge = true,
   baseUrl = "https://www.supercompress.dev",
   kind = "credit_topup",
+  bonusUsd = 0,
 }) {
   const stripe = getStripe();
   const amount = normalizeCreditLimitUsd(creditUsd);
+  const bonus = Math.max(0, Number(bonusUsd) || 0);
   const unitAmount = Math.round(amount * 100);
 
   const session = await stripe.checkout.sessions.create({
@@ -281,7 +283,9 @@ async function createCreditTopUpCheckout({
           unit_amount: unitAmount,
           product_data: {
             name: "SuperCompress credit",
-            description: `$${amount.toFixed(2)} prepaid usage credit ($0.10 / 1M tokens after 1M free/mo)`,
+            description: bonus > 0
+              ? `$${amount.toFixed(2)} prepaid usage credit + $${bonus.toFixed(2)} new-customer bonus ($0.10 / 1M tokens after 1M free/mo)`
+              : `$${amount.toFixed(2)} prepaid usage credit ($0.10 / 1M tokens after 1M free/mo)`,
           },
         },
       },
