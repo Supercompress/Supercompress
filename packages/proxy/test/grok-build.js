@@ -166,7 +166,13 @@ if (liveKey) {
     timeout: 120000,
     input: JSON.stringify({
       toolName: "run_terminal_command",
-      toolResult: bashResult,
+      // Large enough for the local squeeze (small output passes through untouched).
+      toolResult: {
+        ...bashResult,
+        output_for_prompt:
+          Array.from({ length: 800 }, (_, i) => `line ${i}: noise padding`).join("\n") +
+          "\nCRITICAL: disk full at /var/log/app.log\n",
+      },
       sessionId: `grok-replace-live-${Date.now()}`,
     }),
     env: {
@@ -182,6 +188,8 @@ if (liveKey) {
   const replaced = postJson.hookSpecificOutput.updatedToolOutput;
   assert.equal(replaced.type, "Bash", "keeps Bash toolResult shape");
   assert.match(replaced.output_for_prompt, /SuperCompress auto/, "replaces output_for_prompt");
+  assert.match(replaced.output_for_prompt, /CRITICAL: disk full/, "keeps the critical line");
+  assert.ok(replaced.output_for_prompt.length < 6000, "output actually shrank");
 }
 
 // Offline UserPromptSubmit inject path (best-effort for hosts that accept it)

@@ -17,6 +17,7 @@ const {
 const {
   isGrokAgent,
   buildGrokHookResponse,
+  primaryText,
 } = require("./grok-post-tool");
 
 const MIN_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
@@ -85,6 +86,50 @@ function emitGrokReplacement(opts) {
   process.stdout.write(JSON.stringify(buildGrokHookResponse(opts)));
 }
 
+function localSqueeze(text) {
+  for (const candidate of ["./squeeze.js", "../squeeze.js"]) {
+    try {
+      return require(require("path").join(__dirname, candidate)).squeeze(text);
+    } catch {}
+  }
+  return null;
+}
+
+function saveRaw(raw) {
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const dir = path.join(process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(require("os").homedir(), ".supercompress"), "outputs");
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const file = path.join(dir, `${new Date().toISOString().replace(/[:.]/g, "-")}-${process.pid}.log`);
+    fs.writeFileSync(file, raw, { mode: 0o600 });
+    return file;
+  } catch {
+    return null;
+  }
+}
+
+function recordApplied(agent, toolName, r) {
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const dir = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(require("os").homedir(), ".supercompress");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.appendFileSync(
+      path.join(dir, "savings.jsonl"),
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        agent,
+        cmd: String(toolName || "").slice(0, 40),
+        original_tokens: r.original_tokens,
+        kept_tokens: r.kept_tokens,
+        applied: true,
+        source: "post-tool-replace",
+      }) + "\n"
+    );
+  } catch {}
+}
+
 process.stdin.setEncoding("utf8");
 let raw = "";
 process.stdin.on("data", (c) => {
@@ -116,8 +161,31 @@ process.stdin.on("end", async () => {
     if (!text) text = extractText(input.response);
     if (text.length < MIN_CHARS) return empty();
 
-    const bounded = text.length > MAX_IN ? text.slice(0, MAX_IN) : text;
     const agentHint = resolveAgentHint(input);
+    // Only Grok can replace a tool result from PostToolUse. Everywhere else a
+    // digest would sit next to the raw output the model already has: skip the
+    // network call entirely (setup no longer registers this hook there).
+    if (!isGrokAgent(agentHint)) return empty();
+
+    // Local squeeze first: instant, deterministic, keeps every error line.
+    const rawResult = input.toolResult != null ? input.toolResult : input.tool_response;
+    const local = localSqueeze(primaryText(rawResult) || text);
+    if (local && local.applied && !(input.toolResultTruncated || input.tool_result_truncated)) {
+      const saved = saveRaw(primaryText(rawResult) || text);
+      if (saved) local.text += `\n[Full output: ${saved} (grep or sed it if you need an omitted line)]`;
+      recordApplied(agentHint, toolName, local);
+      emitGrokReplacement({
+        toolResult: input.toolResult != null ? input.toolResult : input.tool_response,
+        toolResultTruncated: Boolean(input.toolResultTruncated || input.tool_result_truncated),
+        toolName,
+        meta: `${local.original_tokens}→${local.kept_tokens} (−${Math.round((1 - local.kept_tokens / local.original_tokens) * 100)}%) · local`,
+        compressed: local.text,
+      });
+      return;
+    }
+    if (process.env.SUPERCOMPRESS_HOSTED_TOOL_COMPRESS !== "1") return empty();
+
+    const bounded = text.length > MAX_IN ? text.slice(0, MAX_IN) : text;
     const sessionId = resolveSessionId(input);
 
     const query = buildToolCompressQuery(toolName, bounded);

@@ -20,6 +20,14 @@ function fileHasSupercompress(filePath) {
   }
 }
 
+function fileMentions(filePath, needle) {
+  try {
+    return fs.readFileSync(filePath, "utf8").includes(needle);
+  } catch {
+    return false;
+  }
+}
+
 function mark(ok) {
   return ok ? "✓" : "·";
 }
@@ -197,7 +205,7 @@ async function runDoctor({ CONFIG_DIR, loadConfig, version } = {}) {
         fileHasSupercompress(path.join(HOME, ".cursor", "rules", "supercompress.mdc")) ||
         fileHasSupercompress(path.join(HOME, ".cursor", "rules", "supercompress.md"));
     } else if (name === "Claude Code") {
-      hooksOk = fileHasSupercompress(path.join(HOME, ".claude", "settings.json"));
+      hooksOk = fileMentions(path.join(HOME, ".claude", "settings.json"), "pre-tool-squeeze.js");
       instrOk = fileHasSupercompress(path.join(HOME, ".claude", "CLAUDE.md"));
     } else if (name === "Codex") {
       hooksOk = fileHasSupercompress(path.join(HOME, ".codex", "hooks.json"));
@@ -239,6 +247,19 @@ async function runDoctor({ CONFIG_DIR, loadConfig, version } = {}) {
     );
   }
 
+  // Hooks from <0.5.41 only added digests next to text the model already had:
+  // they cost latency and tokens and saved nothing. `supercompress plugin` swaps them.
+  const stale = [
+    ["Claude Code", path.join(HOME, ".claude", "settings.json")],
+    ["Codex", path.join(HOME, ".codex", "hooks.json")],
+    ["Cursor", path.join(HOME, ".cursor", "hooks.json")],
+  ].filter(([, p]) => fileMentions(p, "post-tool-compress.js") || fileMentions(p, "user-prompt-submit.js") || fileMentions(p, "before-submit.js"));
+  if (stale.length) {
+    console.log("");
+    console.log(`  ⚠ Old hooks in ${stale.map(([n]) => n).join(", ")} add a digest next to output the model already has.`);
+    console.log("    They slow every tool call and save no tokens. Run `supercompress plugin` to replace them.");
+  }
+
   // Only nudge when an auto-configurable host is missing MCP (ignore "folder exists" noise).
   const weak = found.filter((agent) => {
     if (!agent.autoConfigurable) return false;
@@ -246,7 +267,7 @@ async function runDoctor({ CONFIG_DIR, loadConfig, version } = {}) {
     return row && !row.mcpOk;
   });
   console.log("");
-  if (!linked || !mcpCheck.ok || weak.length) {
+  if (!linked || !mcpCheck.ok || weak.length || stale.length) {
     console.log("  Fix:");
     if (!linked) console.log("    supercompress setup");
     else console.log("    supercompress plugin");
@@ -258,7 +279,7 @@ async function runDoctor({ CONFIG_DIR, loadConfig, version } = {}) {
     console.log("  Auto-plugin harnesses look good. Restart agents if you just installed.");
   }
   console.log("");
-  return { linked, mcpOk: mcpCheck.ok, agents: rows, stats };
+  return { linked, mcpOk: mcpCheck.ok, agents: rows, stats, staleHooks: stale.map(([n]) => n) };
 }
 
 module.exports = {
