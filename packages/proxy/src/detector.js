@@ -2058,9 +2058,26 @@ function removePluginArtifacts(skip = new Set()) {
     try {
       const raw = fs.readFileSync(filePath, "utf8");
       const data = edit.parseJsonLoose(raw);
-      if (!edit.isPlainObject(data) || !edit.isPlainObject(data.hooks)) continue;
+      if (!edit.isPlainObject(data)) continue;
+      let rulesChanged = false;
+      if (edit.isPlainObject(data.permissions) && Array.isArray(data.permissions.allow)) {
+        const allow = data.permissions.allow.filter((r) => !isSqueezeAllowRule(r));
+        if (allow.length !== data.permissions.allow.length) {
+          rulesChanged = true;
+          if (allow.length) data.permissions.allow = allow;
+          else delete data.permissions.allow;
+          if (Object.keys(data.permissions).length === 0) delete data.permissions;
+        }
+      }
+      if (!edit.isPlainObject(data.hooks)) {
+        if (rulesChanged) {
+          fs.writeFileSync(filePath, edit.rewriteJson(raw, data));
+          removed.push(`${name} permission rule`);
+        }
+        continue;
+      }
       const events = data.hooks;
-      if (!pruneHookMap(events)) continue;
+      if (!pruneHookMap(events) && !rulesChanged) continue;
       if (Object.keys(events).length === 0) {
         delete data.hooks;
         // hooks.json exists only for hooks; settings.json holds user config.
@@ -2418,7 +2435,7 @@ ${guidance.COMPRESS_WHAT.join("\n")}
 
 ${guidance.compressSteps(inboxPath).join("\n")}
 
-Hooks also auto-compress large tool outputs (\`postToolUse\`), so a digest may already be waiting in the inbox.
+Cursor hooks cannot replace a tool result, so keep long output out of context yourself: filter it with grep, tail or head.
 
 ## Rate limits
 
@@ -2453,6 +2470,8 @@ function writeCursorHooks() {
     "user-prompt-submit.js",
     "compress-prompt-lib.js",
     "grok-post-tool.js",
+    "pre-tool-squeeze.js",
+    "squeeze-run.js",
   ];
   for (const name of scripts) {
     const src = path.join(srcDir, name);
@@ -2464,9 +2483,8 @@ function writeCursorHooks() {
     } catch {}
   }
 
+  copySqueezeEngine(hooksDir);
   const sessionCmd = path.join(hooksDir, "session-start.js");
-  const postCmd = path.join(hooksDir, "post-tool-compress.js");
-  const beforeCmd = path.join(hooksDir, "before-submit.js");
   const hooksPath = path.join(cursorDir, "hooks.json");
   backupFile(hooksPath);
 
@@ -2501,18 +2519,15 @@ function writeCursorHooks() {
   };
 
   ensureHook("sessionStart", { command: sessionCmd, timeout: 10 });
-  // Cursor beforeSubmitPrompt — no matcher (fires on every user submit)
-  ensureHook("beforeSubmitPrompt", {
-    command: `SUPERCOMPRESS_AGENT_NAME=Cursor ${beforeCmd}`,
-    timeout: 20,
-  });
-  // Tag Cursor explicitly — without this, post-tool used to mislabel as Claude Code
-  // whenever the payload had session_id/cwd (which Cursor always sends).
-  ensureHook("postToolUse", {
-    command: `SUPERCOMPRESS_AGENT_NAME=Cursor ${postCmd}`,
-    timeout: 20,
-    matcher: "Read|Shell|Grep|Task|AwaitShell|WebFetch|WebSearch|MCP:.*|Edit|Write|Glob",
-  });
+  // Cursor hooks cannot replace a prompt or a tool result; they could only add a
+  // digest next to text the model already has, which costs tokens and time.
+  // Remove the registrations earlier versions wrote.
+  for (const event of ["beforeSubmitPrompt", "postToolUse"]) {
+    if (!Array.isArray(existing.hooks[event])) continue;
+    const kept = existing.hooks[event].filter((e) => !isOurs(e));
+    if (kept.length) existing.hooks[event] = kept;
+    else delete existing.hooks[event];
+  }
 
   fs.writeFileSync(hooksPath, `${JSON.stringify(existing, null, 2)}\n`);
   return { hooksPath, hooksDir };
@@ -2531,6 +2546,8 @@ function syncHookScripts() {
     "user-prompt-submit.js",
     "compress-prompt-lib.js",
     "grok-post-tool.js",
+    "pre-tool-squeeze.js",
+    "squeeze-run.js",
   ]) {
     const src = path.join(srcDir, name);
     const dest = path.join(hooksDir, name);
@@ -2538,7 +2555,36 @@ function syncHookScripts() {
     fs.copyFileSync(src, dest);
     try { fs.chmodSync(dest, 0o755); } catch {}
   }
+  copySqueezeEngine(hooksDir);
   return hooksDir;
+}
+
+/** squeeze-run.js loads ./squeeze.js from its own folder. */
+function copySqueezeEngine(hooksDir) {
+  try {
+    fs.copyFileSync(path.join(__dirname, "squeeze.js"), path.join(hooksDir, "squeeze.js"));
+  } catch (err) {
+    console.error(`  ⚠ squeeze engine: ${err.message}`);
+  }
+}
+
+/** Remove SuperCompress entries from one event of a Claude-style hook map. */
+function dropClaudeStyleHook(data, eventName) {
+  if (!data.hooks || !Array.isArray(data.hooks[eventName])) return;
+  const kept = data.hooks[eventName].filter((g) => {
+    const hooks = (g && g.hooks) || [];
+    return !hooks.some((h) => isSuperCompressCommand(h && h.command));
+  });
+  if (kept.length) data.hooks[eventName] = kept;
+  else delete data.hooks[eventName];
+}
+
+function squeezeAllowRule(hooksDir) {
+  return require("./cursor-hooks/pre-tool-squeeze.js").runnerAllowRule(path.join(hooksDir, "squeeze-run.js"));
+}
+
+function isSqueezeAllowRule(rule) {
+  return /^Bash\(.*[\\/]supercompress[\\/]squeeze-run\.js.*\)$/.test(String(rule || ""));
 }
 
 function upsertClaudeStyleHook(data, eventName, command, matcher, extra = {}) {
@@ -2563,6 +2609,7 @@ function writeAgentPromptHooks() {
   const hooksDir = syncHookScripts();
   const promptCmd = path.join(hooksDir, "user-prompt-submit.js");
   const postCmd = path.join(hooksDir, "post-tool-compress.js");
+  const squeezeCmd = path.join(hooksDir, "pre-tool-squeeze.js");
   const installed = [];
 
   // Claude Code ~/.claude/settings.json — prompt + PostToolUse (true auto on tool dumps)
@@ -2572,13 +2619,16 @@ function writeAgentPromptHooks() {
       let data = {};
       if (fs.existsSync(claudePath)) data = JSON.parse(fs.readFileSync(claudePath, "utf8"));
       backupFile(claudePath);
-      upsertClaudeStyleHook(data, "UserPromptSubmit", promptCmd);
-      upsertClaudeStyleHook(
-        data,
-        "PostToolUse",
-        `SUPERCOMPRESS_AGENT_NAME="Claude Code" ${postCmd}`,
-        ".*"
-      );
+      // Squeeze shell output before the model sees it (PreToolUse rewrite). The
+      // older UserPromptSubmit / PostToolUse hooks could only add a digest next to
+      // the raw text, so they cost tokens and latency without saving any.
+      dropClaudeStyleHook(data, "UserPromptSubmit");
+      dropClaudeStyleHook(data, "PostToolUse");
+      upsertClaudeStyleHook(data, "PreToolUse", squeezeCmd, "Bash", { timeout: 5 });
+      data.permissions = data.permissions && typeof data.permissions === "object" ? data.permissions : {};
+      const allow = Array.isArray(data.permissions.allow) ? data.permissions.allow.filter((r) => !isSqueezeAllowRule(r)) : [];
+      allow.push(squeezeAllowRule(hooksDir));
+      data.permissions.allow = allow;
       fs.mkdirSync(path.dirname(claudePath), { recursive: true });
       fs.writeFileSync(claudePath, `${JSON.stringify(data, null, 2)}\n`);
       installed.push("Claude Code");
@@ -2594,16 +2644,14 @@ function writeAgentPromptHooks() {
       let data = { hooks: {} };
       if (fs.existsSync(codexPath)) data = JSON.parse(fs.readFileSync(codexPath, "utf8"));
       backupFile(codexPath);
-      upsertClaudeStyleHook(data, "UserPromptSubmit", `SUPERCOMPRESS_AGENT_NAME=Codex ${promptCmd}`);
-      upsertClaudeStyleHook(
-        data,
-        "PostToolUse",
-        `SUPERCOMPRESS_AGENT_NAME=Codex ${postCmd}`,
-        ".*"
-      );
+      // Codex can rewrite a command only together with permissionDecision "allow",
+      // which would skip the user's approvals, and cannot replace tool output. So no
+      // squeeze hook here; drop the additive prompt/tool hooks of earlier versions.
+      dropClaudeStyleHook(data, "UserPromptSubmit");
+      dropClaudeStyleHook(data, "PostToolUse");
       fs.mkdirSync(path.dirname(codexPath), { recursive: true });
       fs.writeFileSync(codexPath, `${JSON.stringify(data, null, 2)}\n`);
-      installed.push("Codex");
+      installed.push("Codex (MCP only)");
     } catch (err) {
       console.error(`  ⚠ Codex hooks: ${err.message}`);
     }
