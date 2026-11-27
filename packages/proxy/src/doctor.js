@@ -247,7 +247,7 @@ async function runDoctor({ CONFIG_DIR, loadConfig, version } = {}) {
     );
   }
 
-  // Hooks from <0.5.41 only added digests next to text the model already had:
+  // Hooks from earlier versions only added digests next to text the model already had:
   // they cost latency and tokens and saved nothing. `supercompress plugin` swaps them.
   const stale = [
     ["Claude Code", path.join(HOME, ".claude", "settings.json")],
