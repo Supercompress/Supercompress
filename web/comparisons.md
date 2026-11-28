@@ -30,6 +30,7 @@ This Markdown file is a noindex convenience extract of the HTML page. Cite the H
 | Bear (The Token Company) | you want a one-line wrapper around an OpenAI or Anthropic client that deletes low-signal tokens. | Prompts, chat history, search results | Hosted API (enterprise VPC option) | Closed hosted service |
 | LeanCTX (lean-ctx) | you want a local, policy-aware gateway that controls what your agent reads, with search, memory and a code graph. | File reads, shell output, requests | Locally (CLI, MCP, hooks, proxy) | Apache-2.0 |
 | jCodeMunch | most of your waste is the agent reading whole files to find one function. | Source code reads | Locally, as an MCP server | Custom dual-use licence |
+| [Loom](https://github.com/ClickHouse/loom) | your agents revisit repository structure or project decisions and you can run a shared retrieval service. | Code reads and recalled project context, with token-budgeted code search | Self-hosted MCP server backed by ClickHouse | Apache-2.0 |
 
 ## Alternatives pages
 
