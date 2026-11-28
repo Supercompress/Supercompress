@@ -340,4 +340,4 @@ pytest tests/ -q
 
 - [INTEGRATIONS.md](./INTEGRATIONS.md) — OpenAI, LangChain, browser, curl
 - [ENVIRONMENT.md](./ENVIRONMENT.md) — kWh / CO₂ methodology
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — policy design
+- [Architecture](../web/docs/architecture.html) — policy design

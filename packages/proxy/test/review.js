@@ -203,7 +203,7 @@ async function main() {
     assert.ok(fs.existsSync(path.join(ROOT, "tui/theme.ts")));
     const agents = execFileSync(process.execPath, ["bin/supercompress.js", "agents"], { cwd: ROOT, encoding: "utf8" });
     assert.match(agents, /Cursor/);
-    assert.match(agents, /48 catalogued|Supported coding agents/i);
+    assert.match(agents, /\d+ harnesses catalogued|Supported coding agents/i);
     pass("CLI help + agents");
   } catch (err) {
     fail("CLI help + agents", err.message);
@@ -531,24 +531,30 @@ async function main() {
       pass("Cursor settings.json absent (ok for MCP-only)");
     }
 
-    const mcp = JSON.parse(fs.readFileSync(path.join(os.homedir(), ".cursor/mcp.json"), "utf8"));
-    const sc = mcp.mcpServers && mcp.mcpServers.supercompress;
-    assert.ok(sc, "supercompress MCP missing");
-    assert.ok(Array.isArray(sc.args) && sc.args.some((a) => String(a).includes("mcp.js")));
-    assert.notEqual(sc.env && sc.env.SUPERCOMPRESS_API_KEY, "${SUPERCOMPRESS_API_KEY}");
-    assert.ok(sc.env && sc.env.SUPERCOMPRESS_CONFIG_DIR);
-    pass("Cursor MCP registers supercompress without placeholder API key");
+    const cursorMcpPath = path.join(os.homedir(), ".cursor/mcp.json");
+    if (!fs.existsSync(cursorMcpPath)) {
+      // run-all.js uses a throwaway HOME unless SC_TEST_LIVE_HOME=1.
+      pass("live agent wiring", "skipped — no ~/.cursor/mcp.json (no live install in this HOME)");
+    } else {
+      const mcp = JSON.parse(fs.readFileSync(cursorMcpPath, "utf8"));
+      const sc = mcp.mcpServers && mcp.mcpServers.supercompress;
+      assert.ok(sc, "supercompress MCP missing");
+      assert.ok(Array.isArray(sc.args) && sc.args.some((a) => String(a).includes("mcp.js")));
+      assert.notEqual(sc.env && sc.env.SUPERCOMPRESS_API_KEY, "${SUPERCOMPRESS_API_KEY}");
+      assert.ok(sc.env && sc.env.SUPERCOMPRESS_CONFIG_DIR);
+      pass("Cursor MCP registers supercompress without placeholder API key");
 
-    if (fs.existsSync(path.join(os.homedir(), ".claude/settings.json"))) {
-      const claude = JSON.parse(fs.readFileSync(path.join(os.homedir(), ".claude/settings.json"), "utf8"));
-      assert.notEqual(claude.env?.ANTHROPIC_BASE_URL, "http://localhost:8080");
-      pass("Claude Code not forced into ANTHROPIC_BASE_URL proxy mode");
+      if (fs.existsSync(path.join(os.homedir(), ".claude/settings.json"))) {
+        const claude = JSON.parse(fs.readFileSync(path.join(os.homedir(), ".claude/settings.json"), "utf8"));
+        assert.notEqual(claude.env?.ANTHROPIC_BASE_URL, "http://localhost:8080");
+        pass("Claude Code not forced into ANTHROPIC_BASE_URL proxy mode");
+      }
+
+      const codex = fs.readFileSync(path.join(os.homedir(), ".codex/config.toml"), "utf8");
+      assert.doesNotMatch(codex, /^\s*openai_base_url\s*=\s*"http:\/\/localhost:8080\/v1"/m);
+      assert.match(codex, /\[mcp_servers\.supercompress\]/);
+      pass("Codex uses MCP plugin, not openai_base_url proxy");
     }
-
-    const codex = fs.readFileSync(path.join(os.homedir(), ".codex/config.toml"), "utf8");
-    assert.doesNotMatch(codex, /^\s*openai_base_url\s*=\s*"http:\/\/localhost:8080\/v1"/m);
-    assert.match(codex, /\[mcp_servers\.supercompress\]/);
-    pass("Codex uses MCP plugin, not openai_base_url proxy");
 
     // Extension MCP targets validation (Roo Code, Cline, Kodu)
     const { resolveExtensionMcpTargets } = require(path.join(ROOT, "src/detector.js"));

@@ -6,7 +6,8 @@
 
 ## Local development
 
-- Install: `npm ci` and `pip install -e ".[test]"` as needed
+- Install: `npm ci` and `pip install -e ".[test]"` as needed (Node 22.13+, Python 3.10+)
+- Fresh clone: run `npm run sync:assets` before `npm test` (the `api/_lib` engine copies are gitignored)
 - JS tests: `npm test` (or the scripts listed in `package.json`)
 - Python tests: `pytest -q`
 - Proxy package lives in `packages/proxy`
