@@ -19,9 +19,13 @@ const COMPRESS_WHAT = [
   "**Don't compress** the user's request, short output, text already in your context, or code you are about to edit or patch — edits need the exact text.",
 ];
 
-function compressSteps(_inboxPath, { tool = "compress_context", connect = "connect_account" } = {}) {
+function compressSteps(inboxPath, { tool = "compress_context", connect = "connect_account", inbox = false } = {}) {
+  // Only agents whose plugin still writes inbox digests (OpenClaw) get the inbox step.
+  const first = inbox && inboxPath
+    ? `1. If \`${inboxPath}\` exists, Read it first — the plugin already compressed recent tool output for this session.`
+    : "1. If a squeezed output dropped a line you need, grep or sed the full-output file named in its footer.";
   return [
-    "1. If a squeezed output dropped a line you need, grep or sed the full-output file named in its footer.",
+    first,
     `2. Before handing bulky text to another model call, run \`${tool}\` on only that text and pass the returned digest.`,
     "3. If a digest dropped a line you need, re-read just that part of the source.",
     `4. If it says the account is not linked, call \`${connect}\` once, give the user its link, then retry.`,
