@@ -260,8 +260,8 @@ async function reportPaygUsage(owner, tokensInThisMonth) {
 }
 
 /**
- * Create a Stripe Checkout session that charges `creditUsd` and saves the card
- * for optional auto-recharge.
+ * Create a Stripe Checkout session that charges `creditUsd`. The card is saved for
+ * off-session charges only when the buyer turned auto-recharge on.
  */
 async function createCreditTopUpCheckout({
   customerId,
@@ -305,8 +305,17 @@ async function createCreditTopUpCheckout({
       credit_usd: String(amount),
       auto_recharge: autoRecharge ? "true" : "false",
     },
+    // Save the card for off-session charges only with auto-recharge consent, and say so
+    // on the payment page. A one-time purchase must not leave a reusable mandate behind.
+    custom_text: {
+      submit: {
+        message: autoRecharge
+          ? `Auto-recharge is ON. You authorize SuperCompress to charge your saved payment method $${amount.toFixed(2)} whenever your prepaid credits run out. Turn it off in Dashboard > Billing.`
+          : "One-time credit purchase. Auto-recharge is OFF.",
+      },
+    },
     payment_intent_data: {
-      setup_future_usage: "off_session",
+      ...(autoRecharge ? { setup_future_usage: "off_session" } : {}),
       metadata: {
         user_id: userId,
         plan_id: "payg",
