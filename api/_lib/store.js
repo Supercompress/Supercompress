@@ -1055,27 +1055,6 @@ async function loadAgentPluginLink(ownerUid) {
   return { linked: false };
 }
 
-async function markAgentPluginLinked(ownerUid, meta = {}) {
-  if (!ownerUid) return null;
-  const now = new Date().toISOString();
-  await mutateStore((store) => {
-    if (!store.agent_links) store.agent_links = {};
-    const prev = store.agent_links[ownerUid] || {};
-    const agents = Array.isArray(meta.agents)
-      ? [...new Set([...(prev.agents || []), ...meta.agents])]
-      : (prev.agents || []);
-    store.agent_links[ownerUid] = {
-      linked: true,
-      linked_at: prev.linked_at || now,
-      updated_at: now,
-      source: meta.source || prev.source || "oauth",
-      agents,
-    };
-    return true;
-  });
-  return loadAgentPluginLink(ownerUid);
-}
-
 module.exports = {
   persistenceStatus,
   loadStore,
@@ -1094,7 +1073,6 @@ module.exports = {
   mergeKeySnaps,
   reconcileKeyUsageGap,
   loadAgentPluginLink,
-  markAgentPluginLinked,
   importAuthStoreRecordsInto,
   gistAllowed,
 };

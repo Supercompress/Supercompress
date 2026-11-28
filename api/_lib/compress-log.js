@@ -52,11 +52,6 @@ function clipQuery(q) {
   return preview(q, QUERY_MAX);
 }
 
-function logUid(ownerUid) {
-  const h = crypto.createHash("sha256").update(String(ownerUid)).digest("hex").slice(0, 28);
-  return `sc_clog_${h}`;
-}
-
 function normalizeEntry(raw = {}, { previewMax = PREVIEW_MAX } = {}) {
   const tokensIn = Math.max(0, Number(raw.tokens_in) || 0);
   const tokensOut = Math.max(0, Number(raw.tokens_out) || 0);
@@ -257,5 +252,4 @@ module.exports = {
   appendCompressLog,
   listCompressLog,
   normalizeEntry,
-  logUid,
 };

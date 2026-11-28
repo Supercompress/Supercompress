@@ -200,16 +200,10 @@ function jsonWithRateLimit(res, status, body, rl) {
   json(res, status, body);
 }
 
-function methodNotAllowed(res) {
-  // Prefer softProbe at call sites for scanner-heavy routes; keep helper for rare cases.
-  json(res, 405, { detail: "Method not allowed" });
-}
-
 module.exports = {
   cors,
   json,
   jsonWithRateLimit,
-  methodNotAllowed,
   softProbe,
   hasAuthCredentials,
   securityHeaders,

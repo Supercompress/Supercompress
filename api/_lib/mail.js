@@ -422,9 +422,6 @@ function weeklyTipForCampaign(campaignId) {
   return seed[n % seed.length];
 }
 
-/** @deprecated use getWeeklyTipsCatalog().seed — kept for older callers */
-const WEEKLY_TIPS = getWeeklyTipsCatalog().seed;
-
 function weeklyCopy({ firstName, email, campaignId, unsubUrl }) {
   const tip = weeklyTipForCampaign(campaignId);
   const unsub = unsubUrl || `${SITE}/unsubscribe`;
@@ -1086,7 +1083,6 @@ module.exports = {
   loadShipDigest,
   parseRecentChangelog,
   weeklyTipForCampaign,
-  WEEKLY_TIPS,
   brandedEmailHtml,
   textToMinimalHtml,
   plainCopy,

@@ -67,17 +67,6 @@ async function* iterateSseData(res) {
 }
 
 /**
- * Collect text deltas from an async iterable of string chunks.
- */
-async function collectText(asyncIterable) {
-  let text = "";
-  for await (const chunk of asyncIterable) {
-    text += chunk;
-  }
-  return text;
-}
-
-/**
  * Incremental SSE consumer for tests / partial buffers.
  * @param {string} chunk
  * @param {{ buf?: string }} [state]
@@ -123,6 +112,5 @@ module.exports = {
   parseSseBlock,
   iterateSseData,
   consumeSse,
-  collectText,
   providerError,
 };
