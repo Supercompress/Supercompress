@@ -510,7 +510,7 @@ function instructionBody() {
     "",
     ...guidance.COMPRESS_WHAT,
     "",
-    ...guidance.compressSteps(inboxHint),
+    ...guidance.compressSteps(inboxHint, { inbox: true }),
     "5. " + guidance.runwayRule(),
     "",
   ].join("\n");

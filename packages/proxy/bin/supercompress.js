@@ -808,6 +808,41 @@ async function fetchJson(url, apiKey) {
   return data;
 }
 
+/**
+ * Savings that actually reached the model: squeezes logged by squeeze-run.js.
+ * Hosted API totals count every compress call, including digests an agent never
+ * used, so the two are shown separately.
+ */
+function readAppliedSavings(days = 30) {
+  const out = { events: 0, original_tokens: 0, saved_tokens: 0, by_agent: {} };
+  const dir = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(require("os").homedir(), ".supercompress");
+  let raw = "";
+  try {
+    raw = fs.readFileSync(path.join(dir, "savings.jsonl"), "utf8");
+  } catch {
+    return out;
+  }
+  const since = Date.now() - days * 86400000;
+  for (const line of raw.split("\n")) {
+    if (!line.trim()) continue;
+    let e;
+    try {
+      e = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (!e.applied || Date.parse(e.ts) < since) continue;
+    const saved = Math.max(0, Number(e.original_tokens || 0) - Number(e.kept_tokens || 0));
+    out.events += 1;
+    out.original_tokens += Number(e.original_tokens || 0);
+    out.saved_tokens += saved;
+    const a = (out.by_agent[e.agent || "unknown"] ||= { events: 0, saved_tokens: 0 });
+    a.events += 1;
+    a.saved_tokens += saved;
+  }
+  return out;
+}
+
 async function printUsageCommand(args = []) {
   const jsonOut = args.includes("--json") || args.includes("-j");
   const config = loadConfig();
@@ -822,13 +857,27 @@ async function printUsageCommand(args = []) {
     throw new Error(data.detail || "Authorization required — reconnect with `supercompress connect`");
   }
 
+  const applied = readAppliedSavings();
   if (jsonOut) {
-    console.log(JSON.stringify(data, null, 2));
+    console.log(JSON.stringify({ ...data, applied_locally: applied }, null, 2));
     return;
   }
 
   console.log("  Usage");
   printPlanStatus(data);
+
+  console.log("");
+  console.log("  Saved before the model saw it (this machine)");
+  if (!applied.events) {
+    console.log("  → Nothing squeezed yet. Long shell output in Claude Code is squeezed once `supercompress setup` has run.");
+  } else {
+    const pct = applied.original_tokens > 0 ? Math.round((applied.saved_tokens / applied.original_tokens) * 1000) / 10 : 0;
+    console.log(`  → Squeezed outputs: ${formatNum(applied.events)} (last 30 days)`);
+    console.log(`  → Tokens kept out:  ${formatNum(applied.saved_tokens)} of ${formatNum(applied.original_tokens)} (−${pct}%)`);
+    for (const [agent, a] of Object.entries(applied.by_agent)) {
+      console.log(`    • ${agent}: ${formatNum(a.saved_tokens)} saved over ${formatNum(a.events)} outputs`);
+    }
+  }
 
   const saved = data.total_tokens_saved || 0;
   const tokensIn = data.total_tokens_in || 0;
@@ -837,7 +886,7 @@ async function printUsageCommand(args = []) {
   const savingsPct = tokensIn > 0 ? Math.round((saved / tokensIn) * 1000) / 10 : 0;
 
   console.log("");
-  console.log("  Totals");
+  console.log("  Hosted compress API (account)");
   console.log(`  → Requests:      ${formatNum(requests)}`);
   console.log(`  → Tokens in:     ${formatNum(tokensIn)}`);
   console.log(`  → Tokens out:    ${formatNum(tokensOut)}`);

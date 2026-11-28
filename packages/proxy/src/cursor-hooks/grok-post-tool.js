@@ -59,6 +59,18 @@ function buildGrokUpdatedToolOutput(toolResult, body) {
   return body;
 }
 
+/** The text field buildGrokUpdatedToolOutput would replace (same key order). */
+function primaryText(toolResult) {
+  if (typeof toolResult === "string") return toolResult;
+  if (!toolResult || typeof toolResult !== "object" || Array.isArray(toolResult)) return "";
+  for (const key of ["output_for_prompt", "output", "stdout", "content", "text", "result"]) {
+    if (typeof toolResult[key] === "string") return toolResult[key];
+  }
+  let best = "";
+  for (const value of Object.values(toolResult)) if (typeof value === "string" && value.length > best.length) best = value;
+  return best;
+}
+
 function buildGrokDigestBody(toolName, meta, compressed) {
   return [
     `[SuperCompress auto] Compressed ${toolName || "tool"} output (~${meta}).`,
@@ -109,4 +121,5 @@ module.exports = {
   buildGrokUpdatedToolOutput,
   buildGrokDigestBody,
   buildGrokHookResponse,
+  primaryText,
 };
