@@ -97,6 +97,27 @@ test("utilization fraction and harness aliases", () => {
   }
 });
 
+test("epoch reset/checkedAt sent as numeric strings are honoured", () => {
+  const s = normalizeSnapshot({
+    checked_at: "1767225000",
+    rate_limits: {
+      five_hour: { used_percentage: 40, resets_at: "1767225600" },
+      seven_day: { used_percentage: 10, resets_at: "1767830400000" },
+    },
+  });
+  assert.strictEqual(s.checkedAt, "2025-12-31T23:50:00.000Z");
+  assert.strictEqual(s.windows[0].resetAt, "2026-01-01T00:00:00.000Z");
+  assert.strictEqual(s.windows[1].resetAt, "2026-01-08T00:00:00.000Z");
+});
+
+test("out-of-range epoch reset drops resetAt but keeps the window", () => {
+  for (const resets_at of ["1767225600000000000", 1767225600000000000]) {
+    const s = normalizeSnapshot({ rate_limits: { five_hour: { used_percentage: 40, resets_at } } });
+    assert.strictEqual(s.windows[0].usedPercent, 40);
+    assert.strictEqual(s.windows[0].resetAt, undefined);
+  }
+});
+
 test("rejects payloads without windows", () => {
   assert.throws(() => normalizeSnapshot({ provider: "codex", rate_limits: { primary: null, secondary: null } }), /No rate-limit windows/);
 });
